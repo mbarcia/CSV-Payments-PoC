@@ -1,2 +1,5 @@
-package poc;public interface Command {
+package poc;
+
+public interface Command<T> {
+    void execute(T processableObj);
 }

@@ -27,5 +27,8 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# Project
 /.idea/
+.idea/workspace.xml
 /target/

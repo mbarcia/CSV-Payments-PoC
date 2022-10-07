@@ -4,25 +4,30 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="4ac0f964-5f6b-4657-a9dc-a5592acd3418" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/compiler.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/csv-plugin.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/libraries/opencsv.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/poc/csvfile/CSVPaymentsFile.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/poc/csvrecord/PaymentRecordBean.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/poc/csvrecord/SendPaymentCommand.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/files/test.csv" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test/files/test1.csv" afterDir="false" />
+    <list default="true" id="4ac0f964-5f6b-4657-a9dc-a5592acd3418" name="Changes" comment="First working version">
+      <change afterPath="$PROJECT_DIR$/src/main/java/Main.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/poc/Command.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/poc/csvfile/ReadFileCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/poc/csvfolder/ReadFolderCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/poc/csvrecord/JoinRecordsCommand.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/poc/csvrecord/PaymentRecord.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/poc/csvrecord/SendPaymentCommand.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/csv-plugin.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/CSV Payments PoC.iml" beforeDir="false" afterPath="$PROJECT_DIR$/CSV Payments PoC.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/poc/Command.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/poc/Command.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/poc/Processable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/poc/Processable.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/poc/csvfile/PaymentsFile.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/poc/csvfile/ReadFileCommand.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/poc/csvfile/ReadFileCommand.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/poc/csvfolder/CSVFolder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/poc/csvfolder/CSVFolder.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/poc/csvfolder/ReadFolderCommand.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/poc/csvfolder/ReadFolderCommand.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/poc/csvrecord/PaymentRecord.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/poc/csvrecord/PaymentRecord.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Main.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/poc/Command.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/poc/Processable.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/poc/Processable.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/poc/csvfile/CSVPaymentsFile.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/poc/csvfile/CSVPaymentsFile.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/poc/csvfile/ReadFileCommand.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/poc/csvfolder/CSVFolder.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/poc/csvfolder/CSVFolder.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/poc/csvfolder/ReadFolderCommand.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/poc/csvrecord/PaymentRecord.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/poc/csvrecord/PaymentRecordBean.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/poc/csvrecord/SendPaymentCommand.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/files/test.csv" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/files/test.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/test/files/test1.csv" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/files/test1.csv" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,23 +56,23 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Downloaded.Files.Path.Enabled": "false",
-    "Repository.Attach.Annotations": "false",
-    "Repository.Attach.JavaDocs": "false",
-    "Repository.Attach.Sources": "false",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "codeWithMe.voiceChat.enabledByDefault": "false",
-    "last_opened_file_path": "/Users/mari/IdeaProjects/CSV Payments PoC/test/files",
-    "project.structure.last.edited": "Libraries",
-    "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "CodeWithMe"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Downloaded.Files.Path.Enabled&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.Annotations&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.JavaDocs&quot;: &quot;false&quot;,
+    &quot;Repository.Attach.Sources&quot;: &quot;false&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/Users/mari/IdeaProjects/CSV Payments PoC/test/files&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Libraries&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;CodeWithMe&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CreateClassDialog.RecentsKey">
       <recent name="poc.csvrecord" />
@@ -77,6 +82,9 @@
     </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$/test/files" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/test" />
     </key>
   </component>
   <component name="RunManager">
@@ -102,6 +110,14 @@
       <option name="presentableId" value="Default" />
       <updated>1665072544737</updated>
     </task>
+    <task id="LOCAL-00001" summary="First working version">
+      <created>1665088133840</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1665088133840</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -109,34 +125,20 @@
       <map>
         <entry key="MAIN">
           <value>
-            <State />
+            <State>
+              <option name="CUSTOM_BOOLEAN_PROPERTIES">
+                <map>
+                  <entry key="Show.Git.Branches" value="false" />
+                </map>
+              </option>
+            </State>
           </value>
         </entry>
       </map>
     </option>
   </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/Main.java</url>
-          <line>15</line>
-          <properties>
-            <option name="lambda-ordinal" value="-1" />
-          </properties>
-          <option name="timeStamp" value="4" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/poc/csvfile/ReadFileCommand.java</url>
-          <line>23</line>
-          <option name="timeStamp" value="6" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/poc/csvfile/ReadFileCommand.java</url>
-          <line>33</line>
-          <option name="timeStamp" value="7" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="First working version" />
+    <option name="LAST_COMMIT_MESSAGE" value="First working version" />
   </component>
 </project>

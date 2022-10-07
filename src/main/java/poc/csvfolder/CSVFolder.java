@@ -1,8 +1,6 @@
 package poc.csvfolder;
 
-import poc.Processable;
-
-public class CSVFolder extends Processable<CSVFolder> {
+public class CSVFolder {
     private final String folderPath;
 
     public CSVFolder(String folderPath) {

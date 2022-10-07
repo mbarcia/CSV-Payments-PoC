@@ -1,5 +1,5 @@
-id, name, amount
-1, Mariano1, 123.50
-2, Sergiu1, 456.60
-3, Moldova1, 789.25
+ID,Recipient,Amount,Currency
+1,Mariano1,123.50,GBP
+2,Sergiu1,456.60,USD
+3,Moldova1,789.25,ARS
 

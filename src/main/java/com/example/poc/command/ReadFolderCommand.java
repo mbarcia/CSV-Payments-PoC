@@ -3,6 +3,9 @@ package com.example.poc.command;
 import com.example.poc.Command;
 import com.example.poc.biz.CSVPaymentsFile;
 import com.example.poc.biz.CSVFolder;
+import com.example.poc.repository.CSVPaymentsFileRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,12 +17,17 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+@Service
 public class ReadFolderCommand implements Command<CSVFolder, Set<CSVPaymentsFile>> {
+    @Autowired
+    private CSVPaymentsFileRepository csvPaymentsFileRepository;
     @Override
     public Set<CSVPaymentsFile> execute(CSVFolder csvFolder) {
         Set<CSVPaymentsFile> fileList = new HashSet<>();
         for (File result: Objects.requireNonNull(getFileList(csvFolder.toString()))) {
-            fileList.add(new CSVPaymentsFile(result));
+            CSVPaymentsFile csvPaymentsFile = new CSVPaymentsFile(result);
+            csvPaymentsFileRepository.save(csvPaymentsFile);
+            fileList.add(csvPaymentsFile);
         }
 
         return fileList;

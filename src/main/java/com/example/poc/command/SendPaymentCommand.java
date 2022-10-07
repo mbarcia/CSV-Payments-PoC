@@ -2,7 +2,9 @@ package com.example.poc.command;
 
 import com.example.poc.Command;
 import com.example.poc.biz.PaymentRecord;
+import org.springframework.stereotype.Service;
 
+@Service
 public class SendPaymentCommand implements Command<PaymentRecord, PaymentRecord> {
     @Override
     public PaymentRecord execute(PaymentRecord paymentRecord) {

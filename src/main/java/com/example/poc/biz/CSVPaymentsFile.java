@@ -46,4 +46,11 @@ public class CSVPaymentsFile {
     public String getFilepath() {
         return filepath;
     }
+
+    @Override
+    public String toString() {
+        return "CSVPaymentsFile{" +
+                "filepath='" + filepath + '\'' +
+                '}';
+    }
 }

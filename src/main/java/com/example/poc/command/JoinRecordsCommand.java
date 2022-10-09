@@ -1,6 +1,5 @@
 package com.example.poc.command;
 
-import com.example.poc.Command;
 import com.example.poc.biz.CSVFolder;
 import com.example.poc.biz.CSVPaymentsFile;
 import com.example.poc.biz.PaymentRecord;
@@ -9,7 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.stream.Stream;
 @Service
-public class JoinRecordsCommand implements Command<CSVFolder, Stream<PaymentRecord>> {
+public class JoinRecordsCommand extends BaseCommand<CSVFolder, Stream<PaymentRecord>> {
     @Autowired
     private ReadFileCommand readCsvPaymentsFileCommand;
 
@@ -18,6 +17,8 @@ public class JoinRecordsCommand implements Command<CSVFolder, Stream<PaymentReco
 
     @Override
     public Stream<PaymentRecord> execute(CSVFolder csvFolder) {
+        super.execute(csvFolder);
+
         Stream<PaymentRecord> results = Stream.empty();
 
         for (CSVPaymentsFile file : readFolderCommand.execute(csvFolder)) {

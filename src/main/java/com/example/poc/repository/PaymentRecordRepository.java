@@ -1,6 +1,6 @@
 package com.example.poc.repository;
 
-import com.example.poc.biz.PaymentRecord;
+import com.example.poc.domain.PaymentRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

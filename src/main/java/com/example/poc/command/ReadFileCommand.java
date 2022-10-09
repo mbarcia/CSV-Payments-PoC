@@ -1,7 +1,7 @@
 package com.example.poc.command;
 
-import com.example.poc.biz.CsvPaymentsFile;
-import com.example.poc.biz.PaymentRecord;
+import com.example.poc.domain.CsvPaymentsFile;
+import com.example.poc.domain.PaymentRecord;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import org.slf4j.Logger;

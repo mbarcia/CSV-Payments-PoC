@@ -1,4 +1,4 @@
-package com.example.poc.biz;
+package com.example.poc.domain;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -7,6 +7,7 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("FieldMayBeFinal")
 @Entity
 public class CsvFolder {
     @Getter

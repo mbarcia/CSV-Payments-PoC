@@ -1,4 +1,4 @@
-package com.example.poc.biz;
+package com.example.poc.domain;
 
 import com.opencsv.bean.CsvBindByName;
 
@@ -24,14 +24,6 @@ public class PaymentRecord implements Serializable {
     private Currency currency;
     @ManyToOne
     private CsvPaymentsFile csvPaymentsFile;
-
-    public CsvPaymentsFile getCsvPaymentsFile() {
-        return csvPaymentsFile;
-    }
-
-    public void setCsvPaymentsFile(CsvPaymentsFile csvPaymentsFile) {
-        this.csvPaymentsFile = csvPaymentsFile;
-    }
 
     public PaymentRecord setFile(CsvPaymentsFile file) {
         this.csvPaymentsFile = file;

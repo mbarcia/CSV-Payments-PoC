@@ -1,6 +1,6 @@
 package com.example.poc.command;
 
-import com.example.poc.biz.PaymentRecord;
+import com.example.poc.domain.PaymentRecord;
 import org.springframework.stereotype.Component;
 
 @Component

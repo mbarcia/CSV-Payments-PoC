@@ -1,7 +1,7 @@
 package com.example.poc.command;
 
-import com.example.poc.biz.CsvFolder;
-import com.example.poc.biz.CsvPaymentsFile;
+import com.example.poc.domain.CsvFolder;
+import com.example.poc.domain.CsvPaymentsFile;
 import com.example.poc.repository.CsvFolderRepository;
 import com.example.poc.repository.CsvPaymentsFileRepository;
 import org.slf4j.Logger;

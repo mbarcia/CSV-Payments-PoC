@@ -1,4 +1,4 @@
-package com.example.poc.biz;
+package com.example.poc.domain;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings("FieldMayBeFinal")
 @Entity
 public class CsvPaymentsFile {
     @Getter

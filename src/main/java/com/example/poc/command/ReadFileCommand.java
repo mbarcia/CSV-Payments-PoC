@@ -1,12 +1,12 @@
 package com.example.poc.command;
 
-import com.example.poc.biz.CSVPaymentsFile;
+import com.example.poc.biz.CsvPaymentsFile;
 import com.example.poc.biz.PaymentRecord;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -14,10 +14,10 @@ import java.io.FileReader;
 import java.io.Reader;
 import java.util.stream.Stream;
 
-@Service
-public class ReadFileCommand extends BaseCommand<CSVPaymentsFile, Stream<PaymentRecord>> {
+@Component
+public class ReadFileCommand extends BaseCommand<CsvPaymentsFile, Stream<PaymentRecord>> {
     @Override
-    public Stream<PaymentRecord> execute(CSVPaymentsFile csvFile) {
+    public Stream<PaymentRecord> execute(CsvPaymentsFile csvFile) {
         super.execute(csvFile);
 
         try {
@@ -29,7 +29,7 @@ public class ReadFileCommand extends BaseCommand<CSVPaymentsFile, Stream<Payment
                     .withIgnoreLeadingWhiteSpace(true)
                     .withIgnoreEmptyLine(true)
                     .build();
-            return csvReader.parse().stream().map(record -> record.setFilepath(csvFile));
+            return csvReader.parse().stream().map(record -> record.setFile(csvFile));
 
         } catch (FileNotFoundException ex) {
             Logger logger = LoggerFactory.getLogger(getClass());

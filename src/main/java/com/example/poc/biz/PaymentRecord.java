@@ -11,6 +11,7 @@ import java.util.Currency;
 public class PaymentRecord implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", nullable = false)
     private Long id;
 
     @CsvBindByName(column = "ID")
@@ -22,12 +23,18 @@ public class PaymentRecord implements Serializable {
     @CsvBindByName(column = "Currency")
     private Currency currency;
     @ManyToOne
-    @JoinColumn(name = "file_id")
-    private CSVPaymentsFile file;
-    private int apiStatus; // READ, SENT, FAILED_TO_SEND, ACCEPTED, REJECTED
+    private CsvPaymentsFile csvPaymentsFile;
 
-    public PaymentRecord setFilepath(CSVPaymentsFile file) {
-        this.file = file;
+    public CsvPaymentsFile getCsvPaymentsFile() {
+        return csvPaymentsFile;
+    }
+
+    public void setCsvPaymentsFile(CsvPaymentsFile csvPaymentsFile) {
+        this.csvPaymentsFile = csvPaymentsFile;
+    }
+
+    public PaymentRecord setFile(CsvPaymentsFile file) {
+        this.csvPaymentsFile = file;
         return this;
     }
 
@@ -38,7 +45,7 @@ public class PaymentRecord implements Serializable {
                 ", recipient='" + recipient + '\'' +
                 ", amount=" + amount +
                 ", currency=" + currency +
-                ", file=" + file.getFilepath() +
+                ", file=" + csvPaymentsFile.getFilepath() +
                 '}';
     }
 }

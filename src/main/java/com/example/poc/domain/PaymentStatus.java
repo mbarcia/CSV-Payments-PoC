@@ -9,17 +9,21 @@ import java.math.BigDecimal;
 
 @Entity
 @Getter @Setter
-@Table(name = "payment_status")
 public class PaymentStatus implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
     private String customerReference;
+
+    @Column(nullable = false)
     private String reference;
     private String status;
     private String message;
     private BigDecimal fee;
+
+    @OneToOne(fetch = FetchType.EAGER)
+    private AckPaymentSent ackPaymentSent;
 
     @Override
     public String toString() {

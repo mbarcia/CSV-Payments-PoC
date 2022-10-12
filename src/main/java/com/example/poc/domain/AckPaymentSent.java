@@ -7,23 +7,28 @@ import javax.persistence.*;
 
 @Entity
 @Getter @Setter
-@Table(name = "send_payment")
-public class SendPayment {
+public class AckPaymentSent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
-    @Column(name = "conversation_id", nullable = false)
+
+    @Column(nullable = false)
     private String conversationID;
+
     private Long status;
     private String message;
 
-    @OneToOne(cascade=CascadeType.ALL)
+    @OneToOne(fetch = FetchType.EAGER)
     private PaymentRecord record;
+
+    @OneToOne(cascade = CascadeType.ALL, mappedBy = "ackPaymentSent")
+    @Getter @Setter
+    private PaymentStatus paymentStatus;
 
     @Override
     public String toString() {
-        return "SendPayment{" +
+        return "AckPaymentSent{" +
                 "id='" + id + '\'' +
                 ", conversationID='" + conversationID + '\'' +
                 ", status=" + status +

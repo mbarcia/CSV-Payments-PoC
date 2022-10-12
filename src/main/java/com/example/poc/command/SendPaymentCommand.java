@@ -3,25 +3,22 @@ package com.example.poc.command;
 import com.example.poc.client.PaymentProviderClient;
 import com.example.poc.client.SendPaymentRequest;
 import com.example.poc.domain.PaymentRecord;
-import com.example.poc.domain.SendPayment;
-import com.example.poc.repository.SendPaymentRepository;
+import com.example.poc.domain.AckPaymentSent;
+import com.example.poc.repository.AckPaymentSentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.transaction.Transactional;
-
 @Component
-public class SendPaymentCommand extends BaseCommand<PaymentRecord, PaymentRecord> {
+public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSent> {
 
     @Autowired
     PaymentProviderClient client;
 
     @Autowired
-    SendPaymentRepository sendPaymentRepository;
+    AckPaymentSentRepository ackPaymentSentRepository;
 
-    @Transactional
     @Override
-    public PaymentRecord execute(PaymentRecord paymentRecord) {
+    public AckPaymentSent execute(PaymentRecord paymentRecord) {
         super.execute(paymentRecord);
 
         SendPaymentRequest request = new SendPaymentRequest();
@@ -29,10 +26,16 @@ public class SendPaymentCommand extends BaseCommand<PaymentRecord, PaymentRecord
         request.setAmount(paymentRecord.getAmount());
         request.setCurrency(paymentRecord.getCurrency());
 
-        SendPayment result = client.pay(request);
-        result.setRecord(paymentRecord);
-        sendPaymentRepository.save(result);
+//        TODO
+        AckPaymentSent result = client.sendPayment(request);
+//        AckPaymentSent result = new AckPaymentSent();
+//        result.setStatus(1000L);
+//        result.setMessage("this is a test");
+//        result.setConversationID("1234567890");
 
-        return paymentRecord;
+        result.setRecord(paymentRecord);
+        ackPaymentSentRepository.save(result);
+
+        return result;
     }
 }

@@ -12,13 +12,16 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
-import java.util.List;
+import java.util.ArrayList;
+import java.util.Set;
 
 @Component
 public class CsvOutputCommand extends BaseCommand<CsvPaymentsFile, CsvPaymentsFile> {
     @Transactional
     public CsvPaymentsFile execute(CsvPaymentsFile aFile) {
-        List<PaymentRecord> processedFileData = aFile.getRecords();
+        super.execute(aFile);
+
+        Set<PaymentRecord> processedFileData = aFile.getRecords();
 
         try (Writer writer = new FileWriter(aFile.getFilepath() + ".out")) {
 
@@ -27,7 +30,8 @@ public class CsvOutputCommand extends BaseCommand<CsvPaymentsFile, CsvPaymentsFi
                     .withSeparator(com.opencsv.CSVWriter.DEFAULT_SEPARATOR)
                     .build();
 
-            sbc.write(processedFileData);
+            ArrayList<PaymentRecord> paymentRecords = new ArrayList<>(processedFileData);
+            sbc.write(paymentRecords);
         } catch (CsvRequiredFieldEmptyException | CsvDataTypeMismatchException | IOException e) {
             throw new RuntimeException(e);
         }

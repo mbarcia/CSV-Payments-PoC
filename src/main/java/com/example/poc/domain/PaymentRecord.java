@@ -10,30 +10,37 @@ import java.math.BigDecimal;
 import java.util.Currency;
 
 @Entity
-@Table(name = "record")
 public class PaymentRecord implements Serializable {
     @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
+
     @Getter
     @CsvBindByName(column = "ID")
     private String csvId;
+
     @CsvBindByName(column = "Recipient")
     private String recipient;
+
     @CsvBindByName(column = "Amount")
     @Getter
     private BigDecimal amount;
+
     @CsvBindByName(column = "Currency")
     @Getter
     private Currency currency;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.EAGER)
     private CsvPaymentsFile csvPaymentsFile;
 
-    @OneToOne(mappedBy = "record", cascade = CascadeType.ALL)
+    @OneToOne(
+            cascade = CascadeType.ALL,
+            mappedBy = "record"
+    )
     @Getter @Setter
-    private SendPayment sendPayment;
+    private AckPaymentSent ackPaymentSent;
 
     public PaymentRecord setFile(CsvPaymentsFile file) {
         this.csvPaymentsFile = file;

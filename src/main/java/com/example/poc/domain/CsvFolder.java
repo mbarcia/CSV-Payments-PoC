@@ -4,10 +4,9 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-@SuppressWarnings("FieldMayBeFinal")
 @Entity
 public class CsvFolder {
     @Getter
@@ -23,9 +22,10 @@ public class CsvFolder {
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.EAGER,
-            mappedBy = "csvFolder"
+            mappedBy = "csvFolder",
+            orphanRemoval = true
     )
-    private List<CsvPaymentsFile> files = new ArrayList<>();
+    private final Set<CsvPaymentsFile> files = new LinkedHashSet<>();
 
     public CsvFolder() {
     }

@@ -7,10 +7,9 @@ import javax.persistence.*;
 import java.io.File;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-@SuppressWarnings("FieldMayBeFinal")
 @Entity
 public class CsvPaymentsFile {
     @Getter
@@ -23,11 +22,13 @@ public class CsvPaymentsFile {
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.EAGER,
-            mappedBy = "csvPaymentsFile"
+            mappedBy = "csvPaymentsFile",
+            orphanRemoval = true
     )
-    private List<PaymentRecord> records = new ArrayList<>();
+    private final Set<PaymentRecord> records = new LinkedHashSet<>();
 
     @Getter @Setter
+    @Transient
     private File csvFile;
 
     @Getter @Setter

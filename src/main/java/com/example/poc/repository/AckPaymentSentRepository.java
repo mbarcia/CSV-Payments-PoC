@@ -1,13 +1,13 @@
 package com.example.poc.repository;
 
-import com.example.poc.domain.SendPayment;
+import com.example.poc.domain.AckPaymentSent;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 
 @Repository
-public interface SendPaymentRepository extends JpaRepository<SendPayment, String> {
+public interface AckPaymentSentRepository extends JpaRepository<AckPaymentSent, String> {
     @Override
-    Optional<SendPayment> findById(String id);
+    Optional<AckPaymentSent> findById(String id);
 }

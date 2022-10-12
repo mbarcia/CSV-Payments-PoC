@@ -1,7 +1,7 @@
 package com.example.poc.client;
 
 import com.example.poc.domain.PaymentStatus;
-import com.example.poc.domain.SendPayment;
+import com.example.poc.domain.AckPaymentSent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +24,7 @@ public class PaymentProviderClient {
     @Autowired
     ObjectMapper mapper;
 
-    public SendPayment pay(SendPaymentRequest requestMap) {
+    public AckPaymentSent sendPayment(SendPaymentRequest requestMap) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         try {
@@ -36,13 +36,13 @@ public class PaymentProviderClient {
         String response = request(requestMap, headers, HttpMethod.POST, "/pay");
 
         try {
-            return mapper.readValue(response, SendPayment.class);
+            return mapper.readValue(response, AckPaymentSent.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public PaymentStatus getPaymentStatus(String conversationID) {
+    public PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent) throws JsonProcessingException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         try {
@@ -53,13 +53,11 @@ public class PaymentProviderClient {
 
         MultiValueMap<String, String> request = new LinkedMultiValueMap<>();
 
-        String response = request(request, headers, HttpMethod.GET, "/status/" + conversationID);
+        String response = request(request, headers, HttpMethod.GET, "/status/" + ackPaymentSent.getConversationID());
 
-        try {
-            return mapper.readValue(response, PaymentStatus.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        PaymentStatus result = mapper.readValue(response, PaymentStatus.class);
+        result.setAckPaymentSent(ackPaymentSent);
+        return result;
     }
 
     private AuthResponse authorization() throws JsonProcessingException {

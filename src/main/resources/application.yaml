@@ -14,3 +14,8 @@ spring:
   h2:
     console:
       enabled: true
+
+api:
+  url: 'http://127.0.0.1:7902'
+  account:
+  apiKey:

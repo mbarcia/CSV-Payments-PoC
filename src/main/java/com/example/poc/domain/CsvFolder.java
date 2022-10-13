@@ -4,8 +4,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class CsvFolder {
@@ -25,7 +25,7 @@ public class CsvFolder {
             mappedBy = "csvFolder",
             orphanRemoval = true
     )
-    private final Set<CsvPaymentsFile> files = new LinkedHashSet<>();
+    private final List<CsvPaymentsFile> files = new ArrayList<>();
 
     public CsvFolder() {
     }

@@ -7,8 +7,8 @@ import javax.persistence.*;
 import java.io.File;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 public class CsvPaymentsFile {
@@ -25,7 +25,7 @@ public class CsvPaymentsFile {
             mappedBy = "csvPaymentsFile",
             orphanRemoval = true
     )
-    private final Set<PaymentRecord> records = new LinkedHashSet<>();
+    private final List<PaymentRecord> records = new ArrayList<>();
 
     @Getter @Setter
     @Transient

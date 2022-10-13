@@ -22,7 +22,7 @@ public class PaymentStatus implements Serializable {
     private String message;
     private BigDecimal fee;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @OneToOne(fetch = FetchType.LAZY)
     private AckPaymentSent ackPaymentSent;
 
     @Override

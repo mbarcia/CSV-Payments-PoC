@@ -1,6 +1,5 @@
 spring:
   datasource:
-    #url: jdbc:h2:file:/Users/mari/poc
     url: jdbc:h2:mem:poc
     username: sa
     password:

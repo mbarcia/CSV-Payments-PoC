@@ -7,7 +7,6 @@ import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
 
-@SuppressWarnings("FieldMayBeFinal")
 @Entity
 public class CsvFolder {
     @Getter
@@ -23,9 +22,10 @@ public class CsvFolder {
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.EAGER,
-            mappedBy = "csvFolder"
+            mappedBy = "csvFolder",
+            orphanRemoval = true
     )
-    private List<CsvPaymentsFile> files = new ArrayList<>();
+    private final List<CsvPaymentsFile> files = new ArrayList<>();
 
     public CsvFolder() {
     }

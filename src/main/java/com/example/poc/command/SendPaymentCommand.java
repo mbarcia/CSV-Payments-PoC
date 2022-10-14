@@ -1,38 +1,39 @@
 package com.example.poc.command;
 
 import com.example.poc.client.PaymentProviderClient;
-import com.example.poc.client.SendPaymentRequest;
+import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;
-import com.example.poc.domain.SendPayment;
-import com.example.poc.repository.SendPaymentRepository;
+import com.example.poc.repository.AckPaymentSentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.transaction.Transactional;
+import java.util.UUID;
 
 @Component
-public class SendPaymentCommand extends BaseCommand<PaymentRecord, PaymentRecord> {
+public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSent> {
 
+    public static final String DUMMY_MSISDN = "12125551003";
     @Autowired
     PaymentProviderClient client;
 
     @Autowired
-    SendPaymentRepository sendPaymentRepository;
+    AckPaymentSentRepository ackPaymentSentRepository;
 
-    @Transactional
     @Override
-    public PaymentRecord execute(PaymentRecord paymentRecord) {
+    public AckPaymentSent execute(PaymentRecord paymentRecord) {
         super.execute(paymentRecord);
 
-        SendPaymentRequest request = new SendPaymentRequest();
-        request.setMsisdn("12125551003");
-        request.setAmount(paymentRecord.getAmount());
-        request.setCurrency(paymentRecord.getCurrency());
+        AckPaymentSent result = new AckPaymentSent()
+        .setStatus(1000L)
+        .setMessage("OK but this is only a test")
+        .setConversationID(String.valueOf(UUID.randomUUID()));
 
-        SendPayment result = client.pay(request);
-        result.setRecord(paymentRecord);
-        sendPaymentRepository.save(result);
+//        TODO
+//        AckPaymentSent result = client.sendPayment((new SendPaymentRequest()).
+//                setMsisdn(DUMMY_MSISDN).
+//                setAmount(paymentRecord.getAmount()).
+//                setCurrency(paymentRecord.getCurrency()));
 
-        return paymentRecord;
+        return ackPaymentSentRepository.save(result.setRecord(paymentRecord));
     }
 }

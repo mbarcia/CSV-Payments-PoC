@@ -8,9 +8,9 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface AckPaymentSentRepository extends JpaRepository<AckPaymentSent, String> {
+public interface AckPaymentSentRepository extends JpaRepository<AckPaymentSent, Long> {
     @Override
-    Optional<AckPaymentSent> findById(String id);
+    Optional<AckPaymentSent> findById(Long id);
 
     Optional<AckPaymentSent> findByRecord(PaymentRecord record);
 }

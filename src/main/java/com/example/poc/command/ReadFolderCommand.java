@@ -9,12 +9,10 @@ import org.springframework.stereotype.Component;
 
 import javax.transaction.Transactional;
 import java.io.File;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Component
-public class ReadFolderCommand extends BaseCommand<CsvFolder, Set<CsvPaymentsFile>> {
+public class ReadFolderCommand extends BaseCommand<CsvFolder, List<CsvPaymentsFile>> {
     @Autowired
     private CsvPaymentsFileRepository csvPaymentsFileRepository;
 
@@ -23,19 +21,14 @@ public class ReadFolderCommand extends BaseCommand<CsvFolder, Set<CsvPaymentsFil
 
     @Transactional
     @Override
-    public Set<CsvPaymentsFile> execute(CsvFolder csvFolder) {
+    public List<CsvPaymentsFile> execute(CsvFolder csvFolder) {
         super.execute(csvFolder);
 
         csvFolderRepository.save(csvFolder);
-        Set<CsvPaymentsFile> fileSet = new HashSet<>();
-        for (File result : Objects.requireNonNull(getFileList(csvFolder.toString()))) {
-            CsvPaymentsFile csvPaymentsFile = new CsvPaymentsFile(result);
-            csvPaymentsFile.setCsvFolder(csvFolder);
-            csvPaymentsFileRepository.save(csvPaymentsFile);
-            fileSet.add(csvPaymentsFile);
-        }
 
-        return fileSet;
+        return Arrays.stream(getFileList(csvFolder.toString())).
+                map(csvFile -> csvPaymentsFileRepository.save(new CsvPaymentsFile(csvFile).setCsvFolder(csvFolder))).
+                toList();
     }
 
     /**

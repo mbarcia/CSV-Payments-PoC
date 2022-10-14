@@ -2,6 +2,7 @@ package com.example.poc.domain;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
 import javax.persistence.*;
 import java.io.File;
@@ -11,14 +12,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Getter @Setter
+@Accessors(chain = true)
 public class CsvPaymentsFile {
-    @Getter
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Getter
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.EAGER,
@@ -27,18 +28,14 @@ public class CsvPaymentsFile {
     )
     private final List<PaymentRecord> records = new ArrayList<>();
 
-    @Getter @Setter
     @Transient
     private File csvFile;
 
-    @Getter @Setter
     @ManyToOne
     private CsvFolder csvFolder;
 
-    @Getter @Setter
     private String filepath;
 
-    @Getter @Setter
     private Timestamp startTimestamp;
 
     protected CsvPaymentsFile() {

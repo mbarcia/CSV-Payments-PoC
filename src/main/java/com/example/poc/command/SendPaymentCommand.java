@@ -1,16 +1,18 @@
 package com.example.poc.command;
 
 import com.example.poc.client.PaymentProviderClient;
-import com.example.poc.client.SendPaymentRequest;
-import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.AckPaymentSent;
+import com.example.poc.domain.PaymentRecord;
 import com.example.poc.repository.AckPaymentSentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Component
 public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSent> {
 
+    public static final String DUMMY_MSISDN = "12125551003";
     @Autowired
     PaymentProviderClient client;
 
@@ -21,21 +23,17 @@ public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSen
     public AckPaymentSent execute(PaymentRecord paymentRecord) {
         super.execute(paymentRecord);
 
-        SendPaymentRequest request = new SendPaymentRequest();
-        request.setMsisdn("12125551003");
-        request.setAmount(paymentRecord.getAmount());
-        request.setCurrency(paymentRecord.getCurrency());
+        AckPaymentSent result = new AckPaymentSent()
+        .setStatus(1000L)
+        .setMessage("OK but this is only a test")
+        .setConversationID(String.valueOf(UUID.randomUUID()));
 
 //        TODO
-        AckPaymentSent result = client.sendPayment(request);
-//        AckPaymentSent result = new AckPaymentSent();
-//        result.setStatus(1000L);
-//        result.setMessage("this is a test");
-//        result.setConversationID("1234567890");
+//        AckPaymentSent result = client.sendPayment((new SendPaymentRequest()).
+//                setMsisdn(DUMMY_MSISDN).
+//                setAmount(paymentRecord.getAmount()).
+//                setCurrency(paymentRecord.getCurrency()));
 
-        result.setRecord(paymentRecord);
-        ackPaymentSentRepository.save(result);
-
-        return result;
+        return ackPaymentSentRepository.save(result.setRecord(paymentRecord));
     }
 }

@@ -1,3 +1,5 @@
+![](https://github.com/mbarcia/spring-boot-junit5/workflows/tests/badge.svg)
+
 # Getting Started
 
 ### Running the application locally

@@ -3,7 +3,7 @@ package com.example.poc.command;
 import com.example.poc.client.PaymentProviderClient;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;
-import com.example.poc.repository.AckPaymentSentRepository;
+import com.example.poc.service.CsvPaymentsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,7 +17,7 @@ public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSen
     PaymentProviderClient client;
 
     @Autowired
-    AckPaymentSentRepository ackPaymentSentRepository;
+    CsvPaymentsService csvPaymentsService;
 
     @Override
     public AckPaymentSent execute(PaymentRecord paymentRecord) {
@@ -34,6 +34,6 @@ public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSen
 //                setAmount(paymentRecord.getAmount()).
 //                setCurrency(paymentRecord.getCurrency()));
 
-        return ackPaymentSentRepository.save(result.setRecord(paymentRecord));
+        return csvPaymentsService.save(result.setRecord(paymentRecord));
     }
 }

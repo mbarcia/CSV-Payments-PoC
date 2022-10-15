@@ -10,6 +10,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Getter @Setter
@@ -52,5 +53,18 @@ public class CsvPaymentsFile {
         return "CsvPaymentsFile{" +
                 "filepath='" + filepath + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CsvPaymentsFile that = (CsvPaymentsFile) o;
+        return getFilepath().equals(that.getFilepath());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getFilepath());
     }
 }

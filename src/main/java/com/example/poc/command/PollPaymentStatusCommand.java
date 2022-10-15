@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+
 @Component
 public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, PaymentStatus> {
     @Autowired
@@ -26,7 +28,7 @@ public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, Paymen
 //            paymentStatus = (client.getPaymentStatus(detachedAckPaymentSent)).setAckPaymentSent(detachedAckPaymentSent);
         paymentStatus = new PaymentStatus()
                 .setStatus("nada")
-                .setFee(java.math.BigDecimal.valueOf(1.01))
+                .setFee(new BigDecimal("1.01"))
                 .setMessage("This is a test")
                 .setAckPaymentSent(detachedAckPaymentSent)
                 .setReference("");

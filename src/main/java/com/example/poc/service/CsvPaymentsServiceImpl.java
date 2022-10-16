@@ -1,13 +1,8 @@
 package com.example.poc.service;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.CsvFolder;
-import com.example.poc.domain.CsvPaymentsFile;
-import com.example.poc.domain.PaymentRecord;
-import com.example.poc.repository.AckPaymentSentRepository;
-import com.example.poc.repository.CsvFolderRepository;
-import com.example.poc.repository.CsvPaymentsFileRepository;
-import com.example.poc.repository.PaymentRecordRepository;
+import com.example.poc.domain.*;
+import com.example.poc.repository.*;
+import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -16,25 +11,22 @@ import java.util.Optional;
 
 @Service
 @Transactional
+@NoArgsConstructor
 public class CsvPaymentsServiceImpl implements CsvPaymentsService {
     @Autowired
-    CsvPaymentsFileRepository csvPaymentsFileRepository;
+    private CsvPaymentsFileRepository csvPaymentsFileRepository;
 
     @Autowired
-    CsvFolderRepository csvFolderRepository;
+    private CsvFolderRepository csvFolderRepository;
 
     @Autowired
-    AckPaymentSentRepository ackPaymentSentRepository;
+    private AckPaymentSentRepository ackPaymentSentRepository;
 
     @Autowired
     private PaymentRecordRepository paymentRecordRepository;
 
-    public CsvPaymentsServiceImpl(CsvPaymentsFileRepository csvPaymentsFileRepository, CsvFolderRepository csvFolderRepository, AckPaymentSentRepository ackPaymentSentRepository, PaymentRecordRepository paymentRecordRepository) {
-        this.csvPaymentsFileRepository = csvPaymentsFileRepository;
-        this.csvFolderRepository = csvFolderRepository;
-        this.ackPaymentSentRepository = ackPaymentSentRepository;
-        this.paymentRecordRepository = paymentRecordRepository;
-    }
+    @Autowired
+    private PaymentStatusRepository paymentStatusRepository;
 
     @Override
     public Optional<CsvPaymentsFile> findFileById(Long id) {
@@ -67,7 +59,12 @@ public class CsvPaymentsServiceImpl implements CsvPaymentsService {
     }
 
     @Override
-    public AckPaymentSent save(AckPaymentSent ackPaymentSent) {
+    public AckPaymentSent persistAckPaymentSent(AckPaymentSent ackPaymentSent) {
         return ackPaymentSentRepository.save(ackPaymentSent);
+    }
+
+    @Override
+    public PaymentStatus persistPaymentStatus(PaymentStatus paymentStatus) {
+        return paymentStatusRepository.save(paymentStatus);
     }
 }

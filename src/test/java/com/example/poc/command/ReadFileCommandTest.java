@@ -61,27 +61,14 @@ class ReadFileCommandTest {
     }
 
     private Stream<PaymentRecord> getTestData() {
-
         List<PaymentRecord> verificationList = new ArrayList<>();
 
-        verificationList.add(new PaymentRecord()
-                .setAmount(new BigDecimal("123.50"))
-                .setCsvId("1")
-                .setFile(csvPaymentsFile)
-                .setRecipient("Mariano")
-                .setCurrency(Currency.getInstance("GBP")));
-        verificationList.add(new PaymentRecord()
-                .setAmount(new BigDecimal("456.60"))
-                .setCsvId("2")
-                .setFile(csvPaymentsFile)
-                .setRecipient("Sergiu")
-                .setCurrency(Currency.getInstance("USD")));
-        verificationList.add(new PaymentRecord()
-                .setAmount(new BigDecimal("789.25"))
-                .setCsvId("3")
-                .setFile(csvPaymentsFile)
-                .setRecipient("Moldova")
-                .setCurrency(Currency.getInstance("ARS")));
+        verificationList.add(new PaymentRecord("1", "Mariano", new BigDecimal("123.50"), Currency.getInstance("GBP"))
+                .setCsvPaymentsFile(csvPaymentsFile));
+        verificationList.add(new PaymentRecord("2", "Sergiu", new BigDecimal("456.60"), Currency.getInstance("USD"))
+                .setCsvPaymentsFile(csvPaymentsFile));
+        verificationList.add(new PaymentRecord("3", "Moldova", new BigDecimal("789.25"), Currency.getInstance("ARS"))
+                .setCsvPaymentsFile(csvPaymentsFile));
 
         return verificationList.stream();
     }

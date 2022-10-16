@@ -1,8 +1,8 @@
 package com.example.poc.domain;
 
 import com.opencsv.bean.CsvBindByName;
-import lombok.Getter;
-import lombok.Setter;
+import com.opencsv.bean.CsvIgnore;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import javax.persistence.*;
@@ -12,40 +12,43 @@ import java.util.Currency;
 import java.util.Objects;
 
 @Entity
-@Getter
-@Setter
+@Getter @Setter
 @Accessors(chain = true)
+@RequiredArgsConstructor
+@NoArgsConstructor
 public class PaymentRecord implements Serializable {
+    @CsvIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
+    @NonNull
     @CsvBindByName(column = "ID")
     private String csvId;
 
+    @NonNull
     @CsvBindByName(column = "Recipient")
     private String recipient;
 
+    @NonNull
     @CsvBindByName(column = "Amount")
     private BigDecimal amount;
 
+    @NonNull
     @CsvBindByName(column = "Currency")
     private Currency currency;
 
+    @CsvIgnore
     @ManyToOne(fetch = FetchType.EAGER)
     private CsvPaymentsFile csvPaymentsFile;
 
+    @CsvIgnore
     @OneToOne(
             cascade = CascadeType.ALL,
             mappedBy = "record"
     )
     private AckPaymentSent ackPaymentSent;
-
-    public PaymentRecord setFile(CsvPaymentsFile file) {
-        this.csvPaymentsFile = file;
-        return this;
-    }
 
     @Override
     public String toString() {

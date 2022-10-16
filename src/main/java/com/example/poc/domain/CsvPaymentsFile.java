@@ -1,13 +1,10 @@
 package com.example.poc.domain;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import javax.persistence.*;
 import java.io.File;
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -15,6 +12,7 @@ import java.util.Objects;
 @Entity
 @Getter @Setter
 @Accessors(chain = true)
+@NoArgsConstructor
 public class CsvPaymentsFile {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -30,6 +28,7 @@ public class CsvPaymentsFile {
     private final List<PaymentRecord> records = new ArrayList<>();
 
     @Transient
+    @NonNull
     private File csvFile;
 
     @ManyToOne
@@ -37,15 +36,9 @@ public class CsvPaymentsFile {
 
     private String filepath;
 
-    private Timestamp startTimestamp;
-
-    protected CsvPaymentsFile() {
-    }
-
-    public CsvPaymentsFile(File csvFile) {
+    public CsvPaymentsFile(@NonNull File csvFile) {
         this.csvFile = csvFile;
         this.filepath = csvFile.getPath();
-        setStartTimestamp(Timestamp.from(Instant.now()));
     }
 
     @Override

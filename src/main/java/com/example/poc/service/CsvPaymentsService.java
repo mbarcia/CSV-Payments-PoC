@@ -1,9 +1,6 @@
 package com.example.poc.service;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.CsvFolder;
-import com.example.poc.domain.CsvPaymentsFile;
-import com.example.poc.domain.PaymentRecord;
+import com.example.poc.domain.*;
 
 import java.util.Optional;
 
@@ -20,5 +17,7 @@ public interface CsvPaymentsService {
 
     CsvPaymentsFile persistFile(CsvPaymentsFile csvPaymentsFile);
 
-    AckPaymentSent save(AckPaymentSent ackPaymentSent);
+    AckPaymentSent persistAckPaymentSent(AckPaymentSent ackPaymentSent);
+
+    PaymentStatus persistPaymentStatus(PaymentStatus paymentStatus);
 }

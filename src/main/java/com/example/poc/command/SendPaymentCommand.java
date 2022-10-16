@@ -3,7 +3,7 @@ package com.example.poc.command;
 import com.example.poc.client.PaymentProviderClient;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;
-import com.example.poc.service.CsvPaymentsService;
+import com.example.poc.service.CsvPaymentsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,16 +17,15 @@ public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSen
     PaymentProviderClient client;
 
     @Autowired
-    CsvPaymentsService csvPaymentsService;
+    CsvPaymentsServiceImpl csvPaymentsService;
 
     @Override
     public AckPaymentSent execute(PaymentRecord paymentRecord) {
         super.execute(paymentRecord);
 
-        AckPaymentSent result = new AckPaymentSent()
+        AckPaymentSent result = new AckPaymentSent(String.valueOf(UUID.randomUUID()))
         .setStatus(1000L)
-        .setMessage("OK but this is only a test")
-        .setConversationID(String.valueOf(UUID.randomUUID()));
+        .setMessage("OK but this is only a test");
 
 //        TODO
 //        AckPaymentSent result = client.sendPayment((new SendPaymentRequest()).
@@ -34,6 +33,6 @@ public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSen
 //                setAmount(paymentRecord.getAmount()).
 //                setCurrency(paymentRecord.getCurrency()));
 
-        return csvPaymentsService.save(result.setRecord(paymentRecord));
+        return csvPaymentsService.persistAckPaymentSent(result.setRecord(paymentRecord));
     }
 }

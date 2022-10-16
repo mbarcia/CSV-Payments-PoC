@@ -27,7 +27,7 @@ public class ReadFileCommand extends BaseCommand<CsvPaymentsFile, Stream<Payment
                     .withIgnoreLeadingWhiteSpace(true)
                     .withIgnoreEmptyLine(true)
                     .build();
-            return csvReader.parse().stream().map(record -> record.setFile(csvFile));
+            return csvReader.parse().stream().map(record -> record.setCsvPaymentsFile(csvFile));
         } catch (FileNotFoundException ex) {
             Logger logger = LoggerFactory.getLogger(getClass());
             logger.error(ex.getLocalizedMessage());

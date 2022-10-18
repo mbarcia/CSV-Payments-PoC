@@ -13,8 +13,21 @@ spring:
   h2:
     console:
       enabled: true
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: 'aadeb37481e7e8373435'
+            client-secret: '03480cfe750b151a7c29d858e6de64d1aa140039'
 
-api:
-  url: 'http://127.0.0.1:7902'
-  account:
-  apiKey:
+okta:
+  oauth2:
+    issuer: 'https://dev-33444155.okta.com/oauth2/default'
+    client-secret: 'MVwmUcnzAtCAMfkkAZxtIEXEiDvr4nqO_fRAVVpU'
+    client-id: '0oa6t0ytouJYzwsgK5d7'
+    scopes: openid, profile, email
+
+service:
+  api: http://127.0.0.1:7902
+  github: https://api.github.com

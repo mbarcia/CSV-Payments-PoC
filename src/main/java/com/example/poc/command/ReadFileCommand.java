@@ -19,23 +19,19 @@ public class ReadFileCommand extends BaseCommand<CsvPaymentsFile, Stream<Payment
     @Override
     public Stream<PaymentRecord> execute(CsvPaymentsFile csvFile) {
         super.execute(csvFile);
-
         try {
             Reader reader = new BufferedReader(new FileReader(csvFile.getFilepath()));
-
             CsvToBean<PaymentRecord> csvReader = new CsvToBeanBuilder<PaymentRecord>(reader)
                     .withType(PaymentRecord.class)
                     .withSeparator(',')
                     .withIgnoreLeadingWhiteSpace(true)
                     .withIgnoreEmptyLine(true)
                     .build();
-            return csvReader.parse().stream().map(record -> record.setFile(csvFile));
-
+            return csvReader.parse().stream().map(record -> record.setCsvPaymentsFile(csvFile));
         } catch (FileNotFoundException ex) {
             Logger logger = LoggerFactory.getLogger(getClass());
             logger.error(ex.getLocalizedMessage());
         }
-
         return null;
     }
 }

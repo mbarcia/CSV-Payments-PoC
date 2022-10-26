@@ -1,39 +1,23 @@
 package com.example.poc.service;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.CsvFolder;
-import com.example.poc.domain.CsvPaymentsFile;
-import com.example.poc.domain.PaymentRecord;
-import com.example.poc.repository.AckPaymentSentRepository;
-import com.example.poc.repository.CsvFolderRepository;
-import com.example.poc.repository.CsvPaymentsFileRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.example.poc.domain.*;
 
-import javax.transaction.Transactional;
 import java.util.Optional;
 
-@Service
-@Transactional
-public class CsvPaymentsService {
-    @Autowired
-    CsvPaymentsFileRepository csvPaymentsFileRepository;
+public interface CsvPaymentsService {
+    Optional<CsvPaymentsFile> findFileById(Long id);
 
-    @Autowired
-    CsvFolderRepository csvFolderRepository;
+    Optional<CsvFolder> findFolderById(Long id);
 
-    @Autowired
-    AckPaymentSentRepository ackPaymentSentRepository;
+    Optional<AckPaymentSent> findAckPaymentSentByRecord(PaymentRecord record);
 
-    public Optional<CsvPaymentsFile> findFileById(Long id) {
-        return csvPaymentsFileRepository.findById(id);
-    }
+    PaymentRecord persistRecord(PaymentRecord record);
 
-    public Optional<CsvFolder> findFolderById(Long id) {
-        return csvFolderRepository.findById(id);
-    }
+    CsvFolder persistFolder(CsvFolder csvFolder);
 
-    public Optional<AckPaymentSent> findAckPaymentSentByRecord(PaymentRecord record) {
-        return ackPaymentSentRepository.findByRecord(record);
-    }
+    CsvPaymentsFile persistFile(CsvPaymentsFile csvPaymentsFile);
+
+    AckPaymentSent persistAckPaymentSent(AckPaymentSent ackPaymentSent);
+
+    PaymentStatus persistPaymentStatus(PaymentStatus paymentStatus);
 }

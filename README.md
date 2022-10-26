@@ -1,3 +1,6 @@
+![](https://github.com/mbarcia/CSV-Payments-PoC/workflows/tests/badge.svg)
+[![Workflow for CSV-Payments-PoC](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml/badge.svg)](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml)
+
 # Getting Started
 
 ### Running the application locally

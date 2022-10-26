@@ -1,7 +1,6 @@
 package com.example.poc.domain;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import javax.persistence.*;
@@ -11,6 +10,8 @@ import java.math.BigDecimal;
 @Entity
 @Getter @Setter
 @Accessors(chain = true)
+@RequiredArgsConstructor
+@NoArgsConstructor
 public class PaymentStatus implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -18,6 +19,7 @@ public class PaymentStatus implements Serializable {
     private Long id;
     private String customerReference;
 
+    @NonNull
     @Column(nullable = false)
     private String reference;
     private String status;

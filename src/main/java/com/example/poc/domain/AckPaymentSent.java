@@ -1,7 +1,6 @@
 package com.example.poc.domain;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import lombok.experimental.Accessors;
 
 import javax.persistence.*;
@@ -9,13 +8,15 @@ import javax.persistence.*;
 @Entity
 @Getter @Setter
 @Accessors(chain = true)
+@RequiredArgsConstructor
+@NoArgsConstructor
 public class AckPaymentSent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @Column(nullable = false)
+    @NonNull
     private String conversationID;
 
     private Long status;

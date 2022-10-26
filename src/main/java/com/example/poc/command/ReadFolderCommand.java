@@ -2,32 +2,33 @@ package com.example.poc.command;
 
 import com.example.poc.domain.CsvFolder;
 import com.example.poc.domain.CsvPaymentsFile;
-import com.example.poc.repository.CsvFolderRepository;
-import com.example.poc.repository.CsvPaymentsFileRepository;
+import com.example.poc.service.CsvPaymentsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.transaction.Transactional;
 import java.io.File;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class ReadFolderCommand extends BaseCommand<CsvFolder, List<CsvPaymentsFile>> {
     @Autowired
-    private CsvPaymentsFileRepository csvPaymentsFileRepository;
+    private CsvPaymentsService csvPaymentsService;
 
-    @Autowired
-    private CsvFolderRepository csvFolderRepository;
+    public ReadFolderCommand(CsvPaymentsService csvPaymentsService) {
+        this.csvPaymentsService = csvPaymentsService;
+    }
 
     @Transactional
     @Override
     public List<CsvPaymentsFile> execute(CsvFolder csvFolder) {
         super.execute(csvFolder);
 
-        csvFolderRepository.save(csvFolder);
+        csvPaymentsService.persistFolder(csvFolder);
 
         return Arrays.stream(getFileList(csvFolder.toString())).
-                map(csvFile -> csvPaymentsFileRepository.save(new CsvPaymentsFile(csvFile).setCsvFolder(csvFolder))).
+                map(csvFile -> csvPaymentsService.persistFile(new CsvPaymentsFile(csvFile).setCsvFolder(csvFolder))).
                 toList();
     }
 

@@ -11,7 +11,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.File;
 import java.math.BigDecimal;
 import java.util.Currency;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,52 +44,6 @@ class CsvPaymentsServiceImplTest {
 
     @AfterEach
     void tearDown() {
-    }
-
-    @Test
-    void findFileById() {
-        // Arrange
-        final var expectedFile = getFileToPersist();
-        when(csvPaymentsFileRepository.findById(anyLong())).thenReturn(Optional.of(expectedFile));
-
-        // Act
-        final var actual = csvPaymentsService.findFileById(1L);
-
-        // Assert
-        assertEquals(actual.get(), expectedFile);
-        verify(csvPaymentsFileRepository, times(1)).findById(anyLong());
-        verifyNoMoreInteractions(csvPaymentsFileRepository);
-    }
-
-    @Test
-    void findFolderById() {
-        // Arrange
-        final var expectedFolder = getFolderToPersist();
-        when(csvFolderRepository.findById(anyLong())).thenReturn(Optional.of(expectedFolder));
-
-        // Act
-        final var actual = csvPaymentsService.findFolderById(1L);
-
-        // Assert
-        assertEquals(actual.get(), expectedFolder);
-        verify(csvFolderRepository, times(1)).findById(anyLong());
-        verifyNoMoreInteractions(csvFolderRepository);
-    }
-
-    @Test
-    void findAckPaymentSentByRecord() {
-        // Arrange
-        final var expectedAckSentPayment = getAckPaymentSentToPersist();
-        final PaymentRecord rec = getPaymentRecordToPersist();
-        when(ackPaymentSentRepository.findByRecord(rec)).thenReturn(Optional.of(expectedAckSentPayment));
-
-        // Act
-        final var actual = csvPaymentsService.findAckPaymentSentByRecord(rec);
-
-        // Assert
-        assertEquals(actual.get(), expectedAckSentPayment);
-        verify(ackPaymentSentRepository, times(1)).findByRecord(rec);
-        verifyNoMoreInteractions(ackPaymentSentRepository);
     }
 
     @Test

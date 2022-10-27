@@ -1,4 +1,6 @@
 spring:
+  main:
+    web-application-type: NONE
   datasource:
     url: jdbc:h2:mem:poc
     username: sa
@@ -9,7 +11,9 @@ spring:
     generate-ddl: true
     hibernate:
       ddl-auto: 'create-drop'
-      show-sql: true
+    show-sql: true
+    properties:
+      format_sql: true
   h2:
     console:
       enabled: true

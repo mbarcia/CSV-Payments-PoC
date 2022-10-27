@@ -1,13 +1,17 @@
 package com.example.poc.domain;
 
-import lombok.*;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import javax.persistence.*;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
 
 @Entity
 @Getter @Setter
@@ -21,7 +25,7 @@ public class CsvPaymentsFile {
 
     @OneToMany(
             cascade = CascadeType.ALL,
-            fetch = FetchType.EAGER,
+            fetch = FetchType.LAZY,
             mappedBy = "csvPaymentsFile",
             orphanRemoval = true
     )
@@ -31,7 +35,7 @@ public class CsvPaymentsFile {
     @NonNull
     private File csvFile;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private CsvFolder csvFolder;
 
     private String filepath;

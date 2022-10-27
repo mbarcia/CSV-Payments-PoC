@@ -1,9 +1,8 @@
 package com.example.poc.domain;
 
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
-
-import javax.persistence.*;
 
 @Entity
 @Getter @Setter

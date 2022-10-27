@@ -47,7 +47,7 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
      * @param args Folder path
      */
     public static void main(String[] args) {
-        LOG.info("STARTING THE APPLICATION");
+        LOG.info("APPLICATION BEGINS");
         SpringApplication.run(CsvPaymentsProofOfConceptApplication.class, args);
         LOG.info("APPLICATION FINISHED");
     }
@@ -71,9 +71,10 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
                             // poll the API service for payment confirmation
                             map(pollPaymentStatusCommand::execute)
                             // and terminate the stream printing the record
-                            .forEach(System.out::println);
+                            .map(Object::toString)
+                            .forEach(LOG::info);
 
-            System.out.println("Writing output CSV file...");
+            LOG.info("Writing output CSV file...");
             // Command the CSV file to be exported (from the DB)
             try (Writer writer = new FileWriter(file.getFilepath() + ".out")) {
                 StatefulBeanToCsv<PaymentRecordOutputBean> sbc = new StatefulBeanToCsvBuilder<PaymentRecordOutputBean>(writer)

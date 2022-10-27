@@ -22,7 +22,7 @@ public class AckPaymentSent {
     private Long status;
     private String message;
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER)
     private PaymentRecord record;
 
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "ackPaymentSent")

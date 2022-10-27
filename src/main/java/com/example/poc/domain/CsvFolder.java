@@ -22,7 +22,7 @@ public class CsvFolder {
 
     @OneToMany(
             cascade = CascadeType.ALL,
-            fetch = FetchType.EAGER,
+            fetch = FetchType.LAZY,
             mappedBy = "csvFolder",
             orphanRemoval = true
     )

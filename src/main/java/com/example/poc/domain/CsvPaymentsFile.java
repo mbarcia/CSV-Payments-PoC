@@ -21,7 +21,7 @@ public class CsvPaymentsFile {
 
     @OneToMany(
             cascade = CascadeType.ALL,
-            fetch = FetchType.EAGER,
+            fetch = FetchType.LAZY,
             mappedBy = "csvPaymentsFile",
             orphanRemoval = true
     )
@@ -31,7 +31,7 @@ public class CsvPaymentsFile {
     @NonNull
     private File csvFile;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private CsvFolder csvFolder;
 
     private String filepath;

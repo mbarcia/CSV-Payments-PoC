@@ -78,22 +78,6 @@ class CsvPaymentsServiceImplTest {
     }
 
     @Test
-    void findAckPaymentSentByRecord() {
-        // Arrange
-        final var expectedAckSentPayment = getAckPaymentSentToPersist();
-        final PaymentRecord rec = getPaymentRecordToPersist();
-        when(ackPaymentSentRepository.findByRecord(rec)).thenReturn(Optional.of(expectedAckSentPayment));
-
-        // Act
-        final var actual = csvPaymentsService.findAckPaymentSentByRecord(rec);
-
-        // Assert
-        assertEquals(actual.get(), expectedAckSentPayment);
-        verify(ackPaymentSentRepository, times(1)).findByRecord(rec);
-        verifyNoMoreInteractions(ackPaymentSentRepository);
-    }
-
-    @Test
     void persistRecord() {
         PaymentRecord paymentRecord = getPaymentRecordToPersist();
         when(paymentRecordRepository.save(any(PaymentRecord.class))).thenReturn(paymentRecord);

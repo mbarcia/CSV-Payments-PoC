@@ -8,18 +8,11 @@ import java.util.List;
 import java.util.Objects;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @RequiredArgsConstructor
 @NoArgsConstructor
 public class CsvFolder {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false)
-    private Long id;
-
-    @NonNull
-    private String folderPath;
-
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY,
@@ -27,6 +20,12 @@ public class CsvFolder {
             orphanRemoval = true
     )
     private final List<CsvPaymentsFile> files = new ArrayList<>();
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id", nullable = false)
+    private Long id;
+    @NonNull
+    private String folderPath;
 
     public String toString() {
         return getFolderPath();

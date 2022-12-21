@@ -14,4 +14,5 @@ public record PaymentOutput(
         @CsvBindByName(column = "Reference") String conversationID,
         @CsvBindByName(column = "Status") Long status,
         @CsvBindByName(column = "Message") String message,
-        @CsvBindByName(column = "Fee") @CsvNumber("#,###.00") BigDecimal fee) {}
+        @CsvBindByName(column = "Fee") @CsvNumber("#,###.00") BigDecimal fee) {
+}

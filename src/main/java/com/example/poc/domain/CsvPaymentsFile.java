@@ -14,15 +14,11 @@ import java.util.Objects;
 
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @Accessors(chain = true)
 @NoArgsConstructor
 public class CsvPaymentsFile {
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false)
-    private Long id;
-
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY,
@@ -30,7 +26,10 @@ public class CsvPaymentsFile {
             orphanRemoval = true
     )
     private final List<PaymentRecord> records = new ArrayList<>();
-
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    @Column(name = "id", nullable = false)
+    private Long id;
     @Transient
     @NonNull
     private File csvFile;

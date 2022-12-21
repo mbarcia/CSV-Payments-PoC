@@ -1,14 +1,15 @@
 package com.example.poc.domain;
 
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor

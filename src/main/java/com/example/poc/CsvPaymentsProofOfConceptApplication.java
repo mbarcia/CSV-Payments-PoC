@@ -28,6 +28,8 @@ import java.util.stream.Stream;
 @SpringBootApplication
 public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
     public static final String CSV_FOLDER = "csv/";
+    private static final Logger LOG = LoggerFactory
+            .getLogger(CsvPaymentsProofOfConceptApplication.class);
     @Autowired
     private ReadFolderCommand readFolderCommand;
     @Autowired
@@ -38,9 +40,6 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
     private PollPaymentStatusCommand pollPaymentStatusCommand;
     @Autowired
     private UnparseRecordCommand unParseRecordCommand;
-
-    private static final Logger LOG = LoggerFactory
-            .getLogger(CsvPaymentsProofOfConceptApplication.class);
 
     /**
      * @param args Folder path

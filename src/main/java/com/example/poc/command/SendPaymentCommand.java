@@ -3,7 +3,6 @@ package com.example.poc.command;
 import com.example.poc.client.PaymentProviderClient;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;
-import com.example.poc.service.CsvPaymentsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,11 +12,9 @@ import java.util.UUID;
 public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSent> {
 
     public static final String DUMMY_MSISDN = "12125551003";
-    @Autowired
-    PaymentProviderClient client;
 
     @Autowired
-    CsvPaymentsServiceImpl csvPaymentsService;
+    PaymentProviderClient client;
 
     @Override
     public AckPaymentSent execute(PaymentRecord paymentRecord) {
@@ -33,6 +30,11 @@ public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSen
 //                setAmount(paymentRecord.getAmount()).
 //                setCurrency(paymentRecord.getCurrency()));
 
-        return csvPaymentsService.persistAckPaymentSent(result.setRecord(paymentRecord));
+        return result.setRecord(paymentRecord);
+    }
+
+    @Override
+    public PaymentRecord persist(PaymentRecord paymentRecord) {
+        return csvPaymentsService.persist(paymentRecord);
     }
 }

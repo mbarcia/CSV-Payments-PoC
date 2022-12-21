@@ -50,7 +50,7 @@ class CsvPaymentsServiceImplTest {
     void persistRecord() {
         PaymentRecord paymentRecord = getPaymentRecordToPersist();
         when(paymentRecordRepository.save(any(PaymentRecord.class))).thenReturn(paymentRecord);
-        assertEquals(csvPaymentsService.persistRecord(paymentRecord), paymentRecord);
+        assertEquals(csvPaymentsService.persist(paymentRecord), paymentRecord);
         verify(paymentRecordRepository, times(1)).save(any(PaymentRecord.class));
         verifyNoMoreInteractions(paymentRecordRepository);
     }
@@ -63,7 +63,7 @@ class CsvPaymentsServiceImplTest {
     void persistPaymentStatus() {
         PaymentStatus paymentStatus = getPaymentStatusToPersist();
         when(paymentStatusRepository.save(any(PaymentStatus.class))).thenReturn(paymentStatus);
-        assertEquals(csvPaymentsService.persistPaymentStatus(paymentStatus), paymentStatus);
+        assertEquals(csvPaymentsService.persist(paymentStatus), paymentStatus);
         verify(paymentStatusRepository, times(1)).save(any(PaymentStatus.class));
         verifyNoMoreInteractions(paymentStatusRepository);
     }
@@ -76,7 +76,7 @@ class CsvPaymentsServiceImplTest {
     void persistFolder() {
         CsvFolder f = getFolderToPersist();
         when(csvFolderRepository.save(any(CsvFolder.class))).thenReturn(f);
-        assertEquals(csvPaymentsService.persistFolder(f), f);
+        assertEquals(csvPaymentsService.persist(f), f);
         verify(csvFolderRepository, times(1)).save(any(CsvFolder.class));
         verifyNoMoreInteractions(csvFolderRepository);
     }
@@ -89,7 +89,7 @@ class CsvPaymentsServiceImplTest {
     void persistFile() {
         CsvPaymentsFile f = getFileToPersist();
         when(csvPaymentsFileRepository.save(any(CsvPaymentsFile.class))).thenReturn(f);
-        assertEquals(csvPaymentsService.persistFile(f), f);
+        assertEquals(csvPaymentsService.persist(f), f);
         verify(csvPaymentsFileRepository, times(1)).save(any(CsvPaymentsFile.class));
         verifyNoMoreInteractions(csvPaymentsFileRepository);
     }
@@ -102,7 +102,7 @@ class CsvPaymentsServiceImplTest {
     void persistAckPaymentSent() {
         AckPaymentSent ackPaymentSentToPersist = getAckPaymentSentToPersist();
         when(ackPaymentSentRepository.save(any(AckPaymentSent.class))).thenReturn(ackPaymentSentToPersist);
-        assertEquals(csvPaymentsService.persistAckPaymentSent(ackPaymentSentToPersist), ackPaymentSentToPersist);
+        assertEquals(csvPaymentsService.persist(ackPaymentSentToPersist), ackPaymentSentToPersist);
         verify(ackPaymentSentRepository, times(1)).save(any(AckPaymentSent.class));
         verifyNoMoreInteractions(ackPaymentSentRepository);    }
 

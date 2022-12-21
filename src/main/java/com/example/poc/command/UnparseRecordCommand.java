@@ -1,21 +1,33 @@
 package com.example.poc.command;
 
+import com.example.poc.domain.AckPaymentSent;
+import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
-import com.example.poc.domain.PaymentRecordOutputBean;
-import org.springframework.beans.BeanUtils;
+import com.example.poc.domain.PaymentStatus;
 import org.springframework.stereotype.Component;
+
 @Component
-public class UnparseRecordCommand extends BaseCommand<PaymentRecord, PaymentRecordOutputBean> {
+public class UnparseRecordCommand extends BaseCommand<PaymentStatus, PaymentOutput> {
+    public PaymentOutput execute(PaymentStatus paymentStatus) {
+        super.execute(paymentStatus);
 
-    public PaymentRecordOutputBean execute(PaymentRecord paymentRecord) {
-        super.execute(paymentRecord);
+        AckPaymentSent ackPaymentSent = paymentStatus.getAckPaymentSent();
+        PaymentRecord paymentRecord = ackPaymentSent.getRecord();
 
-        PaymentRecordOutputBean paymentRecordOutputBean = new PaymentRecordOutputBean();
-        BeanUtils.copyProperties(paymentRecord, paymentRecordOutputBean);
+        return new PaymentOutput(
+                paymentRecord.getCsvId(),
+                paymentRecord.getRecipient(),
+                paymentRecord.getAmount(),
+                paymentRecord.getCurrency(),
+                ackPaymentSent.getConversationID(),
+                ackPaymentSent.getStatus(),
+                paymentStatus.getMessage(),
+                paymentStatus.getFee()
+        );
+    }
 
-        BeanUtils.copyProperties(paymentRecord.getAckPaymentSent(), paymentRecordOutputBean);
-        BeanUtils.copyProperties(paymentRecord.getAckPaymentSent().getPaymentStatus(), paymentRecordOutputBean);
-
-        return paymentRecordOutputBean;
+    @Override
+    protected PaymentStatus persist(PaymentStatus processableObj) {
+        return csvPaymentsService.persist(processableObj);
     }
 }

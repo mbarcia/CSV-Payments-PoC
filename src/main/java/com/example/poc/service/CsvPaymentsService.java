@@ -2,25 +2,14 @@ package com.example.poc.service;
 
 import com.example.poc.domain.*;
 
-import java.util.List;
-import java.util.Optional;
-
 public interface CsvPaymentsService {
-    Optional<CsvPaymentsFile> findFileById(Long id);
+    PaymentRecord persist(PaymentRecord record);
 
-    Optional<CsvFolder> findFolderById(Long id);
+    CsvFolder persist(CsvFolder csvFolder);
 
-    PaymentRecord persistRecord(PaymentRecord record);
+    CsvPaymentsFile persist(CsvPaymentsFile csvPaymentsFile);
 
-    CsvFolder persistFolder(CsvFolder csvFolder);
+    AckPaymentSent persist(AckPaymentSent ackPaymentSent);
 
-    CsvPaymentsFile persistFile(CsvPaymentsFile csvPaymentsFile);
-
-    AckPaymentSent persistAckPaymentSent(AckPaymentSent ackPaymentSent);
-
-    PaymentStatus persistPaymentStatus(PaymentStatus paymentStatus);
-
-    List<CsvPaymentsFile> findFilesByFolder(CsvFolder csvFolder);
-
-    List<PaymentRecord> findRecordsByFile(CsvPaymentsFile csvPaymentsFile);
+    PaymentStatus persist(PaymentStatus paymentStatus);
 }

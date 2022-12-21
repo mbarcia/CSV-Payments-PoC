@@ -3,6 +3,7 @@ package com.example.poc.command;
 import com.example.poc.client.PaymentProviderClient;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
+import com.example.poc.service.CsvPaymentsServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -13,6 +14,9 @@ import java.math.BigDecimal;
 public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, PaymentStatus> {
     @Autowired
     PaymentProviderClient client;
+
+    @Autowired
+    CsvPaymentsServiceImpl csvPaymentsService;
 
     @Async
     public PaymentStatus execute(AckPaymentSent detachedAckPaymentSent) {
@@ -27,6 +31,7 @@ public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, Paymen
                 .setFee(new BigDecimal("1.01"))
                 .setMessage("This is a test")
                 .setAckPaymentSent(detachedAckPaymentSent);
+        csvPaymentsService.persistPaymentStatus(paymentStatus);
 //        } catch (JsonProcessingException e) {
 //            Logger logger = LoggerFactory.getLogger(this.getClass());
 //            logger.error(e.getLocalizedMessage());
@@ -34,10 +39,5 @@ public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, Paymen
 //        }
 
         return paymentStatus;
-    }
-
-    @Override
-    protected AckPaymentSent persist(AckPaymentSent processableObj) {
-        return csvPaymentsService.persist(processableObj);
     }
 }

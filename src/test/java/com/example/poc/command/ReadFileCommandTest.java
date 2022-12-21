@@ -2,11 +2,10 @@ package com.example.poc.command;
 
 import com.example.poc.domain.CsvPaymentsFile;
 import com.example.poc.domain.PaymentRecord;
-import com.example.poc.service.CsvPaymentsServiceImpl;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -22,18 +21,22 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ReadFileCommandTest {
-    private static final String MESSAGE = "Executed with %s";
+    private static final String MESSAGE = "Executing with %s";
     private CsvPaymentsFile csvPaymentsFile;
 
-    @Mock
-    private CsvPaymentsServiceImpl csvPaymentsService;
+    @BeforeEach
+    void setUp() {
+//        MockitoAnnotations.initMocks(getClass());
+    }
 
-    @InjectMocks
-    ReadFileCommand readFileCommand;
+    @AfterEach
+    void tearDown() {
+    }
 
     @Test
     void execute(CapturedOutput output) {
         csvPaymentsFile = new CsvPaymentsFile(new File("src/test/resources/csv/test.csv"));
+        ReadFileCommand readFileCommand = new ReadFileCommand();
 
         // Call method
         Stream<PaymentRecord> recordStream = readFileCommand.execute(csvPaymentsFile);
@@ -47,6 +50,7 @@ class ReadFileCommandTest {
     @Test
     void executeFileNotFound(CapturedOutput output) {
         csvPaymentsFile = new CsvPaymentsFile(new File("src/test/resources/csv/nonexistent-file.csv"));
+        ReadFileCommand readFileCommand = new ReadFileCommand();
 
         // Call method
         Stream<PaymentRecord> recordStream = readFileCommand.execute(csvPaymentsFile);

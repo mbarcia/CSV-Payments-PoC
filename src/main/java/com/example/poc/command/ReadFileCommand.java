@@ -34,9 +34,4 @@ public class ReadFileCommand extends BaseCommand<CsvPaymentsFile, Stream<Payment
         }
         return null;
     }
-
-    @Override
-    protected CsvPaymentsFile persist(CsvPaymentsFile processableObj) {
-        return csvPaymentsService.persist(processableObj);
-    }
 }

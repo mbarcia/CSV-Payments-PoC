@@ -2,7 +2,6 @@ package com.example.poc.domain;
 
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvIgnore;
-import com.opencsv.bean.CsvNumber;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -34,7 +33,6 @@ public class PaymentRecord implements Serializable {
 
     @NonNull
     @CsvBindByName(column = "Amount")
-    @CsvNumber("#,###.00")
     private BigDecimal amount;
 
     @NonNull

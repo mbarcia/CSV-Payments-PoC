@@ -3,15 +3,13 @@ package com.example.poc;
 import com.example.poc.command.*;
 import com.example.poc.domain.CsvFolder;
 import com.example.poc.domain.CsvPaymentsFile;
-import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
-import com.example.poc.rx.CustomProcessor;
-import com.example.poc.rx.PaymentRecordOutputBeanSubscriber;
+import com.example.poc.domain.PaymentRecordOutputBean;
+import com.example.poc.service.CsvPaymentsService;
 import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
-import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +22,13 @@ import java.io.IOException;
 import java.io.Writer;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.SubmissionPublisher;
 import java.util.stream.Stream;
 
 @SpringBootApplication
 public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
     public static final String CSV_FOLDER = "csv/";
+    @Autowired
+    private CsvPaymentsService csvPaymentsService;
     @Autowired
     private ReadFolderCommand readFolderCommand;
     @Autowired
@@ -56,99 +53,41 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) {
-        // Process all files in the folder
-        try {
-            processFiles(readFolderCommand.execute(getCsvFolder(args)).toList())
-                    .forEach(System.out::println);
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+    public void run(String... args) throws Exception {
+        // Create a CSV Folder object
+        CsvFolder csvFolder = getCsvFolder(args);
 
-        // Now same thing but this time using reactive streams
-        try {
-            processFilesWithReactiveStreams(readFolderCommand.execute(getCsvFolder(args)).toList())
-                    .forEach(System.out::println);
-        } catch (URISyntaxException | InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
+        // Command the CSV folder object to be read and persisted in the DB
+        readFolderCommand.execute(csvFolder);
 
-    @Transactional
-    public List<CsvPaymentsFile> processFilesWithReactiveStreams(List<CsvPaymentsFile> csvPaymentsFiles) throws InterruptedException {
         // Print CSV lines
-        for (CsvPaymentsFile file : csvPaymentsFiles) {
-            // Create End Publisher
-            SubmissionPublisher<PaymentRecord> publisher = new SubmissionPublisher<>();
-
-            // Create Processor
-            CustomProcessor transformProcessor = new CustomProcessor(paymentRecord ->
-                    unParseRecordCommand.execute(
-                            pollPaymentStatusCommand.execute(
-                                    sendPaymentCommand.execute(paymentRecord)))
-            );
-
-            //Create End Subscriber
-            PaymentRecordOutputBeanSubscriber subs = new PaymentRecordOutputBeanSubscriber(file);
-
-            //Create chain of publisher, processor and subscriber
-            publisher.subscribe(transformProcessor); // publisher to processor
-            transformProcessor.subscribe(subs); // processor to subscriber
-
-            List<PaymentRecord> paymentRecords = readFileCommand.execute(file).toList();
-            paymentRecords.forEach(publisher::submit);
-            // Logic to wait for messages processing to finish
-            while (paymentRecords.size() != subs.getCounter()) {
-                Thread.sleep(10);
-            }
-            // close the Publisher
-            publisher.close();
-            transformProcessor.close();
-        }
-
-        return csvPaymentsFiles;
-    }
-
-
-    private List<CsvPaymentsFile> processFiles(List<CsvPaymentsFile> csvPaymentsFiles) {
-        List<CsvPaymentsFile> result = new ArrayList<>();
-        // Process each file in the folder
-        for (CsvPaymentsFile file : csvPaymentsFiles) {
-            try {
-                result.add(processRecords(file));
-            } catch (Throwable unchecked) {
-                LOG.error(unchecked.getMessage());
-            } // continue with the next file
-        }
-
-        return result;
-    }
-
-    @Transactional
-    private CsvPaymentsFile processRecords(CsvPaymentsFile file) {
-        try (Writer writer = new FileWriter(file.getFilepath() + ".out")) {
-            // Create the CSV writer
-            StatefulBeanToCsv<PaymentOutput> sbc = new StatefulBeanToCsvBuilder<PaymentOutput>(writer)
-                    .withQuotechar('\'')
-                    .withSeparator(com.opencsv.CSVWriter.DEFAULT_SEPARATOR)
-                    .build();
+        for (CsvPaymentsFile file : csvPaymentsService.findFilesByFolder(csvFolder)) {
             // Read the file, get a stream of records, and
-            Stream<PaymentOutput> paymentOutputStream = readFileCommand.execute(file)
-                    // post the payment record to the API service
-                    .map(sendPaymentCommand::execute)
-                    // poll the API service for payment confirmation
-                    .map(pollPaymentStatusCommand::execute)
-                    // dump the transformed payment data into an output record
-                    .map(unParseRecordCommand::execute);
-            // stream output records to the new CSV file
-            sbc.write(paymentOutputStream);
+            readFileCommand.execute(file).
+                            // persist record to the DB
+                            map(csvPaymentsService::persistRecord).
+                            // post the payment record to the API service
+                            map(sendPaymentCommand::execute).
+                            // poll the API service for payment confirmation
+                            map(pollPaymentStatusCommand::execute)
+                            // and terminate the stream printing the record
+                            .map(Object::toString)
+                            .forEach(LOG::info);
 
-            // Note that if any runtime exception was thrown,
-            // the stream processing stops and the output file is empty
-
-            return file;
-        } catch (CsvRequiredFieldEmptyException | CsvDataTypeMismatchException | IOException e) {
-            throw new RuntimeException(e);
+            LOG.info("Writing output CSV file...");
+            // Command the CSV file to be exported (from the DB)
+            try (Writer writer = new FileWriter(file.getFilepath() + ".out")) {
+                StatefulBeanToCsv<PaymentRecordOutputBean> sbc = new StatefulBeanToCsvBuilder<PaymentRecordOutputBean>(writer)
+                        .withQuotechar('\'')
+                        .withSeparator(com.opencsv.CSVWriter.DEFAULT_SEPARATOR)
+                        .build();
+                // Get a stream of records which have been hydrated with the meta-data thanks to a query
+                Stream<PaymentRecord> paymentRecordStream = csvPaymentsService.findRecordsByFile(file).stream();
+                // Unparse each record to the bean structure and write it in order to get a CSV line
+                sbc.write(paymentRecordStream.map(unParseRecordCommand::execute));
+            } catch (CsvRequiredFieldEmptyException | CsvDataTypeMismatchException | IOException e) {
+                throw new Exception(e);
+            }
         }
     }
 

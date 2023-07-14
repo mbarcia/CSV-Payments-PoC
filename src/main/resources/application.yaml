@@ -2,7 +2,7 @@ spring:
   main:
     web-application-type: NONE
   datasource:
-    url: jdbc:h2:mem:poc
+    url: jdbc:h2:mem:poc;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password:
     driverClassName: org.h2.Driver
@@ -18,7 +18,7 @@ spring:
     console:
       enabled: true
 
-api:
-  url: 'http://127.0.0.1:7902'
-  account:
-  apiKey:
+#api:
+#  url: 'http://127.0.0.1:7902'
+#  account:
+#  apiKey:

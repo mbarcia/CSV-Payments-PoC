@@ -4,7 +4,6 @@ import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -23,8 +22,12 @@ public class PaymentProviderClient implements PaymentProvider {
     @Value("${api.apiKey}")
     private String apiKey;
 
-    @Autowired
+    final
     ObjectMapper mapper;
+
+    public PaymentProviderClient(ObjectMapper mapper) {
+        this.mapper = mapper;
+    }
 
     @Override
     public AckPaymentSent sendPayment(SendPaymentRequest requestMap) {

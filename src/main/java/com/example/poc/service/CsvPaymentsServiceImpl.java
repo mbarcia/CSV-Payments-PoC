@@ -9,16 +9,20 @@ import org.springframework.stereotype.Service;
 @Service
 @NoArgsConstructor
 public class CsvPaymentsServiceImpl implements CsvPaymentsService {
-    @Autowired
     private CsvPaymentsFileRepository csvPaymentsFileRepository;
-    @Autowired
     private CsvFolderRepository csvFolderRepository;
-    @Autowired
     private AckPaymentSentRepository ackPaymentSentRepository;
-    @Autowired
     private PaymentRecordRepository paymentRecordRepository;
-    @Autowired
     private PaymentStatusRepository paymentStatusRepository;
+
+    @Autowired
+    public CsvPaymentsServiceImpl(CsvPaymentsFileRepository csvPaymentsFileRepository, CsvFolderRepository csvFolderRepository, AckPaymentSentRepository ackPaymentSentRepository, PaymentRecordRepository paymentRecordRepository, PaymentStatusRepository paymentStatusRepository) {
+        this.csvPaymentsFileRepository = csvPaymentsFileRepository;
+        this.csvFolderRepository = csvFolderRepository;
+        this.ackPaymentSentRepository = ackPaymentSentRepository;
+        this.paymentRecordRepository = paymentRecordRepository;
+        this.paymentStatusRepository = paymentStatusRepository;
+    }
 
     @Override
     public PaymentRecord persist(PaymentRecord record) {

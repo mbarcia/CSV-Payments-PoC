@@ -12,7 +12,6 @@ import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -32,16 +31,19 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
     public static final String CSV_FOLDER = "csv/";
     private static final Logger LOG = LoggerFactory
             .getLogger(CsvPaymentsProofOfConceptApplication.class);
-    @Autowired
-    private ReadFolderCommand readFolderCommand;
-    @Autowired
-    private ReadFileCommand readFileCommand;
-    @Autowired
-    private SendPaymentCommand sendPaymentCommand;
-    @Autowired
-    private PollPaymentStatusCommand pollPaymentStatusCommand;
-    @Autowired
-    private UnparseRecordCommand unParseRecordCommand;
+    private final ReadFolderCommand readFolderCommand;
+    private final ReadFileCommand readFileCommand;
+    private final SendPaymentCommand sendPaymentCommand;
+    private final PollPaymentStatusCommand pollPaymentStatusCommand;
+    private final UnparseRecordCommand unParseRecordCommand;
+
+    public CsvPaymentsProofOfConceptApplication(ReadFolderCommand readFolderCommand, ReadFileCommand readFileCommand, SendPaymentCommand sendPaymentCommand, PollPaymentStatusCommand pollPaymentStatusCommand, UnparseRecordCommand unParseRecordCommand) {
+        this.readFolderCommand = readFolderCommand;
+        this.readFileCommand = readFileCommand;
+        this.sendPaymentCommand = sendPaymentCommand;
+        this.pollPaymentStatusCommand = pollPaymentStatusCommand;
+        this.unParseRecordCommand = unParseRecordCommand;
+    }
 
     /**
      * @param args Folder path

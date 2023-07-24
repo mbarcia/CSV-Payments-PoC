@@ -4,16 +4,19 @@ import com.example.poc.client.PaymentProvider;
 import com.example.poc.client.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSent> {
 
-    @Autowired
-    @Qualifier("mock")
+    final
     PaymentProvider paymentProviderMock;
+
+    public SendPaymentCommand(@Qualifier("mock") PaymentProvider paymentProviderMock) {
+        this.paymentProviderMock = paymentProviderMock;
+    }
+
     @Override
     public AckPaymentSent execute(PaymentRecord paymentRecord) {
         super.execute(paymentRecord);

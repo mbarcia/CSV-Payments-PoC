@@ -24,6 +24,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Stream;
 
 @SpringBootApplication
@@ -87,15 +89,16 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
                     .withQuotechar('\'')
                     .withSeparator(com.opencsv.CSVWriter.DEFAULT_SEPARATOR)
                     .build();
+            // Making use of virtual threads from new project Loom
+            ExecutorService executorService = Executors.newVirtualThreadPerTaskExecutor();
             // Read the file, get a stream of records, and
             List<CompletableFuture<PaymentStatus>> paymentStatusList = readFileCommand.execute(file)
                     // post the payment record to the API service
                     .map(sendPaymentCommand::execute)
-                    // async call on polling
+                    // Call the polling/blocking service on a virtual thread
                     .map(item ->
-                            CompletableFuture.supplyAsync(() ->
-                                    pollPaymentStatusCommand.execute(item)))
-                    // stream terminal operation to start the polling
+                            CompletableFuture.supplyAsync(() -> pollPaymentStatusCommand.execute(item), executorService))
+                    // stream terminal operation to kick off the lazy stream operations
                     .toList();
 
             Stream<PaymentOutput> paymentOutputStream = paymentStatusList.stream()
@@ -109,6 +112,7 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
             // Note that if any runtime exception was thrown,
             // the stream processing stops and the output file is empty
 
+            executorService.shutdown();
             return file;
         } catch (CsvRequiredFieldEmptyException | CsvDataTypeMismatchException | IOException e) {
             throw new RuntimeException(e);

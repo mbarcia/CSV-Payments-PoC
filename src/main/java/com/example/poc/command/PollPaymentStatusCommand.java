@@ -26,9 +26,11 @@ public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, Paymen
 
         try {
             long time = (long)(Math.random() * 10000);
-            logger.info("Started polling...({}ms)", time);
+            logger.info("Started polling...(for {}ms)", time);
+            // Verify and show the use of virtual threads
+            logger.info("Thread: {} isVirtual? {}", Thread.currentThread(), Thread.currentThread().isVirtual());
             Thread.sleep(time);
-            logger.info("Polled for {}ms", time);
+            logger.info("Finished polling (--> {}ms)", time);
             return paymentProviderMock.getPaymentStatus(detachedAckPaymentSent);
         } catch (JsonProcessingException | InterruptedException e) {
             throw new RuntimeException(e);

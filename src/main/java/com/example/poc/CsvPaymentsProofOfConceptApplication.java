@@ -80,7 +80,7 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
     }
 
     @Transactional
-    private CsvPaymentsFile processRecords(CsvPaymentsFile file) {
+    public CsvPaymentsFile processRecords(CsvPaymentsFile file) {
         try (Writer writer = new FileWriter(file.getFilepath() + ".out")) {
             // Create the CSV writer
             StatefulBeanToCsv<PaymentOutput> sbc = new StatefulBeanToCsvBuilder<PaymentOutput>(writer)

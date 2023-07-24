@@ -13,7 +13,6 @@ import java.math.BigDecimal;
 import java.util.Currency;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,14 +36,6 @@ class CsvPaymentsServiceImplTest {
 
     @Mock
     private PaymentStatusRepository paymentStatusRepository;
-
-    @BeforeEach
-    void setUp() {
-    }
-
-    @AfterEach
-    void tearDown() {
-    }
 
     @Test
     void persistRecord() {

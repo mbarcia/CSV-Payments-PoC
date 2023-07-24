@@ -13,7 +13,6 @@ import lombok.experimental.Accessors;
 public class AckPaymentSent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
     private Long id;
 
     @NonNull

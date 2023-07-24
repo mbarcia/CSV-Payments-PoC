@@ -28,7 +28,6 @@ public class CsvPaymentsFile {
     private final List<PaymentRecord> records = new ArrayList<>();
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false)
     private Long id;
     @Transient
     @NonNull

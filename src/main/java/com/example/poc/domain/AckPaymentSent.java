@@ -5,7 +5,8 @@ import lombok.*;
 import lombok.experimental.Accessors;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
@@ -25,7 +26,8 @@ public class AckPaymentSent {
     private PaymentRecord record;
 
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "ackPaymentSent")
-    @Getter @Setter
+    @Getter
+    @Setter
     private PaymentStatus paymentStatus;
 
     @Override

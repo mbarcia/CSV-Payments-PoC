@@ -1,6 +1,5 @@
 package com.example.poc.command;
 
-import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
@@ -11,16 +10,15 @@ public class UnparseRecordCommand extends BaseCommand<PaymentStatus, PaymentOutp
     public PaymentOutput execute(PaymentStatus paymentStatus) {
         super.execute(paymentStatus);
 
-        AckPaymentSent ackPaymentSent = paymentStatus.getAckPaymentSent();
-        PaymentRecord paymentRecord = ackPaymentSent.getRecord();
+        PaymentRecord paymentRecord = paymentStatus.getAckPaymentSent().getRecord();
 
         return new PaymentOutput(
                 paymentRecord.getCsvId(),
                 paymentRecord.getRecipient(),
                 paymentRecord.getAmount(),
                 paymentRecord.getCurrency(),
-                ackPaymentSent.getConversationID(),
-                ackPaymentSent.getStatus(),
+                paymentStatus.getAckPaymentSent().getConversationID(),
+                paymentStatus.getAckPaymentSent().getStatus(),
                 paymentStatus.getMessage(),
                 paymentStatus.getFee()
         );

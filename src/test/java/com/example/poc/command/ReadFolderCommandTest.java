@@ -27,11 +27,9 @@ class ReadFolderCommandTest {
 
     @Mock
     CsvPaymentsServiceImpl csvPaymentsService;
-
-    private CsvFolder csvFolder;
-
     @InjectMocks
     ReadFolderCommand readFolderCommand;
+    private CsvFolder csvFolder;
 
     @BeforeEach
     void setUp() {

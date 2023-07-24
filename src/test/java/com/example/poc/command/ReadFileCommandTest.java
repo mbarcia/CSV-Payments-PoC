@@ -23,13 +23,11 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class ReadFileCommandTest {
     private static final String MESSAGE = "Executed with %s";
-    private CsvPaymentsFile csvPaymentsFile;
-
-    @Mock
-    private CsvPaymentsServiceImpl csvPaymentsService;
-
     @InjectMocks
     ReadFileCommand readFileCommand;
+    private CsvPaymentsFile csvPaymentsFile;
+    @Mock
+    private CsvPaymentsServiceImpl csvPaymentsService;
 
     @Test
     void execute(CapturedOutput output) {

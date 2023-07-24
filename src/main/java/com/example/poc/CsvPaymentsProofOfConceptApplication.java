@@ -4,6 +4,7 @@ import com.example.poc.command.*;
 import com.example.poc.domain.CsvFolder;
 import com.example.poc.domain.CsvPaymentsFile;
 import com.example.poc.domain.PaymentOutput;
+import com.example.poc.domain.PaymentStatus;
 import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
@@ -23,11 +24,14 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 @SpringBootApplication
 public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
     public static final String CSV_FOLDER = "csv/";
+    private static final Logger LOG = LoggerFactory
+            .getLogger(CsvPaymentsProofOfConceptApplication.class);
     @Autowired
     private ReadFolderCommand readFolderCommand;
     @Autowired
@@ -38,9 +42,6 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
     private PollPaymentStatusCommand pollPaymentStatusCommand;
     @Autowired
     private UnparseRecordCommand unParseRecordCommand;
-
-    private static final Logger LOG = LoggerFactory
-            .getLogger(CsvPaymentsProofOfConceptApplication.class);
 
     /**
      * @param args Folder path
@@ -85,13 +86,21 @@ public class CsvPaymentsProofOfConceptApplication implements CommandLineRunner {
                     .withSeparator(com.opencsv.CSVWriter.DEFAULT_SEPARATOR)
                     .build();
             // Read the file, get a stream of records, and
-            Stream<PaymentOutput> paymentOutputStream = readFileCommand.execute(file)
+            List<CompletableFuture<PaymentStatus>> paymentStatusList = readFileCommand.execute(file)
                     // post the payment record to the API service
                     .map(sendPaymentCommand::execute)
-                    // poll the API service for payment confirmation
-                    .map(pollPaymentStatusCommand::execute)
+                    // async call on polling
+                    .map(item ->
+                            CompletableFuture.supplyAsync(() ->
+                                    pollPaymentStatusCommand.execute(item)))
+                    // stream terminal operation to start the polling
+                    .toList();
+
+            Stream<PaymentOutput> paymentOutputStream = paymentStatusList.stream()
+                    .map(CompletableFuture::join)
                     // dump the transformed payment data into an output record
                     .map(unParseRecordCommand::execute);
+
             // stream output records to the new CSV file
             sbc.write(paymentOutputStream);
 

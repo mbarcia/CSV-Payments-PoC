@@ -104,7 +104,8 @@ class CsvPaymentsServiceImplTest {
         when(ackPaymentSentRepository.save(any(AckPaymentSent.class))).thenReturn(ackPaymentSentToPersist);
         assertEquals(csvPaymentsService.persist(ackPaymentSentToPersist), ackPaymentSentToPersist);
         verify(ackPaymentSentRepository, times(1)).save(any(AckPaymentSent.class));
-        verifyNoMoreInteractions(ackPaymentSentRepository);    }
+        verifyNoMoreInteractions(ackPaymentSentRepository);
+    }
 
     private AckPaymentSent getAckPaymentSentToPersist() {
         return new AckPaymentSent("nada");

@@ -3,17 +3,18 @@ package com.example.poc.domain;
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvIgnore;
 import com.opencsv.bean.CsvNumber;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.Objects;
 
 @Entity
-@Getter @Setter
+@Getter
+@Setter
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor

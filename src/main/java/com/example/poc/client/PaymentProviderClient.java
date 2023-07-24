@@ -1,19 +1,21 @@
 package com.example.poc.client;
 
-import com.example.poc.domain.PaymentStatus;
 import com.example.poc.domain.AckPaymentSent;
+import com.example.poc.domain.PaymentStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 @Service
-public class PaymentProviderClient {
+@Component(value="client")
+public class PaymentProviderClient implements PaymentProvider {
     @Value("${api.url}")
     private String resourceUrl;
     @Value("${api.account}")
@@ -24,6 +26,7 @@ public class PaymentProviderClient {
     @Autowired
     ObjectMapper mapper;
 
+    @Override
     public AckPaymentSent sendPayment(SendPaymentRequest requestMap) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -42,6 +45,7 @@ public class PaymentProviderClient {
         }
     }
 
+    @Override
     public PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent) throws JsonProcessingException {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -60,7 +64,7 @@ public class PaymentProviderClient {
         return result;
     }
 
-    private AuthResponse authorization() throws JsonProcessingException {
+    public AuthResponse authorization() throws JsonProcessingException {
         // TODO implement something like Spring Boot OAuth Bearer Tokens
         //  The current implementation is BAD because it polls token for each request
 
@@ -76,7 +80,7 @@ public class PaymentProviderClient {
         return mapper.readValue(response, AuthResponse.class);
     }
 
-    private <T> String request(T requestMap, HttpHeaders headers, HttpMethod method, String uri) {
+    public <T> String request(T requestMap, HttpHeaders headers, HttpMethod method, String uri) {
         RestTemplate restTemplate = new RestTemplate();
         HttpEntity<T> request = new HttpEntity<>(requestMap, headers);
 

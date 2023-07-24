@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class BaseCommand<T, S> implements Command<T, S> {
     @Autowired
-    CsvPaymentsService csvPaymentsService; // used by the subclasses
+    CsvPaymentsService csvPaymentsService;
 
     public S execute(T processableObj) {
         // Firstly, save (or update) the given object

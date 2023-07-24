@@ -1,39 +1,37 @@
 package com.example.poc.command;
 
-import com.example.poc.client.PaymentProviderClient;
+import com.example.poc.client.PaymentProvider;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-
 @Component
 public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, PaymentStatus> {
-    @Autowired
-    PaymentProviderClient client;
 
+    @Autowired
+    @Qualifier("mock")
+    PaymentProvider paymentProviderMock;
     @Async
     public PaymentStatus execute(AckPaymentSent detachedAckPaymentSent) {
         super.execute(detachedAckPaymentSent);
-        PaymentStatus paymentStatus;
 
-//        TODO
-//        try {
-//            paymentStatus = (client.getPaymentStatus(detachedAckPaymentSent)).setAckPaymentSent(detachedAckPaymentSent);
-        paymentStatus = new PaymentStatus("101")
-                .setStatus("nada")
-                .setFee(new BigDecimal("1.01"))
-                .setMessage("This is a test")
-                .setAckPaymentSent(detachedAckPaymentSent);
-//        } catch (JsonProcessingException e) {
-//            Logger logger = LoggerFactory.getLogger(this.getClass());
-//            logger.error(e.getLocalizedMessage());
-//            return null;
-//        }
+        Logger logger = LoggerFactory.getLogger(this.getClass());
 
-        return paymentStatus;
+        try {
+            long time = (long)(Math.random() * 10000);
+            logger.info("Started polling...({}ms)", time);
+            Thread.sleep(time);
+            logger.info("Polled for {}ms", time);
+            return paymentProviderMock.getPaymentStatus(detachedAckPaymentSent);
+        } catch (JsonProcessingException | InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Override

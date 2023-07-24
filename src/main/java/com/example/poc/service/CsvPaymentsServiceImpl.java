@@ -11,16 +11,12 @@ import org.springframework.stereotype.Service;
 public class CsvPaymentsServiceImpl implements CsvPaymentsService {
     @Autowired
     private CsvPaymentsFileRepository csvPaymentsFileRepository;
-
     @Autowired
     private CsvFolderRepository csvFolderRepository;
-
     @Autowired
     private AckPaymentSentRepository ackPaymentSentRepository;
-
     @Autowired
     private PaymentRecordRepository paymentRecordRepository;
-
     @Autowired
     private PaymentStatusRepository paymentStatusRepository;
 

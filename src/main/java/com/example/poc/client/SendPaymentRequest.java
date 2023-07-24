@@ -1,5 +1,6 @@
 package com.example.poc.client;
 
+import com.example.poc.domain.PaymentRecord;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -16,4 +17,5 @@ public class SendPaymentRequest {
     private Currency currency;
     private String reference;
     private String url;
+    private PaymentRecord record;
 }

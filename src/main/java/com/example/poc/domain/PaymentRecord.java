@@ -22,7 +22,6 @@ public class PaymentRecord implements Serializable {
     @CsvIgnore
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
     private Long id;
 
     @NonNull

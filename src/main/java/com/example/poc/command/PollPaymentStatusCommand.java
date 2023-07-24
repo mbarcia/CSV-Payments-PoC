@@ -6,18 +6,19 @@ import com.example.poc.domain.PaymentStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 @Component
 public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, PaymentStatus> {
 
-    @Autowired
-    @Qualifier("mock")
+    final
     PaymentProvider paymentProviderMock;
-    @Async
+
+    public PollPaymentStatusCommand(@Qualifier("mock") PaymentProvider paymentProviderMock) {
+        this.paymentProviderMock = paymentProviderMock;
+    }
+
     public PaymentStatus execute(AckPaymentSent detachedAckPaymentSent) {
         super.execute(detachedAckPaymentSent);
 

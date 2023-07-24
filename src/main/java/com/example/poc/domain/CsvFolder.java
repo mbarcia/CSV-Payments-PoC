@@ -22,7 +22,6 @@ public class CsvFolder {
     private final List<CsvPaymentsFile> files = new ArrayList<>();
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false)
     private Long id;
     @NonNull
     private String folderPath;

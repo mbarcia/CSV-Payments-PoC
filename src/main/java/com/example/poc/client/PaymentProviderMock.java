@@ -2,7 +2,6 @@ package com.example.poc.client;
 
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -20,7 +19,7 @@ public class PaymentProviderMock implements PaymentProvider {
     }
 
     @Override
-    public PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent) throws JsonProcessingException {
+    public PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent) {
 
         return new PaymentStatus("101")
                 .setStatus("nada")

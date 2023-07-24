@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 public class PaymentStatus implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
     private Long id;
     private String customerReference;
 

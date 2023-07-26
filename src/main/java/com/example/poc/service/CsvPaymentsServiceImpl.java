@@ -2,18 +2,16 @@ package com.example.poc.service;
 
 import com.example.poc.domain.*;
 import com.example.poc.repository.*;
-import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-@NoArgsConstructor
 public class CsvPaymentsServiceImpl implements CsvPaymentsService {
-    private CsvPaymentsFileRepository csvPaymentsFileRepository;
-    private CsvFolderRepository csvFolderRepository;
-    private AckPaymentSentRepository ackPaymentSentRepository;
-    private PaymentRecordRepository paymentRecordRepository;
-    private PaymentStatusRepository paymentStatusRepository;
+    private final CsvPaymentsFileRepository csvPaymentsFileRepository;
+    private final CsvFolderRepository csvFolderRepository;
+    private final AckPaymentSentRepository ackPaymentSentRepository;
+    private final PaymentRecordRepository paymentRecordRepository;
+    private final PaymentStatusRepository paymentStatusRepository;
 
     @Autowired
     public CsvPaymentsServiceImpl(CsvPaymentsFileRepository csvPaymentsFileRepository, CsvFolderRepository csvFolderRepository, AckPaymentSentRepository ackPaymentSentRepository, PaymentRecordRepository paymentRecordRepository, PaymentStatusRepository paymentStatusRepository) {

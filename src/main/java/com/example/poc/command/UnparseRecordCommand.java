@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class UnparseRecordCommand extends BaseCommand<PaymentStatus, PaymentOutput> {
+    @Override
     public PaymentOutput execute(PaymentStatus paymentStatus) {
         super.execute(paymentStatus);
 

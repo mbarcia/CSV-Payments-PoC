@@ -25,10 +25,10 @@ import static org.mockito.Mockito.doReturn;
 class ReadFolderCommandTest {
     private static final String MESSAGE = "Executed with %s";
 
-    @Mock
-    CsvPaymentsServiceImpl csvPaymentsService;
     @InjectMocks
     ReadFolderCommand readFolderCommand;
+    @Mock
+    CsvPaymentsServiceImpl csvPaymentsService;
     private CsvFolder csvFolder;
 
     @BeforeEach

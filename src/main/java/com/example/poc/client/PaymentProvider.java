@@ -6,7 +6,5 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 public interface PaymentProvider {
     AckPaymentSent sendPayment(SendPaymentRequest requestMap);
-
     PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent) throws JsonProcessingException;
-
 }

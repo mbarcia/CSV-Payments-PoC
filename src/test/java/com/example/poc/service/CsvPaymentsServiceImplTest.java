@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.util.Currency;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,13 +42,17 @@ class CsvPaymentsServiceImplTest {
     void persistRecord() {
         PaymentRecord paymentRecord = getPaymentRecordToPersist();
         when(paymentRecordRepository.save(any(PaymentRecord.class))).thenReturn(paymentRecord);
-        assertEquals(csvPaymentsService.persist(paymentRecord), paymentRecord);
+        PaymentRecord persistedPaymentRecord = csvPaymentsService.persist(paymentRecord);
+        assertEquals(persistedPaymentRecord, paymentRecord);
+        assertNotNull(paymentRecord.getId());
         verify(paymentRecordRepository, times(1)).save(any(PaymentRecord.class));
         verifyNoMoreInteractions(paymentRecordRepository);
     }
 
     private PaymentRecord getPaymentRecordToPersist() {
-        return new PaymentRecord("1", "Black Adam", new BigDecimal("420.69"), Currency.getInstance("USD"));
+        PaymentRecord paymentRecord = new PaymentRecord("1", "Black Adam", new BigDecimal("420.69"), Currency.getInstance("USD"));
+        paymentRecord.setId(1L);
+        return paymentRecord;
     }
 
     @Test

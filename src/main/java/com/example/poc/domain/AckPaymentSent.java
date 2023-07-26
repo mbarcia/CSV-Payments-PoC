@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 
+import java.util.Objects;
+
 @Entity
 @Getter
 @Setter
@@ -37,5 +39,18 @@ public class AckPaymentSent {
                 ", status=" + status +
                 ", message=" + message +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        AckPaymentSent ackPaymentSent = (AckPaymentSent) o;
+        return (conversationID.equals(ackPaymentSent.getConversationID()) &&
+                message.equals(ackPaymentSent.getMessage()) &&
+                status.equals(ackPaymentSent.getStatus()) &&
+                record.equals(ackPaymentSent.getRecord()) &&
+                Objects.equals(paymentStatus, ackPaymentSent.getPaymentStatus())
+        );
     }
 }

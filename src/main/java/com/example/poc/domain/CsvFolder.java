@@ -12,7 +12,7 @@ import java.util.Objects;
 @Setter
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class CsvFolder {
+public class CsvFolder extends BasePersistable {
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY,
@@ -20,9 +20,7 @@ public class CsvFolder {
             orphanRemoval = true
     )
     private final List<CsvPaymentsFile> files = new ArrayList<>();
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
+
     @NonNull
     private String folderPath;
 

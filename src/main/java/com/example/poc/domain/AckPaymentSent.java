@@ -12,10 +12,7 @@ import java.util.Objects;
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class AckPaymentSent {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class AckPaymentSent extends BasePersistable {
 
     @NonNull
     private String conversationID;

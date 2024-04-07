@@ -18,7 +18,7 @@ import java.util.Objects;
 @Setter
 @Accessors(chain = true)
 @NoArgsConstructor
-public class CsvPaymentsFile {
+public class CsvPaymentsFile extends BasePersistable implements AutoCloseable {
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY,
@@ -26,9 +26,7 @@ public class CsvPaymentsFile {
             orphanRemoval = true
     )
     private final List<PaymentRecord> records = new ArrayList<>();
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
-    private Long id;
+
     @Transient
     @NonNull
     private File csvFile;
@@ -61,5 +59,10 @@ public class CsvPaymentsFile {
     @Override
     public int hashCode() {
         return Objects.hash(getFilepath());
+    }
+
+    @Override
+    public void close() throws Exception {
+        writer.close();
     }
 }

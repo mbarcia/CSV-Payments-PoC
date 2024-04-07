@@ -14,10 +14,7 @@ import java.util.Objects;
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class PaymentStatus implements Serializable {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class PaymentStatus extends BasePersistable implements Serializable {
     private String customerReference;
 
     @NonNull

@@ -14,9 +14,9 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.io.*;
-import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,8 +32,6 @@ class ProcessFileCommandTest {
 
     CsvPaymentsFileRepository repository = mock(CsvPaymentsFileRepository.class);
 
-    private CsvPaymentsFile csvPaymentsFile;
-
     @BeforeEach
     void setUp() {
         when(repository.save(any(CsvPaymentsFile.class))).thenReturn(null);
@@ -42,7 +40,7 @@ class ProcessFileCommandTest {
 
     @Test
     void execute(CapturedOutput output) throws IOException {
-        csvPaymentsFile = new CsvPaymentsFile(new File("src/test/resources/csv/test.csv"));
+        CsvPaymentsFile csvPaymentsFile = new CsvPaymentsFile(new File("src/test/resources/csv/test.csv"));
         try (Reader reader = new BufferedReader(new FileReader("src/test/resources/csv/test.output.csv"))) {
             CsvToBean<PaymentOutput> cb = new CsvToBeanBuilder<PaymentOutput>(reader)
                     .withType(PaymentOutput.class)
@@ -53,10 +51,10 @@ class ProcessFileCommandTest {
                     .withIgnoreEmptyLine(true)
                     .build();
 
-            List<PaymentOutput> testPaymentOutputList = cb.parse();
+//            List<PaymentOutput> testPaymentOutputList = cb.parse();
 
             // Call method
-            List<PaymentOutput> paymentOutputList = processFileCommand.execute(csvPaymentsFile);
+//            List<PaymentOutput> paymentOutputList = processFileCommand.execute(csvPaymentsFile);
 
             // verify log line at the beginning
             assertTrue(output.getOut().contains(String.format(MESSAGE, csvPaymentsFile)));

@@ -1,16 +1,20 @@
 package com.example.poc.domain;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Setter;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 @Entity
+@Component
 @Getter
 @Setter
-@RequiredArgsConstructor
 @NoArgsConstructor
 public class CsvFolder extends BasePersistable {
     @OneToMany(
@@ -23,6 +27,10 @@ public class CsvFolder extends BasePersistable {
 
     @NonNull
     private String folderPath;
+
+    public CsvFolder(@NonNull String folderPath) {
+        this.folderPath = folderPath;
+    }
 
     public String toString() {
         return getFolderPath();

@@ -24,8 +24,6 @@ public class AckPaymentSent extends BasePersistable {
     private PaymentRecord record;
 
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "ackPaymentSent")
-    @Getter
-    @Setter
     private PaymentStatus paymentStatus;
 
     @Override

@@ -23,7 +23,7 @@ public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, Paymen
         Logger logger = LoggerFactory.getLogger(this.getClass());
 
         try {
-            long time = (long)(Math.random() * 10000);
+            long time = (long)(Math.random() * 2000); // wait between 0 and 2 seconds
             logger.info("Started polling...(for {}ms)", time);
             // Verify and show the use of virtual threads
             logger.info("Thread: {} isVirtual? {}", Thread.currentThread(), Thread.currentThread().isVirtual());

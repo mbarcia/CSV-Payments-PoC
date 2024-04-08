@@ -1,5 +1,9 @@
 package com.example.poc.domain;
 
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
+import com.opencsv.bean.StatefulBeanToCsv;
+import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -7,11 +11,10 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
-import java.io.File;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
 
 @Entity
 @Getter
@@ -35,10 +38,31 @@ public class CsvPaymentsFile extends BasePersistable implements AutoCloseable {
     private CsvFolder csvFolder;
 
     private String filepath;
+    @Transient
+    StatefulBeanToCsv<PaymentOutput> sbc;
+    @Transient
+    private FileWriter writer;
+    @Transient
+    private Reader reader;
+    @Transient
+    CsvToBean<PaymentRecord> csvReader;
 
-    public CsvPaymentsFile(@NonNull File csvFile) {
+    public CsvPaymentsFile(@NonNull File csvFile) throws IOException {
         this.csvFile = csvFile;
-        this.filepath = csvFile.getPath();
+        filepath = csvFile.getPath();
+        // Create the CSV writer
+        writer = new FileWriter(STR."\{filepath}.out");
+        sbc = new StatefulBeanToCsvBuilder<PaymentOutput>(writer)
+                .withQuotechar('\'')
+                .withSeparator(com.opencsv.CSVWriter.DEFAULT_SEPARATOR)
+                .build();
+        reader = new BufferedReader(new FileReader(filepath));
+        csvReader = new CsvToBeanBuilder<PaymentRecord>(reader)
+                .withType(PaymentRecord.class)
+                .withSeparator(',')
+                .withIgnoreLeadingWhiteSpace(true)
+                .withIgnoreEmptyLine(true)
+                .build();
     }
 
     @Override

@@ -15,7 +15,7 @@ public abstract class BaseCommand<T, S> implements Command<T, S> {
 
         // Log for audit purposes
         Logger logger = LoggerFactory.getLogger(this.getClass());
-        logger.info("Executed with {}", processableObj.toString());
+        logger.info("Executed with {}", processableObj);
 
         // Return value should not be taken into account
         return null;

@@ -31,6 +31,6 @@ public class ReadFolderCommand extends BaseCommand<CsvFolder, Stream<CsvPayments
     private File[] getFileList(String dir) {
         File directory = new File(dir);
 
-        return directory.listFiles((dir1, name) -> name.toLowerCase().endsWith(".csv"));
+        return directory.listFiles((_, name) -> name.toLowerCase().endsWith(".csv"));
     }
 }

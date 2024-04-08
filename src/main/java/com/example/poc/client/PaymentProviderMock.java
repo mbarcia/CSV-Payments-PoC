@@ -13,6 +13,7 @@ public class PaymentProviderMock implements PaymentProvider {
 
     public static final String UUID = "ac007cbd-1504-4207-8d9f-0abc4b1d2bd8";
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public AckPaymentSent sendPayment(SendPaymentRequest requestMap) {
 
@@ -22,7 +23,7 @@ public class PaymentProviderMock implements PaymentProvider {
         requestMap.getRecord();
         requestMap.getCurrency();
         requestMap.getReference();
-        return new AckPaymentSent(String.valueOf(UUID))
+        return new AckPaymentSent(UUID)
                 .setStatus(1000L)
                 .setMessage("OK but this is only a test")
                 .setRecord(requestMap.getRecord());

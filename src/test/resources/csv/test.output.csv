@@ -1,0 +1,4 @@
+'AMOUNT','CSV ID','CURRENCY','FEE','MESSAGE','RECIPIENT','REFERENCE','STATUS'
+'123.50','1','GBP','1.01','This is a test','Mariano','ac007cbd-1504-4207-8d9f-0abc4b1d2bd8','1000'
+'456.60','2','USD','1.01','This is a test','Sergiu','ac007cbd-1504-4207-8d9f-0abc4b1d2bd8','1000'
+'789.25','3','ARS','1.01','This is a test','Moldova','ac007cbd-1504-4207-8d9f-0abc4b1d2bd8','1000'

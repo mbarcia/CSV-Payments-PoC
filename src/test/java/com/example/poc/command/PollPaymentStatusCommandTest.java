@@ -6,13 +6,12 @@ import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
-import com.example.poc.service.CsvPaymentsServiceImpl;
+import com.example.poc.repository.AckPaymentSentRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -23,8 +22,7 @@ import java.util.Currency;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class PollPaymentStatusCommandTest {
@@ -32,10 +30,10 @@ class PollPaymentStatusCommandTest {
     @Mock
     PaymentProviderMock paymentProviderMock;
 
-    @Mock
-    CsvPaymentsServiceImpl csvPaymentsService;
-    @InjectMocks
+    AckPaymentSentRepository repository = mock(AckPaymentSentRepository.class);
+
     PollPaymentStatusCommand pollPaymentStatusCommand;
+
     PaymentOutput paymentOutput;
     AckPaymentSent ackPaymentSent;
     PaymentRecord paymentRecord;
@@ -69,6 +67,8 @@ class PollPaymentStatusCommandTest {
                 .setRecord(paymentRecord);
 
         lenient().doReturn(paymentStatus).when(paymentProviderMock).getPaymentStatus(any(AckPaymentSent.class));
+        when(repository.save(any(AckPaymentSent.class))).thenReturn(null);
+        pollPaymentStatusCommand = new PollPaymentStatusCommand(paymentProviderMock, repository);
     }
 
     @AfterEach
@@ -84,8 +84,5 @@ class PollPaymentStatusCommandTest {
     void executeWithJsonProcessingException() {
         doThrow(JsonProcessingException.class).when(paymentProviderMock).getPaymentStatus(any(AckPaymentSent.class));
         assertThrowsExactly(RuntimeException.class, () -> pollPaymentStatusCommand.execute(ackPaymentSent));
-    }
-    @Test
-    void persist() {
     }
 }

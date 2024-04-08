@@ -67,9 +67,7 @@ public class CsvPaymentsFile extends BasePersistable implements AutoCloseable {
 
     @Override
     public String toString() {
-        return "CsvPaymentsFile{" +
-                "filepath='" + filepath + '\'' +
-                '}';
+        return STR."CsvPaymentsFile{filepath='\{filepath}\{'\''}\{'}'}";
     }
 
     @Override

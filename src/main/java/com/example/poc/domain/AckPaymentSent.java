@@ -30,12 +30,7 @@ public class AckPaymentSent extends BasePersistable {
 
     @Override
     public String toString() {
-        return "AckPaymentSent{" +
-                "id='" + id + '\'' +
-                ", conversationID='" + conversationID + '\'' +
-                ", status=" + status +
-                ", message=" + message +
-                '}';
+        return STR."AckPaymentSent{id='\{getId()}\{'\''}, conversationID='\{conversationID}\{'\''}, status=\{status}, message=\{message}\{'}'}";
     }
 
     @Override

@@ -29,13 +29,7 @@ public class PaymentStatus extends BasePersistable implements Serializable {
 
     @Override
     public String toString() {
-        return "PaymentStatus{" +
-                "customerReference='" + customerReference + '\'' +
-                ", reference='" + reference + '\'' +
-                ", message='" + message + '\'' +
-                ", status=" + status +
-                ", fee=" + fee +
-                '}';
+        return STR."PaymentStatus{customerReference='\{customerReference}\{'\''}, reference='\{reference}\{'\''}, message='\{message}\{'\''}, status=\{status}, fee=\{fee}\{'}'}";
     }
 
     @Override

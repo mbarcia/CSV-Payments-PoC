@@ -49,13 +49,7 @@ public class PaymentRecord extends BasePersistable implements Serializable {
 
     @Override
     public String toString() {
-        return "PaymentRecord{" +
-                "id='" + csvId + '\'' +
-                ", recipient='" + recipient + '\'' +
-                ", amount=" + amount +
-                ", currency=" + currency +
-                ", file=" + csvPaymentsFile +
-                '}';
+        return STR."PaymentRecord{id='\{csvId}\{'\''}, recipient='\{recipient}\{'\''}, amount=\{amount}, currency=\{currency}, file=\{csvPaymentsFile}\{'}'}";
     }
 
     @Override

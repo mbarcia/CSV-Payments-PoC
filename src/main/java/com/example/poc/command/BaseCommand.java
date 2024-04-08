@@ -1,17 +1,14 @@
 package com.example.poc.command;
 
-import com.example.poc.service.CsvPaymentsService;
+import com.example.poc.domain.BasePersistable;
+import com.example.poc.repository.BaseRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 
-public abstract class BaseCommand<T, S> implements Command<T, S> {
-    @Autowired
-    CsvPaymentsService csvPaymentsService;
-
-    public S execute(T processableObj) {
+public abstract class BaseCommand<T extends BasePersistable, S> implements Command<T, S> {
+    public S execute(T processableObj, BaseRepository<T> repository) {
         // Firstly, save (or update) the given object
-        persist(processableObj);
+        repository.save(processableObj);
 
         // Log for audit purposes
         Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -20,12 +17,4 @@ public abstract class BaseCommand<T, S> implements Command<T, S> {
         // Return value should not be taken into account
         return null;
     }
-
-    /**
-     * Persist is implemented by subclasses by calling the service
-     *
-     * @param processableObj Given object
-     * @return Same object only now it should be managed by the ORM
-     */
-    protected abstract T persist(T processableObj);
 }

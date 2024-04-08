@@ -4,19 +4,26 @@ import com.example.poc.client.PaymentProvider;
 import com.example.poc.client.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.example.poc.repository.PaymentRecordRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
 public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSent> {
 
-    @Autowired @Qualifier("mock")
+    final
     PaymentProvider paymentProviderMock;
+
+    private final PaymentRecordRepository repository;
+
+    public SendPaymentCommand(@Qualifier("mock") PaymentProvider paymentProviderMock, PaymentRecordRepository repository) {
+        this.paymentProviderMock = paymentProviderMock;
+        this.repository = repository;
+    }
 
     @Override
     public AckPaymentSent execute(PaymentRecord paymentRecord) {
-        super.execute(paymentRecord);
+        super.execute(paymentRecord, repository);
 
         SendPaymentRequest request = new SendPaymentRequest()
                 .setAmount(paymentRecord.getAmount())
@@ -25,10 +32,5 @@ public class SendPaymentCommand extends BaseCommand<PaymentRecord, AckPaymentSen
                 .setRecord(paymentRecord);
 
         return paymentProviderMock.sendPayment(request);
-    }
-
-    @Override
-    public PaymentRecord persist(PaymentRecord paymentRecord) {
-        return csvPaymentsService.persist(paymentRecord);
     }
 }

@@ -51,7 +51,7 @@ class UnparseRecordCommandTest {
         );
 
         when(repository.save(any(PaymentStatus.class))).thenReturn(null);
-        unparseRecordCommand = new UnparseRecordCommand(repository);
+        unparseRecordCommand = new UnparseRecordCommand();
     }
 
     @AfterEach

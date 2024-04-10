@@ -68,7 +68,7 @@ class PollPaymentStatusCommandTest {
 
         lenient().doReturn(paymentStatus).when(paymentProviderMock).getPaymentStatus(any(AckPaymentSent.class));
         when(repository.save(any(AckPaymentSent.class))).thenReturn(null);
-        pollPaymentStatusCommand = new PollPaymentStatusCommand(paymentProviderMock, repository);
+        pollPaymentStatusCommand = new PollPaymentStatusCommand(paymentProviderMock);
     }
 
     @AfterEach

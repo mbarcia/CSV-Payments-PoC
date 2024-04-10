@@ -68,7 +68,7 @@ class SendPaymentCommandTest {
 
         lenient().doReturn(ackPaymentSent).when(paymentProviderMock).sendPayment(any(SendPaymentRequest.class));
         when(repository.save(any(PaymentRecord.class))).thenReturn(null);
-        sendPaymentCommand = new SendPaymentCommand(paymentProviderMock, repository);
+        sendPaymentCommand = new SendPaymentCommand(paymentProviderMock);
     }
 
     @AfterEach

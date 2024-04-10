@@ -4,7 +4,9 @@ import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
-import com.example.poc.repository.PaymentRecordRepository;
+import com.example.poc.service.PollPaymentStatusService;
+import com.example.poc.service.SendPaymentService;
+import com.example.poc.service.UnparseRecordService;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import org.springframework.stereotype.Component;
@@ -15,34 +17,30 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 @Component
-public class ProcessRecordCommand extends BaseCommand<PaymentRecord, PaymentOutput> {
-    private final SendPaymentCommand sendPaymentCommand;
-    private final PollPaymentStatusCommand pollPaymentStatusCommand;
-    private final UnparseRecordCommand unparseRecordCommand;
-    private final PaymentRecordRepository repository;
+public class ProcessRecordCommand implements Command<PaymentRecord, PaymentOutput> {
+    private final SendPaymentService sendPaymentService;
+    private final PollPaymentStatusService pollPaymentStatusService;
+    private final UnparseRecordService unparseRecordService;
 
     private final ExecutorService executorService;
 
-    public ProcessRecordCommand(SendPaymentCommand sendPaymentCommand, PollPaymentStatusCommand pollPaymentStatusCommand, UnparseRecordCommand unparseRecordCommand, PaymentRecordRepository repository) {
+    public ProcessRecordCommand(SendPaymentService sendPaymentService, PollPaymentStatusService pollPaymentStatusService, UnparseRecordService unparseRecordService) {
         executorService = Executors.newVirtualThreadPerTaskExecutor();
-        this.sendPaymentCommand = sendPaymentCommand;
-        this.pollPaymentStatusCommand = pollPaymentStatusCommand;
-        this.unparseRecordCommand = unparseRecordCommand;
-        this.repository = repository;
+        this.sendPaymentService = sendPaymentService;
+        this.pollPaymentStatusService = pollPaymentStatusService;
+        this.unparseRecordService = unparseRecordService;
     }
 
     @Override
     public PaymentOutput execute(PaymentRecord paymentRecord) {
-        super.execute(paymentRecord, repository);
-
         // post the payment record to the API service
-        AckPaymentSent ackPaymentSent = sendPaymentCommand.execute(paymentRecord);
+        AckPaymentSent ackPaymentSent = sendPaymentService.process(paymentRecord);
         // call the polling/blocking service on a virtual thread (async)
-        CompletableFuture<PaymentStatus> paymentStatusCompletableFuture = CompletableFuture.supplyAsync(() -> pollPaymentStatusCommand.execute(ackPaymentSent), executorService);
+        CompletableFuture<PaymentStatus> paymentStatusCompletableFuture = CompletableFuture.supplyAsync(() -> pollPaymentStatusService.process(ackPaymentSent), executorService);
         // dump the transformed payment data into an output record
         PaymentOutput paymentOutput;
         try {
-            paymentOutput = paymentStatusCompletableFuture.thenApply(unparseRecordCommand::execute).get();
+            paymentOutput = paymentStatusCompletableFuture.thenApply(unparseRecordService::process).get();
         } catch (InterruptedException | ExecutionException e) {
             throw new RuntimeException(e);
         }

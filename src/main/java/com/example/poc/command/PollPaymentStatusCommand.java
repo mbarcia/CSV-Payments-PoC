@@ -3,30 +3,23 @@ package com.example.poc.command;
 import com.example.poc.client.PaymentProvider;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
-import com.example.poc.repository.AckPaymentSentRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PollPaymentStatusCommand extends BaseCommand<AckPaymentSent, PaymentStatus> {
+public class PollPaymentStatusCommand implements Command<AckPaymentSent, PaymentStatus> {
 
     final
     PaymentProvider paymentProviderMock;
 
-    private final AckPaymentSentRepository repository;
-
-    public PollPaymentStatusCommand(@Qualifier("mock") PaymentProvider paymentProviderMock, AckPaymentSentRepository repository) {
+    public PollPaymentStatusCommand(PaymentProvider paymentProviderMock) {
         this.paymentProviderMock = paymentProviderMock;
-        this.repository = repository;
     }
 
     @Override
     public PaymentStatus execute(AckPaymentSent detachedAckPaymentSent) {
-        super.execute(detachedAckPaymentSent, repository);
-
         Logger logger = LoggerFactory.getLogger(this.getClass());
 
         try {

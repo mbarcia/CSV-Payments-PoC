@@ -2,13 +2,13 @@ package com.example.poc.command;
 
 import com.example.poc.domain.CsvFolder;
 import com.example.poc.domain.CsvPaymentsFile;
-import com.example.poc.repository.CsvFolderRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.data.repository.CrudRepository;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +24,7 @@ class ReadFolderCommandTest {
 
     ReadFolderCommand readFolderCommand;
 
-    CsvFolderRepository csvFolderRepository = mock(CsvFolderRepository.class);
+    CrudRepository<CsvFolder, Long> csvFolderRepository = mock(CrudRepository.class);
 
     private CsvFolder csvFolder;
 

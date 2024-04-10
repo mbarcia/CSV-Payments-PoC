@@ -1,9 +1,6 @@
 package com.example.poc.domain;
 
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
-import com.opencsv.bean.StatefulBeanToCsv;
-import com.opencsv.bean.StatefulBeanToCsvBuilder;
+import com.opencsv.bean.*;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,7 +18,12 @@ import java.util.Objects;
 @Setter
 @Accessors(chain = true)
 @NoArgsConstructor
-public class CsvPaymentsFile extends BasePersistable implements AutoCloseable {
+public class CsvPaymentsFile implements AutoCloseable {
+    @Id
+    @CsvIgnore
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY,
@@ -41,7 +43,7 @@ public class CsvPaymentsFile extends BasePersistable implements AutoCloseable {
     @Transient
     StatefulBeanToCsv<PaymentOutput> sbc;
     @Transient
-    private FileWriter writer;
+    private Writer writer;
     @Transient
     private Reader reader;
     @Transient
@@ -51,7 +53,7 @@ public class CsvPaymentsFile extends BasePersistable implements AutoCloseable {
         this.csvFile = csvFile;
         filepath = csvFile.getPath();
         // Create the CSV writer
-        writer = new FileWriter(STR."\{filepath}.out");
+        writer = new BufferedWriter(new FileWriter(STR."\{filepath}.out"));
         sbc = new StatefulBeanToCsvBuilder<PaymentOutput>(writer)
                 .withQuotechar('\'')
                 .withSeparator(com.opencsv.CSVWriter.DEFAULT_SEPARATOR)

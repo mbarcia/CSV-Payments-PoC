@@ -18,7 +18,12 @@ import java.util.Objects;
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class PaymentRecord extends BasePersistable implements Serializable {
+public class PaymentRecord implements Serializable {
+    @Id
+    @CsvIgnore
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @NonNull
     @CsvBindByName(column = "ID")
     private String csvId;

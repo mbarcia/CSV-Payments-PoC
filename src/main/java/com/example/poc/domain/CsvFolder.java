@@ -1,5 +1,6 @@
 package com.example.poc.domain;
 
+import com.opencsv.bean.CsvIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -16,7 +17,12 @@ import java.util.Objects;
 @Getter
 @Setter
 @NoArgsConstructor
-public class CsvFolder extends BasePersistable {
+public class CsvFolder {
+    @Id
+    @CsvIgnore
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY,

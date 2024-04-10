@@ -13,7 +13,7 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @NoArgsConstructor(force = true)
 @Getter
-public class PaymentOutput extends BasePersistable {
+public class PaymentOutput {
     @CsvBindByName(column = "CSV Id") final String csvId;
     @CsvBindByName(column = "Recipient") final String recipient;
     @CsvBindByName(column = "Amount") @CsvNumber("#,###.00") final BigDecimal amount;
@@ -28,7 +28,7 @@ public class PaymentOutput extends BasePersistable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PaymentOutput that = (PaymentOutput) o;
-        return Objects.equals(getId(), that.getId()) &&
+        return Objects.equals(getCsvId(), that.getCsvId()) &&
                 getCsvId().equals(that.getCsvId()) &&
                 getRecipient().equals(that.getRecipient()) &&
                 getAmount().equals(that.getAmount()) &&

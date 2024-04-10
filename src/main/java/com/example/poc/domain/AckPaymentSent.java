@@ -1,9 +1,9 @@
 package com.example.poc.domain;
 
+import com.opencsv.bean.CsvIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
-
 import java.util.Objects;
 
 @Entity
@@ -12,7 +12,11 @@ import java.util.Objects;
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class AckPaymentSent extends BasePersistable {
+public class AckPaymentSent {
+    @Id
+    @CsvIgnore
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @NonNull
     private String conversationID;
@@ -43,4 +47,5 @@ public class AckPaymentSent extends BasePersistable {
                 Objects.equals(paymentStatus, ackPaymentSent.getPaymentStatus())
         );
     }
+
 }

@@ -1,5 +1,6 @@
 package com.example.poc.domain;
 
+import com.opencsv.bean.CsvIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
@@ -14,7 +15,12 @@ import java.util.Objects;
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class PaymentStatus extends BasePersistable implements Serializable {
+public class PaymentStatus implements Serializable {
+    @Id
+    @CsvIgnore
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
     private String customerReference;
 
     @NonNull

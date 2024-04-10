@@ -6,6 +6,7 @@ import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
+import com.example.poc.repository.PaymentRecordRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.data.repository.CrudRepository;
 
 import java.math.BigDecimal;
 import java.util.Currency;
@@ -28,7 +28,7 @@ class SendPaymentCommandTest {
     @Mock
     PaymentProviderMock paymentProviderMock;
 
-    CrudRepository<PaymentRecord, Long> repository = mock(CrudRepository.class);
+    PaymentRecordRepository repository = mock(PaymentRecordRepository.class);
 
     SendPaymentCommand sendPaymentCommand;
 

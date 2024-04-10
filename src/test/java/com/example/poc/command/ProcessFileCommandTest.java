@@ -2,6 +2,7 @@ package com.example.poc.command;
 
 import com.example.poc.domain.CsvPaymentsFile;
 import com.example.poc.domain.PaymentOutput;
+import com.example.poc.repository.CsvPaymentsFileRepository;
 import com.example.poc.service.ProcessRecordService;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
@@ -12,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
-import org.springframework.data.repository.CrudRepository;
 
 import java.io.*;
 
@@ -31,7 +31,7 @@ class ProcessFileCommandTest {
 
     ProcessFileCommand processFileCommand;
 
-    CrudRepository<CsvPaymentsFile, Long> repository = mock(CrudRepository.class);
+    CsvPaymentsFileRepository repository = mock(CsvPaymentsFileRepository.class);
 
     @BeforeEach
     void setUp() {

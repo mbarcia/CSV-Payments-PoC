@@ -1,6 +1,6 @@
 package com.example.poc.command;
 
-import com.example.poc.client.PaymentProvider;
+import com.example.poc.service.PaymentProvider;
 import com.example.poc.client.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;

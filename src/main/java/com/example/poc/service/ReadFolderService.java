@@ -3,7 +3,7 @@ package com.example.poc.service;
 import com.example.poc.command.ReadFolderCommand;
 import com.example.poc.domain.CsvFolder;
 import com.example.poc.domain.CsvPaymentsFile;
-import org.springframework.data.repository.CrudRepository;
+import com.example.poc.repository.CsvFolderRepository;
 import org.springframework.stereotype.Service;
 
 import java.net.URISyntaxException;
@@ -15,7 +15,7 @@ public class ReadFolderService extends BaseService<CsvFolder, Stream<CsvPayments
 
     public static final String CSV_FOLDER = "csv/";
 
-    public ReadFolderService(CrudRepository<CsvFolder, Long> repository, ReadFolderCommand command) {
+    public ReadFolderService(CsvFolderRepository repository, ReadFolderCommand command) {
         super(repository, command);
     }
 

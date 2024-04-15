@@ -1,11 +1,11 @@
 package com.example.poc.command;
 
-import com.example.poc.client.PaymentProviderMock;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
 import com.example.poc.repository.PaymentStatusRepository;
+import com.example.poc.service.PaymentProviderMock;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 class UnparseRecordCommandTest {

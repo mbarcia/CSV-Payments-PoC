@@ -1,17 +1,16 @@
 package com.example.poc.command;
 
-import com.example.poc.service.PaymentProviderMock;
-import com.example.poc.client.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
-import com.example.poc.repository.AckPaymentSentRepository;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.junit.jupiter.api.AfterEach;
+import com.example.poc.service.*;
+import com.opencsv.exceptions.CsvDataTypeMismatchException;
+import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -20,25 +19,30 @@ import java.math.BigDecimal;
 import java.util.Currency;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
-class PollPaymentStatusCommandTest {
+class ProcessRecordCommandTest {
+    @Mock
+    SendPaymentService sendPaymentService;
 
     @Mock
-    PaymentProviderMock paymentProviderMock;
+    PollPaymentStatusService pollPaymentStatusService;
 
-    AckPaymentSentRepository repository = mock(AckPaymentSentRepository.class);
+    @Mock
+    UnparseRecordService unparseRecordService;
 
-    PollPaymentStatusCommand pollPaymentStatusCommand;
+    @Mock
+    ProcessRecordService processRecordService;
 
-    PaymentOutput paymentOutput;
-    AckPaymentSent ackPaymentSent;
+    @InjectMocks
+    ProcessRecordCommand processRecordCommand;
+
     PaymentRecord paymentRecord;
+    AckPaymentSent ackPaymentSent;
     PaymentStatus paymentStatus;
-    SendPaymentRequest sendPaymentRequest;
+    PaymentOutput paymentOutput;
 
     @BeforeEach
     void setUp() {
@@ -60,29 +64,27 @@ class PollPaymentStatusCommandTest {
                 paymentStatus.getMessage(),
                 paymentStatus.getFee()
         );
-        sendPaymentRequest = new SendPaymentRequest()
-                .setAmount(paymentRecord.getAmount())
-                .setReference(paymentRecord.getRecipient())
-                .setCurrency(paymentRecord.getCurrency())
-                .setRecord(paymentRecord);
 
-        lenient().doReturn(paymentStatus).when(paymentProviderMock).getPaymentStatus(any(AckPaymentSent.class));
-        when(repository.save(any(AckPaymentSent.class))).thenReturn(null);
-        pollPaymentStatusCommand = new PollPaymentStatusCommand(paymentProviderMock);
-    }
-
-    @AfterEach
-    void tearDown() {
+        doReturn(ackPaymentSent).when(sendPaymentService).process(paymentRecord);
+        doReturn(paymentStatus).when(pollPaymentStatusService).process(ackPaymentSent);
+        doReturn(paymentOutput).when(unparseRecordService).process(paymentStatus);
     }
 
     @Test
-    void execute() {
-        assertEquals(paymentStatus, pollPaymentStatusCommand.execute(ackPaymentSent));
+    void executeTest() throws CsvRequiredFieldEmptyException, CsvDataTypeMismatchException {
+        doNothing().when(processRecordService).writeOutputToFile(paymentRecord, paymentOutput);
+        assertEquals(paymentOutput, processRecordCommand.execute(paymentRecord));
     }
 
     @Test
-    void executeWithJsonProcessingException() {
-        doThrow(JsonProcessingException.class).when(paymentProviderMock).getPaymentStatus(any(AckPaymentSent.class));
-        assertThrowsExactly(RuntimeException.class, () -> pollPaymentStatusCommand.execute(ackPaymentSent));
+    void executeWithExceptionTest() throws CsvRequiredFieldEmptyException, CsvDataTypeMismatchException {
+        lenient().doThrow(CsvDataTypeMismatchException.class).when(processRecordService).writeOutputToFile(paymentRecord, paymentOutput);
+        assertThrows(RuntimeException.class, () -> processRecordCommand.execute(paymentRecord));
+    }
+
+    @Test
+    void executeWithAnotherExceptionTest() throws CsvRequiredFieldEmptyException, CsvDataTypeMismatchException {
+        lenient().doThrow(CsvRequiredFieldEmptyException.class).when(processRecordService).writeOutputToFile(paymentRecord, paymentOutput);
+        assertThrows(RuntimeException.class, () -> processRecordCommand.execute(paymentRecord));
     }
 }

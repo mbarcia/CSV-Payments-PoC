@@ -5,6 +5,7 @@ import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
 import com.example.poc.service.PollPaymentStatusService;
+import com.example.poc.service.ProcessRecordService;
 import com.example.poc.service.SendPaymentService;
 import com.example.poc.service.UnparseRecordService;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
@@ -23,12 +24,14 @@ public class ProcessRecordCommand implements Command<PaymentRecord, PaymentOutpu
     private final UnparseRecordService unparseRecordService;
 
     private final ExecutorService executorService;
+    private final ProcessRecordService processRecordService;
 
-    public ProcessRecordCommand(SendPaymentService sendPaymentService, PollPaymentStatusService pollPaymentStatusService, UnparseRecordService unparseRecordService) {
+    public ProcessRecordCommand(SendPaymentService sendPaymentService, PollPaymentStatusService pollPaymentStatusService, UnparseRecordService unparseRecordService, ProcessRecordService processRecordService) {
         executorService = Executors.newVirtualThreadPerTaskExecutor();
         this.sendPaymentService = sendPaymentService;
         this.pollPaymentStatusService = pollPaymentStatusService;
         this.unparseRecordService = unparseRecordService;
+        this.processRecordService = processRecordService;
     }
 
     @Override
@@ -46,7 +49,7 @@ public class ProcessRecordCommand implements Command<PaymentRecord, PaymentOutpu
         }
         // write the output record to the CSV file
         try {
-            paymentRecord.getCsvPaymentsFile().getSbc().write(paymentOutput);
+            processRecordService.writeOutputToFile(paymentRecord, paymentOutput);
         } catch (CsvDataTypeMismatchException | CsvRequiredFieldEmptyException e) {
             throw new RuntimeException(e);
         }

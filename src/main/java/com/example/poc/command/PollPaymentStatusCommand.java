@@ -1,6 +1,6 @@
 package com.example.poc.command;
 
-import com.example.poc.client.PaymentProvider;
+import com.example.poc.service.PaymentProvider;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -18,6 +18,10 @@ public class PollPaymentStatusCommand implements Command<AckPaymentSent, Payment
         this.paymentProviderMock = paymentProviderMock;
     }
 
+    /**
+     * @param detachedAckPaymentSent Input to poll the payment provider service
+     * @return Output from the payment provider service
+     */
     @Override
     public PaymentStatus execute(AckPaymentSent detachedAckPaymentSent) {
         Logger logger = LoggerFactory.getLogger(this.getClass());

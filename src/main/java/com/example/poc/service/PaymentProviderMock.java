@@ -1,5 +1,6 @@
-package com.example.poc.client;
+package com.example.poc.service;
 
+import com.example.poc.client.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
 import org.springframework.stereotype.Component;

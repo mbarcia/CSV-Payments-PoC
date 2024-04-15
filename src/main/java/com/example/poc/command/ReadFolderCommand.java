@@ -2,27 +2,36 @@ package com.example.poc.command;
 
 import com.example.poc.domain.CsvFolder;
 import com.example.poc.domain.CsvPaymentsFile;
+import com.example.poc.service.ProcessFileService;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 @Component
 public class ReadFolderCommand implements Command<CsvFolder, Stream<CsvPaymentsFile>> {
+    final
+    ProcessFileService processFileService;
+
+    public ReadFolderCommand(ProcessFileService processFileService) {
+        this.processFileService = processFileService;
+    }
+
     @Override
     public Stream<CsvPaymentsFile> execute(CsvFolder csvFolder) {
         Stream<File> files = Arrays.stream(getFileList(csvFolder.getFolderPath()));
         ArrayList<CsvPaymentsFile> retFiles = new ArrayList<>();
-        files.map(f -> {
-            try {
-                CsvPaymentsFile file = new CsvPaymentsFile(f);
-                return file.setCsvFolder(csvFolder);
-            } catch (Exception e) {
+        for (File f : files.toList()) {
+            try (CsvPaymentsFile file = processFileService.createCsvFile(f)) {
+                file.setCsvFolder(csvFolder);
+                retFiles.add(file);
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }).forEach(retFiles::add);
+        }
 
         return retFiles.stream();
     }

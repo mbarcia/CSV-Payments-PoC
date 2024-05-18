@@ -6,12 +6,14 @@ import com.example.poc.domain.PaymentStatus;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UnparseRecordCommand implements Command<PaymentStatus, PaymentOutput> {
+public class ProcessPaymentStatusCommand implements Command<PaymentStatus, PaymentOutput> {
     @Override
     public PaymentOutput execute(PaymentStatus paymentStatus) {
         PaymentRecord paymentRecord = paymentStatus.getAckPaymentSent().getRecord();
 
         return new PaymentOutput(
+                paymentRecord,
+                paymentRecord.getCsvPaymentsOutputFile(),
                 paymentRecord.getCsvId(),
                 paymentRecord.getRecipient(),
                 paymentRecord.getAmount(),

@@ -1,19 +1,38 @@
 package com.example.poc.domain;
 
 import com.opencsv.bean.CsvBindByName;
+import com.opencsv.bean.CsvIgnore;
 import com.opencsv.bean.CsvNumber;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.Objects;
 
+@Entity
 @RequiredArgsConstructor
 @NoArgsConstructor(force = true)
 @Getter
-public class PaymentOutput {
+@Setter
+public class PaymentOutput implements Serializable {
+    @Id
+    @CsvIgnore
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @CsvIgnore
+    @OneToOne
+    private final PaymentRecord paymentRecord;
+
+    @CsvIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
+    private final CsvPaymentsOutputFile csvPaymentsOutputFile;
+
     @CsvBindByName(column = "CSV Id") final String csvId;
     @CsvBindByName(column = "Recipient") final String recipient;
     @CsvBindByName(column = "Amount") @CsvNumber("#,###.00") final BigDecimal amount;
@@ -29,7 +48,7 @@ public class PaymentOutput {
         if (o == null || getClass() != o.getClass()) return false;
         PaymentOutput that = (PaymentOutput) o;
         return Objects.equals(getCsvId(), that.getCsvId()) &&
-                getCsvId().equals(that.getCsvId()) &&
+                getCsvPaymentsOutputFile().equals(that.getCsvPaymentsOutputFile()) &&
                 getRecipient().equals(that.getRecipient()) &&
                 getAmount().equals(that.getAmount()) &&
                 getCurrency().equals(that.getCurrency()) &&

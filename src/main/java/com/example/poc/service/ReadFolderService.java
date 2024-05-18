@@ -2,7 +2,7 @@ package com.example.poc.service;
 
 import com.example.poc.command.ReadFolderCommand;
 import com.example.poc.domain.CsvFolder;
-import com.example.poc.domain.CsvPaymentsFile;
+import com.example.poc.domain.CsvPaymentsInputFile;
 import com.example.poc.repository.CsvFolderRepository;
 import org.springframework.stereotype.Service;
 
@@ -11,7 +11,7 @@ import java.net.URL;
 import java.util.stream.Stream;
 
 @Service
-public class ReadFolderService extends BaseService<CsvFolder, Stream<CsvPaymentsFile>> {
+public class ReadFolderService extends BaseServiceWithAudit<CsvFolder, Stream<CsvPaymentsInputFile>> {
 
     public static final String CSV_FOLDER = "csv/";
 
@@ -19,8 +19,8 @@ public class ReadFolderService extends BaseService<CsvFolder, Stream<CsvPayments
         super(repository, command);
     }
 
-    public Stream<CsvPaymentsFile> process(String[] args) throws URISyntaxException {
-        return this.process(getCsvFolder(args));
+    public Stream<CsvPaymentsInputFile> process(String[] args) throws URISyntaxException {
+        return super.process(getCsvFolder(args));
     }
 
     private CsvFolder getCsvFolder(String[] args) throws URISyntaxException {

@@ -9,12 +9,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-public class PollPaymentStatusCommand implements Command<AckPaymentSent, PaymentStatus> {
+public class PollAckPaymentSentCommand implements Command<AckPaymentSent, PaymentStatus> {
 
     final
     PaymentProvider paymentProviderMock;
 
-    public PollPaymentStatusCommand(PaymentProvider paymentProviderMock) {
+    public PollAckPaymentSentCommand(PaymentProvider paymentProviderMock) {
         this.paymentProviderMock = paymentProviderMock;
     }
 

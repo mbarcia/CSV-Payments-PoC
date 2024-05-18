@@ -1,14 +1,14 @@
 package com.example.poc.service;
 
-import com.example.poc.command.UnparseRecordCommand;
+import com.example.poc.command.ProcessPaymentStatusCommand;
 import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentStatus;
 import com.example.poc.repository.PaymentStatusRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UnparseRecordService extends BaseService<PaymentStatus, PaymentOutput> {
-    public UnparseRecordService(PaymentStatusRepository repository, UnparseRecordCommand command) {
+public class ProcessPaymentStatusService extends BaseServiceWithAudit<PaymentStatus, PaymentOutput> {
+    public ProcessPaymentStatusService(PaymentStatusRepository repository, ProcessPaymentStatusCommand command) {
         super(repository, command);
     }
 }

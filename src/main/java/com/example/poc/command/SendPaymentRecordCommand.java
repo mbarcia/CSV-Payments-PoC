@@ -8,12 +8,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
-public class SendPaymentCommand implements Command<PaymentRecord, AckPaymentSent> {
+public class SendPaymentRecordCommand implements Command<PaymentRecord, AckPaymentSent> {
 
     final
     PaymentProvider paymentProviderMock;
 
-    public SendPaymentCommand(@Qualifier("mock") PaymentProvider paymentProviderMock) {
+    public SendPaymentRecordCommand(@Qualifier("mock") PaymentProvider paymentProviderMock) {
         this.paymentProviderMock = paymentProviderMock;
     }
 

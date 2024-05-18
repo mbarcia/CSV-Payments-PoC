@@ -7,3 +7,13 @@ package com.example.poc.command;
 public interface Command<T, S> {
     S execute(T processableObj);
 }
+
+/*
+CsvFolder         --> CsvPaymentsInputFile               --> PaymentRecord            --> AckPaymentSent               --> PaymentStatus               --> PaymentOutput
+
+ReadFolderCommand --> ProcessCsvPaymentsInputFileCommand --> SendPaymentRecordCommand --> ProcessAckPaymentSentCommand --> ProcessPaymentStatusCommand --> ProcessPaymentOutputStreamCommand
+                                                                                           PollAckPaymentSentCommand --^
+
+ReadFolderService --> ProcessCsvPaymentsInputFileService --> SendPaymentRecordService --> ProcessAckPaymentSentService -->  ProcessPaymentStatusService --> ProcessPaymentOutputStreamService
+                                                                                           PollAckPaymentSentService --^
+ */

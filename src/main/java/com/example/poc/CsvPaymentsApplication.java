@@ -15,19 +15,19 @@ public class CsvPaymentsApplication implements CommandLineRunner {
     private static final Logger LOG = LoggerFactory
             .getLogger(CsvPaymentsApplication.class);
     private final ReadFolderService readFolderService;
-    private final ProcessFileService processFileService;
-    private final ProcessRecordService processRecordService;
-    private final SendPaymentService sendPaymentService;
-    private final PollPaymentStatusService pollPaymentStatusService;
-    private final UnparseRecordService unparseRecordService;
+    private final ProcessCsvPaymentsInputFileService processCsvPaymentsInputFileService;
+    private final ProcessAckPaymentSentService processAckPaymentSentService;
+    private final SendPaymentRecordService sendPaymentRecordService;
+    private final ProcessPaymentOutputStreamService processPaymentOutputStreamService;
+    private final ProcessPaymentStatusService processPaymentStatusService;
 
-    public CsvPaymentsApplication(ReadFolderService readFolderService, ProcessFileService processFileService, ProcessRecordService processRecordService, SendPaymentService sendPaymentService, PollPaymentStatusService pollPaymentStatusService, UnparseRecordService unparseRecordService) {
+    public CsvPaymentsApplication(ReadFolderService readFolderService, ProcessCsvPaymentsInputFileService processCsvPaymentsInputFileService, ProcessAckPaymentSentService processAckPaymentSentService, SendPaymentRecordService sendPaymentRecordService, ProcessPaymentOutputStreamService processPaymentOutputStreamService, ProcessPaymentStatusService processPaymentStatusService) {
         this.readFolderService = readFolderService;
-        this.processFileService = processFileService;
-        this.processRecordService = processRecordService;
-        this.sendPaymentService = sendPaymentService;
-        this.pollPaymentStatusService = pollPaymentStatusService;
-        this.unparseRecordService = unparseRecordService;
+        this.processCsvPaymentsInputFileService = processCsvPaymentsInputFileService;
+        this.processAckPaymentSentService = processAckPaymentSentService;
+        this.sendPaymentRecordService = sendPaymentRecordService;
+        this.processPaymentOutputStreamService = processPaymentOutputStreamService;
+        this.processPaymentStatusService = processPaymentStatusService;
     }
 
     /**
@@ -48,9 +48,11 @@ public class CsvPaymentsApplication implements CommandLineRunner {
         try {
             // Return all files in the folder
             readFolderService.process(args)
-                    .parallel()
-                    // Process records of all files, one by one
-                    .map(processFileService::process).toList();
+                .parallel()
+                // Process records of all files, one by one
+                .map(processCsvPaymentsInputFileService::process)
+                .map(processPaymentOutputStreamService::process)
+                .toList();
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -58,10 +60,10 @@ public class CsvPaymentsApplication implements CommandLineRunner {
         System.out.println("And these are the contents in the database:");
 
         readFolderService.print();
-        processFileService.print();
-        processRecordService.print();
-        sendPaymentService.print();
-        pollPaymentStatusService.print();
-        unparseRecordService.print();
+        processCsvPaymentsInputFileService.print();
+        sendPaymentRecordService.print();
+        processAckPaymentSentService.print();
+        processPaymentStatusService.print();
+        processPaymentOutputStreamService.print();
     }
 }

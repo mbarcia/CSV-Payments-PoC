@@ -7,11 +7,10 @@ spring:
     password:
     driverClassName: org.h2.Driver
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
     generate-ddl: true
     hibernate:
       ddl-auto: 'create-drop'
-    show-sql: true
+    #show-sql: true
     properties:
       format_sql: true
   h2:

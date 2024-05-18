@@ -1,37 +1,32 @@
 package com.example.poc.command;
 
 import com.example.poc.domain.CsvFolder;
-import com.example.poc.domain.CsvPaymentsFile;
-import com.example.poc.service.ProcessFileService;
+import com.example.poc.domain.CsvPaymentsInputFile;
+import com.example.poc.service.ProcessCsvPaymentsInputFileService;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
 @Component
-public class ReadFolderCommand implements Command<CsvFolder, Stream<CsvPaymentsFile>> {
+public class ReadFolderCommand implements Command<CsvFolder, Stream<CsvPaymentsInputFile>> {
     final
-    ProcessFileService processFileService;
+    ProcessCsvPaymentsInputFileService processCsvPaymentsInputFileService;
 
-    public ReadFolderCommand(ProcessFileService processFileService) {
-        this.processFileService = processFileService;
+    public ReadFolderCommand(ProcessCsvPaymentsInputFileService processCsvPaymentsInputFileService) {
+        this.processCsvPaymentsInputFileService = processCsvPaymentsInputFileService;
     }
 
     @Override
-    public Stream<CsvPaymentsFile> execute(CsvFolder csvFolder) {
+    public Stream<CsvPaymentsInputFile> execute(CsvFolder csvFolder) {
         Stream<File> files = Arrays.stream(getFileList(csvFolder.getFolderPath()));
-        ArrayList<CsvPaymentsFile> retFiles = new ArrayList<>();
-        for (File f : files.toList()) {
-            try (CsvPaymentsFile file = processFileService.createCsvFile(f)) {
-                file.setCsvFolder(csvFolder);
-                retFiles.add(file);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        ArrayList<CsvPaymentsInputFile> retFiles = new ArrayList<>();
+        files.map(processCsvPaymentsInputFileService::createCsvFile).forEach(file -> {
+            file.setCsvFolder(csvFolder);
+            retFiles.add(file);
+        });
 
         return retFiles.stream();
     }

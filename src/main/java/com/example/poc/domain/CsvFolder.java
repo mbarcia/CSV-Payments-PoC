@@ -29,7 +29,7 @@ public class CsvFolder {
             mappedBy = "csvFolder",
             orphanRemoval = true
     )
-    private final List<CsvPaymentsFile> files = new ArrayList<>();
+    private final List<CsvPaymentsInputFile> files = new ArrayList<>();
 
     @NonNull
     private String folderPath;

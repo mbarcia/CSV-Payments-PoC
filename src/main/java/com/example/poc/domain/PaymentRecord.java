@@ -43,7 +43,11 @@ public class PaymentRecord implements Serializable {
 
     @CsvIgnore
     @ManyToOne(fetch = FetchType.EAGER)
-    private CsvPaymentsFile csvPaymentsFile;
+    private CsvPaymentsInputFile csvPaymentsInputFile;
+
+    @CsvIgnore
+    @ManyToOne(fetch = FetchType.EAGER)
+    private CsvPaymentsOutputFile csvPaymentsOutputFile;
 
     @CsvIgnore
     @OneToOne(
@@ -54,7 +58,7 @@ public class PaymentRecord implements Serializable {
 
     @Override
     public String toString() {
-        return STR."PaymentRecord{id='\{csvId}\{'\''}, recipient='\{recipient}\{'\''}, amount=\{amount}, currency=\{currency}, file=\{csvPaymentsFile}\{'}'}";
+        return STR."PaymentRecord{id='\{csvId}\{'\''}, recipient='\{recipient}\{'\''}, amount=\{amount}, currency=\{currency}, file=\{csvPaymentsInputFile}\{'}'}";
     }
 
     @Override
@@ -66,7 +70,8 @@ public class PaymentRecord implements Serializable {
                 getCsvId().equals(that.getCsvId()) &&
                 getRecipient().equals(that.getRecipient()) &&
                 getAmount().equals(that.getAmount()) &&
-                getCsvPaymentsFile().equals(that.getCsvPaymentsFile()) &&
+                getCsvPaymentsInputFile().equals(that.getCsvPaymentsInputFile()) &&
+                getCsvPaymentsOutputFile().equals(that.getCsvPaymentsOutputFile()) &&
                 getCurrency().equals(that.getCurrency()) &&
                 Objects.equals(this.ackPaymentSent, that.getAckPaymentSent());
     }
@@ -75,4 +80,5 @@ public class PaymentRecord implements Serializable {
     public int hashCode() {
         return Objects.hash(getId(), getCsvId(), getRecipient(), getAmount(), getCurrency());
     }
+
 }

@@ -8,6 +8,10 @@
             <name>Spring GA Repository</name>
             <url>https://repo.spring.io/plugins-release/</url>
         </repository>
+        <repository>
+            <id>repository.maven2.release</id>
+            <url>https://repo.maven.apache.org/maven2/</url>
+        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -72,7 +76,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.30</version>
+            <version>1.18.32</version>
         </dependency>
     </dependencies>
     <build>

@@ -18,7 +18,7 @@ import java.util.List;
 @Setter
 @Accessors(chain = true)
 @NoArgsConstructor
-public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile implements AutoCloseable {
+public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile {
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY,
@@ -41,10 +41,5 @@ public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile implements AutoCl
                 .withQuotechar('\'')
                 .withSeparator(com.opencsv.CSVWriter.DEFAULT_SEPARATOR)
                 .build();
-    }
-
-    @Override
-    public void close() throws IOException {
-        writer.close();
     }
 }

@@ -11,9 +11,9 @@ public interface Command<T, S> {
 /*
 CsvFolder         --> CsvPaymentsInputFile               --> PaymentRecord            --> AckPaymentSent               --> PaymentStatus               --> PaymentOutput
 
-ReadFolderCommand --> ProcessCsvPaymentsInputFileCommand --> SendPaymentRecordCommand --> ProcessAckPaymentSentCommand --> ProcessPaymentStatusCommand --> ProcessPaymentOutputStreamCommand
+ReadFolderCommand --> ProcessCsvPaymentsInputFileCommand --> SendPaymentRecordCommand --> ProcessAckPaymentSentCommand --> ProcessPaymentStatusCommand --> ProcessPaymentOutputCommand
                                                                                            PollAckPaymentSentCommand --^
 
-ReadFolderService --> ProcessCsvPaymentsInputFileService --> SendPaymentRecordService --> ProcessAckPaymentSentService -->  ProcessPaymentStatusService --> ProcessPaymentOutputStreamService
+ReadFolderService --> ProcessCsvPaymentsInputFileService --> SendPaymentRecordService --> ProcessAckPaymentSentService -->  ProcessPaymentStatusService --> ProcessPaymentOutputService
                                                                                            PollAckPaymentSentService --^
  */

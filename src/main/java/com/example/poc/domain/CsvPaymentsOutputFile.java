@@ -10,6 +10,7 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.*;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,7 +34,7 @@ public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile {
     private Writer writer;
 
     public CsvPaymentsOutputFile(@NonNull CsvPaymentsInputFile csvPaymentsInputFile) throws IOException {
-        this.filepath = STR."\{csvPaymentsInputFile.getFilepath()}.out";
+        this.filepath = MessageFormat.format("{0}.out", csvPaymentsInputFile.getFilepath());
         this.csvFile = new File(this.getFilepath());
         // Create the CSV writer
         writer = new BufferedWriter(new FileWriter(this.getFilepath()));

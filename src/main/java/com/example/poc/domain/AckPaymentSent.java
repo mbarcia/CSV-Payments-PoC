@@ -4,7 +4,10 @@ import com.opencsv.bean.CsvIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
+
 import java.util.Objects;
+
+import static java.text.MessageFormat.format;
 
 @Entity
 @Getter
@@ -32,7 +35,7 @@ public class AckPaymentSent {
 
     @Override
     public String toString() {
-        return STR."AckPaymentSent{id='\{getId()}\{'\''}, conversationID='\{conversationID}\{'\''}, status=\{status}, message=\{message}\{'}'}";
+        return format("AckPaymentSent'{'id=''{0}'', conversationID=''{1}'', status={2}, message={3}'}'", getId(), conversationID, status, message);
     }
 
     @Override

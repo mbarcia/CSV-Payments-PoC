@@ -9,6 +9,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Objects;
 
+import static java.text.MessageFormat.format;
+
 @Entity
 @Getter
 @Setter
@@ -35,7 +37,7 @@ public class PaymentStatus implements Serializable {
 
     @Override
     public String toString() {
-        return STR."PaymentStatus{customerReference='\{customerReference}\{'\''}, reference='\{reference}\{'\''}, message='\{message}\{'\''}, status=\{status}, fee=\{fee}\{'}'}";
+        return format("PaymentStatus'{'customerReference=''{0}'', reference=''{1}'', message=''{2}'', status={3}, fee={4}'}'", customerReference, reference, message, status, fee);
     }
 
     @Override

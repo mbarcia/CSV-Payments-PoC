@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.Serializable;
 import java.util.Objects;
 
+import static java.text.MessageFormat.format;
+
 @Getter
 @Setter
 @MappedSuperclass
@@ -29,7 +31,7 @@ public abstract class BaseCsvPaymentsFile implements Serializable {
 
     @Override
     public String toString() {
-        return STR."CsvPaymentsFile{filepath='\{filepath}\{'\''}\{'}'}";
+        return format("CsvPaymentsFile'{'filepath=''{0}'''}'", filepath);
     }
 
     @Override

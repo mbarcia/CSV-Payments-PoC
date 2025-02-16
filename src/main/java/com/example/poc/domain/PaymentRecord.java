@@ -12,6 +12,8 @@ import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.Objects;
 
+import static java.text.MessageFormat.format;
+
 @Entity
 @Getter
 @Setter
@@ -58,7 +60,7 @@ public class PaymentRecord implements Serializable {
 
     @Override
     public String toString() {
-        return STR."PaymentRecord{id='\{csvId}\{'\''}, recipient='\{recipient}\{'\''}, amount=\{amount}, currency=\{currency}, file=\{csvPaymentsInputFile}\{'}'}";
+        return format("PaymentRecord'{'id=''{0}'', recipient=''{1}'', amount={2}, currency={3}, file={4}'}'", csvId, recipient, amount, currency, csvPaymentsInputFile);
     }
 
     @Override

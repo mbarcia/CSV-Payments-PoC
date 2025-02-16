@@ -34,8 +34,9 @@ public class PaymentRecord implements Serializable {
     @CsvBindByName(column = "Recipient")
     private String recipient;
 
+    // en-UK locale to match the format of the csv input files
     @NonNull
-    @CsvBindByName(column = "Amount")
+    @CsvBindByName(column = "Amount", locale = "en-UK")
     @CsvNumber("#,###.00")
     private BigDecimal amount;
 

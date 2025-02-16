@@ -33,14 +33,15 @@ public class PaymentOutput implements Serializable {
     @ManyToOne(fetch = FetchType.EAGER)
     private final CsvPaymentsOutputFile csvPaymentsOutputFile;
 
+    // en-UK locale to match the format of the (mock) payment service
     @CsvBindByName(column = "CSV Id") final String csvId;
     @CsvBindByName(column = "Recipient") final String recipient;
-    @CsvBindByName(column = "Amount") @CsvNumber("#,###.00") final BigDecimal amount;
+    @CsvBindByName(column = "Amount", locale = "en-UK") @CsvNumber("#,###.00") final BigDecimal amount;
     @CsvBindByName(column = "Currency") final Currency currency;
     @CsvBindByName(column = "Reference") final String conversationID;
     @CsvBindByName(column = "Status") final Long status;
     @CsvBindByName(column = "Message") final String message;
-    @CsvBindByName(column = "Fee") @CsvNumber("#,###.00") final BigDecimal fee;
+    @CsvBindByName(column = "Fee", locale = "en-UK") @CsvNumber("#,###.00") final BigDecimal fee;
 
     @Override
     public boolean equals(Object o) {

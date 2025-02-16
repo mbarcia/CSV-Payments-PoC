@@ -9,7 +9,7 @@ import com.example.poc.repository.CsvPaymentsOutputFileRepository;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 
 @Service
@@ -39,7 +39,7 @@ public class ProcessPaymentOutputService extends BaseService<PaymentOutput, CsvP
         this.csvPaymentsOutputFileRepository.findAll().forEach(System.out::println);
     }
 
-    public void closeFiles(List<CsvPaymentsOutputFile> outputFilesList) {
+    public void closeFiles(Collection<CsvPaymentsOutputFile> outputFilesList) {
         outputFilesList.forEach(
             (outputFile) -> {
                 try {

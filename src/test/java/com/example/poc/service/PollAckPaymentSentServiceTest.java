@@ -1,6 +1,6 @@
 package com.example.poc.service;
 
-import com.example.poc.command.PollPaymentStatusCommand;
+import com.example.poc.command.PollAckPaymentSentCommand;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.repository.AckPaymentSentRepository;
 import org.junit.jupiter.api.Test;
@@ -14,34 +14,34 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
-class PollPaymentStatusServiceTest {
+class PollAckPaymentSentServiceTest {
 
     @Mock
     AckPaymentSentRepository ackPaymentSentRepository;
 
     @Mock
-    PollPaymentStatusCommand pollPaymentStatusCommand;
+    PollAckPaymentSentCommand pollAckPaymentSentCommand;
 
     @InjectMocks
-    PollPaymentStatusService pollPaymentStatusService;
+    PollAckPaymentSentService pollAckPaymentSentService;
 
     @Test
     void constructorTest() {
-        assertNotNull(pollPaymentStatusService.getRepository());
-        assertNotNull(pollPaymentStatusService.getCommand());
+        assertNotNull(pollAckPaymentSentService.getRepository());
+        assertNotNull(pollAckPaymentSentService.getCommand());
     }
 
     @Test
     void processTest() {
         AckPaymentSent ackPaymentSent = new AckPaymentSent();
-        pollPaymentStatusService.process(ackPaymentSent);
+        pollAckPaymentSentService.process(ackPaymentSent);
         verify(ackPaymentSentRepository).save(ackPaymentSent);
-        verify(pollPaymentStatusCommand).execute(ackPaymentSent);
+        verify(pollAckPaymentSentCommand).execute(ackPaymentSent);
     }
 
     @Test
     void printTest() {
-        pollPaymentStatusService.print();
+        pollAckPaymentSentService.print();
         verify(ackPaymentSentRepository).findAll();
     }
 }

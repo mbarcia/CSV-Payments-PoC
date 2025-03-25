@@ -6,50 +6,78 @@ import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
-import java.util.Currency;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 
 class PaymentProviderMockTest {
 
-    @InjectMocks
-    PaymentProviderMock paymentProviderMock;
-    AckPaymentSent ackPaymentSent;
-    SendPaymentRequest paymentRequest;
-    PaymentRecord paymentRecord;
-    String uuid;
+    private PaymentProviderMock paymentProviderMock;
+
+    @Mock
+    private PaymentRecord mockRecord;
+
+    @Mock
+    private SendPaymentRequest mockRequest;
 
     @BeforeEach
     void setUp() {
-        uuid = String.valueOf(UUID.randomUUID());
+        MockitoAnnotations.openMocks(this);
+
         paymentProviderMock = new PaymentProviderMock();
-        ackPaymentSent = new AckPaymentSent(PaymentProviderMock.UUID);
-        paymentRecord = new PaymentRecord("1", "Mariano", new BigDecimal("123.50"), Currency.getInstance("GBP"));
-        paymentRequest = new SendPaymentRequest()
-                .setAmount(paymentRecord.getAmount())
-                .setReference("")
-                .setCurrency(paymentRecord.getCurrency())
-                .setRecord(paymentRecord);
     }
 
     @Test
-    void sendPayment() {
-        assertEquals(paymentProviderMock.sendPayment(paymentRequest), new AckPaymentSent(PaymentProviderMock.UUID)
-                .setStatus(1000L)
-                .setMessage("OK but this is only a test")
-                .setRecord(paymentRecord));
+    void sendPayment_ShouldReturnValidAckPaymentSent() {
+        // Arrange
+        when(mockRequest.getRecord()).thenReturn(mockRecord);
+
+        // Act
+        AckPaymentSent result = paymentProviderMock.sendPayment(mockRequest);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals(PaymentProviderMock.UUID, result.getConversationID());
+        assertEquals(1000L, result.getStatus());
+        assertEquals("OK but this is only a test", result.getMessage());
+        assertEquals(mockRecord, result.getRecord());
     }
 
     @Test
-    void getPaymentStatus() {
-        assertEquals(paymentProviderMock.getPaymentStatus(ackPaymentSent), new PaymentStatus("101")
-                .setStatus("nada")
-                .setFee(new BigDecimal("1.01"))
-                .setMessage("This is a test")
-                .setAckPaymentSent(ackPaymentSent));
+    void getPaymentStatus_ShouldReturnValidPaymentStatus() {
+        // Arrange
+        AckPaymentSent ackPaymentSent = new AckPaymentSent(PaymentProviderMock.UUID);
+
+        // Act
+        PaymentStatus result = paymentProviderMock.getPaymentStatus(ackPaymentSent);
+
+        // Assert
+        assertNotNull(result);
+        assertEquals("101", result.getReference());
+        assertEquals("nada", result.getStatus());
+        assertEquals(new BigDecimal("1.01"), result.getFee());
+        assertEquals("This is a test", result.getMessage());
+        assertEquals(ackPaymentSent, result.getAckPaymentSent());
+    }
+
+    @Test
+    void sendPayment_ShouldCallAllGetters() {
+        // Act
+        paymentProviderMock.sendPayment(mockRequest);
+
+        // Assert - verify all getters are called
+        verify(mockRequest).getUrl();
+        verify(mockRequest).getAmount();
+        verify(mockRequest).getMsisdn();
+        verify(mockRequest).getReference();
+        verify(mockRequest).getCurrency();
+        verify(mockRequest).getReference();
     }
 }

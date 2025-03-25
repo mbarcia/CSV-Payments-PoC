@@ -9,7 +9,9 @@ import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.util.Currency;
+import java.util.Locale;
 import java.util.Objects;
 
 import static java.text.MessageFormat.format;
@@ -61,7 +63,12 @@ public class PaymentRecord implements Serializable {
 
     @Override
     public String toString() {
-        return format("PaymentRecord'{'id=''{0}'', recipient=''{1}'', amount={2}, currency={3}, file={4}'}'", csvId, recipient, amount, currency, csvPaymentsInputFile);
+        return format("PaymentRecord'{'id=''{0}'', recipient=''{1}'', amount={2}, currency={3}, file={4}'}'",
+                csvId,
+                recipient,
+                NumberFormat.getCurrencyInstance(Locale.UK).format(amount),
+                currency,
+                csvPaymentsInputFile);
     }
 
     @Override

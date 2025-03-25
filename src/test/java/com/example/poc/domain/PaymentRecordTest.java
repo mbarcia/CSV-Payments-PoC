@@ -54,7 +54,7 @@ class PaymentRecordTest {
         // Then
         assertTrue(result.contains("PAY123"));
         assertTrue(result.contains("John Doe"));
-        assertTrue(result.contains("1.000")); // English-UK formatted
+        assertTrue(result.contains("1,000")); // UK formatted
         assertTrue(result.contains("GBP"));
     }
 

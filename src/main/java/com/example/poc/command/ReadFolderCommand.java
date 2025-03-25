@@ -39,7 +39,7 @@ public class ReadFolderCommand implements Command<CsvFolder, Map<CsvPaymentsInpu
             try {
                 CsvPaymentsOutputFile outputFile = processPaymentOutputService.createCsvFile(inputFile);
                 result.put(inputFile, outputFile);
-            } catch (IOException _) {
+            } catch (IOException ignored) {
             }
         }
 

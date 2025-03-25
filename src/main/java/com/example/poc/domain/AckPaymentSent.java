@@ -5,8 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 
-import java.util.Objects;
-
 import static java.text.MessageFormat.format;
 
 @Entity
@@ -43,12 +41,6 @@ public class AckPaymentSent {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AckPaymentSent ackPaymentSent = (AckPaymentSent) o;
-        return (conversationID.equals(ackPaymentSent.getConversationID()) &&
-                message.equals(ackPaymentSent.getMessage()) &&
-                status.equals(ackPaymentSent.getStatus()) &&
-                record.equals(ackPaymentSent.getRecord()) &&
-                Objects.equals(paymentStatus, ackPaymentSent.getPaymentStatus())
-        );
+        return id != null && id.equals(ackPaymentSent.id);
     }
-
 }

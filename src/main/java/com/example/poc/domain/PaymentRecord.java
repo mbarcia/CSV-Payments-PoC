@@ -69,14 +69,7 @@ public class PaymentRecord implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PaymentRecord that = (PaymentRecord) o;
-        return Objects.equals(getId(), that.getId()) &&
-                getCsvId().equals(that.getCsvId()) &&
-                getRecipient().equals(that.getRecipient()) &&
-                getAmount().equals(that.getAmount()) &&
-                getCsvPaymentsInputFile().equals(that.getCsvPaymentsInputFile()) &&
-                getCsvPaymentsOutputFile().equals(that.getCsvPaymentsOutputFile()) &&
-                getCurrency().equals(that.getCurrency()) &&
-                Objects.equals(this.ackPaymentSent, that.getAckPaymentSent());
+        return id != null && id.equals(that.id);
     }
 
     @Override

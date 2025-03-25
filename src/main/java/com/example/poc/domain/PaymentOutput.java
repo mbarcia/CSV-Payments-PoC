@@ -12,7 +12,6 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Currency;
-import java.util.Objects;
 
 @Entity
 @RequiredArgsConstructor
@@ -48,14 +47,6 @@ public class PaymentOutput implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PaymentOutput that = (PaymentOutput) o;
-        return Objects.equals(getCsvId(), that.getCsvId()) &&
-                getCsvPaymentsOutputFile().equals(that.getCsvPaymentsOutputFile()) &&
-                getRecipient().equals(that.getRecipient()) &&
-                getAmount().equals(that.getAmount()) &&
-                getCurrency().equals(that.getCurrency()) &&
-                getConversationID().equals(that.getConversationID()) &&
-                getStatus().equals(that.getStatus()) &&
-                Objects.equals(getMessage(), that.getMessage()) &&
-                Objects.equals(getFee(), that.getFee());
+        return id != null && id.equals(that.id);
     }
 }

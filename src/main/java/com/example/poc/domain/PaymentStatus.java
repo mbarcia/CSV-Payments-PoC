@@ -7,7 +7,6 @@ import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.Objects;
 
 import static java.text.MessageFormat.format;
 
@@ -45,10 +44,6 @@ public class PaymentStatus implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PaymentStatus that = (PaymentStatus) o;
-        return (reference.equals(that.getReference()) &&
-            Objects.equals(customerReference, that.getCustomerReference()) &&
-            status.equals(that.getStatus()) &&
-            message.equals(that.getMessage()) &&
-            fee.equals(that.getFee()));
+        return id != null && id.equals(that.id);
     }
 }

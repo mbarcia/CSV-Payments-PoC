@@ -19,7 +19,7 @@ public abstract class BaseCsvPaymentsFile implements Serializable {
     @Id
     @CsvIgnore
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    protected Long id;
 
     @Transient
     @NonNull
@@ -32,14 +32,6 @@ public abstract class BaseCsvPaymentsFile implements Serializable {
     @Override
     public String toString() {
         return format("CsvPaymentsFile'{'filepath=''{0}'''}'", filepath);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        CsvPaymentsInputFile that = (CsvPaymentsInputFile) o;
-        return getFilepath().equals(that.getFilepath());
     }
 
     @Override

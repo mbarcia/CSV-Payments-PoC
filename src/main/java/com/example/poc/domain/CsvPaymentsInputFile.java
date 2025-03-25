@@ -32,4 +32,12 @@ public class CsvPaymentsInputFile extends BaseCsvPaymentsFile {
         this.csvFile = csvFile;
         filepath = csvFile.getPath();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CsvPaymentsInputFile that = (CsvPaymentsInputFile) o;
+        return id != null && id.equals(that.id);
+    }
 }

@@ -43,4 +43,12 @@ public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile {
                 .withSeparator(com.opencsv.CSVWriter.DEFAULT_SEPARATOR)
                 .build();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CsvPaymentsOutputFile that = (CsvPaymentsOutputFile) o;
+        return id != null && id.equals(that.id);
+    }
 }

@@ -61,21 +61,15 @@ public class CsvPaymentsApplication implements CommandLineRunner {
         for (Stream<PaymentRecord> recordStream : csvFilesStream.toList()) {
             // This is where most part of the processing takes place (in parallel)
             List<CsvPaymentsOutputFile> outputFilesList = this.getCsvPaymentsOutputFilesList(recordStream);
-            // Make sure to flush the output file buffers
-            processPaymentOutputService.closeFiles(outputFilesList);
-            System.out.println(STR."The resulting output files are: \{Arrays.toString(outputFilesList.toArray())}");
+            LOG.info("The resulting output files are: {}", Arrays.toString(outputFilesList.toArray()));
         }
 
-        System.out.println("And these are the contents in the database:");
-        readFolderService.print();
-        processCsvPaymentsInputFileService.print();
-        sendPaymentRecordService.print();
-        processAckPaymentSentService.print();
-        processPaymentStatusService.print();
-        processPaymentOutputService.print();
+        // Flush/close the output file buffers
+        processPaymentOutputService.closeFiles(csvPaymentsOutputFileMap.values());
+        printOutputToConsole();
     }
 
-    private List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(Stream<PaymentRecord> recordsStream) {
+    List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(Stream<PaymentRecord> recordsStream) {
         return recordsStream
             // parallel stream processing
             .parallel()
@@ -85,7 +79,7 @@ public class CsvPaymentsApplication implements CommandLineRunner {
             .map(processAckPaymentSentService::process)
             // process final full response from the 3rd party payment processor
             .map(processPaymentStatusService::process)
-            // Write all outputs to file
+            // unparse record to CSV format put the output file into a return set
             .map(processPaymentOutputService::process)
             // collect to a list for the return
             .toList();
@@ -101,5 +95,15 @@ public class CsvPaymentsApplication implements CommandLineRunner {
         return csvFilesStream.stream()
             // Return all payment records in all CSV input files
             .map(processCsvPaymentsInputFileService::process);
+    }
+
+    private void printOutputToConsole() {
+        System.out.println("And these are the contents in the database:");
+        readFolderService.print();
+        processCsvPaymentsInputFileService.print();
+        sendPaymentRecordService.print();
+        processAckPaymentSentService.print();
+        processPaymentStatusService.print();
+        processPaymentOutputService.print();
     }
 }

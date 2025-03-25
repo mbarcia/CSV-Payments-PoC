@@ -1,6 +1,4 @@
-![](https://github.com/mbarcia/CSV-Payments-PoC/workflows/tests/badge.svg)
 [![Workflow for CSV-Payments-PoC](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml/badge.svg)](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml)
-[![Qodana](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/code_quality.yml/badge.svg)](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/code_quality.yml)
 
 # Motivation
 Write a command-line client to process CSV files containing payments.
@@ -126,7 +124,7 @@ http://localhost:8080/h2-console
 
 Driver Class: `org.h2.Driver`
 JDBC URL: `jdbc:h2:mem:poc`
-User Name: `sa`
+Username: `sa`
 Password:
 
 ### Configuration

@@ -31,6 +31,11 @@ public class PaymentProviderMock implements PaymentProvider {
         this.timeoutMillis = timeoutMillis;
     }
 
+    public PaymentProviderMock(PaymentProviderConfig config) {
+        this.rateLimiter = RateLimiter.create(config.getPermitsPerSecond());
+        this.timeoutMillis = config.getTimeoutMillis();
+    }
+
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
     public AckPaymentSent sendPayment(SendPaymentRequest requestMap) {

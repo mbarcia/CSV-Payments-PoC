@@ -11,10 +11,10 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.util.StopWatch;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 @SpringBootApplication
@@ -70,19 +70,32 @@ public class CsvPaymentsApplication implements CommandLineRunner {
     }
 
     List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(Stream<PaymentRecord> recordsStream) {
-        return recordsStream
-            // parallel stream processing
-            .parallel()
-            // send each record to a 3rd party payment processor
-            .map(sendPaymentRecordService::process)
-            // process immediate partial response from the 3rd party payment processor
-            .map(processAckPaymentSentService::process)
-            // process final full response from the 3rd party payment processor
-            .map(processPaymentStatusService::process)
-            // unparse record to CSV format put the output file into a return set
-            .map(processPaymentOutputService::process)
-            // collect to a list for the return
-            .toList();
+        List<PaymentRecord> records = recordsStream.toList(); // Collect records to process
+        List<CsvPaymentsOutputFile> results = new ArrayList<>();
+
+        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Future<CsvPaymentsOutputFile>> futures = records.stream()
+                    .map(record -> executor.submit(() -> {
+                        // The processing pipeline for each record
+                        var sent = sendPaymentRecordService.process(record);
+                        var acked = processAckPaymentSentService.process(sent);
+                        var statusProcessed = processPaymentStatusService.process(acked);
+                        return processPaymentOutputService.process(statusProcessed);
+                    }))
+                    .toList();
+
+            // Collect results from all futures
+            for (Future<CsvPaymentsOutputFile> future : futures) {
+                try {
+                    results.add(future.get());
+                } catch (InterruptedException | ExecutionException e) {
+                    // Handle exceptions appropriately
+                    throw new RuntimeException("Error processing payment record", e);
+                }
+            }
+        }
+
+        return results;
     }
 
     private Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> getCsvPaymentsInputFiles(String... args) {

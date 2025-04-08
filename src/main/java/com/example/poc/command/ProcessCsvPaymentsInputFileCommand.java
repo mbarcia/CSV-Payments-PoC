@@ -16,6 +16,8 @@ import java.util.stream.Stream;
 public class ProcessCsvPaymentsInputFileCommand implements Command<CsvPaymentsInputFile, Stream<PaymentRecord>> {
     @Override
     public Stream<PaymentRecord> execute(CsvPaymentsInputFile csvFile) {
+        Logger logger = LoggerFactory.getLogger(getClass());
+
         try {
             CsvToBean<PaymentRecord> csvReader = new CsvToBeanBuilder<PaymentRecord>(new BufferedReader(new FileReader(csvFile.getFilepath())))
                     .withType(PaymentRecord.class)
@@ -27,7 +29,6 @@ public class ProcessCsvPaymentsInputFileCommand implements Command<CsvPaymentsIn
             return csvReader.parse().stream()
                     .map(record -> record.setCsvPaymentsInputFile(csvFile));
         } catch (Exception e) {
-            Logger logger = LoggerFactory.getLogger(getClass());
             logger.error(e.getLocalizedMessage());
             throw new RuntimeException(e);
         }

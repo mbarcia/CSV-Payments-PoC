@@ -38,6 +38,6 @@ public class CsvPaymentsInputFile extends BaseCsvPaymentsFile {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         CsvPaymentsInputFile that = (CsvPaymentsInputFile) o;
-        return id != null && id.equals(that.id);
+        return this.getId() != null && this.getId().equals(that.getId());
     }
 }

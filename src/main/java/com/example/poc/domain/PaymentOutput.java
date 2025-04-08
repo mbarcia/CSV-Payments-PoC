@@ -47,6 +47,6 @@ public class PaymentOutput implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PaymentOutput that = (PaymentOutput) o;
-        return id != null && id.equals(that.id);
+        return this.getId() != null && this.getId().equals(that.getId());
     }
 }

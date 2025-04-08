@@ -1,6 +1,5 @@
 package com.example.poc.domain;
 
-import com.opencsv.bean.CsvIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NonNull;
@@ -9,18 +8,14 @@ import lombok.Setter;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.UUID;
 
 import static java.text.MessageFormat.format;
 
 @Getter
 @Setter
 @MappedSuperclass
-public abstract class BaseCsvPaymentsFile implements Serializable {
-    @Id
-    @CsvIgnore
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    protected Long id;
-
+public abstract class BaseCsvPaymentsFile extends BaseEntity implements Serializable {
     @Transient
     @NonNull
     protected File csvFile;

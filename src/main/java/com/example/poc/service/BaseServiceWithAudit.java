@@ -4,11 +4,13 @@ import com.example.poc.command.Command;
 import lombok.Getter;
 import org.springframework.data.repository.CrudRepository;
 
+import java.util.UUID;
+
 @Getter
 public abstract class BaseServiceWithAudit<T, S> extends BaseService<T, S> {
-    private final CrudRepository<T, Long> repository;
+    private final CrudRepository<T, UUID> repository;
 
-    public BaseServiceWithAudit(CrudRepository<T, Long> repository, Command<T, S> command) {
+    public BaseServiceWithAudit(CrudRepository<T, UUID> repository, Command<T, S> command) {
         super(command);
         this.repository = repository;
     }

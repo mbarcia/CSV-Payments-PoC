@@ -4,6 +4,8 @@ import com.example.poc.domain.CsvPaymentsInputFile;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 @Repository
-public interface CsvPaymentsInputFileRepository extends CrudRepository<CsvPaymentsInputFile, Long> {
+public interface CsvPaymentsInputFileRepository extends CrudRepository<CsvPaymentsInputFile, UUID> {
 }

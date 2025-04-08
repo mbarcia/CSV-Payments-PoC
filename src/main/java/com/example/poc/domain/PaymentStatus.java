@@ -1,7 +1,9 @@
 package com.example.poc.domain;
 
-import com.opencsv.bean.CsvIgnore;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToOne;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -16,12 +18,7 @@ import static java.text.MessageFormat.format;
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class PaymentStatus implements Serializable {
-    @Id
-    @CsvIgnore
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class PaymentStatus extends BaseEntity implements Serializable {
     private String customerReference;
 
     @NonNull
@@ -44,6 +41,6 @@ public class PaymentStatus implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PaymentStatus that = (PaymentStatus) o;
-        return id != null && id.equals(that.id);
+        return this.getId() != null && this.getId().equals(that.getId());
     }
 }

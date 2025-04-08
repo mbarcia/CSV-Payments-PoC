@@ -4,6 +4,8 @@ import com.example.poc.domain.PaymentStatus;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.UUID;
+
 @Repository
-public interface PaymentStatusRepository extends CrudRepository<PaymentStatus, Long> {
+public interface PaymentStatusRepository extends CrudRepository<PaymentStatus, UUID> {
 }

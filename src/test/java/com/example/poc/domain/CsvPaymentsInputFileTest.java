@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -34,8 +35,9 @@ class CsvPaymentsInputFileTest {
         // Arrange
         CsvPaymentsInputFile file1 = new CsvPaymentsInputFile();
         CsvPaymentsInputFile file2 = new CsvPaymentsInputFile();
-        file1.setId(1L);
-        file2.setId(1L);
+        UUID myUuid = UUID.randomUUID();
+        file1.setId(myUuid);
+        file2.setId(myUuid);
 
         // Act & Assert
         assertEquals(file1, file2);
@@ -46,8 +48,8 @@ class CsvPaymentsInputFileTest {
         // Arrange
         CsvPaymentsInputFile file1 = new CsvPaymentsInputFile();
         CsvPaymentsInputFile file2 = new CsvPaymentsInputFile();
-        file1.setId(1L);
-        file2.setId(2L);
+        file1.setId(UUID.randomUUID());
+        file2.setId(UUID.randomUUID());
 
         // Act & Assert
         assertNotEquals(file1, file2);

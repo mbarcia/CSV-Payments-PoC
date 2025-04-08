@@ -1,9 +1,13 @@
 package com.example.poc.domain;
 
-import com.opencsv.bean.CsvIgnore;
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToOne;
 import lombok.*;
 import lombok.experimental.Accessors;
+
+import java.io.Serializable;
 
 import static java.text.MessageFormat.format;
 
@@ -13,12 +17,7 @@ import static java.text.MessageFormat.format;
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class AckPaymentSent {
-    @Id
-    @CsvIgnore
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class AckPaymentSent extends BaseEntity implements Serializable {
     @NonNull
     private String conversationID;
 
@@ -40,7 +39,7 @@ public class AckPaymentSent {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        AckPaymentSent ackPaymentSent = (AckPaymentSent) o;
-        return id != null && id.equals(ackPaymentSent.id);
+        AckPaymentSent that = (AckPaymentSent) o;
+        return this.getId() != null && this.getId().equals(that.getId());
     }
 }

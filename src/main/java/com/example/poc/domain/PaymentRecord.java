@@ -22,12 +22,7 @@ import static java.text.MessageFormat.format;
 @Accessors(chain = true)
 @RequiredArgsConstructor
 @NoArgsConstructor
-public class PaymentRecord implements Serializable {
-    @Id
-    @CsvIgnore
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+public class PaymentRecord extends BaseEntity implements Serializable {
     @NonNull
     @CsvBindByName(column = "ID")
     private String csvId;
@@ -76,7 +71,7 @@ public class PaymentRecord implements Serializable {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PaymentRecord that = (PaymentRecord) o;
-        return id != null && id.equals(that.id);
+        return this.getId() != null && this.getId().equals(that.getId());
     }
 
     @Override

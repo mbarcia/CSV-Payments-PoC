@@ -48,7 +48,7 @@ The CSV output columns should be:
 
 # CSV Payments Processing Application
 
-This Spring Boot application processes CSV payment files, sends payments to a third-party processor, and generates output files.
+This Quarkus CLI application processes CSV payment files, sends payments to a third-party processor, and generates output files.
 
 The CSV Payments Processing Application is designed to handle the end-to-end process of reading CSV payment input files, processing payment records, interacting with a third-party payment processor, and generating output files. It provides a robust and efficient solution for managing payment data in a CSV format.
 
@@ -84,9 +84,9 @@ Key integration points:
 
 ### Prerequisites
 
-- Java 22
+- Java 21
 - Maven 3.6+
-- Spring Boot 3.x
+- Quarkus 3.x
 
 ### Installation
 
@@ -108,10 +108,10 @@ Key integration points:
 To run the application, use the following command:
 
 ```
-java -jar target/CSVPaymentsPoC-0.0.1-SNAPSHOT.jar [folder-path]
+mvn quarkus:dev
 ```
 
-Replace `[folder-path]` with the path to the folder containing the CSV input files. If not specified, the application will default to the "csv/" folder.
+Use --csv-folder=folder-path with the path to the folder containing the CSV input files. If not specified, the application will default to the "csv/" folder.
 
 The output is generated with the extension `csv.out` under `target/classes/csv/`
 
@@ -146,7 +146,7 @@ mvn test
 ### Troubleshooting
 
 1. Issue: Application fails to start
-   - Check if the Java version is correct (Java 22 required)
+   - Check if the Java version is correct (Java 21 required)
    - Ensure all dependencies are properly downloaded (run `mvn dependency:resolve`)
    - Verify the `application.yaml` configuration
 
@@ -154,11 +154,6 @@ mvn test
    - Confirm the correct folder path is provided as an argument
    - Check file permissions on the input folder
    - Verify CSV file format matches expected structure
-
-3. Issue: Errors during payment processing
-   - Enable debug logging by adding `logging.level.com.example.poc=DEBUG` to `application.yaml`
-   - Check the application logs for detailed error messages
-   - Verify the mock payment provider is functioning correctly (if using the mock implementation)
 
 For performance optimization:
 - Monitor CPU and memory usage during processing

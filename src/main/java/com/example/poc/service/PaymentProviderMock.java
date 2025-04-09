@@ -4,14 +4,14 @@ import com.example.poc.client.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
 import com.google.common.util.concurrent.RateLimiter;
-import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 import java.math.BigDecimal;
 import java.util.concurrent.TimeUnit;
 
-@Service
-@Component(value="mock")
+@SuppressWarnings("UnstableApiUsage")
+@ApplicationScoped
 public class PaymentProviderMock implements PaymentProvider {
 
     public static final String UUID = "ac007cbd-1504-4207-8d9f-0abc4b1d2bd8";
@@ -19,21 +19,20 @@ public class PaymentProviderMock implements PaymentProvider {
     private final RateLimiter rateLimiter;
     private final long timeoutMillis;
 
-    public PaymentProviderMock() {
-        PaymentProviderConfig config = new PaymentProviderConfig();
-        this.rateLimiter = RateLimiter.create(config.getPermitsPerSecond());
-        this.timeoutMillis = config.getTimeoutMillis();
+    @Inject
+    @SuppressWarnings("unused")
+    public PaymentProviderMock(PaymentProviderConfig config) {
+        rateLimiter = RateLimiter.create(config.permitsPerSecond());
+        timeoutMillis = config.timeoutMillis();
+
+        System.out.println("PaymentProviderConfig loaded: permitsPerSecond=" +
+                config.permitsPerSecond() + ", timeoutMillis=" + config.timeoutMillis());
     }
 
     // Constructor for testing with explicit values
     public PaymentProviderMock(double permitsPerSecond, long timeoutMillis) {
         this.rateLimiter = RateLimiter.create(permitsPerSecond);
         this.timeoutMillis = timeoutMillis;
-    }
-
-    public PaymentProviderMock(PaymentProviderConfig config) {
-        this.rateLimiter = RateLimiter.create(config.getPermitsPerSecond());
-        this.timeoutMillis = config.getTimeoutMillis();
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")

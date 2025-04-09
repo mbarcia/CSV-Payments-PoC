@@ -1,6 +1,9 @@
 package com.example.poc.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.Transient;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
@@ -8,7 +11,6 @@ import lombok.Setter;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Objects;
-import java.util.UUID;
 
 import static java.text.MessageFormat.format;
 

@@ -86,11 +86,11 @@ class ProcessPaymentOutputServiceTest {
     @Test
     void print_ShouldCallRepositoryFindAll() {
         List<CsvPaymentsOutputFile> outputFiles = List.of(mockOutputFile);
-        when(csvPaymentsOutputFileRepository.findAll()).thenReturn(outputFiles);
+        when(csvPaymentsOutputFileRepository.listAll()).thenReturn(outputFiles);
 
         service.print();
 
-        verify(csvPaymentsOutputFileRepository).findAll();
+        verify(csvPaymentsOutputFileRepository).listAll();
     }
 
     @Test

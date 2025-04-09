@@ -5,6 +5,7 @@ import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
 import com.google.common.util.concurrent.RateLimiter;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,9 +29,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings({"UnstableApiUsage", "ResultOfMethodCallIgnored"})
 class PaymentProviderMockTest {
 
-    private PaymentProviderMock paymentProviderMock;
+    private PaymentProvider paymentProvider;
 
     @Mock
     private PaymentRecord mockRecord;
@@ -41,14 +43,14 @@ class PaymentProviderMockTest {
     @Mock
     private AckPaymentSent mockAck;
 
-    @Mock
-    private PaymentProviderConfig mockConfig;
-
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        paymentProviderMock = new PaymentProviderMock();
+        // Arrange
+        double rateLimit = 10.0; // 10 requests per second
+        long timeoutMillis = 5000; // 5s timeout for testing
+        this.paymentProvider = new PaymentProviderMock(rateLimit, timeoutMillis);
         when(mockRequest.getUrl()).thenReturn("https://payment.example.com");
         when(mockRequest.getAmount()).thenReturn(new BigDecimal("123.45"));
         when(mockRequest.getMsisdn()).thenReturn("1234567890");
@@ -61,7 +63,7 @@ class PaymentProviderMockTest {
     @Test
     void sendPayment_ShouldReturnValidAckPaymentSent() {
         // Act
-        AckPaymentSent result = paymentProviderMock.sendPayment(mockRequest);
+        AckPaymentSent result = paymentProvider.sendPayment(mockRequest);
 
         // Assert
         assertNotNull(result);
@@ -72,9 +74,10 @@ class PaymentProviderMockTest {
     }
 
     @Test
+    @SneakyThrows
     void getPaymentStatus_ShouldReturnValidPaymentStatus() {
         // Act
-        PaymentStatus result = paymentProviderMock.getPaymentStatus(mockAck);
+        PaymentStatus result = paymentProvider.getPaymentStatus(mockAck);
 
         // Assert
         assertNotNull(result);
@@ -91,8 +94,7 @@ class PaymentProviderMockTest {
         // Arrange
         double rateLimit = 5.0; // 5 requests per second
         long timeoutMillis = 100; // Short timeout for testing
-
-        PaymentProviderMock provider = new PaymentProviderMock(rateLimit, timeoutMillis);
+        PaymentProvider provider = new PaymentProviderMock(rateLimit, timeoutMillis);
 
         int numThreads = 20; // Try to make 20 requests at once
         AtomicInteger successCount = new AtomicInteger(0);
@@ -170,11 +172,10 @@ class PaymentProviderMockTest {
     @Test
     @DisplayName("Test default constructor uses configuration correctly")
     void testDefaultConstructor() {
-        // Create a mock PaymentProviderConfig to inject
-        when(mockConfig.getPermitsPerSecond()).thenReturn(15.0);
-        when(mockConfig.getTimeoutMillis()).thenReturn(2500L);
-
-        PaymentProviderMock provider = new PaymentProviderMock(mockConfig);
+        // Arrange
+        double rateLimit = 15.0; // 15 requests per second
+        long timeoutMillis = 2500L; // long timeout for testing
+        PaymentProviderMock provider = new PaymentProviderMock(rateLimit, timeoutMillis);
 
         // Verify the provider was created with the right config - we'll test indirectly
         // by ensuring calls succeed (i.e., the rateLimiter allows them)
@@ -196,7 +197,7 @@ class PaymentProviderMockTest {
         CountDownLatch latch = new CountDownLatch(requestCount);
 
         // Act - Create and start virtual threads
-        List<Thread> threads = new ArrayList<>();
+        @SuppressWarnings("MismatchedQueryAndUpdateOfCollection") List<Thread> threads = new ArrayList<>();
         for (int i = 0; i < requestCount; i++) {
             Thread t = Thread.ofVirtual().start(() -> {
                 try {

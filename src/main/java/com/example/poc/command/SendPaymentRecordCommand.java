@@ -1,19 +1,19 @@
 package com.example.poc.command;
 
-import com.example.poc.service.PaymentProvider;
 import com.example.poc.client.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
+import com.example.poc.service.PaymentProvider;
+import jakarta.enterprise.context.ApplicationScoped;
 
-@Component
+@ApplicationScoped
 public class SendPaymentRecordCommand implements Command<PaymentRecord, AckPaymentSent> {
 
     final
     PaymentProvider paymentProviderMock;
 
-    public SendPaymentRecordCommand(@Qualifier("mock") PaymentProvider paymentProviderMock) {
+    // Parameterised constructor for testing purposes
+    public SendPaymentRecordCommand(PaymentProvider paymentProviderMock) {
         this.paymentProviderMock = paymentProviderMock;
     }
 

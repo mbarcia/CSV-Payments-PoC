@@ -42,7 +42,7 @@ class ReadFolderServiceTest {
     @Test
     void process_WithValidFolder_ShouldReturnExpectedResult() throws Exception {
         // Arrange
-        String[] args = new String[]{"csv/"};
+        String args = "csv/";
         URL mockUrl = URI.create("file:/test/path").toURL();
         Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> expectedResult =
                 Map.of(new CsvPaymentsInputFile(), new CsvPaymentsOutputFile());
@@ -63,7 +63,7 @@ class ReadFolderServiceTest {
     @Test
     void process_WhenResourceNotFound_ShouldThrowIllegalArgumentException() {
         // Arrange
-        String[] args = new String[]{"nonexistent/folder/"};
+        String args = "nonexistent/folder/";
         when(resourceLoader.getResource("nonexistent/folder/")).thenReturn(null);
 
         // Act & Assert
@@ -76,7 +76,6 @@ class ReadFolderServiceTest {
     @Test
     void process_WithNoArguments_ShouldUseDefaultFolder() throws Exception {
         // Arrange
-        String[] args = new String[]{};
         URL mockUrl = URI.create("file:/test/path").toURL();
         Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> expectedResult =
                 Map.of(new CsvPaymentsInputFile(), new CsvPaymentsOutputFile());
@@ -85,7 +84,7 @@ class ReadFolderServiceTest {
         when(command.execute(any(CsvFolder.class))).thenReturn(expectedResult);
 
         // Act
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = readFolderService.process(args);
+        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = readFolderService.process("");
 
         // Assert
         assertNotNull(result);

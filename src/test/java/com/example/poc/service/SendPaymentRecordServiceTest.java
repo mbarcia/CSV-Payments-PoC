@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -35,17 +36,17 @@ class SendPaymentRecordServiceTest {
     @Test
     void process_shouldSaveToRepositoryAndExecuteCommand() {
         // Given
-        PaymentRecord paymentRecord = new PaymentRecord();
+        PaymentRecord paymentRecord = new PaymentRecord("1", "Mariano", new BigDecimal("123.50"), Currency.getInstance("GBP"));
         AckPaymentSent expectedAck = new AckPaymentSent();
 
-        when(repository.save(paymentRecord)).thenReturn(paymentRecord);
+        doNothing().when(repository).persist(any(PaymentRecord.class));
         when(command.execute(paymentRecord)).thenReturn(expectedAck);
 
         // When
         AckPaymentSent result = service.process(paymentRecord);
 
         // Then
-        verify(repository).save(paymentRecord);
+        verify(repository).persist(paymentRecord);
         verify(command).execute(paymentRecord);
         assertEquals(expectedAck, result);
     }
@@ -55,13 +56,13 @@ class SendPaymentRecordServiceTest {
         // Given
         PaymentRecord record1 = new PaymentRecord("1", "Mariano", new BigDecimal("123.50"), Currency.getInstance("GBP"));
         PaymentRecord record2 = new PaymentRecord("2", "Aurelio", new BigDecimal("124.50"), Currency.getInstance("USD"));
-        when(repository.findAll()).thenReturn(java.util.List.of(record1, record2));
+        when(repository.listAll()).thenReturn(List.of(record1, record2));
 
         // When
         service.print();
 
         // Then
-        verify(repository).findAll();
+        verify(repository).listAll();
     }
 
     @Test
@@ -90,7 +91,7 @@ class SendPaymentRecordServiceTest {
         PaymentRecord paymentRecord = new PaymentRecord();
         RuntimeException expectedException = new RuntimeException("Test exception");
 
-        when(repository.save(paymentRecord)).thenThrow(expectedException);
+        doThrow(expectedException).when(repository).persist(any(PaymentRecord.class));
 
         // When/Then
         assertThrows(RuntimeException.class, () -> service.process(paymentRecord));

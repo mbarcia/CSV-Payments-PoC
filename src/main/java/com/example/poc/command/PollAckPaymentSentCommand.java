@@ -1,14 +1,14 @@
 package com.example.poc.command;
 
-import com.example.poc.service.PaymentProvider;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
+import com.example.poc.service.PaymentProvider;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
-@Component
+@ApplicationScoped
 public class PollAckPaymentSentCommand implements Command<AckPaymentSent, PaymentStatus> {
 
     final

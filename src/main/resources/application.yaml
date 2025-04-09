@@ -1,23 +1,19 @@
-spring:
-  main:
-    web-application-type: NONE
+quarkus:
+  picocli:
+    top-command: com.example.poc.client.CsvCommand
   datasource:
-    url: jdbc:h2:mem:poc;DB_CLOSE_ON_EXIT=FALSE
+    jdbc:
+      url: jdbc:h2:mem:poc;DB_CLOSE_ON_EXIT=FALSE
+      driver: org.h2.Driver
     username: sa
-    password:
-    driverClassName: org.h2.Driver
-  jpa:
-    generate-ddl: true
-    hibernate:
-      ddl-auto: 'create-drop'
-    #show-sql: true
-    properties:
-      format_sql: true
-  h2:
-    console:
-      enabled: true
+    password: ""
+  hibernate-orm:
+    database:
+      generation: drop-and-create
+    log:
+      sql: false
 
-api:
-
-
-
+csv-poc:
+  payment-provider:
+    permits-per-second: 10.0
+    timeout-millis: 5000

@@ -6,14 +6,14 @@ import com.example.poc.domain.CsvPaymentsOutputFile;
 import com.example.poc.service.FileListingService;
 import com.example.poc.service.ProcessCsvPaymentsInputFileService;
 import com.example.poc.service.ProcessPaymentOutputService;
-import org.springframework.stereotype.Component;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
+@ApplicationScoped
 public class ReadFolderCommand implements Command<CsvFolder, Map<CsvPaymentsInputFile, CsvPaymentsOutputFile>> {
     private final ProcessCsvPaymentsInputFileService processCsvPaymentsInputFileService;
     private final ProcessPaymentOutputService processPaymentOutputService;

@@ -4,9 +4,9 @@ import com.example.poc.domain.CsvPaymentsOutputFile;
 import com.example.poc.domain.PaymentOutput;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
-import org.springframework.stereotype.Component;
+import jakarta.enterprise.context.ApplicationScoped;
 
-@Component
+@ApplicationScoped
 public class ProcessPaymentOutputCommand implements Command<PaymentOutput, CsvPaymentsOutputFile> {
     @Override
     public CsvPaymentsOutputFile execute(PaymentOutput paymentOutput) {

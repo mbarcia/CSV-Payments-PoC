@@ -6,17 +6,21 @@ import com.example.poc.domain.CsvPaymentsOutputFile;
 import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.repository.CsvPaymentsOutputFileRepository;
-import org.springframework.stereotype.Service;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
-@Service
+@ApplicationScoped
 public class ProcessPaymentOutputService extends BaseService<PaymentOutput, CsvPaymentsOutputFile> {
     private final CsvPaymentsOutputFileRepository csvPaymentsOutputFileRepository;
     private Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap;
 
+    @Inject
     public ProcessPaymentOutputService(ProcessPaymentOutputCommand command, CsvPaymentsOutputFileRepository csvPaymentsOutputFileRepository) {
         super(command);
         this.csvPaymentsOutputFileRepository = csvPaymentsOutputFileRepository;
@@ -27,6 +31,7 @@ public class ProcessPaymentOutputService extends BaseService<PaymentOutput, CsvP
     }
 
     @Override
+    @Transactional
     public CsvPaymentsOutputFile process(PaymentOutput processableObj) {
         PaymentRecord paymentRecord = processableObj.getPaymentRecord();
         CsvPaymentsInputFile csvPaymentsInputFile = paymentRecord.getCsvPaymentsInputFile();
@@ -35,8 +40,10 @@ public class ProcessPaymentOutputService extends BaseService<PaymentOutput, CsvP
         return super.process(processableObj);
     }
 
+    @Transactional
     public void print() {
-        this.csvPaymentsOutputFileRepository.findAll().forEach(System.out::println);
+        List<CsvPaymentsOutputFile> entities = this.csvPaymentsOutputFileRepository.listAll();
+        entities.forEach(System.out::println);
     }
 
     public void closeFiles(Collection<CsvPaymentsOutputFile> outputFilesList) {

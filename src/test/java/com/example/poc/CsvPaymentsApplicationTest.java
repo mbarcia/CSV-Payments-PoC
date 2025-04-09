@@ -5,6 +5,7 @@ import com.example.poc.service.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -13,13 +14,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 
-class CsvPaymentsApplicationTests {
+class OrchestratorServiceTests {
 
     @Mock
     private ReadFolderService readFolderService;
@@ -39,24 +41,25 @@ class CsvPaymentsApplicationTests {
     @Mock
     private ProcessPaymentStatusService processPaymentStatusService;
 
-    private CsvPaymentsApplication csvPaymentsApplication;
+    @InjectMocks
+    private OrchestratorService orchestratorService;
 
     @BeforeEach
     void setUp() {
-        csvPaymentsApplication = new CsvPaymentsApplication(
-                readFolderService,
-                processCsvPaymentsInputFileService,
-                processAckPaymentSentService,
-                sendPaymentRecordService,
-                processPaymentOutputService,
-                processPaymentStatusService
-        );
+//        csvPaymentsApplication = new CsvPaymentsApplication(
+//                readFolderService,
+//                processCsvPaymentsInputFileService,
+//                processAckPaymentSentService,
+//                sendPaymentRecordService,
+//                processPaymentOutputService,
+//                processPaymentStatusService
+//        );
     }
 
     @Test
     void testRunWithValidInput() {
         // Arrange
-        String[] args = new String[]{"testFolder"};
+        String testFolder = "testFolder";
         CsvPaymentsInputFile inputFile = mock(CsvPaymentsInputFile.class);
         CsvPaymentsOutputFile outputFile = mock(CsvPaymentsOutputFile.class);
         Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> fileMap =
@@ -66,9 +69,8 @@ class CsvPaymentsApplicationTests {
         PaymentStatus paymentStatus = mock(PaymentStatus.class);
         PaymentOutput paymentOutput = mock(PaymentOutput.class);
 
-
         // Mock the service responses
-        when(readFolderService.process(args)).thenReturn(fileMap);
+        when(readFolderService.process(testFolder)).thenReturn(fileMap);
         when(processCsvPaymentsInputFileService.process(any()))
                 .thenReturn(Stream.of(paymentRecord));
         when(sendPaymentRecordService.process(any())).thenReturn(ackPaymentSent);
@@ -77,10 +79,10 @@ class CsvPaymentsApplicationTests {
         when(processPaymentOutputService.process(any())).thenReturn(outputFile);
 
         // Act
-        csvPaymentsApplication.run(args);
+        orchestratorService.process(testFolder);
 
         // Assert
-        verify(readFolderService).process(args);
+        verify(readFolderService).process(testFolder);
         verify(processPaymentOutputService).initialiseFiles(fileMap);
         verify(processCsvPaymentsInputFileService).process(any());
         verify(processPaymentOutputService).closeFiles(fileMap.values());
@@ -95,16 +97,15 @@ class CsvPaymentsApplicationTests {
     @Test
     void testRunWithEmptyFolder() {
         // Arrange
-        String[] args = new String[]{"emptyFolder"};
         Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> emptyMap = Collections.emptyMap();
 
-        when(readFolderService.process(args)).thenReturn(emptyMap);
+        when(readFolderService.process("")).thenReturn(emptyMap);
 
         // Act
-        csvPaymentsApplication.run(args);
+        orchestratorService.process("");
 
         // Assert
-        verify(readFolderService).process(args);
+        verify(readFolderService).process("");
         verify(processPaymentOutputService).initialiseFiles(emptyMap);
         verify(processPaymentOutputService).closeFiles(emptyMap.values());
     }
@@ -125,7 +126,7 @@ class CsvPaymentsApplicationTests {
         when(processPaymentOutputService.process(any(PaymentOutput.class))).thenReturn(outputFile);
 
         // Act
-        List<CsvPaymentsOutputFile> result = csvPaymentsApplication
+        List<CsvPaymentsOutputFile> result = orchestratorService
                 .getCsvPaymentsOutputFilesList(recordStream);
 
         // Assert
@@ -135,17 +136,5 @@ class CsvPaymentsApplicationTests {
         verify(processAckPaymentSentService).process(ackPaymentSent);
         verify(processPaymentStatusService).process(paymentStatus);
         verify(processPaymentOutputService).process(paymentOutput);
-    }
-
-    @Test
-    void testRunWithNullArguments() {
-        // Arrange
-        String[] args = null;
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> emptyMap = Collections.emptyMap();
-
-        when(readFolderService.process(args)).thenReturn(emptyMap);
-
-        // Act & Assert
-        assertDoesNotThrow(() -> csvPaymentsApplication.run(args));
     }
 }

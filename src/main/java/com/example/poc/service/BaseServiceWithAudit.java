@@ -1,29 +1,35 @@
 package com.example.poc.service;
 
 import com.example.poc.command.Command;
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import jakarta.transaction.Transactional;
 import lombok.Getter;
-import org.springframework.data.repository.CrudRepository;
 
-import java.util.UUID;
+import java.util.List;
 
 @Getter
 public abstract class BaseServiceWithAudit<T, S> extends BaseService<T, S> {
-    private final CrudRepository<T, UUID> repository;
+    private PanacheRepository<T> repository;
 
-    public BaseServiceWithAudit(CrudRepository<T, UUID> repository, Command<T, S> command) {
+    @SuppressWarnings("unused")
+    public BaseServiceWithAudit() {}
+
+    public BaseServiceWithAudit(PanacheRepository<T> repository, Command<T, S> command) {
         super(command);
         this.repository = repository;
     }
 
     @Override
+    @Transactional
     public S process(T processableObj) {
         // Save command object to the database for advanced audit purposes
-        repository.save(processableObj);
+        repository.persist(processableObj);
         return super.process(processableObj);
     }
 
+    @Transactional
     public void print() {
-        repository.findAll().forEach(System.out::println);
+        List<T> entities = repository.listAll();
+        entities.forEach(System.out::println);
     }
 }
-

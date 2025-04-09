@@ -1,11 +1,9 @@
 package com.example.poc.repository;
 
 import com.example.poc.domain.CsvPaymentsOutputFile;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.stereotype.Repository;
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import jakarta.enterprise.context.ApplicationScoped;
 
-import java.util.UUID;
-
-@Repository
-public interface CsvPaymentsOutputFileRepository extends CrudRepository<CsvPaymentsOutputFile, UUID> {
+@ApplicationScoped
+public class CsvPaymentsOutputFileRepository implements PanacheRepository<CsvPaymentsOutputFile> {
 }

@@ -1,15 +1,14 @@
-package com.example.poc;
+package com.example.poc.service;
 
+
+import com.example.poc.client.CsvPaymentsApplication;
 import com.example.poc.domain.CsvPaymentsInputFile;
 import com.example.poc.domain.CsvPaymentsOutputFile;
 import com.example.poc.domain.PaymentRecord;
-import com.example.poc.service.*;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.util.StopWatch;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -17,42 +16,40 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-@SpringBootApplication
-public class CsvPaymentsApplication implements CommandLineRunner {
+@ApplicationScoped
+public class OrchestratorService {
+
     private static final Logger LOG = LoggerFactory
             .getLogger(CsvPaymentsApplication.class);
-    private final ReadFolderService readFolderService;
-    private final ProcessCsvPaymentsInputFileService processCsvPaymentsInputFileService;
-    private final ProcessAckPaymentSentService processAckPaymentSentService;
-    private final SendPaymentRecordService sendPaymentRecordService;
-    private final ProcessPaymentOutputService processPaymentOutputService;
-    private final ProcessPaymentStatusService processPaymentStatusService;
 
-    public CsvPaymentsApplication(ReadFolderService readFolderService, ProcessCsvPaymentsInputFileService processCsvPaymentsInputFileService, ProcessAckPaymentSentService processAckPaymentSentService, SendPaymentRecordService sendPaymentRecordService, ProcessPaymentOutputService processPaymentOutputService, ProcessPaymentStatusService processPaymentStatusService) {
-        this.readFolderService = readFolderService;
-        this.processCsvPaymentsInputFileService = processCsvPaymentsInputFileService;
-        this.processAckPaymentSentService = processAckPaymentSentService;
-        this.sendPaymentRecordService = sendPaymentRecordService;
-        this.processPaymentOutputService = processPaymentOutputService;
-        this.processPaymentStatusService = processPaymentStatusService;
+    String csvFolder;
+
+    @Inject
+    ReadFolderService readFolderService;
+
+    @Inject
+    ProcessCsvPaymentsInputFileService processCsvPaymentsInputFileService;
+
+    @Inject
+    ProcessAckPaymentSentService processAckPaymentSentService;
+
+    @Inject
+    SendPaymentRecordService sendPaymentRecordService;
+
+    @Inject
+    ProcessPaymentOutputService processPaymentOutputService;
+
+    @Inject
+    ProcessPaymentStatusService processPaymentStatusService;
+
+    public void process(String csvFolder) {
+        this.csvFolder = csvFolder;
+        process();
     }
 
-    /**
-     * @param args Folder path
-     */
-    public static void main(String[] args) {
-        LOG.info("APPLICATION BEGINS");
-        StopWatch watch = new StopWatch();
-        watch.start();
-        SpringApplication.run(CsvPaymentsApplication.class, args);
-        watch.stop();
-        LOG.info("APPLICATION FINISHED in {} seconds", watch.getTotalTimeSeconds());
-    }
-
-    @Override
-    public void run(String... args) {
+    public void process() {
         // Get a map of input/output files, obtained and created from the folder name
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap = getCsvPaymentsInputFiles(args);
+        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap = getCsvPaymentsInputFiles(csvFolder);
         // Initialise the service with this map
         processPaymentOutputService.initialiseFiles(csvPaymentsOutputFileMap);
         // Get a stream of CSV record objects coming from all the files in the folder
@@ -69,7 +66,7 @@ public class CsvPaymentsApplication implements CommandLineRunner {
         printOutputToConsole();
     }
 
-    List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(Stream<PaymentRecord> recordsStream) {
+    public List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(Stream<PaymentRecord> recordsStream) {
         List<PaymentRecord> records = recordsStream.toList(); // Collect records to process
         List<CsvPaymentsOutputFile> results = new ArrayList<>();
 
@@ -98,16 +95,16 @@ public class CsvPaymentsApplication implements CommandLineRunner {
         return results;
     }
 
-    private Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> getCsvPaymentsInputFiles(String... args) {
+    private Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> getCsvPaymentsInputFiles(String csvFolder) {
         return readFolderService
-            // Return all CSV files contained inside the folder
-            .process(args);
+                // Return all CSV files contained inside the folder
+                .process(csvFolder);
     }
 
     private Stream<Stream<PaymentRecord>> getSingleRecordStream(Set<CsvPaymentsInputFile> csvFilesStream) {
         return csvFilesStream.stream()
-            // Return all payment records in all CSV input files
-            .map(processCsvPaymentsInputFileService::process);
+                // Return all payment records in all CSV input files
+                .map(processCsvPaymentsInputFileService::process);
     }
 
     private void printOutputToConsole() {

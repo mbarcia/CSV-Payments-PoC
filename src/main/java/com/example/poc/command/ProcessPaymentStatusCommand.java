@@ -3,9 +3,9 @@ package com.example.poc.command;
 import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
-import org.springframework.stereotype.Component;
+import jakarta.enterprise.context.ApplicationScoped;
 
-@Component
+@ApplicationScoped
 public class ProcessPaymentStatusCommand implements Command<PaymentStatus, PaymentOutput> {
     @Override
     public PaymentOutput execute(PaymentStatus paymentStatus) {

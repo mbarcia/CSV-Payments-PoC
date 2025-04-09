@@ -1,11 +1,11 @@
 package com.example.poc.service;
 
-import org.springframework.stereotype.Component;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.net.URL;
 
 // Default implementation using ClassLoader
-@Component
+@ApplicationScoped
 public class ClassPathResourceLoader implements ResourceLoader {
     @Override
     public URL getResource(String path) {

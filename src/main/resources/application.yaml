@@ -1,6 +1,7 @@
 quarkus:
-  picocli:
-    top-command: com.example.poc.client.CsvCommand
+  native:
+    resources:
+      includes: csv/*.csv
   datasource:
     jdbc:
       url: jdbc:h2:mem:poc;DB_CLOSE_ON_EXIT=FALSE

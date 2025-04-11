@@ -78,7 +78,8 @@ The repository is organized as follows:
 
 Key integration points:
 - `PaymentProvider` interface: Defines the contract for interacting with the third-party payment processor
-- `CsvPaymentsApplication`: Orchestrates the entire payment processing workflow
+- `OrchestratorService`: Orchestrates the entire payment processing workflow
+- `CsvPaymentsApplication`: Processes the CLI parameters and calls the OrchestratorService
 
 ## Usage Instructions
 
@@ -103,12 +104,30 @@ Key integration points:
    mvn clean install
    ```
 
-### Running the Application
+### Running the CLI application
 
 To run the application, use the following command:
-
+#### Using Maven
 ```
-mvn quarkus:dev
+# Run with Maven
+mvn quarkus:dev -Dquarkus.args="--csv-folder=csv/"
+
+# Or for production build
+mvn package
+java -jar target/quarkus-app/quarkus-run.jar -Dquarkus.args="--csv-folder=csv/"
+```
+
+#### Using the Quarkys CLI tool
+```
+# Install Quarkus CLI if you haven't
+# curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio
+
+# Run in dev mode
+quarkus dev --args="--csv-folder=csv/"
+
+# Build and run
+quarkus build
+java -jar target/quarkus-app/quarkus-run.jar --csv-folder=csv/
 ```
 
 Use --csv-folder=folder-path with the path to the folder containing the CSV input files. If not specified, the application will default to the "csv/" folder.

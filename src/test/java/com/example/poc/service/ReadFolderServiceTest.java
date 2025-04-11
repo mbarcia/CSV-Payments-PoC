@@ -5,20 +5,19 @@ import com.example.poc.domain.CsvFolder;
 import com.example.poc.domain.CsvPaymentsInputFile;
 import com.example.poc.domain.CsvPaymentsOutputFile;
 import com.example.poc.repository.CsvFolderRepository;
+import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.URI;
-import java.net.URL;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ReadFolderServiceTest {
@@ -29,67 +28,132 @@ class ReadFolderServiceTest {
     @Mock
     private ReadFolderCommand command;
 
-    @Mock
-    private ResourceLoader resourceLoader;
-
-    private ReadFolderService readFolderService;
+    private ReadFolderService service;
 
     @BeforeEach
     void setUp() {
-        readFolderService = new ReadFolderService(repository, command, resourceLoader);
+        service = new ReadFolderService(repository, command);
     }
 
     @Test
-    void process_WithValidFolder_ShouldReturnExpectedResult() throws Exception {
-        // Arrange
-        String args = "csv/";
-        URL mockUrl = URI.create("file:/test/path").toURL();
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> expectedResult =
-                Map.of(new CsvPaymentsInputFile(), new CsvPaymentsOutputFile());
+    void process_shouldSaveToRepositoryAndExecuteCommand() {
+        // Given
+        CsvFolder csvFolder = new CsvFolder();
+        csvFolder.setFolderPath("/test/path");
 
-        when(resourceLoader.getResource("csv/")).thenReturn(mockUrl);
-        when(command.execute(any(CsvFolder.class))).thenReturn(expectedResult);
+        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> expectedResult = new HashMap<>();
+        CsvPaymentsInputFile inputFile = new CsvPaymentsInputFile();
+        inputFile.setFilepath("test.csv");
+        CsvPaymentsOutputFile outputFile = new CsvPaymentsOutputFile();
+        outputFile.setFilepath("test.output.csv");
+        expectedResult.put(inputFile, outputFile);
 
-        // Act
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = readFolderService.process(args);
+        when(command.execute(csvFolder)).thenReturn(expectedResult);
 
-        // Assert
-        assertNotNull(result);
+        // When
+        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = service.process(csvFolder);
+
+        // Then
+        verify(repository).persist(csvFolder);
+        verify(command).execute(csvFolder);
         assertEquals(expectedResult, result);
-        verify(command).execute(any(CsvFolder.class));
-        verify(resourceLoader).getResource("csv/");
+        assertEquals(1, result.size());
+        assertTrue(result.containsKey(inputFile));
+        assertEquals(outputFile, result.get(inputFile));
     }
 
     @Test
-    void process_WhenResourceNotFound_ShouldThrowIllegalArgumentException() {
-        // Arrange
-        String args = "nonexistent/folder/";
-        when(resourceLoader.getResource("nonexistent/folder/")).thenReturn(null);
-
-        // Act & Assert
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> readFolderService.process(args));
-        assertEquals("Resource not found: nonexistent/folder/", exception.getMessage());
-        verify(resourceLoader).getResource("nonexistent/folder/");
+    void process_withNullInput_shouldNotThrowException() {
+        // When & Then
+        assertDoesNotThrow(() -> service.process(null));
     }
 
     @Test
-    void process_WithNoArguments_ShouldUseDefaultFolder() throws Exception {
-        // Arrange
-        URL mockUrl = URI.create("file:/test/path").toURL();
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> expectedResult =
-                Map.of(new CsvPaymentsInputFile(), new CsvPaymentsOutputFile());
+    void process_whenCommandReturnsEmpty_shouldReturnEmptyMap() {
+        // Given
+        CsvFolder csvFolder = new CsvFolder();
+        csvFolder.setFolderPath("/test/path");
 
-        when(resourceLoader.getResource("csv/")).thenReturn(mockUrl);
-        when(command.execute(any(CsvFolder.class))).thenReturn(expectedResult);
+        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> emptyMap = new HashMap<>();
 
-        // Act
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = readFolderService.process("");
+        when(command.execute(csvFolder)).thenReturn(emptyMap);
 
-        // Assert
+        // When
+        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = service.process(csvFolder);
+
+        // Then
+        verify(repository).persist(csvFolder);
+        verify(command).execute(csvFolder);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void print_shouldCallFindAllOnRepository() {
+        // Given
+        CsvFolder folder1 = new CsvFolder();
+        folder1.setFolderPath("/test/path1");
+        CsvFolder folder2 = new CsvFolder();
+        folder2.setFolderPath("/test/path2");
+
+        doReturn(List.of(folder1, folder2)).when(repository).listAll();
+//        when(repository.findAll()).thenReturn(java.util.List.of(folder1, folder2));
+
+        // When
+        service.print();
+
+        // Then
+        verify(repository).listAll();
+    }
+
+    @Test
+    void getRepository_shouldReturnRepository() {
+        // When
+        PanacheRepository<CsvFolder> result = service.getRepository();
+
+        // Then
         assertNotNull(result);
-        assertEquals(expectedResult, result);
-        verify(command).execute(any(CsvFolder.class));
-        verify(resourceLoader).getResource("csv/");
+        assertEquals(repository, result);
+    }
+
+    @Test
+    void getCommand_shouldReturnCommand() {
+        // When
+        ReadFolderCommand result = (ReadFolderCommand) service.getCommand();
+
+        // Then
+        assertNotNull(result);
+        assertEquals(command, result);
+    }
+
+    @Test
+    void process_whenRepositoryThrowsException_shouldPropagateException() {
+        // Given
+        CsvFolder csvFolder = new CsvFolder();
+        csvFolder.setFolderPath("/test/path");
+
+        RuntimeException expectedException = new RuntimeException("Test exception");
+        doThrow(expectedException).when(repository).persist(csvFolder);
+
+        // When & Then
+        Exception exception = assertThrows(RuntimeException.class, () -> service.process(csvFolder));
+        assertEquals("Test exception", exception.getMessage());
+        verify(repository).persist(csvFolder);
+        verify(command, never()).execute(any());
+    }
+
+    @Test
+    void process_whenCommandThrowsException_shouldPropagateException() {
+        // Given
+        CsvFolder csvFolder = new CsvFolder();
+        csvFolder.setFolderPath("/test/path");
+
+        RuntimeException expectedException = new RuntimeException("Command exception");
+        when(command.execute(csvFolder)).thenThrow(expectedException);
+
+        // When & Then
+        Exception exception = assertThrows(RuntimeException.class, () -> service.process(csvFolder));
+        assertEquals("Command exception", exception.getMessage());
+        verify(repository).persist(csvFolder);
+        verify(command).execute(csvFolder);
     }
 }

@@ -6,7 +6,7 @@ import com.example.poc.domain.PaymentOutput;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
 import com.example.poc.repository.PaymentRecordRepository;
-import com.example.poc.service.PaymentProviderMock;
+import com.example.poc.service.PaymentProviderServiceImpl;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ import static org.mockito.Mockito.*;
 class SendPaymentRecordCommandTest {
 
     @Mock
-    PaymentProviderMock paymentProviderMock;
+    PaymentProviderServiceImpl paymentProviderServiceImpl;
 
     PaymentRecordRepository repository = mock(PaymentRecordRepository.class);
 
@@ -40,9 +40,9 @@ class SendPaymentRecordCommandTest {
     @BeforeEach
     void setUp() {
         paymentRecord = new PaymentRecord("1", "Mariano", new BigDecimal("123.50"), Currency.getInstance("GBP"));
-        ackPaymentSent = (new AckPaymentSent()).setConversationID(PaymentProviderMock.UUID).setStatus(0L).setMessage("nada").setRecord(paymentRecord);
+        ackPaymentSent = (new AckPaymentSent()).setConversationID(PaymentProviderServiceImpl.UUID).setStatus(0L).setMessage("nada").setRecord(paymentRecord);
         paymentStatus = new PaymentStatus("nada").setAckPaymentSent(ackPaymentSent);
-        ackPaymentSent = new AckPaymentSent(PaymentProviderMock.UUID)
+        ackPaymentSent = new AckPaymentSent(PaymentProviderServiceImpl.UUID)
                 .setStatus(1000L)
                 .setMessage("OK but this is only a test")
                 .setRecord(paymentRecord);
@@ -67,9 +67,9 @@ class SendPaymentRecordCommandTest {
                 .setCurrency(paymentRecord.getCurrency())
                 .setRecord(paymentRecord);
 
-        lenient().doReturn(ackPaymentSent).when(paymentProviderMock).sendPayment(any(SendPaymentRequest.class));
+        lenient().doReturn(ackPaymentSent).when(paymentProviderServiceImpl).sendPayment(any(SendPaymentRequest.class));
         doNothing().when(repository).persist(any(PaymentRecord.class));
-        sendPaymentRecordCommand = new SendPaymentRecordCommand(paymentProviderMock);
+        sendPaymentRecordCommand = new SendPaymentRecordCommand(paymentProviderServiceImpl);
     }
 
     @AfterEach

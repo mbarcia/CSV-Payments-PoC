@@ -2,6 +2,7 @@ package com.example.poc.service;
 
 
 import com.example.poc.client.CsvPaymentsApplication;
+import com.example.poc.domain.CsvFolder;
 import com.example.poc.domain.CsvPaymentsInputFile;
 import com.example.poc.domain.CsvPaymentsOutputFile;
 import com.example.poc.domain.PaymentRecord;
@@ -10,6 +11,8 @@ import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
@@ -22,7 +25,8 @@ public class OrchestratorService {
     private static final Logger LOG = LoggerFactory
             .getLogger(CsvPaymentsApplication.class);
 
-    String csvFolder;
+    @Inject
+    HybridResourceLoader resourceLoader;
 
     @Inject
     ReadFolderService readFolderService;
@@ -42,14 +46,10 @@ public class OrchestratorService {
     @Inject
     ProcessPaymentStatusService processPaymentStatusService;
 
-    public void process(String csvFolder) {
-        this.csvFolder = csvFolder;
-        process();
-    }
-
-    public void process() {
+    public void process(String csvFolderPath) throws URISyntaxException {
+        CsvFolder csvFolder = getCsvFolder(csvFolderPath);
         // Get a map of input/output files, obtained and created from the folder name
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap = getCsvPaymentsInputFiles(csvFolder);
+        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap = readFolderService.process(csvFolder);
         // Initialise the service with this map
         processPaymentOutputService.initialiseFiles(csvPaymentsOutputFileMap);
         // Get a stream of CSV record objects coming from all the files in the folder
@@ -64,6 +64,27 @@ public class OrchestratorService {
         // Flush/close the output file buffers
         processPaymentOutputService.closeFiles(csvPaymentsOutputFileMap.values());
         printOutputToConsole();
+    }
+
+    private CsvFolder getCsvFolder(String csvFolderPath) throws URISyntaxException, IllegalArgumentException {
+        LOG.info("Processing CSV folder path: {}", csvFolderPath);
+
+        // In development, this might list example files from the JAR
+        // In production, it will list real files from the external directory
+        List<URL> csvFiles = resourceLoader.listResources(csvFolderPath);
+
+        if (csvFiles.isEmpty()) {
+            LOG.warn("No CSV files found in {}", csvFolderPath);
+            // Add diagnostic info if needed
+            resourceLoader.diagnoseResourceAccess(csvFolderPath);
+        }
+
+        URL resource = resourceLoader.getResource(csvFolderPath);
+        if (resource == null) {
+            throw new IllegalArgumentException("Resource not found: " + csvFolderPath);
+        }
+
+        return new CsvFolder(resource.toURI().getPath());
     }
 
     public List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(Stream<PaymentRecord> recordsStream) {
@@ -95,13 +116,7 @@ public class OrchestratorService {
         return results;
     }
 
-    private Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> getCsvPaymentsInputFiles(String csvFolder) {
-        return readFolderService
-                // Return all CSV files contained inside the folder
-                .process(csvFolder);
-    }
-
-    private Stream<Stream<PaymentRecord>> getSingleRecordStream(Set<CsvPaymentsInputFile> csvFilesStream) {
+    Stream<Stream<PaymentRecord>> getSingleRecordStream(Set<CsvPaymentsInputFile> csvFilesStream) {
         return csvFilesStream.stream()
                 // Return all payment records in all CSV input files
                 .map(processCsvPaymentsInputFileService::process);

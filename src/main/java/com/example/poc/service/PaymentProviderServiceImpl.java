@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("UnstableApiUsage")
 @ApplicationScoped
-public class PaymentProviderMock implements PaymentProvider {
+public class PaymentProviderServiceImpl implements PaymentProviderService {
 
     public static final String UUID = "ac007cbd-1504-4207-8d9f-0abc4b1d2bd8";
 
@@ -21,7 +21,7 @@ public class PaymentProviderMock implements PaymentProvider {
 
     @Inject
     @SuppressWarnings("unused")
-    public PaymentProviderMock(PaymentProviderConfig config) {
+    public PaymentProviderServiceImpl(PaymentProviderConfig config) {
         rateLimiter = RateLimiter.create(config.permitsPerSecond());
         timeoutMillis = config.timeoutMillis();
 
@@ -30,7 +30,8 @@ public class PaymentProviderMock implements PaymentProvider {
     }
 
     // Constructor for testing with explicit values
-    public PaymentProviderMock(double permitsPerSecond, long timeoutMillis) {
+    // Setting the timeout to -1 causes sendPayment() to throw an exception
+    public PaymentProviderServiceImpl(double permitsPerSecond, long timeoutMillis) {
         this.rateLimiter = RateLimiter.create(permitsPerSecond);
         this.timeoutMillis = timeoutMillis;
     }
@@ -39,7 +40,7 @@ public class PaymentProviderMock implements PaymentProvider {
     @Override
     public AckPaymentSent sendPayment(SendPaymentRequest requestMap) {
         // Try to acquire with timeout
-        if (!rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
+        if (this.timeoutMillis == -1L || !rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
             throw new ThrottlingException("Failed to acquire permit within timeout period. The payment service is currently throttled.");
         }
 
@@ -59,7 +60,7 @@ public class PaymentProviderMock implements PaymentProvider {
     @Override
     public PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent) {
         // Try to acquire with timeout
-        if (!rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
+        if (this.timeoutMillis == -1L || !rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
             throw new ThrottlingException("Failed to acquire permit within timeout period. The payment status service is currently throttled.");
         }
 

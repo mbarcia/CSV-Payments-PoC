@@ -2,7 +2,7 @@ package com.example.poc.command;
 
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
-import com.example.poc.service.PaymentProvider;
+import com.example.poc.service.PaymentProviderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,14 +15,14 @@ import static org.mockito.Mockito.*;
 class PollAckPaymentSentCommandTest {
 
     @Mock
-    private PaymentProvider paymentProviderMock;
+    private PaymentProviderService paymentProviderServiceMock;
 
     private PollAckPaymentSentCommand command;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        command = new PollAckPaymentSentCommand(paymentProviderMock);
+        command = new PollAckPaymentSentCommand(paymentProviderServiceMock);
     }
 
     @Test
@@ -30,7 +30,7 @@ class PollAckPaymentSentCommandTest {
         // Arrange
         AckPaymentSent ackPaymentSent = new AckPaymentSent(); // Add necessary parameters
         PaymentStatus expectedStatus = new PaymentStatus(); // Add expected values
-        when(paymentProviderMock.getPaymentStatus(any(AckPaymentSent.class)))
+        when(paymentProviderServiceMock.getPaymentStatus(any(AckPaymentSent.class)))
                 .thenReturn(expectedStatus);
 
         // Act
@@ -38,7 +38,7 @@ class PollAckPaymentSentCommandTest {
 
         // Assert
         assertNotNull(result);
-        verify(paymentProviderMock).getPaymentStatus(ackPaymentSent);
+        verify(paymentProviderServiceMock).getPaymentStatus(ackPaymentSent);
         assertEquals(expectedStatus, result);
     }
 
@@ -46,7 +46,7 @@ class PollAckPaymentSentCommandTest {
     void execute_WhenExceptionOccurs_ShouldThrowRuntimeException() throws JsonProcessingException {
         // Arrange
         AckPaymentSent ackPaymentSent = new AckPaymentSent(); // Add necessary parameters
-        when(paymentProviderMock.getPaymentStatus(any(AckPaymentSent.class)))
+        when(paymentProviderServiceMock.getPaymentStatus(any(AckPaymentSent.class)))
                 .thenThrow(new JsonProcessingException("Error processing JSON") {});
 
         // Act & Assert

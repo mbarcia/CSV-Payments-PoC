@@ -4,14 +4,11 @@ import com.example.poc.client.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.domain.PaymentStatus;
-import com.google.common.util.concurrent.RateLimiter;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
-import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
 import java.math.BigDecimal;
@@ -25,14 +22,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@SuppressWarnings({"UnstableApiUsage", "ResultOfMethodCallIgnored"})
-class PaymentProviderMockTest {
+@SuppressWarnings({"ResultOfMethodCallIgnored"})
+class PaymentProviderServiceImplTest {
 
-    private PaymentProvider paymentProvider;
+    private PaymentProviderService paymentProviderService;
 
     @Mock
     private PaymentRecord mockRecord;
@@ -50,7 +45,7 @@ class PaymentProviderMockTest {
         // Arrange
         double rateLimit = 10.0; // 10 requests per second
         long timeoutMillis = 5000; // 5s timeout for testing
-        this.paymentProvider = new PaymentProviderMock(rateLimit, timeoutMillis);
+        this.paymentProviderService = new PaymentProviderServiceImpl(rateLimit, timeoutMillis);
         when(mockRequest.getUrl()).thenReturn("https://payment.example.com");
         when(mockRequest.getAmount()).thenReturn(new BigDecimal("123.45"));
         when(mockRequest.getMsisdn()).thenReturn("1234567890");
@@ -63,11 +58,11 @@ class PaymentProviderMockTest {
     @Test
     void sendPayment_ShouldReturnValidAckPaymentSent() {
         // Act
-        AckPaymentSent result = paymentProvider.sendPayment(mockRequest);
+        AckPaymentSent result = paymentProviderService.sendPayment(mockRequest);
 
         // Assert
         assertNotNull(result);
-        assertEquals(PaymentProviderMock.UUID, result.getConversationID());
+        assertEquals(PaymentProviderServiceImpl.UUID, result.getConversationID());
         assertEquals(1000L, result.getStatus());
         assertEquals("OK but this is only a test", result.getMessage());
         assertEquals(mockRecord, result.getRecord());
@@ -77,7 +72,7 @@ class PaymentProviderMockTest {
     @SneakyThrows
     void getPaymentStatus_ShouldReturnValidPaymentStatus() {
         // Act
-        PaymentStatus result = paymentProvider.getPaymentStatus(mockAck);
+        PaymentStatus result = paymentProviderService.getPaymentStatus(mockAck);
 
         // Assert
         assertNotNull(result);
@@ -94,7 +89,7 @@ class PaymentProviderMockTest {
         // Arrange
         double rateLimit = 5.0; // 5 requests per second
         long timeoutMillis = 100; // Short timeout for testing
-        PaymentProvider provider = new PaymentProviderMock(rateLimit, timeoutMillis);
+        PaymentProviderService provider = new PaymentProviderServiceImpl(rateLimit, timeoutMillis);
 
         int numThreads = 20; // Try to make 20 requests at once
         AtomicInteger successCount = new AtomicInteger(0);
@@ -114,7 +109,7 @@ class PaymentProviderMockTest {
                     try {
                         provider.sendPayment(mockRequest);
                         successCount.incrementAndGet();
-                    } catch (PaymentProviderMock.ThrottlingException e) {
+                    } catch (PaymentProviderServiceImpl.ThrottlingException e) {
                         throttledCount.incrementAndGet();
                     }
                 } catch (InterruptedException e) {
@@ -142,31 +137,22 @@ class PaymentProviderMockTest {
     @Test
     @DisplayName("Test throttling with timeout")
     void testThrottlingWithTimeout() {
-        // Arrange - Create a mock RateLimiter that always returns false for tryAcquire
-        RateLimiter mockRateLimiter = mock(RateLimiter.class);
-        when(mockRateLimiter.tryAcquire(anyLong(), any(TimeUnit.class))).thenReturn(false);
+        // Create provider with mocked RateLimiter
+        PaymentProviderService provider = new PaymentProviderServiceImpl(1, -1L);
 
-        // Use Mockito's static mocking to intercept the RateLimiter.create call
-        try (MockedStatic<RateLimiter> mockedStatic = Mockito.mockStatic(RateLimiter.class)) {
-            mockedStatic.when(() -> RateLimiter.create(anyDouble())).thenReturn(mockRateLimiter);
+        // Act & Assert for sendPayment
+        PaymentProviderServiceImpl.ThrottlingException exception = assertThrows(
+                PaymentProviderServiceImpl.ThrottlingException.class,
+                () -> provider.sendPayment(mockRequest)
+        );
+        assertTrue(exception.getMessage().contains("Failed to acquire permit within timeout period"));
 
-            // Create provider with mocked RateLimiter
-            PaymentProviderMock provider = new PaymentProviderMock(10.0, 50);
-
-            // Act & Assert for sendPayment
-            PaymentProviderMock.ThrottlingException exception = assertThrows(
-                    PaymentProviderMock.ThrottlingException.class,
-                    () -> provider.sendPayment(mockRequest)
-            );
-            assertTrue(exception.getMessage().contains("Failed to acquire permit within timeout period"));
-
-            // Act & Assert for getPaymentStatus
-            exception = assertThrows(
-                    PaymentProviderMock.ThrottlingException.class,
-                    () -> provider.getPaymentStatus(mockAck)
-            );
-            assertTrue(exception.getMessage().contains("Failed to acquire permit within timeout period"));
-        }
+        // Act & Assert for getPaymentStatus
+        exception = assertThrows(
+                PaymentProviderServiceImpl.ThrottlingException.class,
+                () -> provider.getPaymentStatus(mockAck)
+        );
+        assertTrue(exception.getMessage().contains("Failed to acquire permit within timeout period"));
     }
 
     @Test
@@ -175,7 +161,7 @@ class PaymentProviderMockTest {
         // Arrange
         double rateLimit = 15.0; // 15 requests per second
         long timeoutMillis = 2500L; // long timeout for testing
-        PaymentProviderMock provider = new PaymentProviderMock(rateLimit, timeoutMillis);
+        PaymentProviderServiceImpl provider = new PaymentProviderServiceImpl(rateLimit, timeoutMillis);
 
         // Verify the provider was created with the right config - we'll test indirectly
         // by ensuring calls succeed (i.e., the rateLimiter allows them)
@@ -190,7 +176,7 @@ class PaymentProviderMockTest {
         // If using earlier versions, modify to use Thread.startVirtualThread or remove this test
 
         // Arrange
-        PaymentProviderMock provider = new PaymentProviderMock(10.0, 1000);
+        PaymentProviderServiceImpl provider = new PaymentProviderServiceImpl(10.0, 1000);
         int requestCount = 30;
         AtomicInteger successCount = new AtomicInteger(0);
         AtomicInteger throttledCount = new AtomicInteger(0);
@@ -203,7 +189,7 @@ class PaymentProviderMockTest {
                 try {
                     provider.sendPayment(mockRequest);
                     successCount.incrementAndGet();
-                } catch (PaymentProviderMock.ThrottlingException e) {
+                } catch (PaymentProviderServiceImpl.ThrottlingException e) {
                     throttledCount.incrementAndGet();
                 } finally {
                     latch.countDown();

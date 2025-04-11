@@ -2,7 +2,7 @@ package com.example.poc.command;
 
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
-import com.example.poc.service.PaymentProvider;
+import com.example.poc.service.PaymentProviderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
@@ -12,10 +12,10 @@ import org.slf4j.LoggerFactory;
 public class PollAckPaymentSentCommand implements Command<AckPaymentSent, PaymentStatus> {
 
     final
-    PaymentProvider paymentProviderMock;
+    PaymentProviderService paymentProviderServiceMock;
 
-    public PollAckPaymentSentCommand(PaymentProvider paymentProviderMock) {
-        this.paymentProviderMock = paymentProviderMock;
+    public PollAckPaymentSentCommand(PaymentProviderService paymentProviderServiceMock) {
+        this.paymentProviderServiceMock = paymentProviderServiceMock;
     }
 
     /**
@@ -33,7 +33,7 @@ public class PollAckPaymentSentCommand implements Command<AckPaymentSent, Paymen
             logger.info("Thread: {} isVirtual? {}", Thread.currentThread(), Thread.currentThread().isVirtual());
             Thread.sleep(time);
             logger.info("Finished polling (--> {}ms)", time);
-            return paymentProviderMock.getPaymentStatus(detachedAckPaymentSent);
+            return paymentProviderServiceMock.getPaymentStatus(detachedAckPaymentSent);
         } catch (JsonProcessingException | InterruptedException e) {
             throw new RuntimeException(e);
         }

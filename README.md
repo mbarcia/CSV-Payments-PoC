@@ -101,7 +101,7 @@ Key integration points:
    ```
 3. Build the project:
    ```
-   mvn clean install
+   mvn -f pom-monolith.xml clean install
    ```
 
 ### Running the CLI application
@@ -110,10 +110,10 @@ To run the application, use the following command:
 #### Using Maven
 ```
 # Run with Maven
-mvn quarkus:dev -Dquarkus.args="--csv-folder=csv/"
+mvn -f pom-monolith.xml quarkus:dev -Dquarkus.args="--csv-folder=csv/"
 
 # Or for production build
-mvn package
+mvn -f pom-monolith.xml package
 java -jar target/quarkus-app/quarkus-run.jar -Dquarkus.args="--csv-folder=csv/"
 ```
 
@@ -159,14 +159,14 @@ The application can be configured using the `application.yaml` file located in t
 To run the tests, execute:
 
 ```
-mvn test
+mvn -f pom-monolith.xml test
 ```
 
 ### Troubleshooting
 
 1. Issue: Application fails to start
    - Check if the Java version is correct (Java 21 required)
-   - Ensure all dependencies are properly downloaded (run `mvn dependency:resolve`)
+   - Ensure all dependencies are properly downloaded (run `mvn -f pom-monolith.xml dependency:resolve`)
    - Verify the `application.yaml` configuration
 
 2. Issue: CSV files not being processed

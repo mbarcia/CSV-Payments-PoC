@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 import static java.text.MessageFormat.format;
 
@@ -20,6 +21,8 @@ public class AckPaymentSent extends BaseEntity implements Serializable {
 
     private Long status;
     private String message;
+    private UUID record;
+    private UUID paymentStatus;
 
     @Override
     public String toString() {

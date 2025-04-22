@@ -1,12 +1,12 @@
-package com.example.poc.client;
+package com.example.poc;
 
-import com.example.poc.domain.PaymentRecord;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.UUID;
 
 @Setter
 @Getter
@@ -17,5 +17,5 @@ public class SendPaymentRequest {
     private Currency currency;
     private String reference;
     private String url;
-    private PaymentRecord record;
+    private UUID record;
 }

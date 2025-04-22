@@ -1,11 +1,12 @@
 package com.example.poc;
 
-import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.BaseEntity;
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvIgnore;
 import com.opencsv.bean.CsvNumber;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ManyToOne;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -50,13 +51,6 @@ public class PaymentRecord extends BaseEntity implements Serializable {
     @CsvIgnore
     @ManyToOne(fetch = FetchType.EAGER)
     private CsvPaymentsOutputFile csvPaymentsOutputFile;
-
-    @CsvIgnore
-    @OneToOne(
-            cascade = CascadeType.ALL,
-            mappedBy = "record"
-    )
-    private AckPaymentSent ackPaymentSent;
 
     @Override
     public String toString() {

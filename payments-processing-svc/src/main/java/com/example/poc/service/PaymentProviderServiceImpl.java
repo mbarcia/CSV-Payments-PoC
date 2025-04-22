@@ -1,6 +1,6 @@
 package com.example.poc.service;
 
-import com.example.poc.client.SendPaymentRequest;
+import com.example.poc.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
 import com.google.common.util.concurrent.RateLimiter;
@@ -68,7 +68,7 @@ public class PaymentProviderServiceImpl implements PaymentProviderService {
                 .setStatus("nada")
                 .setFee(new BigDecimal("1.01"))
                 .setMessage("This is a test")
-                .setAckPaymentSent(ackPaymentSent);
+                .setAckPaymentSent(ackPaymentSent.getId());
     }
 
     // Custom exception for throttling

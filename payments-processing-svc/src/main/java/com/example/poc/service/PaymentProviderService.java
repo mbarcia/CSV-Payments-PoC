@@ -1,6 +1,6 @@
 package com.example.poc.service;
 
-import com.example.poc.client.SendPaymentRequest;
+import com.example.poc.SendPaymentRequest;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
 import com.fasterxml.jackson.core.JsonProcessingException;

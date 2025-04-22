@@ -1,9 +1,6 @@
 package com.example.poc.domain;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToOne;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -23,9 +20,6 @@ public class AckPaymentSent extends BaseEntity implements Serializable {
 
     private Long status;
     private String message;
-
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "ackPaymentSent")
-    private PaymentStatus paymentStatus;
 
     @Override
     public String toString() {

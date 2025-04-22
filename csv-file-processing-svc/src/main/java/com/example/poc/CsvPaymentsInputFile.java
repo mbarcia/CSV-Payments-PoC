@@ -1,6 +1,5 @@
 package com.example.poc;
 
-import com.example.poc.domain.PaymentRecord;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

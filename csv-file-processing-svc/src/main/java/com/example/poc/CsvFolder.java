@@ -1,7 +1,6 @@
 package com.example.poc;
 
 import com.example.poc.domain.BaseEntity;
-import com.example.poc.domain.CsvPaymentsInputFile;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;

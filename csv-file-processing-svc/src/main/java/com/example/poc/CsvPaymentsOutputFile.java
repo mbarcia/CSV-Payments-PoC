@@ -1,6 +1,5 @@
 package com.example.poc;
 
-import com.example.poc.domain.PaymentOutput;
 import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import jakarta.persistence.*;

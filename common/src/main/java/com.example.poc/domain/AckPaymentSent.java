@@ -24,9 +24,6 @@ public class AckPaymentSent extends BaseEntity implements Serializable {
     private Long status;
     private String message;
 
-    @OneToOne(fetch = FetchType.EAGER)
-    private PaymentRecord record;
-
     @OneToOne(cascade = CascadeType.ALL, mappedBy = "ackPaymentSent")
     private PaymentStatus paymentStatus;
 

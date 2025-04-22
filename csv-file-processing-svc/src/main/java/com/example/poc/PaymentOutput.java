@@ -1,4 +1,4 @@
-package com.example.poc.domain;
+package com.example.poc;
 
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvIgnore;

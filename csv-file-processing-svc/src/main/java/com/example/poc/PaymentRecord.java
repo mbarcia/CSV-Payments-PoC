@@ -1,5 +1,7 @@
-package com.example.poc.domain;
+package com.example.poc;
 
+import com.example.poc.domain.AckPaymentSent;
+import com.example.poc.domain.BaseEntity;
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvIgnore;
 import com.opencsv.bean.CsvNumber;

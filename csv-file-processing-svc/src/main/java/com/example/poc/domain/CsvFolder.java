@@ -1,4 +1,4 @@
-package com.example.poc;
+package com.example.poc.domain;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
@@ -8,36 +8,45 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.experimental.Accessors;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Getter
 @Setter
-@Accessors(chain = true)
 @NoArgsConstructor
-public class CsvPaymentsInputFile extends BaseCsvPaymentsFile {
+public class CsvFolder extends BaseEntity {
     @OneToMany(
             cascade = CascadeType.ALL,
             fetch = FetchType.LAZY,
-            mappedBy = "csvPaymentsInputFile",
+            mappedBy = "csvFolder",
             orphanRemoval = true
     )
-    private final List<PaymentRecord> records = new ArrayList<>();
+    private final List<CsvPaymentsInputFile> files = new ArrayList<>();
 
-    public CsvPaymentsInputFile(@NonNull File csvFile) {
-        this.csvFile = csvFile;
-        filepath = csvFile.getPath();
+    @NonNull
+    private String folderPath;
+
+    public CsvFolder(@NonNull String folderPath) {
+        this.folderPath = folderPath;
+    }
+
+    public String toString() {
+        return getFolderPath();
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        CsvPaymentsInputFile that = (CsvPaymentsInputFile) o;
-        return this.getId() != null && this.getId().equals(that.getId());
+        CsvFolder csvFolder = (CsvFolder) o;
+        return getFolderPath().equals(csvFolder.getFolderPath());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getFolderPath());
     }
 }

@@ -1,4 +1,4 @@
-package com.example.poc;
+package com.example.poc.domain;
 
 import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;

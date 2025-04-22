@@ -1,6 +1,5 @@
-package com.example.poc;
+package com.example.poc.domain;
 
-import com.example.poc.domain.BaseEntity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;

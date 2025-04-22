@@ -1,6 +1,5 @@
-package com.example.poc;
+package com.example.poc.domain;
 
-import com.example.poc.domain.BaseEntity;
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvIgnore;
 import com.opencsv.bean.CsvNumber;

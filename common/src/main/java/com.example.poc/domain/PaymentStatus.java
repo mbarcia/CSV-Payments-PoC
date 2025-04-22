@@ -2,12 +2,13 @@ package com.example.poc.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.OneToOne;
 import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.UUID;
 
 import static java.text.MessageFormat.format;
 
@@ -27,7 +28,8 @@ public class PaymentStatus extends BaseEntity implements Serializable {
     private String message;
     private BigDecimal fee;
 
-    private UUID ackPaymentSent;
+    @OneToOne(fetch = FetchType.LAZY)
+    private AckPaymentSent ackPaymentSent;
 
     @Override
     public String toString() {

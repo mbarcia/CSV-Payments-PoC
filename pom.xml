@@ -6,13 +6,17 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
 
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
+
     <modules>
         <module>common</module>
         <module>csv-file-processing-svc</module>
         <module>payments-processing-svc</module>
         <module>payment-provider-integration-svc</module>
         <module>payment-status-svc</module>
-        <module>data-persistence-svc</module>
         <module>orchestrator-svc</module>
     </modules>
 

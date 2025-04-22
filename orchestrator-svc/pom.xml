@@ -17,5 +17,17 @@
             <artifactId>common</artifactId>
             <version>1.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>csv-file-processing-svc</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.example</groupId>
+            <artifactId>payment-processing-svc</artifactId>
+            <version>1.0.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 </project>

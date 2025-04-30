@@ -10,7 +10,7 @@ import java.io.File;
 import java.util.stream.Stream;
 
 @ApplicationScoped
-public class ProcessCsvPaymentsInputFileService extends BaseServiceWithAudit<CsvPaymentsInputFile, Stream<PaymentRecord>> {
+public class ProcessCsvPaymentsInputFileService extends LocalAbstractServiceWithAudit<CsvPaymentsInputFile, Stream<PaymentRecord>> {
     public ProcessCsvPaymentsInputFileService(CsvPaymentsInputFileRepository repository, ProcessCsvPaymentsInputFileCommand command) {
         super(repository, command);
     }

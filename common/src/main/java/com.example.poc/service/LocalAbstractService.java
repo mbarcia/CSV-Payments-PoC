@@ -10,15 +10,16 @@ import org.slf4j.MDC;
 import java.util.UUID;
 
 @Getter
-public abstract class BaseService<T, S> {
+public abstract class LocalAbstractService<T, S> implements Service<T, S> {
     private Command<T, S> command;
 
-    public BaseService() {}
+    public LocalAbstractService() {}
 
-    public BaseService(Command<T, S> command) {
+    public LocalAbstractService(Command<T, S> command) {
         this.command = command;
     }
 
+    @Override
     @Transactional
     public S process(T processableObj) {
         // Log for basic audit purposes
@@ -30,6 +31,6 @@ public abstract class BaseService<T, S> {
 
         MDC.clear();
 
-        return command.execute(processableObj);
+        return getCommand().execute(processableObj);
     }
 }

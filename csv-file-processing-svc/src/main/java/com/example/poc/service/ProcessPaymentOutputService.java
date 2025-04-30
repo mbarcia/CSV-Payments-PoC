@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
-public class ProcessPaymentOutputService extends BaseService<PaymentOutput, CsvPaymentsOutputFile> {
+public class ProcessPaymentOutputService extends LocalAbstractService<PaymentOutput, CsvPaymentsOutputFile> {
     private final CsvPaymentsOutputFileRepository csvPaymentsOutputFileRepository;
     private Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap;
 

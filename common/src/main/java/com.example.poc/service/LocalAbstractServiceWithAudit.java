@@ -8,13 +8,13 @@ import lombok.Getter;
 import java.util.List;
 
 @Getter
-public abstract class BaseServiceWithAudit<T, S> extends BaseService<T, S> {
+public abstract class LocalAbstractServiceWithAudit<T, S> extends LocalAbstractService<T, S> implements Service<T, S> {
     private PanacheRepository<T> repository;
 
     @SuppressWarnings("unused")
-    public BaseServiceWithAudit() {}
+    public LocalAbstractServiceWithAudit() {}
 
-    public BaseServiceWithAudit(PanacheRepository<T> repository, Command<T, S> command) {
+    public LocalAbstractServiceWithAudit(PanacheRepository<T> repository, Command<T, S> command) {
         super(command);
         this.repository = repository;
     }

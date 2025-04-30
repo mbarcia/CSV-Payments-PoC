@@ -10,7 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.Map;
 
 @ApplicationScoped
-public class ReadFolderService extends BaseServiceWithAudit<CsvFolder, Map<CsvPaymentsInputFile, CsvPaymentsOutputFile>> {
+public class ReadFolderService extends LocalAbstractServiceWithAudit<CsvFolder, Map<CsvPaymentsInputFile, CsvPaymentsOutputFile>> {
     public ReadFolderService(CsvFolderRepository repository, ReadFolderCommand command) {
         super(repository, command);
     }

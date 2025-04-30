@@ -9,7 +9,7 @@ import lombok.Getter;
 
 @ApplicationScoped
 @Getter
-public class PollAckPaymentSentService extends BaseServiceWithAudit<AckPaymentSent, PaymentStatus> {
+public class PollAckPaymentSentService extends LocalAbstractServiceWithAudit<AckPaymentSent, PaymentStatus> {
     public PollAckPaymentSentService(AckPaymentSentRepository repository, PollAckPaymentSentCommand command) {
         super(repository, command);
     }

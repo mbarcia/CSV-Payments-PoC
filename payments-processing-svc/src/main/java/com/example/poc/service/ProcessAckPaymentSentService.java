@@ -7,7 +7,7 @@ import com.example.poc.repository.AckPaymentSentRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class ProcessAckPaymentSentService extends BaseServiceWithAudit<AckPaymentSent, PaymentStatus> {
+public class ProcessAckPaymentSentService extends LocalAbstractServiceWithAudit<AckPaymentSent, PaymentStatus> {
     public ProcessAckPaymentSentService(AckPaymentSentRepository repository, ProcessAckPaymentSentCommand command) {
         super(repository, command);
     }

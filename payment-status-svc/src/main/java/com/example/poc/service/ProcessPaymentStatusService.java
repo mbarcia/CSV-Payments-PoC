@@ -7,7 +7,7 @@ import com.example.poc.repository.PaymentStatusRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class ProcessPaymentStatusService extends BaseServiceWithAudit<PaymentStatus, PaymentOutput> {
+public class ProcessPaymentStatusService extends LocalAbstractServiceWithAudit<PaymentStatus, PaymentOutput> {
     public ProcessPaymentStatusService(PaymentStatusRepository repository, ProcessPaymentStatusCommand command) {
         super(repository, command);
     }

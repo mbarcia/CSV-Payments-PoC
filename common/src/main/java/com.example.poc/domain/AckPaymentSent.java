@@ -1,13 +1,11 @@
 package com.example.poc.domain;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
+import java.util.UUID;
 
 import static java.text.MessageFormat.format;
 
@@ -24,11 +22,13 @@ public class AckPaymentSent extends BaseEntity implements Serializable {
     private Long status;
     private String message;
 
-    @OneToOne(fetch = FetchType.EAGER)
+    @Transient
     private PaymentRecord record;
+    private UUID recordId;
 
-    @OneToOne(cascade = CascadeType.ALL, mappedBy = "ackPaymentSent")
+    @Transient
     private PaymentStatus paymentStatus;
+    private UUID paymentStatusId;
 
     @Override
     public String toString() {

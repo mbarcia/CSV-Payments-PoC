@@ -12,6 +12,7 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.UUID;
 
 @Entity
 @RequiredArgsConstructor
@@ -25,12 +26,14 @@ public class PaymentOutput implements Serializable {
     private Long id;
 
     @CsvIgnore
-    @OneToOne
+    @Transient
     private final PaymentRecord paymentRecord;
+    private final UUID paymentRecordId;
 
     @CsvIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
+    @Transient
     private final CsvPaymentsOutputFile csvPaymentsOutputFile;
+    private final String csvPaymentsOutputFilename;
 
     // en-UK locale to match the format of the (mock) payment service
     @CsvBindByName(column = "CSV Id") final String csvId;

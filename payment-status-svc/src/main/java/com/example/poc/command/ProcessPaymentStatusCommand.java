@@ -13,7 +13,9 @@ public class ProcessPaymentStatusCommand implements Command<PaymentStatus, Payme
 
         return new PaymentOutput(
                 paymentRecord,
+                paymentRecord.getId(),
                 paymentRecord.getCsvPaymentsOutputFile(),
+                paymentRecord.getCsvPaymentsOutputFile().getFilepath(),
                 paymentRecord.getCsvId(),
                 paymentRecord.getRecipient(),
                 paymentRecord.getAmount(),

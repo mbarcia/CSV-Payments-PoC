@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option java_package = "com.example.poc.grpc";
+
+message AckPaymentSent {
+  string id = 1; // from BaseEntity
+  string conversation_id = 2;
+  int64  status = 3; // Long
+  string message = 4;
+  string record_id = 5;
+  string payment_status_id = 6;
+}
+
+message PaymentStatus {
+  string id = 1; // from BaseEntity
+  string reference = 2;
+  string status = 3;
+  string message = 4;
+  string fee = 5; // BigDecimal
+  string ack_payment_sent_id = 6;
+}
+
+message PaymentOutput {
+  string id = 1; // from BaseEntity
+  string payment_record_id = 2;
+  string csvPaymentsOutputFilename = 3;
+  string csvId = 4;
+  string recipient = 5;
+  string amount = 6; // BigDecimal
+  string currency = 7; // Currency
+  string conversation_id = 8;
+  int64  status = 9; // Long
+  string message = 10;
+  string fee = 11; // BigDecimal
+}
+
+service PollAckPaymentSentService {
+  rpc Process(AckPaymentSent) returns (PaymentStatus);
+}
+
+service ProcessPaymentStatusService {
+  rpc Process(PaymentStatus) returns (PaymentOutput);
+}

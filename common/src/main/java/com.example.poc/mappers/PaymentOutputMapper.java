@@ -1,5 +1,6 @@
-package com.example.poc.domain;
+package com.example.poc.mappers;
 
+import com.example.poc.domain.PaymentOutput;
 import com.example.poc.grpc.PaymentStatusSvc;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -13,7 +14,7 @@ import java.util.UUID;
 @Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface PaymentOutputMapper {
 
-    @Mapping(target = "id", ignore = true) // managed by JPA
+    @Mapping(source = "id", target = "id", qualifiedByName = "toUUID")
     @Mapping(target = "paymentRecord", ignore = true) // transient
     @Mapping(target = "csvPaymentsOutputFile", ignore = true) // transient
     @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "toUUID")
@@ -22,19 +23,20 @@ public interface PaymentOutputMapper {
     @Mapping(source = "recipient", target = "recipient")
     @Mapping(source = "amount", target = "amount", qualifiedByName = "toBigDecimal")
     @Mapping(source = "currency", target = "currency", qualifiedByName = "toCurrency")
-    @Mapping(source = "conversationID", target = "conversationID")
+    @Mapping(source = "conversationId", target = "conversationId")
     @Mapping(source = "status", target = "status")
     @Mapping(source = "message", target = "message")
     @Mapping(source = "fee", target = "fee", qualifiedByName = "toBigDecimal")
     PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput proto);
 
+    @Mapping(source = "id", target = "id", qualifiedByName = "toString")
     @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "toString")
     @Mapping(source = "csvPaymentsOutputFilename", target = "csvPaymentsOutputFilename")
     @Mapping(source = "csvId", target = "csvId")
     @Mapping(source = "recipient", target = "recipient")
     @Mapping(source = "amount", target = "amount", qualifiedByName = "toStringDecimal")
     @Mapping(source = "currency", target = "currency", qualifiedByName = "currencyToString")
-    @Mapping(source = "conversationID", target = "conversationID")
+    @Mapping(source = "conversationId", target = "conversationId")
     @Mapping(source = "status", target = "status")
     @Mapping(source = "message", target = "message")
     @Mapping(source = "fee", target = "fee", qualifiedByName = "toStringDecimal")

@@ -1,5 +1,7 @@
-package com.example.poc.domain;
+package com.example.poc.mappers;
 
+import com.example.poc.domain.AckPaymentSent;
+import com.example.poc.grpc.PaymentsProcessingSvc;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -13,12 +15,12 @@ public interface AckPaymentSentMapper {
     @Mapping(source = "id", target = "id", qualifiedByName = "toUUID")
     @Mapping(source = "recordId", target = "recordId", qualifiedByName = "toUUID")
     @Mapping(source = "paymentStatusId", target = "paymentStatusId", qualifiedByName = "toUUID")
-    AckPaymentSent fromGrpc(com.example.poc.grpc.PaymentStatusSvc.AckPaymentSent proto);
+    AckPaymentSent fromGrpc(PaymentsProcessingSvc.AckPaymentSent proto);
 
     @Mapping(source = "id", target = "id", qualifiedByName = "toString")
     @Mapping(source = "recordId", target = "recordId", qualifiedByName = "toString")
     @Mapping(source = "paymentStatusId", target = "paymentStatusId", qualifiedByName = "toString")
-    com.example.poc.grpc.PaymentStatusSvc.AckPaymentSent toGrpc(AckPaymentSent domain);
+    PaymentsProcessingSvc.AckPaymentSent toGrpc(AckPaymentSent domain);
 
     @Named("toUUID")
     static UUID toUUID(String id) {

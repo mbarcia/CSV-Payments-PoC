@@ -1,6 +1,8 @@
-package com.example.poc.domain;
+package com.example.poc.mapper;
 
+import com.example.poc.domain.PaymentStatus;
 import com.example.poc.grpc.PaymentStatusSvc;
+import com.example.poc.grpc.PaymentsProcessingSvc;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -14,11 +16,11 @@ public interface PaymentStatusMapper {
 
     @Mapping(source = "ackPaymentSentId", target = "ackPaymentSentId", qualifiedByName = "toUUID")
     @Mapping(source = "fee", target = "fee", qualifiedByName = "toBigDecimal")
-    PaymentStatus fromGrpc(PaymentStatusSvc.PaymentStatus proto);
+    PaymentStatus fromGrpc(PaymentsProcessingSvc.PaymentStatus proto);
 
     @Mapping(source = "ackPaymentSentId", target = "ackPaymentSentId", qualifiedByName = "toString")
     @Mapping(source = "fee", target = "fee", qualifiedByName = "toStringDecimal")
-    PaymentStatusSvc.PaymentStatus toGrpc(PaymentStatus domain);
+    PaymentsProcessingSvc.PaymentStatus toGrpc(PaymentStatus domain);
 
     @Named("toUUID")
     static UUID toUUID(String id) {

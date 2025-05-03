@@ -1,7 +1,5 @@
 package com.example.poc.domain;
 
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Transient;
 import lombok.Getter;
@@ -11,6 +9,7 @@ import lombok.Setter;
 import java.io.File;
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.UUID;
 
 import static java.text.MessageFormat.format;
 
@@ -23,8 +22,9 @@ public abstract class BaseCsvPaymentsFile extends BaseEntity implements Serializ
     protected File csvFile;
     protected String filepath;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @Transient
     private CsvFolder csvFolder;
+    private UUID csvFolderId;
 
     @Override
     public String toString() {

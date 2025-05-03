@@ -5,9 +5,7 @@ option java_package = "com.example.poc.grpc";
 import "payment_status_svc.proto";
 
 message CsvPaymentsOutputFile {
-  string id = 1;                        // Inherited from BaseCsvPaymentsFile (likely UUID)
-  string filepath = 2;                 // Output file path (e.g., "xxx.csv.out")
-  repeated PaymentOutput payment_outputs = 3; // Transient list of output records
+  string filepath = 1;                 // Output file path (e.g., "xxx.csv.out")
 }
 
 service ProcessPaymentOutputService {

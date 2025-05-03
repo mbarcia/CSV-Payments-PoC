@@ -16,12 +16,12 @@ import java.util.List;
 import java.util.Map;
 
 @ApplicationScoped
-public class ProcessPaymentOutputService extends LocalAbstractService<PaymentOutput, CsvPaymentsOutputFile> {
+public class ProcessCsvPaymentsOutputFileService extends LocalAbstractService<PaymentOutput, CsvPaymentsOutputFile> {
     private final CsvPaymentsOutputFileRepository csvPaymentsOutputFileRepository;
     private Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap;
 
     @Inject
-    public ProcessPaymentOutputService(ProcessPaymentOutputCommand command, CsvPaymentsOutputFileRepository csvPaymentsOutputFileRepository) {
+    public ProcessCsvPaymentsOutputFileService(ProcessPaymentOutputCommand command, CsvPaymentsOutputFileRepository csvPaymentsOutputFileRepository) {
         super(command);
         this.csvPaymentsOutputFileRepository = csvPaymentsOutputFileRepository;
     }
@@ -56,9 +56,5 @@ public class ProcessPaymentOutputService extends LocalAbstractService<PaymentOut
                 }
             }
         );
-    }
-
-    public CsvPaymentsOutputFile createCsvFile(CsvPaymentsInputFile inputFile) throws IOException {
-        return new CsvPaymentsOutputFile(inputFile);
     }
 }

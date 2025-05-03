@@ -13,9 +13,7 @@ message PaymentRecord {
 }
 
 message CsvPaymentsInputFile {
-  string id = 1;                      // Inherited from BaseCsvPaymentsFile (assumed UUID)
-  string filepath = 2;               // Path to the CSV file
-  repeated PaymentRecord records = 3; // Transient list of records, may be omitted from DB
+  string filepath = 1;               // Path to the CSV file
 }
 
 message PaymentRecordList {

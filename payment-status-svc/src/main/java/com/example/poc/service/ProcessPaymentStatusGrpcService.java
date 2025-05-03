@@ -2,7 +2,10 @@ package com.example.poc.service;
 
 import com.example.poc.domain.*;
 import com.example.poc.grpc.PaymentStatusSvc;
+import com.example.poc.grpc.PaymentsProcessingSvc;
 import com.example.poc.grpc.ProcessPaymentStatusServiceGrpc;
+import com.example.poc.mappers.PaymentOutputMapper;
+import com.example.poc.mappers.PaymentStatusMapper;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
 import jakarta.inject.Inject;
@@ -19,7 +22,7 @@ public class ProcessPaymentStatusGrpcService extends ProcessPaymentStatusService
     @Inject
     PaymentOutputMapper paymentOutputMapper;
 
-    private final GrpcServiceAdapter<PaymentStatusSvc.PaymentStatus,
+    private final GrpcServiceAdapter<PaymentsProcessingSvc.PaymentStatus,
             PaymentStatusSvc.PaymentOutput,
             PaymentStatus,
             PaymentOutput> adapter =
@@ -30,7 +33,7 @@ public class ProcessPaymentStatusGrpcService extends ProcessPaymentStatusService
                 }
 
                 @Override
-                protected PaymentStatus fromGrpc(PaymentStatusSvc.PaymentStatus grpcIn) {
+                protected PaymentStatus fromGrpc(PaymentsProcessingSvc.PaymentStatus grpcIn) {
                     return paymentStatusMapper.fromGrpc(grpcIn);
                 }
 
@@ -40,7 +43,7 @@ public class ProcessPaymentStatusGrpcService extends ProcessPaymentStatusService
                 }
             };
 
-    public void invoke(PaymentStatusSvc.PaymentStatus request,
+    public void invoke(PaymentsProcessingSvc.PaymentStatus request,
                        StreamObserver<PaymentStatusSvc.PaymentOutput> responseObserver) {
         adapter.invoke(request, responseObserver);
     }

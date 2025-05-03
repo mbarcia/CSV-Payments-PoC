@@ -3,7 +3,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>orchestrator-svc</artifactId>
+    <artifactId>read-folder-svc</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
 
     <parent>
         <groupId>com.example</groupId>
@@ -41,16 +42,11 @@
             <version>1.0</version>
         </dependency>
         <dependency>
-            <groupId>com.example</groupId>
-            <artifactId>input-csv-file-processing-svc</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.example</groupId>
-            <artifactId>payment-processing-svc</artifactId>
-            <version>1.0.0</version>
-            <scope>compile</scope>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.36</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 </project>
+

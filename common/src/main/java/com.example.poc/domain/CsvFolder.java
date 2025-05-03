@@ -1,9 +1,6 @@
 package com.example.poc.domain;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -18,12 +15,7 @@ import java.util.Objects;
 @Setter
 @NoArgsConstructor
 public class CsvFolder extends BaseEntity {
-    @OneToMany(
-            cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY,
-            mappedBy = "csvFolder",
-            orphanRemoval = true
-    )
+    @Transient
     private final List<CsvPaymentsInputFile> files = new ArrayList<>();
 
     @NonNull

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+option java_package = "com.example.poc.grpc";
+
+import "input_csv_file_processing_svc.proto";
+import "output_csv_file_processing_svc.proto";
+
+message CsvFolder {
+  string id = 1;                                // Inherited from BaseEntity (likely UUID)
+  string folder_path = 2;                       // Path to the folder
+  repeated CsvPaymentsInputFile files = 3;      // Transient list of input files
+}
+
+message InputOutputPair {
+  CsvPaymentsInputFile input_file = 1;
+  CsvPaymentsOutputFile output_file = 2;
+}
+
+message CsvProcessingResult {
+  repeated InputOutputPair results = 1;
+}
+
+service ReadFolderService {
+  rpc Process(CsvFolder) returns (CsvProcessingResult);
+}

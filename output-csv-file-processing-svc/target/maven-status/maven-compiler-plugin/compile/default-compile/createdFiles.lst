@@ -1,0 +1,3 @@
+com/example/poc/command/ProcessPaymentOutputCommand.class
+com/example/poc/service/ProcessPaymentOutputService.class
+com/example/poc/repository/CsvPaymentsOutputFileRepository.class

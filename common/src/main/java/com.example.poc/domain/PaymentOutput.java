@@ -4,10 +4,7 @@ import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvIgnore;
 import com.opencsv.bean.CsvNumber;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -16,34 +13,47 @@ import java.util.UUID;
 
 @Entity
 @RequiredArgsConstructor
-@NoArgsConstructor(force = true)
 @Getter
 @Setter
-public class PaymentOutput implements Serializable {
-    @Id
-    @CsvIgnore
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class PaymentOutput extends BaseEntity implements Serializable {
+
+    @Setter(AccessLevel.NONE) // Avoids override by MapStruct
+    private UUID id = UUID.randomUUID();
 
     @CsvIgnore
     @Transient
-    private final PaymentRecord paymentRecord;
-    private final UUID paymentRecordId;
+    private PaymentRecord paymentRecord;
+    private UUID paymentRecordId;
 
     @CsvIgnore
     @Transient
-    private final CsvPaymentsOutputFile csvPaymentsOutputFile;
-    private final String csvPaymentsOutputFilename;
+    private CsvPaymentsOutputFile csvPaymentsOutputFile;
+    private String csvPaymentsOutputFilename;
 
     // en-UK locale to match the format of the (mock) payment service
-    @CsvBindByName(column = "CSV Id") final String csvId;
-    @CsvBindByName(column = "Recipient") final String recipient;
-    @CsvBindByName(column = "Amount", locale = "en-UK") @CsvNumber("#,###.00") final BigDecimal amount;
-    @CsvBindByName(column = "Currency") final Currency currency;
-    @CsvBindByName(column = "Reference") final String conversationID;
-    @CsvBindByName(column = "Status") final Long status;
-    @CsvBindByName(column = "Message") final String message;
-    @CsvBindByName(column = "Fee", locale = "en-UK") @CsvNumber("#,###.00") final BigDecimal fee;
+    @CsvBindByName(column = "CSV Id") String csvId;
+    @CsvBindByName(column = "Recipient") String recipient;
+    @CsvBindByName(column = "Amount", locale = "en-UK") @CsvNumber("#,###.00") BigDecimal amount;
+    @CsvBindByName(column = "Currency") Currency currency;
+    @CsvBindByName(column = "Reference") String conversationId;
+    @CsvBindByName(column = "Status") Long status;
+    @CsvBindByName(column = "Message") String message;
+    @CsvBindByName(column = "Fee", locale = "en-UK") @CsvNumber("#,###.00") BigDecimal fee;
+
+    public PaymentOutput(PaymentRecord paymentRecord, UUID paymentRecordId, CsvPaymentsOutputFile csvPaymentsOutputFile, String csvPaymentsOutputFilename, String csvId, String recipient, BigDecimal amount, Currency currency, String conversationId, Long status, String message, BigDecimal fee) {
+        this.paymentRecord = paymentRecord;
+        this.paymentRecordId = paymentRecordId;
+        this.csvPaymentsOutputFile = csvPaymentsOutputFile;
+        this.csvPaymentsOutputFilename = csvPaymentsOutputFilename;
+        this.csvId = csvId;
+        this.recipient = recipient;
+        this.amount = amount;
+        this.currency = currency;
+        this.conversationId = conversationId;
+        this.status = status;
+        this.message = message;
+        this.fee = fee;
+    }
 
     @Override
     public boolean equals(Object o) {

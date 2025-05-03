@@ -4,8 +4,7 @@ import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvIgnore;
 import com.opencsv.bean.CsvNumber;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Transient;
 import lombok.*;
 import lombok.experimental.Accessors;
 
@@ -15,6 +14,7 @@ import java.text.NumberFormat;
 import java.util.Currency;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.UUID;
 
 import static java.text.MessageFormat.format;
 
@@ -44,12 +44,14 @@ public class PaymentRecord extends BaseEntity implements Serializable {
     private Currency currency;
 
     @CsvIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
+    @Transient
     private CsvPaymentsInputFile csvPaymentsInputFile;
+    private UUID csvPaymentsInputFileId;
 
     @CsvIgnore
-    @ManyToOne(fetch = FetchType.EAGER)
+    @Transient
     private CsvPaymentsOutputFile csvPaymentsOutputFile;
+    private UUID csvPaymentsOutputFileId;
 
     @Override
     public String toString() {

@@ -1,0 +1,5 @@
+com/example/poc/repository/CsvFolderRepository.class
+com/example/poc/command/ReadFolderCommand.class
+com/example/poc/service/ReadFolderService.class
+com/example/poc/service/CsvFileService.class
+com/example/poc/service/CsvFileServiceImpl.class

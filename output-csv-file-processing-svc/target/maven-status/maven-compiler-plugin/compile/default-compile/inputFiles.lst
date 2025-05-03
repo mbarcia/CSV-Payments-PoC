@@ -1,0 +1,3 @@
+/Users/mari/IdeaProjects/CSV-Payments-PoC/output-csv-file-processing-svc/src/main/java/com/example/poc/repository/CsvPaymentsOutputFileRepository.java
+/Users/mari/IdeaProjects/CSV-Payments-PoC/output-csv-file-processing-svc/src/main/java/com/example/poc/command/ProcessPaymentOutputCommand.java
+/Users/mari/IdeaProjects/CSV-Payments-PoC/output-csv-file-processing-svc/src/main/java/com/example/poc/service/ProcessPaymentOutputService.java

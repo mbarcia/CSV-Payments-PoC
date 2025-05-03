@@ -1,9 +1,6 @@
 package com.example.poc.domain;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -20,12 +17,7 @@ import java.util.List;
 @Accessors(chain = true)
 @NoArgsConstructor
 public class CsvPaymentsInputFile extends BaseCsvPaymentsFile {
-    @OneToMany(
-            cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY,
-            mappedBy = "csvPaymentsInputFile",
-            orphanRemoval = true
-    )
+    @Transient
     private final List<PaymentRecord> records = new ArrayList<>();
 
     public CsvPaymentsInputFile(@NonNull File csvFile) {

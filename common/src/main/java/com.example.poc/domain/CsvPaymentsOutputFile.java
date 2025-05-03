@@ -20,12 +20,8 @@ import java.util.List;
 @Accessors(chain = true)
 @NoArgsConstructor
 public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile {
-    @OneToMany(
-            cascade = CascadeType.ALL,
-            fetch = FetchType.LAZY,
-            mappedBy = "csvPaymentsOutputFile",
-            orphanRemoval = true
-    )
+
+    @Transient
     private final List<PaymentOutput> paymentOutputs = new ArrayList<>();
 
     @Transient

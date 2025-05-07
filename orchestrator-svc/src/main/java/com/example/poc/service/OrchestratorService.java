@@ -38,7 +38,7 @@ public class OrchestratorService {
 
     @Inject
     @GrpcClient("process-csv-payments-input-file-svc")
-    ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceBlockingStub processCsvPaymentsInputFileService;
+    ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceStub processCsvPaymentsInputFileService;
 
     @Inject
     @GrpcClient("process-ack-payment-sent-svc")
@@ -98,8 +98,8 @@ public class OrchestratorService {
         }
 
         // Flush/close the output file buffers
+        //noinspection ResultOfMethodCallIgnored
         processCsvPaymentsOutputFileService.closeFiles(Empty.getDefaultInstance());
-        printOutputToConsole();
     }
 
     private CsvFolder getCsvFolder(String csvFolderPath) throws URISyntaxException, IllegalArgumentException {
@@ -151,12 +151,6 @@ public class OrchestratorService {
         return results;
     }
 
-//    Stream<Stream<PaymentRecord>> getSingleRecordStream(Set<CsvPaymentsInputFile> csvFilesStream) {
-//        return csvFilesStream.stream()
-//                // Return all payment records in all CSV input files
-//                .map(processCsvPaymentsInputFileService::remoteProcess);
-//    }
-
     List<CompletableFuture<List<PaymentRecord>>> getSingleRecordStream(Set<CsvPaymentsInputFile> inputFiles) {
         return inputFiles.stream()
                 .map(this::callRemoteProcess)
@@ -168,23 +162,22 @@ public class OrchestratorService {
         List<PaymentRecord> records = new ArrayList<>();
         InputCsvFileProcessingSvc.CsvPaymentsInputFile protoInputFile = csvPaymentsInputFileMapper.toGrpc(inputFile);
 
-        // TODO need to know more about streaming gRPC service
-//        processCsvPaymentsInputFileService.remoteProcess(protoInputFile, new StreamObserver<PaymentRecord>() {
-//            @Override
-//            public void onNext(PaymentRecord value) {
-//                records.add(value);
-//            }
-//
-//            @Override
-//            public void onError(Throwable t) {
-//                future.completeExceptionally(t);
-//            }
-//
-//            @Override
-//            public void onCompleted() {
-//                future.complete(records);
-//            }
-//        });
+        processCsvPaymentsInputFileService.remoteProcess(protoInputFile, new StreamObserver<>() {
+            @Override
+            public void onNext(InputCsvFileProcessingSvc.PaymentRecord paymentRecord) {
+                records.add(paymentRecordMapper.fromGrpc(paymentRecord));
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                future.completeExceptionally(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                future.complete(records);
+            }
+        });
 
         return future;
     }
@@ -223,14 +216,5 @@ public class OrchestratorService {
         }
 
         return result;
-    }
-
-    private void printOutputToConsole() {
-        System.out.println("And these are the contents in the database:");
-//        processCsvPaymentsInputFileService.print();
-//        sendPaymentRecordService.print();
-//        processAckPaymentSentService.print();
-//        processPaymentStatusService.print();
-//        processCsvPaymentsOutputFileService.print();
     }
 }

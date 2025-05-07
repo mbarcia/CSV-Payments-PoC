@@ -16,10 +16,6 @@ message CsvPaymentsInputFile {
   string filepath = 1;               // Path to the CSV file
 }
 
-message PaymentRecordList {
-  repeated PaymentRecord records = 1;
-}
-
 service ProcessCsvPaymentsInputFileService {
-  rpc remoteProcess(CsvPaymentsInputFile) returns (PaymentRecordList);
+  rpc remoteProcess(CsvPaymentsInputFile) returns (stream PaymentRecord);
 }

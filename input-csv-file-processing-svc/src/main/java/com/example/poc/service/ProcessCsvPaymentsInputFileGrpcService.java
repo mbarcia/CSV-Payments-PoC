@@ -10,10 +10,6 @@ import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
 import jakarta.inject.Inject;
 
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 @GrpcService
 public class ProcessCsvPaymentsInputFileGrpcService extends ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase {
 
@@ -26,11 +22,11 @@ public class ProcessCsvPaymentsInputFileGrpcService extends ProcessCsvPaymentsIn
     @Inject
     PaymentRecordMapper paymentRecordMapper;
 
-    private final GrpcServiceAdapter<InputCsvFileProcessingSvc.CsvPaymentsInputFile,
-            InputCsvFileProcessingSvc.PaymentRecordList ,
+    private final GrpcServiceStreamingAdapter<InputCsvFileProcessingSvc.CsvPaymentsInputFile,
+            InputCsvFileProcessingSvc.PaymentRecord,
             CsvPaymentsInputFile,
-            Stream<PaymentRecord>> adapter =
-            new GrpcServiceAdapter<>() {
+            PaymentRecord> adapter =
+            new GrpcServiceStreamingAdapter<>() {
 
                 protected ProcessCsvPaymentsInputFileService getService() {
                     return domainService;
@@ -42,18 +38,13 @@ public class ProcessCsvPaymentsInputFileGrpcService extends ProcessCsvPaymentsIn
                 }
 
                 @Override
-                protected InputCsvFileProcessingSvc.PaymentRecordList toGrpc(Stream<PaymentRecord> stream) {
-                    List<InputCsvFileProcessingSvc.PaymentRecord> grpcList =
-                            stream.map(paymentRecordMapper::toGrpc).collect(Collectors.toList());
-
-                    return com.example.poc.grpc.InputCsvFileProcessingSvc.PaymentRecordList.newBuilder()
-                            .addAllRecords(grpcList)
-                            .build();
+                protected InputCsvFileProcessingSvc.PaymentRecord toGrpc(PaymentRecord grpcOut) {
+                    return paymentRecordMapper.toGrpc(grpcOut);
                 }
             };
 
     public void remoteProcess(InputCsvFileProcessingSvc.CsvPaymentsInputFile request,
-                       StreamObserver<InputCsvFileProcessingSvc.PaymentRecordList> responseObserver) {
+                       StreamObserver<InputCsvFileProcessingSvc.PaymentRecord> responseObserver) {
         adapter.remoteProcess(request, responseObserver);
     }
 }

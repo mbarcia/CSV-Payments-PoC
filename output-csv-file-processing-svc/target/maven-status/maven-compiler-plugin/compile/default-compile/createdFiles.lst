@@ -1,5 +1,7 @@
 com/example/poc/service/ProcessCsvPaymentsOutputFileGrpcService.class
 com/example/poc/service/ProcessCsvPaymentsOutputFileService.class
 com/example/poc/service/ProcessCsvPaymentsOutputFileGrpcService$1.class
-com/example/poc/command/ProcessPaymentOutputCommand.class
+com/example/poc/mapper/FilePairMapper.class
+com/example/poc/mapper/CsvPaymentsOutputFileMapper.class
 com/example/poc/repository/CsvPaymentsOutputFileRepository.class
+com/example/poc/command/ProcessPaymentOutputCommand.class

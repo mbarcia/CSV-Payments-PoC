@@ -8,11 +8,9 @@
 
     <modules>
         <module>common</module>
-        <module>read-folder-svc</module>
         <module>input-csv-file-processing-svc</module>
         <module>output-csv-file-processing-svc</module>
         <module>payments-processing-svc</module>
-        <module>payment-provider-integration-svc</module>
         <module>payment-status-svc</module>
         <module>orchestrator-svc</module>
     </modules>

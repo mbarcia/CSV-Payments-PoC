@@ -4,8 +4,8 @@ import com.example.poc.domain.*;
 import com.example.poc.grpc.PaymentStatusSvc;
 import com.example.poc.grpc.PaymentsProcessingSvc;
 import com.example.poc.grpc.ProcessPaymentStatusServiceGrpc;
-import com.example.poc.mappers.PaymentOutputMapper;
-import com.example.poc.mappers.PaymentStatusMapper;
+import com.example.poc.mapper.PaymentOutputMapper;
+import com.example.poc.mapper.PaymentStatusMapper;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
 import jakarta.inject.Inject;
@@ -43,8 +43,8 @@ public class ProcessPaymentStatusGrpcService extends ProcessPaymentStatusService
                 }
             };
 
-    public void invoke(PaymentsProcessingSvc.PaymentStatus request,
+    public void remoteProcess(PaymentsProcessingSvc.PaymentStatus request,
                        StreamObserver<PaymentStatusSvc.PaymentOutput> responseObserver) {
-        adapter.invoke(request, responseObserver);
+        adapter.remoteProcess(request, responseObserver);
     }
 }

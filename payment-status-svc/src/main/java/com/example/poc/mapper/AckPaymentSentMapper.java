@@ -1,4 +1,4 @@
-package com.example.poc.mappers;
+package com.example.poc.mapper;
 
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.grpc.PaymentsProcessingSvc;

@@ -3,7 +3,7 @@ package com.example.poc.service;
 import com.example.poc.domain.AckPaymentSent;
 import com.example.poc.domain.PaymentStatus;
 import com.example.poc.grpc.PaymentsProcessingSvc;
-import com.example.poc.grpc.PollAckPaymentSentServiceGrpc;
+import com.example.poc.grpc.ProcessAckPaymentSentServiceGrpc;
 import com.example.poc.mapper.AckPaymentSentMapper;
 import com.example.poc.mapper.PaymentStatusMapper;
 import io.grpc.stub.StreamObserver;
@@ -11,10 +11,10 @@ import io.quarkus.grpc.GrpcService;
 import jakarta.inject.Inject;
 
 @GrpcService
-public class PollAckPaymentSentGrpcService extends PollAckPaymentSentServiceGrpc.PollAckPaymentSentServiceImplBase {
+public class ProcessAckPaymentSentGrpcService extends ProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase {
 
     @Inject
-    PollAckPaymentSentService domainService;
+    ProcessAckPaymentSentService domainService;
 
     @Inject
     AckPaymentSentMapper ackPaymentSentMapper;
@@ -28,7 +28,7 @@ public class PollAckPaymentSentGrpcService extends PollAckPaymentSentServiceGrpc
             PaymentStatus> adapter =
             new GrpcServiceAdapter<>() {
 
-                protected PollAckPaymentSentService getService() {
+                protected ProcessAckPaymentSentService getService() {
                     return domainService;
                 }
 
@@ -44,7 +44,7 @@ public class PollAckPaymentSentGrpcService extends PollAckPaymentSentServiceGrpc
             };
 
     public void remoteProcess(PaymentsProcessingSvc.AckPaymentSent request,
-                        StreamObserver<PaymentsProcessingSvc.PaymentStatus> responseObserver) {
+                       StreamObserver<PaymentsProcessingSvc.PaymentStatus> responseObserver) {
         adapter.remoteProcess(request, responseObserver);
     }
 }

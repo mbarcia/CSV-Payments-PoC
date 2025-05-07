@@ -5,18 +5,27 @@ import com.example.poc.domain.CsvFolder;
 import com.example.poc.domain.CsvPaymentsInputFile;
 import com.example.poc.domain.CsvPaymentsOutputFile;
 import com.example.poc.domain.PaymentRecord;
+import com.example.poc.grpc.*;
+import com.example.poc.mapper.*;
+import io.grpc.stub.StreamObserver;
+import io.quarkus.grpc.GrpcClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.google.protobuf.Empty;
 
 @ApplicationScoped
 public class OrchestratorService {
@@ -28,40 +37,68 @@ public class OrchestratorService {
     HybridResourceLoader resourceLoader;
 
     @Inject
-    ReadFolderService readFolderService;
+    @GrpcClient("process-csv-payments-input-file-svc")
+    ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceBlockingStub processCsvPaymentsInputFileService;
 
     @Inject
-    ProcessCsvPaymentsInputFileService processCsvPaymentsInputFileService;
+    @GrpcClient("process-ack-payment-sent-svc")
+    ProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceBlockingStub processAckPaymentSentService;
 
     @Inject
-    ProcessAckPaymentSentService processAckPaymentSentService;
+    @GrpcClient("payments-processing-svc")
+    SendPaymentRecordServiceGrpc.SendPaymentRecordServiceBlockingStub sendPaymentRecordService;
 
     @Inject
-    SendPaymentRecordService sendPaymentRecordService;
+    @GrpcClient("process-csv-payments-output-file-svc")
+    ProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceBlockingStub processCsvPaymentsOutputFileService;
 
     @Inject
-    ProcessPaymentOutputService processPaymentOutputService;
+    @GrpcClient("process-payment-status-svc")
+    ProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceBlockingStub processPaymentStatusService;
 
     @Inject
-    ProcessPaymentStatusService processPaymentStatusService;
+    FilePairMapper filePairMapper;
+
+    @Inject
+    PaymentRecordMapper paymentRecordMapper;
+
+    @Inject
+    CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
+
+    @Inject
+    CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
 
     public void process(String csvFolderPath) throws URISyntaxException {
         CsvFolder csvFolder = getCsvFolder(csvFolderPath);
         // Get a map of input/output files, obtained and created from the folder name
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap = readFolderService.process(csvFolder);
+        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap = readFolder(csvFolder);
         // Initialise the service with this map
-        processPaymentOutputService.initialiseFiles(csvPaymentsOutputFileMap);
+        OutputCsvFileProcessingSvc.InitialiseFilesRequest request = filePairMapper.toProtoList(csvPaymentsOutputFileMap);
+        //noinspection ResultOfMethodCallIgnored
+        processCsvPaymentsOutputFileService.initialiseFiles(request);
         // Get a stream of CSV record objects coming from all the files in the folder
-        Stream<Stream<PaymentRecord>> csvFilesStream = getSingleRecordStream(csvPaymentsOutputFileMap.keySet());
+        List<CompletableFuture<List<PaymentRecord>>> futureList = getSingleRecordStream(csvPaymentsOutputFileMap.keySet());
+
+        // Wait for all futures to complete
+        CompletableFuture<Void> allDoneFuture =
+                CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
+
+        // Block until all are done (you could make this async too if needed)
+        allDoneFuture.join();
+
+        // Gather all results (now safe because we waited)
+        Stream<List<PaymentRecord>> allRecordsStreams = futureList.stream()
+                .map(CompletableFuture::join);          // each gives List<PaymentRecord>
+
         // Process the stream of CSV record objects
-        for (Stream<PaymentRecord> recordStream : csvFilesStream.toList()) {
+        for (List<PaymentRecord> recordStream : allRecordsStreams.toList()) {
             // This is where most part of the processing takes place (in parallel)
             List<CsvPaymentsOutputFile> outputFilesList = this.getCsvPaymentsOutputFilesList(recordStream);
             LOG.info("The resulting output files are: {}", Arrays.toString(outputFilesList.toArray()));
         }
 
         // Flush/close the output file buffers
-        processPaymentOutputService.closeFiles(csvPaymentsOutputFileMap.values());
+        processCsvPaymentsOutputFileService.closeFiles(Empty.getDefaultInstance());
         printOutputToConsole();
     }
 
@@ -86,18 +123,17 @@ public class OrchestratorService {
         return new CsvFolder(resource.toURI().getPath());
     }
 
-    public List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(Stream<PaymentRecord> recordsStream) {
-        List<PaymentRecord> records = recordsStream.toList(); // Collect records to process
+    public List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(List<PaymentRecord> records) {
         List<CsvPaymentsOutputFile> results = new ArrayList<>();
 
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             List<Future<CsvPaymentsOutputFile>> futures = records.stream()
                     .map(record -> executor.submit(() -> {
                         // The processing pipeline for each record
-                        var sent = sendPaymentRecordService.process(record);
-                        var acked = processAckPaymentSentService.process(sent);
-                        var statusProcessed = processPaymentStatusService.process(acked);
-                        return processPaymentOutputService.process(statusProcessed);
+                        var sent = sendPaymentRecordService.remoteProcess(paymentRecordMapper.toGrpc(record));
+                        var acked = processAckPaymentSentService.remoteProcess(sent);
+                        var statusProcessed = processPaymentStatusService.remoteProcess(acked);
+                        return csvPaymentsOutputFileMapper.fromGrpc(processCsvPaymentsOutputFileService.remoteProcess(statusProcessed));
                     }))
                     .toList();
 
@@ -115,19 +151,86 @@ public class OrchestratorService {
         return results;
     }
 
-    Stream<Stream<PaymentRecord>> getSingleRecordStream(Set<CsvPaymentsInputFile> csvFilesStream) {
-        return csvFilesStream.stream()
-                // Return all payment records in all CSV input files
-                .map(processCsvPaymentsInputFileService::process);
+//    Stream<Stream<PaymentRecord>> getSingleRecordStream(Set<CsvPaymentsInputFile> csvFilesStream) {
+//        return csvFilesStream.stream()
+//                // Return all payment records in all CSV input files
+//                .map(processCsvPaymentsInputFileService::remoteProcess);
+//    }
+
+    List<CompletableFuture<List<PaymentRecord>>> getSingleRecordStream(Set<CsvPaymentsInputFile> inputFiles) {
+        return inputFiles.stream()
+                .map(this::callRemoteProcess)
+                .collect(Collectors.toList());
+    }
+
+    private CompletableFuture<List<PaymentRecord>> callRemoteProcess(CsvPaymentsInputFile inputFile) {
+        CompletableFuture<List<PaymentRecord>> future = new CompletableFuture<>();
+        List<PaymentRecord> records = new ArrayList<>();
+        InputCsvFileProcessingSvc.CsvPaymentsInputFile protoInputFile = csvPaymentsInputFileMapper.toGrpc(inputFile);
+
+        // TODO need to know more about streaming gRPC service
+//        processCsvPaymentsInputFileService.remoteProcess(protoInputFile, new StreamObserver<PaymentRecord>() {
+//            @Override
+//            public void onNext(PaymentRecord value) {
+//                records.add(value);
+//            }
+//
+//            @Override
+//            public void onError(Throwable t) {
+//                future.completeExceptionally(t);
+//            }
+//
+//            @Override
+//            public void onCompleted() {
+//                future.complete(records);
+//            }
+//        });
+
+        return future;
+    }
+
+    public File[] listCsvFiles(String directoryPath) {
+        if (Objects.nonNull(directoryPath)) {
+            File directory = new File(directoryPath);
+
+            return directory.listFiles((file, name) -> name.toLowerCase().endsWith(".csv"));
+        } else {
+            return new File[0];
+        }
+    }
+
+    public CsvPaymentsInputFile createInputCsvFile(File file) {
+        return new CsvPaymentsInputFile(file);
+    }
+
+    public CsvPaymentsOutputFile createOutputCsvFile(CsvPaymentsInputFile inputFile) throws IOException {
+        return new CsvPaymentsOutputFile(inputFile);
+    }
+
+    public Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> readFolder(CsvFolder csvFolder) {
+        File[] files = listCsvFiles(csvFolder.getFolderPath());
+        HashMap<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = new HashMap<>();
+
+        for (File file : files) {
+            CsvPaymentsInputFile inputFile = createInputCsvFile(file);
+            inputFile.setCsvFolder(csvFolder);
+            try {
+                CsvPaymentsOutputFile outputFile = createOutputCsvFile(inputFile);
+                result.put(inputFile, outputFile);
+            } catch (IOException ignored) {
+                // TODO ignoring this is probably not a good thing
+            }
+        }
+
+        return result;
     }
 
     private void printOutputToConsole() {
         System.out.println("And these are the contents in the database:");
-        readFolderService.print();
-        processCsvPaymentsInputFileService.print();
-        sendPaymentRecordService.print();
-        processAckPaymentSentService.print();
-        processPaymentStatusService.print();
-        processPaymentOutputService.print();
+//        processCsvPaymentsInputFileService.print();
+//        sendPaymentRecordService.print();
+//        processAckPaymentSentService.print();
+//        processPaymentStatusService.print();
+//        processCsvPaymentsOutputFileService.print();
     }
 }

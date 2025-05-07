@@ -1,4 +1,4 @@
-package com.example.poc.mappers;
+package com.example.poc.mapper;
 
 import com.example.poc.domain.PaymentRecord;
 import com.example.poc.grpc.InputCsvFileProcessingSvc;
@@ -31,7 +31,7 @@ public interface PaymentRecordMapper {
     @Mapping(source = "currency", target = "currency", qualifiedByName = "stringToCurrency")
     @Mapping(source = "csvPaymentsInputFileId", target = "csvPaymentsInputFileId", qualifiedByName = "stringToUUID")
     @Mapping(source = "csvPaymentsOutputFileId", target = "csvPaymentsOutputFileId", qualifiedByName = "stringToUUID")
-    PaymentRecord toEntity(InputCsvFileProcessingSvc.PaymentRecord grpc);
+    PaymentRecord fromGrpc(InputCsvFileProcessingSvc.PaymentRecord grpc);
 
     // Custom mappers
     @Named("uuidToString")

@@ -3,11 +3,24 @@ syntax = "proto3";
 option java_package = "com.example.poc.grpc";
 
 import "payment_status_svc.proto";
+import "input_csv_file_processing_svc.proto";
+import "google/protobuf/empty.proto";
 
 message CsvPaymentsOutputFile {
-  string filepath = 1;                 // Output file path (e.g., "xxx.csv.out")
+  string filepath = 1;
 }
 
-service ProcessPaymentOutputService {
-  rpc Process(PaymentOutput) returns (CsvPaymentsOutputFile);
+message FilePair {
+  CsvPaymentsInputFile input = 1;
+  CsvPaymentsOutputFile output = 2;
+}
+
+message InitialiseFilesRequest {
+  repeated FilePair files = 1;
+}
+
+service ProcessCsvPaymentsOutputFileService {
+  rpc remoteProcess(PaymentOutput) returns (CsvPaymentsOutputFile);
+  rpc initialiseFiles(InitialiseFilesRequest) returns (google.protobuf.Empty);
+  rpc closeFiles(google.protobuf.Empty) returns (google.protobuf.Empty);
 }

@@ -23,10 +23,9 @@ message PaymentStatus {
 }
 
 service SendPaymentRecordService {
-  rpc Process(PaymentRecord) returns (AckPaymentSent);
+  rpc remoteProcess(PaymentRecord) returns (AckPaymentSent);
 }
 
 service ProcessAckPaymentSentService {
-  rpc Process(AckPaymentSent) returns (PaymentStatus);
+  rpc remoteProcess(AckPaymentSent) returns (PaymentStatus);
 }
-

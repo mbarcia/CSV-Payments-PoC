@@ -1,4 +1,4 @@
-package com.example.poc.mappers;
+package com.example.poc.mapper;
 
 import com.example.poc.domain.CsvPaymentsInputFile;
 import com.example.poc.grpc.InputCsvFileProcessingSvc;

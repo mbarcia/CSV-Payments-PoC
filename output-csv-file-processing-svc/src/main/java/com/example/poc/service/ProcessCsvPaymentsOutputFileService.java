@@ -11,7 +11,6 @@ import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -46,8 +45,8 @@ public class ProcessCsvPaymentsOutputFileService extends LocalAbstractService<Pa
         entities.forEach(System.out::println);
     }
 
-    public void closeFiles(Collection<CsvPaymentsOutputFile> outputFilesList) {
-        outputFilesList.forEach(
+    public void closeFiles() {
+        this.csvPaymentsOutputFileMap.values().forEach(
             (outputFile) -> {
                 try {
                     outputFile.getWriter().close();

@@ -4,6 +4,20 @@ option java_package = "com.example.poc.grpc";
 
 import "payments_processing_svc.proto";
 
+message SendPaymentRequest {
+  string msisdn = 1;
+  string amount = 2;
+  string currency = 3;
+  string reference = 4;
+  string url = 5;
+  string recordId = 6;
+}
+
+service PaymentProviderService {
+  rpc sendPayment(SendPaymentRequest) returns (AckPaymentSent);
+  rpc getPaymentStatus(AckPaymentSent) returns(PaymentStatus);
+}
+
 message PaymentOutput {
   string id = 1; // from BaseEntity
   string payment_record_id = 2;
@@ -19,9 +33,9 @@ message PaymentOutput {
 }
 
 service ProcessPaymentStatusService {
-  rpc Process(PaymentStatus) returns (PaymentOutput);
+  rpc remoteProcess(PaymentStatus) returns (PaymentOutput);
 }
 
 service PollAckPaymentSentService {
-  rpc Process(AckPaymentSent) returns (PaymentStatus);
+  rpc remoteProcess(AckPaymentSent) returns (PaymentStatus);
 }

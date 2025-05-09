@@ -46,7 +46,8 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
         return new AckPaymentSent(UUID)
                 .setStatus(1000L)
                 .setMessage("OK but this is only a test")
-                .setRecordId(requestMap.getRecordId());
+                .setPaymentRecord(requestMap.getPaymentRecord())
+                .setPaymentRecordId(requestMap.getPaymentRecordId());
     }
 
     @Override

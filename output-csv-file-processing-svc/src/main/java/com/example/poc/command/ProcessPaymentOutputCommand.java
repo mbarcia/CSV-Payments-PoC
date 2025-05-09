@@ -11,7 +11,7 @@ public class ProcessPaymentOutputCommand implements Command<PaymentOutput, CsvPa
     @Override
     public CsvPaymentsOutputFile execute(PaymentOutput paymentOutput) {
         try {
-            CsvPaymentsOutputFile csvOutputFile = paymentOutput.getPaymentRecord().getCsvPaymentsOutputFile();
+            CsvPaymentsOutputFile csvOutputFile = paymentOutput.getCsvPaymentsOutputFile();
             csvOutputFile.getSbc().write(paymentOutput);
 
             return csvOutputFile;

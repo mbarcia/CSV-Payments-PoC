@@ -23,7 +23,8 @@ public class SendPaymentRecordCommand implements Command<PaymentRecord, AckPayme
                 .setAmount(paymentRecord.getAmount())
                 .setReference(paymentRecord.getRecipient())
                 .setCurrency(paymentRecord.getCurrency())
-                .setRecordId(paymentRecord.getId());
+                .setPaymentRecord(paymentRecord)
+                .setPaymentRecordId(paymentRecord.getId());
 
         return paymentProviderServiceMock.sendPayment(request);
     }

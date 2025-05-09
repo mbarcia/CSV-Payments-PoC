@@ -9,10 +9,10 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class ProcessPaymentStatusCommand implements Command<PaymentStatus, PaymentOutput> {
     @Override
     public PaymentOutput execute(PaymentStatus paymentStatus) {
-        PaymentRecord paymentRecord = paymentStatus.getAckPaymentSent().getRecord();
+        PaymentRecord paymentRecord = paymentStatus.getAckPaymentSent().getPaymentRecord();
 
         return new PaymentOutput(
-                paymentRecord,
+                paymentStatus,
                 paymentRecord.getId(),
                 paymentRecord.getCsvPaymentsOutputFile(),
                 paymentRecord.getCsvPaymentsOutputFile().getFilepath(),

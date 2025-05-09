@@ -5,13 +5,13 @@ import com.example.poc.domain.CsvPaymentsOutputFile;
 import com.example.poc.grpc.InputCsvFileProcessingSvc;
 import com.example.poc.grpc.OutputCsvFileProcessingSvc;
 import org.mapstruct.Mapper;
-import org.mapstruct.factory.Mappers;
+import org.mapstruct.ReportingPolicy;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Mapper
+@Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface FilePairMapper {
 
     default OutputCsvFileProcessingSvc.InitialiseFilesRequest toProtoList(Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> map) {

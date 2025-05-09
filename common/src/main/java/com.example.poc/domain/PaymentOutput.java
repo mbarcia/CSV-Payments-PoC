@@ -22,8 +22,7 @@ public class PaymentOutput extends BaseEntity implements Serializable {
 
     @CsvIgnore
     @Transient
-    private PaymentRecord paymentRecord;
-    private UUID paymentRecordId;
+    private PaymentStatus paymentStatus;
 
     @CsvIgnore
     @Transient
@@ -40,9 +39,8 @@ public class PaymentOutput extends BaseEntity implements Serializable {
     @CsvBindByName(column = "Message") String message;
     @CsvBindByName(column = "Fee", locale = "en-UK") @CsvNumber("#,###.00") BigDecimal fee;
 
-    public PaymentOutput(PaymentRecord paymentRecord, UUID paymentRecordId, CsvPaymentsOutputFile csvPaymentsOutputFile, String csvPaymentsOutputFilename, String csvId, String recipient, BigDecimal amount, Currency currency, String conversationId, Long status, String message, BigDecimal fee) {
-        this.paymentRecord = paymentRecord;
-        this.paymentRecordId = paymentRecordId;
+    public PaymentOutput(PaymentStatus paymentStatus, UUID paymentRecordId, CsvPaymentsOutputFile csvPaymentsOutputFile, String csvPaymentsOutputFilename, String csvId, String recipient, BigDecimal amount, Currency currency, String conversationId, Long status, String message, BigDecimal fee) {
+        this.paymentStatus = paymentStatus;
         this.csvPaymentsOutputFile = csvPaymentsOutputFile;
         this.csvPaymentsOutputFilename = csvPaymentsOutputFilename;
         this.csvId = csvId;

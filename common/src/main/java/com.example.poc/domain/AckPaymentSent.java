@@ -23,8 +23,8 @@ public class AckPaymentSent extends BaseEntity implements Serializable {
     private String message;
 
     @Transient
-    private PaymentRecord record;
-    private UUID recordId;
+    private PaymentRecord paymentRecord;
+    private UUID paymentRecordId;
 
     @Transient
     private PaymentStatus paymentStatus;
@@ -32,7 +32,7 @@ public class AckPaymentSent extends BaseEntity implements Serializable {
 
     @Override
     public String toString() {
-        return format("AckPaymentSent'{'id=''{0}'', conversationID=''{1}'', status={2}, message={3}'}'", getId(), conversationID, status, message);
+        return format("AckPaymentSent'{'id=''{0}'', conversationID=''{1}'', status={2}, message={3}, recordId={4}'}'", getId(), conversationID, status, message, paymentStatusId);
     }
 
     @Override

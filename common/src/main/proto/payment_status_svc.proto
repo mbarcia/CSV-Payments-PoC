@@ -3,6 +3,7 @@ syntax = "proto3";
 option java_package = "com.example.poc.grpc";
 
 import "payments_processing_svc.proto";
+import "input_csv_file_processing_svc.proto";
 
 message SendPaymentRequest {
   string msisdn = 1;
@@ -10,7 +11,8 @@ message SendPaymentRequest {
   string currency = 3;
   string reference = 4;
   string url = 5;
-  string recordId = 6;
+  string paymentRecordId = 6;
+  PaymentRecord paymentRecord = 7;
 }
 
 service PaymentProviderService {
@@ -20,22 +22,18 @@ service PaymentProviderService {
 
 message PaymentOutput {
   string id = 1; // from BaseEntity
-  string payment_record_id = 2;
-  string csvPaymentsOutputFilename = 3;
-  string csvId = 4;
-  string recipient = 5;
-  string amount = 6; // BigDecimal
-  string currency = 7; // Currency
-  string conversation_id = 8;
-  int64  status = 9; // Long
-  string message = 10;
-  string fee = 11; // BigDecimal
+  string csvPaymentsOutputFilename = 2;
+  string csvId = 3;
+  string recipient = 4;
+  string amount = 5; // BigDecimal
+  string currency = 6; // Currency
+  string conversationId = 7;
+  int64  status = 8; // Long
+  string message = 9;
+  string fee = 10; // BigDecimal
+  PaymentStatus paymentStatus = 11;
 }
 
 service ProcessPaymentStatusService {
   rpc remoteProcess(PaymentStatus) returns (PaymentOutput);
-}
-
-service PollAckPaymentSentService {
-  rpc remoteProcess(AckPaymentSent) returns (PaymentStatus);
 }

@@ -2,12 +2,15 @@ package com.example.poc.mapper;
 
 import com.example.poc.domain.PaymentStatus;
 import com.example.poc.grpc.PaymentsProcessingSvc;
-import org.mapstruct.*;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-@Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.WARN)
+@Mapper(componentModel = "cdi", uses = {AckPaymentSentMapper.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface PaymentStatusMapper {
     @Mapping(source = "id", target = "id", qualifiedByName = "uuidToString")
     @Mapping(source = "reference", target = "reference")
@@ -15,6 +18,7 @@ public interface PaymentStatusMapper {
     @Mapping(source = "message", target = "message")
     @Mapping(source = "fee", target = "fee", qualifiedByName = "bigDecimalToString")
     @Mapping(source = "ackPaymentSentId", target = "ackPaymentSentId", qualifiedByName = "uuidToString")
+    @Mapping(source = "ackPaymentSent", target = "ackPaymentSent")
     PaymentsProcessingSvc.PaymentStatus toGrpc(PaymentStatus entity);
 
     @Mapping(source = "id", target = "id", qualifiedByName = "stringToUuid")
@@ -23,6 +27,7 @@ public interface PaymentStatusMapper {
     @Mapping(source = "message", target = "message")
     @Mapping(source = "fee", target = "fee", qualifiedByName = "stringToBigDecimal")
     @Mapping(source = "ackPaymentSentId", target = "ackPaymentSentId", qualifiedByName = "stringToUuid")
+    @Mapping(source = "ackPaymentSent", target = "ackPaymentSent")
     PaymentStatus fromGrpc(PaymentsProcessingSvc.PaymentStatus grpc);
 
     @Named("bigDecimalToString")

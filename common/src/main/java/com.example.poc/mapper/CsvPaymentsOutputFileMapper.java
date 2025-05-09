@@ -4,11 +4,9 @@ import com.example.poc.domain.CsvPaymentsOutputFile;
 import com.example.poc.grpc.OutputCsvFileProcessingSvc;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.ReportingPolicy;
 
-import java.io.File;
-import java.util.UUID;
-
-@Mapper(componentModel = "cdi", imports = {File.class, UUID.class})
+@Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface CsvPaymentsOutputFileMapper {
 
     @Mapping(target = "csvFile", ignore = true)

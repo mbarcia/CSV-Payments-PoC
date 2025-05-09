@@ -30,9 +30,13 @@ public class PaymentStatus extends BaseEntity implements Serializable {
     private AckPaymentSent ackPaymentSent;
     private UUID ackPaymentSentId;
 
+    @Transient
+    private PaymentRecord paymentRecord;
+    private UUID paymentRecordId;
+
     @Override
     public String toString() {
-        return format("PaymentStatus'{'customerReference=''{0}'', reference=''{1}'', message=''{2}'', status={3}, fee={4}'}'", customerReference, reference, message, status, fee);
+        return format("PaymentStatus'{'customerReference=''{0}'', reference=''{1}'', message=''{2}'', status={3}, fee={4}, recordId={5}'}'", customerReference, reference, message, status, fee, paymentRecordId);
     }
 
     @Override

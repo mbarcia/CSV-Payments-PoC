@@ -32,7 +32,7 @@ public class ProcessCsvPaymentsOutputFileService extends LocalAbstractService<Pa
     @Override
     @Transactional
     public CsvPaymentsOutputFile process(PaymentOutput processableObj) {
-        PaymentRecord paymentRecord = processableObj.getPaymentRecord();
+        PaymentRecord paymentRecord = processableObj.getPaymentStatus().getPaymentRecord();
         CsvPaymentsInputFile csvPaymentsInputFile = paymentRecord.getCsvPaymentsInputFile();
         paymentRecord.setCsvPaymentsOutputFile(csvPaymentsOutputFileMap.get(csvPaymentsInputFile));
 

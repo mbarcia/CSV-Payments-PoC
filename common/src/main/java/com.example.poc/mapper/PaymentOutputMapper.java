@@ -15,9 +15,8 @@ import java.util.UUID;
 public interface PaymentOutputMapper {
 
     @Mapping(source = "id", target = "id", qualifiedByName = "toUUID")
-    @Mapping(target = "paymentRecord", ignore = true) // transient
+    @Mapping(source = "paymentStatus", target = "paymentStatus")
     @Mapping(target = "csvPaymentsOutputFile", ignore = true) // transient
-    @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "toUUID")
     @Mapping(source = "csvPaymentsOutputFilename", target = "csvPaymentsOutputFilename")
     @Mapping(source = "csvId", target = "csvId")
     @Mapping(source = "recipient", target = "recipient")
@@ -30,7 +29,7 @@ public interface PaymentOutputMapper {
     PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput proto);
 
     @Mapping(source = "id", target = "id", qualifiedByName = "toString")
-    @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "toString")
+    @Mapping(source = "paymentStatus", target = "paymentStatus")
     @Mapping(source = "csvPaymentsOutputFilename", target = "csvPaymentsOutputFilename")
     @Mapping(source = "csvId", target = "csvId")
     @Mapping(source = "recipient", target = "recipient")

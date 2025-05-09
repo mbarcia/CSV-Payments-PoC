@@ -6,11 +6,13 @@ import "input_csv_file_processing_svc.proto";
 
 message AckPaymentSent {
   string id = 1; // from BaseEntity
-  string conversation_id = 2;
+  string conversationId = 2;
   int64  status = 3; // Long
   string message = 4;
-  string record_id = 5;
-  string payment_status_id = 6;
+  string paymentRecordId = 5;
+  string paymentStatusId = 6;
+  PaymentRecord paymentRecord = 7;
+  PaymentStatus paymentStatus = 8;
 }
 
 message PaymentStatus {
@@ -19,7 +21,8 @@ message PaymentStatus {
   string status = 3;
   string message = 4;
   string fee = 5; // BigDecimal
-  string ack_payment_sent_id = 6;
+  string ackPaymentSentId = 6;
+  AckPaymentSent ackPaymentSent = 7;
 }
 
 service SendPaymentRecordService {
@@ -27,5 +30,9 @@ service SendPaymentRecordService {
 }
 
 service ProcessAckPaymentSentService {
+  rpc remoteProcess(AckPaymentSent) returns (PaymentStatus);
+}
+
+service PollAckPaymentSentService {
   rpc remoteProcess(AckPaymentSent) returns (PaymentStatus);
 }

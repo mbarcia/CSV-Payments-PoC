@@ -4,41 +4,24 @@
                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <artifactId>orchestrator-svc</artifactId>
+    <packaging>jar</packaging>
 
     <parent>
         <groupId>com.example</groupId>
         <artifactId>csv-payments</artifactId>
         <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <quarkus.platform.version>3.13.0</quarkus.platform.version>
-        <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-        <protobuf.version>4.28.2</protobuf.version>
-        <grpc.version>1.63.0</grpc.version>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>${quarkus.platform.group-id}</groupId>
-                <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                <version>${quarkus.platform.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <dependency>
             <groupId>com.example</groupId>
             <artifactId>common</artifactId>
             <version>1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-picocli</artifactId>
         </dependency>
         <dependency>
             <groupId>com.example</groupId>
@@ -48,8 +31,8 @@
         </dependency>
         <dependency>
             <groupId>com.example</groupId>
-            <artifactId>payment-processing-svc</artifactId>
-            <version>1.0.0</version>
+            <artifactId>payments-processing-svc</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

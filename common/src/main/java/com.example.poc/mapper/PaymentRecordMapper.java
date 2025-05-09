@@ -5,12 +5,13 @@ import com.example.poc.grpc.InputCsvFileProcessingSvc;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
+import org.mapstruct.ReportingPolicy;
 
 import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.UUID;
 
-@Mapper(componentModel = "cdi")
+@Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface PaymentRecordMapper {
 
     // Entity to gRPC

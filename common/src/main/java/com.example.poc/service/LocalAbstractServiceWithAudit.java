@@ -2,6 +2,7 @@ package com.example.poc.service;
 
 import com.example.poc.command.Command;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
+import io.smallrye.common.annotation.Blocking;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 
@@ -20,14 +21,12 @@ public abstract class LocalAbstractServiceWithAudit<T, S> extends LocalAbstractS
     }
 
     @Override
-    @Transactional
     public S process(T processableObj) {
         // Save command object to the database for advanced audit purposes
         repository.persist(processableObj);
         return super.process(processableObj);
     }
 
-    @Transactional
     public void print() {
         List<T> entities = repository.listAll();
         entities.forEach(System.out::println);

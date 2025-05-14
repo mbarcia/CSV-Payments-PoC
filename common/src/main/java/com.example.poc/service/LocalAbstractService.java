@@ -1,6 +1,7 @@
 package com.example.poc.service;
 
 import com.example.poc.command.Command;
+import io.smallrye.common.annotation.Blocking;
 import jakarta.transaction.Transactional;
 import lombok.Getter;
 import org.slf4j.Logger;
@@ -20,7 +21,6 @@ public abstract class LocalAbstractService<T, S> implements Service<T, S> {
     }
 
     @Override
-    @Transactional
     public S process(T processableObj) {
         // Log for basic audit purposes
         MDC.put("transactionId", UUID.randomUUID().toString());

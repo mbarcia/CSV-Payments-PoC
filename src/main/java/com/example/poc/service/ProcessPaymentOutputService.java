@@ -31,7 +31,6 @@ public class ProcessPaymentOutputService extends BaseService<PaymentOutput, CsvP
     }
 
     @Override
-    @Transactional
     public CsvPaymentsOutputFile process(PaymentOutput processableObj) {
         PaymentRecord paymentRecord = processableObj.getPaymentRecord();
         CsvPaymentsInputFile csvPaymentsInputFile = paymentRecord.getCsvPaymentsInputFile();
@@ -40,11 +39,10 @@ public class ProcessPaymentOutputService extends BaseService<PaymentOutput, CsvP
         return super.process(processableObj);
     }
 
-    @Transactional
-    public void print() {
-        List<CsvPaymentsOutputFile> entities = this.csvPaymentsOutputFileRepository.listAll();
-        entities.forEach(System.out::println);
-    }
+//    public void print() {
+//        List<CsvPaymentsOutputFile> entities = this.csvPaymentsOutputFileRepository.listAll();
+//        entities.forEach(System.out::println);
+//    }
 
     public void closeFiles(Collection<CsvPaymentsOutputFile> outputFilesList) {
         outputFilesList.forEach(

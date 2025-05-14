@@ -8,7 +8,9 @@ import com.example.poc.mapper.CsvPaymentsInputFileMapper;
 import com.example.poc.mapper.PaymentRecordMapper;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
+import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 @GrpcService
 public class ProcessCsvPaymentsInputFileGrpcService extends ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase {
@@ -43,6 +45,8 @@ public class ProcessCsvPaymentsInputFileGrpcService extends ProcessCsvPaymentsIn
                 }
             };
 
+    @Blocking
+    @Transactional
     public void remoteProcess(InputCsvFileProcessingSvc.CsvPaymentsInputFile request,
                        StreamObserver<InputCsvFileProcessingSvc.PaymentRecord> responseObserver) {
         adapter.remoteProcess(request, responseObserver);

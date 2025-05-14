@@ -11,6 +11,7 @@ import com.example.poc.mapper.SendPaymentRequestMapper;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
+import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
 
 @GrpcService

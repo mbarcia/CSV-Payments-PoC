@@ -9,6 +9,7 @@ import com.example.poc.grpc.*;
 import com.example.poc.mapper.*;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcClient;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -18,6 +19,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import io.grpc.Channel;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -37,23 +39,30 @@ public class OrchestratorService {
     HybridResourceLoader resourceLoader;
 
     @Inject
-    @GrpcClient("process-csv-payments-input-file-svc")
-    ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceStub processCsvPaymentsInputFileService;
+    @GrpcClient("process-csv-payments-input-file")
+    Channel channel;
+
+    private ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceStub processCsvPaymentsInputFileServiceStub;
+
+    @PostConstruct
+    void init() {
+        processCsvPaymentsInputFileServiceStub = ProcessCsvPaymentsInputFileServiceGrpc.newStub(channel);
+    }
 
     @Inject
-    @GrpcClient("process-ack-payment-sent-svc")
+    @GrpcClient("process-ack-payment-sent")
     ProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceBlockingStub processAckPaymentSentService;
 
     @Inject
-    @GrpcClient("payments-processing-svc")
+    @GrpcClient("send-payment-record")
     SendPaymentRecordServiceGrpc.SendPaymentRecordServiceBlockingStub sendPaymentRecordService;
 
     @Inject
-    @GrpcClient("process-csv-payments-output-file-svc")
+    @GrpcClient("process-csv-payments-output-file")
     ProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceBlockingStub processCsvPaymentsOutputFileService;
 
     @Inject
-    @GrpcClient("process-payment-status-svc")
+    @GrpcClient("process-payment-status")
     ProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceBlockingStub processPaymentStatusService;
 
     @Inject
@@ -162,7 +171,7 @@ public class OrchestratorService {
         List<PaymentRecord> records = new ArrayList<>();
         InputCsvFileProcessingSvc.CsvPaymentsInputFile protoInputFile = csvPaymentsInputFileMapper.toGrpc(inputFile);
 
-        processCsvPaymentsInputFileService.remoteProcess(protoInputFile, new StreamObserver<>() {
+        processCsvPaymentsInputFileServiceStub.remoteProcess(protoInputFile, new StreamObserver<>() {
             @Override
             public void onNext(InputCsvFileProcessingSvc.PaymentRecord paymentRecord) {
                 records.add(paymentRecordMapper.fromGrpc(paymentRecord));

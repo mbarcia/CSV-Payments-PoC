@@ -12,6 +12,8 @@ import com.example.poc.mapper.PaymentOutputMapper;
 import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
+import io.smallrye.common.annotation.Blocking;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 import java.util.Map;
@@ -30,6 +32,11 @@ public class ProcessCsvPaymentsOutputFileGrpcService extends ProcessCsvPaymentsO
 
     @Inject
     FilePairMapper filePairMapper;
+
+    @PostConstruct
+    void init() {
+        System.out.println(">>> GrpcService initialized");
+    }
 
     private final GrpcServiceAdapter<PaymentStatusSvc.PaymentOutput,
             OutputCsvFileProcessingSvc.CsvPaymentsOutputFile,
@@ -52,6 +59,7 @@ public class ProcessCsvPaymentsOutputFileGrpcService extends ProcessCsvPaymentsO
                 }
             };
 
+    @Blocking
     public void remoteProcess(PaymentStatusSvc.PaymentOutput request,
                        StreamObserver<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> responseObserver) {
         adapter.remoteProcess(request, responseObserver);

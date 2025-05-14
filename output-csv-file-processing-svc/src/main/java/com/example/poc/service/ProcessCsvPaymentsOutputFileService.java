@@ -30,16 +30,15 @@ public class ProcessCsvPaymentsOutputFileService extends LocalAbstractService<Pa
     }
 
     @Override
-    @Transactional
     public CsvPaymentsOutputFile process(PaymentOutput processableObj) {
         PaymentRecord paymentRecord = processableObj.getPaymentStatus().getPaymentRecord();
         CsvPaymentsInputFile csvPaymentsInputFile = paymentRecord.getCsvPaymentsInputFile();
+        // TODO this side-effect... is it really necessary?
         paymentRecord.setCsvPaymentsOutputFile(csvPaymentsOutputFileMap.get(csvPaymentsInputFile));
 
         return super.process(processableObj);
     }
 
-    @Transactional
     public void print() {
         List<CsvPaymentsOutputFile> entities = this.csvPaymentsOutputFileRepository.listAll();
         entities.forEach(System.out::println);

@@ -8,6 +8,7 @@ import com.example.poc.mapper.PaymentOutputMapper;
 import com.example.poc.mapper.PaymentStatusMapper;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
+import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
 
 @GrpcService
@@ -43,6 +44,7 @@ public class ProcessPaymentStatusGrpcService extends ProcessPaymentStatusService
                 }
             };
 
+    @Blocking
     public void remoteProcess(PaymentsProcessingSvc.PaymentStatus request,
                        StreamObserver<PaymentStatusSvc.PaymentOutput> responseObserver) {
         adapter.remoteProcess(request, responseObserver);

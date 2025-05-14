@@ -9,7 +9,9 @@ import com.example.poc.mapper.AckPaymentSentMapper;
 import com.example.poc.mapper.PaymentRecordMapper;
 import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcService;
+import io.smallrye.common.annotation.Blocking;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 @GrpcService
 public class SendPaymentRecordGrpcService extends SendPaymentRecordServiceGrpc.SendPaymentRecordServiceImplBase {
@@ -45,6 +47,8 @@ public class SendPaymentRecordGrpcService extends SendPaymentRecordServiceGrpc.S
                 }
             };
 
+    @Blocking
+    @Transactional
     public void remoteProcess(InputCsvFileProcessingSvc.PaymentRecord request,
                        StreamObserver<PaymentsProcessingSvc.AckPaymentSent> responseObserver) {
         adapter.remoteProcess(request, responseObserver);

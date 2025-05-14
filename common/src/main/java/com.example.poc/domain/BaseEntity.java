@@ -22,6 +22,6 @@ public abstract class BaseEntity {
     @GeneratedValue
     // UUID version 7 (Hibernate 6.5+)
     @UuidGenerator(style = UuidGenerator.Style.TIME)
-    private UUID id;
+    public UUID id;
 
 }

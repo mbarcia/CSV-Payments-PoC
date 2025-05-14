@@ -20,14 +20,12 @@ public abstract class BaseServiceWithAudit<T, S> extends BaseService<T, S> {
     }
 
     @Override
-    @Transactional
     public S process(T processableObj) {
         // Save command object to the database for advanced audit purposes
         repository.persist(processableObj);
         return super.process(processableObj);
     }
 
-    @Transactional
     public void print() {
         List<T> entities = repository.listAll();
         entities.forEach(System.out::println);

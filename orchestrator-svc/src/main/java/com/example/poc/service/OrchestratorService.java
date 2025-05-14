@@ -40,14 +40,7 @@ public class OrchestratorService {
 
     @Inject
     @GrpcClient("process-csv-payments-input-file")
-    Channel channel;
-
-    private ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceStub processCsvPaymentsInputFileServiceStub;
-
-    @PostConstruct
-    void init() {
-        processCsvPaymentsInputFileServiceStub = ProcessCsvPaymentsInputFileServiceGrpc.newStub(channel);
-    }
+    ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceBlockingStub processCsvPaymentsInputFileServiceBlockingStub;
 
     @Inject
     @GrpcClient("process-ack-payment-sent")
@@ -86,23 +79,12 @@ public class OrchestratorService {
         //noinspection ResultOfMethodCallIgnored
         processCsvPaymentsOutputFileService.initialiseFiles(request);
         // Get a stream of CSV record objects coming from all the files in the folder
-        List<CompletableFuture<List<PaymentRecord>>> futureList = getSingleRecordStream(csvPaymentsOutputFileMap.keySet());
-
-        // Wait for all futures to complete
-        CompletableFuture<Void> allDoneFuture =
-                CompletableFuture.allOf(futureList.toArray(new CompletableFuture[0]));
-
-        // Block until all are done (you could make this async too if needed)
-        allDoneFuture.join();
-
-        // Gather all results (now safe because we waited)
-        Stream<List<PaymentRecord>> allRecordsStreams = futureList.stream()
-                .map(CompletableFuture::join);          // each gives List<PaymentRecord>
+        List<List<PaymentRecord>> recordLists = getSingleRecordLists(csvPaymentsOutputFileMap.keySet());
 
         // Process the stream of CSV record objects
-        for (List<PaymentRecord> recordStream : allRecordsStreams.toList()) {
+        for (List<PaymentRecord> recordList : recordLists) {
             // This is where most part of the processing takes place (in parallel)
-            List<CsvPaymentsOutputFile> outputFilesList = this.getCsvPaymentsOutputFilesList(recordStream);
+            List<CsvPaymentsOutputFile> outputFilesList = this.getCsvPaymentsOutputFilesList(recordList);
             LOG.info("The resulting output files are: {}", Arrays.toString(outputFilesList.toArray()));
         }
 
@@ -135,60 +117,40 @@ public class OrchestratorService {
     public List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(List<PaymentRecord> records) {
         List<CsvPaymentsOutputFile> results = new ArrayList<>();
 
-        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-            List<Future<CsvPaymentsOutputFile>> futures = records.stream()
-                    .map(record -> executor.submit(() -> {
-                        // The processing pipeline for each record
-                        var sent = sendPaymentRecordService.remoteProcess(paymentRecordMapper.toGrpc(record));
-                        var acked = processAckPaymentSentService.remoteProcess(sent);
-                        var statusProcessed = processPaymentStatusService.remoteProcess(acked);
-                        return csvPaymentsOutputFileMapper.fromGrpc(processCsvPaymentsOutputFileService.remoteProcess(statusProcessed));
-                    }))
-                    .toList();
-
-            // Collect results from all futures
-            for (Future<CsvPaymentsOutputFile> future : futures) {
-                try {
-                    results.add(future.get());
-                } catch (InterruptedException | ExecutionException e) {
-                    // Handle exceptions appropriately
-                    throw new RuntimeException("Error processing payment record", e);
-                }
+        for (PaymentRecord record : records) {
+            try {
+                var sent = sendPaymentRecordService.remoteProcess(paymentRecordMapper.toGrpc(record));
+                var acked = processAckPaymentSentService.remoteProcess(sent);
+                var statusProcessed = processPaymentStatusService.remoteProcess(acked);
+                var outputFile = processCsvPaymentsOutputFileService.remoteProcess(statusProcessed);
+                results.add(csvPaymentsOutputFileMapper.fromGrpc(outputFile));
+            } catch (Exception e) {
+                throw new RuntimeException("Error processing payment record", e);
             }
         }
 
         return results;
     }
 
-    List<CompletableFuture<List<PaymentRecord>>> getSingleRecordStream(Set<CsvPaymentsInputFile> inputFiles) {
+    public List<List<PaymentRecord>> getSingleRecordLists(Set<CsvPaymentsInputFile> inputFiles) {
         return inputFiles.stream()
                 .map(this::callRemoteProcess)
                 .collect(Collectors.toList());
     }
 
-    private CompletableFuture<List<PaymentRecord>> callRemoteProcess(CsvPaymentsInputFile inputFile) {
-        CompletableFuture<List<PaymentRecord>> future = new CompletableFuture<>();
-        List<PaymentRecord> records = new ArrayList<>();
+    private List<PaymentRecord> callRemoteProcess(CsvPaymentsInputFile inputFile) {
         InputCsvFileProcessingSvc.CsvPaymentsInputFile protoInputFile = csvPaymentsInputFileMapper.toGrpc(inputFile);
 
-        processCsvPaymentsInputFileServiceStub.remoteProcess(protoInputFile, new StreamObserver<>() {
-            @Override
-            public void onNext(InputCsvFileProcessingSvc.PaymentRecord paymentRecord) {
-                records.add(paymentRecordMapper.fromGrpc(paymentRecord));
-            }
+        // Assuming this returns an `Iterator<PaymentRecord>` or similar
+        Iterator<InputCsvFileProcessingSvc.PaymentRecord> responseIterator =
+                processCsvPaymentsInputFileServiceBlockingStub.remoteProcess(protoInputFile);
 
-            @Override
-            public void onError(Throwable t) {
-                future.completeExceptionally(t);
-            }
-
-            @Override
-            public void onCompleted() {
-                future.complete(records);
-            }
+        List<PaymentRecord> records = new ArrayList<>();
+        responseIterator.forEachRemaining(grpcRecord -> {
+            records.add(paymentRecordMapper.fromGrpc(grpcRecord));
         });
 
-        return future;
+        return records;
     }
 
     public File[] listCsvFiles(String directoryPath) {

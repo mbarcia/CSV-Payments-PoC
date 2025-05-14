@@ -17,7 +17,7 @@ import static java.text.MessageFormat.format;
 @NoArgsConstructor
 public class AckPaymentSent extends BaseEntity implements Serializable {
     @NonNull
-    private String conversationID;
+    private String conversationId;
 
     private Long status;
     private String message;
@@ -26,13 +26,9 @@ public class AckPaymentSent extends BaseEntity implements Serializable {
     private PaymentRecord paymentRecord;
     private UUID paymentRecordId;
 
-    @Transient
-    private PaymentStatus paymentStatus;
-    private UUID paymentStatusId;
-
     @Override
     public String toString() {
-        return format("AckPaymentSent'{'id=''{0}'', conversationID=''{1}'', status={2}, message={3}, recordId={4}'}'", getId(), conversationID, status, message, paymentStatusId);
+        return format("AckPaymentSent'{'id=''{0}'', conversationId=''{1}'', status={2}, message={3}, recordId={4}'}'", getId(), conversationId, status, message, paymentRecordId);
     }
 
     @Override

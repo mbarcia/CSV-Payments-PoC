@@ -7,14 +7,13 @@ import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 
 import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.UUID;
 
-@Mapper(componentModel = "cdi", uses = {PaymentStatusMapper.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
+@Mapper(componentModel = "cdi", uses = {CommonConverters.class, PaymentStatusMapper.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface SendPaymentRequestMapper {
 
     @Mapping(source = "amount", target = "amount", qualifiedByName = "stringToBigDecimal")
@@ -29,21 +28,6 @@ public interface SendPaymentRequestMapper {
     @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "uuidToString")
     @Mapping(source = "paymentRecord", target = "paymentRecord")
     PaymentStatusSvc.SendPaymentRequest toGrpc(SendPaymentRequest domainIn);
-
-    @Named("stringToCurrency")
-    static Currency stringToCurrency(String currency) {
-        return currency != null ? Currency.getInstance(currency) : null;
-    }
-
-    @Named("currencyToString")
-    static String currencyToString(Currency currency) {
-        return currency != null ? currency.getCurrencyCode() : "";
-    }
-
-    @Named("stringToUUID")
-    static UUID stringToUUID(String recordId) {
-        return recordId != null ? UUID.fromString(recordId) : null;
-    }
 
     @Setter
     @Getter

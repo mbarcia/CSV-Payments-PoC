@@ -4,14 +4,9 @@ import com.example.poc.domain.PaymentRecord;
 import com.example.poc.grpc.InputCsvFileProcessingSvc;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.mapstruct.Named;
 import org.mapstruct.ReportingPolicy;
 
-import java.math.BigDecimal;
-import java.util.Currency;
-import java.util.UUID;
-
-@Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.WARN)
+@Mapper(componentModel = "cdi", uses = {CommonConverters.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface PaymentRecordMapper {
 
     // Entity to gRPC
@@ -30,38 +25,9 @@ public interface PaymentRecordMapper {
     @Mapping(source = "recipient", target = "recipient")
     @Mapping(source = "amount", target = "amount", qualifiedByName = "stringToBigDecimal")
     @Mapping(source = "currency", target = "currency", qualifiedByName = "stringToCurrency")
+    @Mapping(target = "csvPaymentsInputFile", ignore = true)
+    @Mapping(target = "csvPaymentsOutputFile", ignore = true)
     @Mapping(source = "csvPaymentsInputFileId", target = "csvPaymentsInputFileId", qualifiedByName = "stringToUUID")
     @Mapping(source = "csvPaymentsOutputFileId", target = "csvPaymentsOutputFileId", qualifiedByName = "stringToUUID")
     PaymentRecord fromGrpc(InputCsvFileProcessingSvc.PaymentRecord grpc);
-
-    // Custom mappers
-    @Named("uuidToString")
-    static String uuidToString(UUID uuid) {
-        return uuid != null ? uuid.toString() : "";
-    }
-
-    @Named("stringToUUID")
-    static UUID stringToUUID(String str) {
-        return (str != null && !str.isEmpty()) ? UUID.fromString(str) : null;
-    }
-
-    @Named("bigDecimalToString")
-    static String bigDecimalToString(BigDecimal value) {
-        return value != null ? value.toPlainString() : "0";
-    }
-
-    @Named("stringToBigDecimal")
-    static BigDecimal stringToBigDecimal(String str) {
-        return (str != null && !str.isEmpty()) ? new BigDecimal(str) : BigDecimal.ZERO;
-    }
-
-    @Named("currencyToString")
-    static String currencyToString(Currency currency) {
-        return currency != null ? currency.getCurrencyCode() : "";
-    }
-
-    @Named("stringToCurrency")
-    static Currency stringToCurrency(String str) {
-        return (str != null && !str.isEmpty()) ? Currency.getInstance(str) : null;
-    }
 }

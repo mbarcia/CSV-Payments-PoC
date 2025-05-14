@@ -20,7 +20,7 @@ public class ProcessPaymentStatusCommand implements Command<PaymentStatus, Payme
                 paymentRecord.getRecipient(),
                 paymentRecord.getAmount(),
                 paymentRecord.getCurrency(),
-                paymentStatus.getAckPaymentSent().getConversationID(),
+                paymentStatus.getAckPaymentSent().getConversationId(),
                 paymentStatus.getAckPaymentSent().getStatus(),
                 paymentStatus.getMessage(),
                 paymentStatus.getFee()

@@ -1,8 +1,9 @@
 package com.example.poc.command;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.PaymentRecord;
-import com.example.poc.mapper.SendPaymentRequestMapper;
+import com.example.poc.common.command.Command;
+import com.example.poc.common.domain.AckPaymentSent;
+import com.example.poc.common.domain.PaymentRecord;
+import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import com.example.poc.service.PaymentProviderServiceMock;
 import jakarta.enterprise.context.ApplicationScoped;
 

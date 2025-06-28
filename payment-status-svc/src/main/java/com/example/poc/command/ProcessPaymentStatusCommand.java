@@ -1,8 +1,9 @@
 package com.example.poc.command;
 
-import com.example.poc.domain.PaymentOutput;
-import com.example.poc.domain.PaymentRecord;
-import com.example.poc.domain.PaymentStatus;
+import com.example.poc.common.command.Command;
+import com.example.poc.common.domain.PaymentOutput;
+import com.example.poc.common.domain.PaymentRecord;
+import com.example.poc.common.domain.PaymentStatus;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
@@ -13,9 +14,6 @@ public class ProcessPaymentStatusCommand implements Command<PaymentStatus, Payme
 
         return new PaymentOutput(
                 paymentStatus,
-                paymentRecord.getId(),
-                paymentRecord.getCsvPaymentsOutputFile(),
-                paymentRecord.getCsvPaymentsOutputFile().getFilepath(),
                 paymentRecord.getCsvId(),
                 paymentRecord.getRecipient(),
                 paymentRecord.getAmount(),

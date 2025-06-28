@@ -1,15 +1,15 @@
 package com.example.poc.service;
 
 
-import com.example.poc.domain.CsvFolder;
-import com.example.poc.domain.CsvPaymentsInputFile;
-import com.example.poc.domain.CsvPaymentsOutputFile;
-import com.example.poc.domain.PaymentRecord;
+import com.example.poc.common.domain.CsvFolder;
+import com.example.poc.common.domain.CsvPaymentsInputFile;
+import com.example.poc.common.domain.CsvPaymentsOutputFile;
+import com.example.poc.common.mapper.CsvPaymentsInputFileMapper;
+import com.example.poc.common.mapper.CsvPaymentsOutputFileMapper;
 import com.example.poc.grpc.*;
-import com.example.poc.mapper.*;
-import io.grpc.stub.StreamObserver;
 import io.quarkus.grpc.GrpcClient;
-import jakarta.annotation.PostConstruct;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -19,15 +19,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import io.grpc.Channel;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import com.google.protobuf.Empty;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 @ApplicationScoped
 public class OrchestratorService {
@@ -40,29 +35,23 @@ public class OrchestratorService {
 
     @Inject
     @GrpcClient("process-csv-payments-input-file")
-    ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceBlockingStub processCsvPaymentsInputFileServiceBlockingStub;
+    MutinyProcessCsvPaymentsInputFileServiceGrpc.MutinyProcessCsvPaymentsInputFileServiceStub processCsvPaymentsInputFileService;
 
     @Inject
     @GrpcClient("process-ack-payment-sent")
-    ProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceBlockingStub processAckPaymentSentService;
+    MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub processAckPaymentSentService;
 
     @Inject
     @GrpcClient("send-payment-record")
-    SendPaymentRecordServiceGrpc.SendPaymentRecordServiceBlockingStub sendPaymentRecordService;
+    MutinySendPaymentRecordServiceGrpc.MutinySendPaymentRecordServiceStub sendPaymentRecordService;
 
     @Inject
     @GrpcClient("process-csv-payments-output-file")
-    ProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceBlockingStub processCsvPaymentsOutputFileService;
+    MutinyProcessCsvPaymentsOutputFileServiceGrpc.MutinyProcessCsvPaymentsOutputFileServiceStub processCsvPaymentsOutputFileService;
 
     @Inject
     @GrpcClient("process-payment-status")
-    ProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceBlockingStub processPaymentStatusService;
-
-    @Inject
-    FilePairMapper filePairMapper;
-
-    @Inject
-    PaymentRecordMapper paymentRecordMapper;
+    MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub processPaymentStatusService;
 
     @Inject
     CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
@@ -70,31 +59,51 @@ public class OrchestratorService {
     @Inject
     CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
 
-    public void process(String csvFolderPath) throws URISyntaxException {
-        CsvFolder csvFolder = getCsvFolder(csvFolderPath);
-        // Get a map of input/output files, obtained and created from the folder name
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> csvPaymentsOutputFileMap = readFolder(csvFolder);
-        // Initialise the service with this map
-        OutputCsvFileProcessingSvc.InitialiseFilesRequest request = filePairMapper.toProtoList(csvPaymentsOutputFileMap);
-        //noinspection ResultOfMethodCallIgnored
-        processCsvPaymentsOutputFileService.initialiseFiles(request);
-        // Get a stream of CSV record objects coming from all the files in the folder
-        List<List<PaymentRecord>> recordLists = getSingleRecordLists(csvPaymentsOutputFileMap.keySet());
+    public Uni<Void> process(String csvFolderPath) throws URISyntaxException {
+        CsvFolder csvFolder = setupCsvFolder(csvFolderPath);
 
-        // Process the stream of CSV record objects
-        for (List<PaymentRecord> recordList : recordLists) {
-            // This is where most part of the processing takes place (in parallel)
-            List<CsvPaymentsOutputFile> outputFilesList = this.getCsvPaymentsOutputFilesList(recordList);
-            LOG.info("The resulting output files are: {}", Arrays.toString(outputFilesList.toArray()));
-        }
+        List<Uni<CsvPaymentsOutputFile>> processingUnis = readFolder(csvFolder).keySet().stream()
+                .map(this::processOneFile)
+                .toList();
 
-        // Flush/close the output file buffers
-        //noinspection ResultOfMethodCallIgnored
-        processCsvPaymentsOutputFileService.closeFiles(Empty.getDefaultInstance());
+        return Uni.combine().all().unis(processingUnis).discardItems();
     }
 
-    private CsvFolder getCsvFolder(String csvFolderPath) throws URISyntaxException, IllegalArgumentException {
-        LOG.info("Processing CSV folder path: {}", csvFolderPath);
+    private Uni<CsvPaymentsOutputFile> processOneFile(CsvPaymentsInputFile inputFile) {
+        Multi<InputCsvFileProcessingSvc.PaymentRecord> inputRecords = processCsvPaymentsInputFileService
+                .remoteProcess(csvPaymentsInputFileMapper.toGrpc(inputFile));
+
+        Multi<PaymentsProcessingSvc.AckPaymentSent> acks = inputRecords
+                .onItem().transformToUniAndConcatenate(record -> sendPaymentRecordService.remoteProcess(record));
+
+        Multi<PaymentsProcessingSvc.PaymentStatus> statuses = acks
+                .onItem().transformToUniAndConcatenate(ack -> processAckPaymentSentService.remoteProcess(ack));
+
+        Multi<PaymentStatusSvc.PaymentOutput> outputs = statuses
+                .onItem().transformToUniAndConcatenate(status -> processPaymentStatusService.remoteProcess(status));
+
+        return processCsvPaymentsOutputFileService.remoteProcess(outputs)
+                .onItem().transform(csvPaymentsOutputFileMapper::fromGrpc)
+                .onItem().invoke(result -> LOG.info("✅ Completed processing: {}", result))
+                .onFailure().invoke(e -> LOG.error("❌ Processing failed for: {}", inputFile, e));
+    }
+
+    /*
+     * Helper I/O methods
+     */
+
+    public File[] listCsvFiles(String directoryPath) {
+        if (Objects.nonNull(directoryPath)) {
+            File directory = new File(directoryPath);
+
+            return directory.listFiles((_, name) -> name.toLowerCase().endsWith(".csv"));
+        } else {
+            return new File[0];
+        }
+    }
+
+    private CsvFolder setupCsvFolder(String csvFolderPath) throws URISyntaxException, IllegalArgumentException {
+        LOG.info("Setting up CSV folder path: {}", csvFolderPath);
 
         // In development, this might list example files from the JAR
         // In production, it will list real files from the external directory
@@ -108,67 +117,18 @@ public class OrchestratorService {
 
         URL resource = resourceLoader.getResource(csvFolderPath);
         if (resource == null) {
-            throw new IllegalArgumentException("Resource not found: " + csvFolderPath);
+            throw new IllegalArgumentException("Folder not found: " + csvFolderPath);
         }
 
         return new CsvFolder(resource.toURI().getPath());
     }
 
-    public List<CsvPaymentsOutputFile> getCsvPaymentsOutputFilesList(List<PaymentRecord> records) {
-        List<CsvPaymentsOutputFile> results = new ArrayList<>();
-
-        for (PaymentRecord record : records) {
-            try {
-                var sent = sendPaymentRecordService.remoteProcess(paymentRecordMapper.toGrpc(record));
-                var acked = processAckPaymentSentService.remoteProcess(sent);
-                var statusProcessed = processPaymentStatusService.remoteProcess(acked);
-                var outputFile = processCsvPaymentsOutputFileService.remoteProcess(statusProcessed);
-                results.add(csvPaymentsOutputFileMapper.fromGrpc(outputFile));
-            } catch (Exception e) {
-                throw new RuntimeException("Error processing payment record", e);
-            }
-        }
-
-        return results;
-    }
-
-    public List<List<PaymentRecord>> getSingleRecordLists(Set<CsvPaymentsInputFile> inputFiles) {
-        return inputFiles.stream()
-                .map(this::callRemoteProcess)
-                .collect(Collectors.toList());
-    }
-
-    private List<PaymentRecord> callRemoteProcess(CsvPaymentsInputFile inputFile) {
-        InputCsvFileProcessingSvc.CsvPaymentsInputFile protoInputFile = csvPaymentsInputFileMapper.toGrpc(inputFile);
-
-        // Assuming this returns an `Iterator<PaymentRecord>` or similar
-        Iterator<InputCsvFileProcessingSvc.PaymentRecord> responseIterator =
-                processCsvPaymentsInputFileServiceBlockingStub.remoteProcess(protoInputFile);
-
-        List<PaymentRecord> records = new ArrayList<>();
-        responseIterator.forEachRemaining(grpcRecord -> {
-            records.add(paymentRecordMapper.fromGrpc(grpcRecord));
-        });
-
-        return records;
-    }
-
-    public File[] listCsvFiles(String directoryPath) {
-        if (Objects.nonNull(directoryPath)) {
-            File directory = new File(directoryPath);
-
-            return directory.listFiles((file, name) -> name.toLowerCase().endsWith(".csv"));
-        } else {
-            return new File[0];
-        }
-    }
-
-    public CsvPaymentsInputFile createInputCsvFile(File file) {
+    public CsvPaymentsInputFile setupInputCsvFile(File file) {
         return new CsvPaymentsInputFile(file);
     }
 
-    public CsvPaymentsOutputFile createOutputCsvFile(CsvPaymentsInputFile inputFile) throws IOException {
-        return new CsvPaymentsOutputFile(inputFile);
+    public CsvPaymentsOutputFile setupOutputCsvFile(CsvPaymentsInputFile inputFile) throws IOException {
+        return new CsvPaymentsOutputFile(inputFile.getFilepath());
     }
 
     public Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> readFolder(CsvFolder csvFolder) {
@@ -176,10 +136,9 @@ public class OrchestratorService {
         HashMap<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = new HashMap<>();
 
         for (File file : files) {
-            CsvPaymentsInputFile inputFile = createInputCsvFile(file);
-            inputFile.setCsvFolder(csvFolder);
+            CsvPaymentsInputFile inputFile = setupInputCsvFile(file);
             try {
-                CsvPaymentsOutputFile outputFile = createOutputCsvFile(inputFile);
+                CsvPaymentsOutputFile outputFile = setupOutputCsvFile(inputFile);
                 result.put(inputFile, outputFile);
             } catch (IOException ignored) {
                 // TODO ignoring this is probably not a good thing

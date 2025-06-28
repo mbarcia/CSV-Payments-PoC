@@ -53,6 +53,11 @@
             <artifactId>grpc-protobuf</artifactId>
             <version>${grpc.version}</version>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-codegen</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

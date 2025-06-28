@@ -68,7 +68,8 @@ public class PaymentProviderServiceImpl implements PaymentProviderService {
                 .setStatus("nada")
                 .setFee(new BigDecimal("1.01"))
                 .setMessage("This is a test")
-                .setAckPaymentSent(ackPaymentSent);
+                .setAckPaymentSent(ackPaymentSent)
+                .setAckPaymentSentId(ackPaymentSent.getId())
     }
 
     // Custom exception for throttling

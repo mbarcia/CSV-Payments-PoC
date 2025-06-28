@@ -1,25 +1,24 @@
 package com.example.poc.service;
 
-import com.example.poc.domain.CsvPaymentsInputFile;
-import com.example.poc.domain.CsvPaymentsOutputFile;
-import com.example.poc.domain.PaymentOutput;
+import com.example.poc.common.domain.CsvPaymentsOutputFile;
+import com.example.poc.common.domain.PaymentOutput;
+import com.example.poc.common.service.GrpcServiceClientStreamingAdapter;
+import com.example.poc.common.service.Service;
+import com.example.poc.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
 import com.example.poc.grpc.OutputCsvFileProcessingSvc;
 import com.example.poc.grpc.PaymentStatusSvc;
-import com.example.poc.grpc.ProcessCsvPaymentsOutputFileServiceGrpc;
-import com.example.poc.mapper.CsvPaymentsOutputFileMapper;
-import com.example.poc.mapper.FilePairMapper;
-import com.example.poc.mapper.PaymentOutputMapper;
-import com.google.protobuf.Empty;
-import io.grpc.stub.StreamObserver;
+import com.example.poc.common.mapper.CsvPaymentsOutputFileMapper;
+import com.example.poc.common.mapper.PaymentOutputMapper;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.common.annotation.Blocking;
-import jakarta.annotation.PostConstruct;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 
-import java.util.Map;
+import java.util.List;
 
 @GrpcService
-public class ProcessCsvPaymentsOutputFileGrpcService extends ProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceImplBase {
+public class ProcessCsvPaymentsOutputFileGrpcService extends MutinyProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceImplBase {
 
     @Inject
     ProcessCsvPaymentsOutputFileService domainService;
@@ -30,53 +29,29 @@ public class ProcessCsvPaymentsOutputFileGrpcService extends ProcessCsvPaymentsO
     @Inject
     PaymentOutputMapper paymentOutputMapper;
 
-    @Inject
-    FilePairMapper filePairMapper;
-
-    @PostConstruct
-    void init() {
-        System.out.println(">>> GrpcService initialized");
-    }
-
-    private final GrpcServiceAdapter<PaymentStatusSvc.PaymentOutput,
-            OutputCsvFileProcessingSvc.CsvPaymentsOutputFile,
-            PaymentOutput,
-            CsvPaymentsOutputFile> adapter =
-            new GrpcServiceAdapter<>() {
-
-                protected ProcessCsvPaymentsOutputFileService getService() {
-                    return domainService;
-                }
-
-                @Override
-                protected PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpcIn) {
-                    return paymentOutputMapper.fromGrpc(grpcIn);
-                }
-
-                @Override
-                protected OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(CsvPaymentsOutputFile domainOut) {
-                    return csvPaymentsOutputFileMapper.toGrpc(domainOut);
-                }
-            };
-
+    @Override
     @Blocking
-    public void remoteProcess(PaymentStatusSvc.PaymentOutput request,
-                       StreamObserver<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> responseObserver) {
-        adapter.remoteProcess(request, responseObserver);
-    }
+    public Uni<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> remoteProcess(Multi<PaymentStatusSvc.PaymentOutput> grpcStream) {
+        return new GrpcServiceClientStreamingAdapter<
+                        PaymentStatusSvc.PaymentOutput,
+                        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile,
+                        PaymentOutput,
+                        CsvPaymentsOutputFile>() {
 
-    public void initialiseFiles(OutputCsvFileProcessingSvc.InitialiseFilesRequest grpcRequest, StreamObserver<Empty> responseObserver) {
-        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> map = filePairMapper.fromProtoList(grpcRequest);
-        domainService.initialiseFiles(map);
+            @Override
+            protected Service<List<PaymentOutput>, CsvPaymentsOutputFile> getService() {
+                return domainService;
+            }
 
-        responseObserver.onNext(Empty.getDefaultInstance());
-        responseObserver.onCompleted();
-    }
+            @Override
+            protected PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpcIn) {
+                return paymentOutputMapper.fromGrpc(grpcIn);
+            }
 
-    public void closeFiles(Empty request, StreamObserver<Empty> responseObserver) {
-        domainService.closeFiles();
-
-        responseObserver.onNext(Empty.getDefaultInstance());
-        responseObserver.onCompleted();
+            @Override
+            protected OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(CsvPaymentsOutputFile domainOut) {
+                return csvPaymentsOutputFileMapper.toGrpc(domainOut);
+            }
+        }.remoteProcess(grpcStream); // <-- send Multi<> input instead
     }
 }

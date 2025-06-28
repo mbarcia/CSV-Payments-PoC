@@ -1,7 +1,6 @@
 package com.example.poc.service;
 
 import com.example.poc.command.Command;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +18,6 @@ public abstract class BaseService<T, S> {
         this.command = command;
     }
 
-    @Transactional
     public S process(T processableObj) {
         // Log for basic audit purposes
         MDC.put("transactionId", UUID.randomUUID().toString());

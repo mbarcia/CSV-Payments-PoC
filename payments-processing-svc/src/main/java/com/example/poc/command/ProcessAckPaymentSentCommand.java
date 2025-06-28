@@ -1,13 +1,16 @@
 package com.example.poc.command;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.PaymentStatus;
+import com.example.poc.common.command.Command;
+import com.example.poc.common.domain.AckPaymentSent;
+import com.example.poc.common.domain.PaymentStatus;
 import com.example.poc.service.PollAckPaymentSentService;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class ProcessAckPaymentSentCommand implements Command<AckPaymentSent, PaymentStatus> {
-    private final PollAckPaymentSentService pollAckPaymentSentService;
+    @Inject
+    PollAckPaymentSentService pollAckPaymentSentService;
 
     public ProcessAckPaymentSentCommand(PollAckPaymentSentService pollAckPaymentSentService) {
         this.pollAckPaymentSentService = pollAckPaymentSentService;

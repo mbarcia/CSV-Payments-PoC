@@ -1,7 +1,8 @@
 package com.example.poc.command;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.PaymentStatus;
+import com.example.poc.common.command.Command;
+import com.example.poc.common.domain.AckPaymentSent;
+import com.example.poc.common.domain.PaymentStatus;
 import com.example.poc.service.PaymentProviderService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.enterprise.context.ApplicationScoped;

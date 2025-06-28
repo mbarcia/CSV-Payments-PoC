@@ -8,7 +8,6 @@ import com.example.poc.domain.PaymentRecord;
 import com.example.poc.repository.CsvPaymentsOutputFileRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 import java.io.IOException;
 import java.util.Collection;

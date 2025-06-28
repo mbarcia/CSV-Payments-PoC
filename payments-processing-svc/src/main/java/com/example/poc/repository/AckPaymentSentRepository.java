@@ -1,6 +1,6 @@
 package com.example.poc.repository;
 
-import com.example.poc.domain.AckPaymentSent;
+import com.example.poc.common.domain.AckPaymentSent;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 

@@ -1,20 +1,22 @@
 package com.example.poc.service;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.PaymentRecord;
+import com.example.poc.common.domain.AckPaymentSent;
+import com.example.poc.common.domain.PaymentRecord;
+import com.example.poc.common.service.GrpcServiceAdapter;
+import com.example.poc.common.service.Service;
 import com.example.poc.grpc.InputCsvFileProcessingSvc;
+import com.example.poc.grpc.MutinySendPaymentRecordServiceGrpc;
 import com.example.poc.grpc.PaymentsProcessingSvc;
-import com.example.poc.grpc.SendPaymentRecordServiceGrpc;
-import com.example.poc.mapper.AckPaymentSentMapper;
-import com.example.poc.mapper.PaymentRecordMapper;
-import io.grpc.stub.StreamObserver;
+import com.example.poc.common.mapper.AckPaymentSentMapper;
+import com.example.poc.common.mapper.PaymentRecordMapper;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
 @GrpcService
-public class SendPaymentRecordGrpcService extends SendPaymentRecordServiceGrpc.SendPaymentRecordServiceImplBase {
+public class SendPaymentRecordGrpcService extends
+        MutinySendPaymentRecordServiceGrpc.SendPaymentRecordServiceImplBase {
 
     @Inject
     SendPaymentRecordService domainService;
@@ -25,32 +27,31 @@ public class SendPaymentRecordGrpcService extends SendPaymentRecordServiceGrpc.S
     @Inject
     AckPaymentSentMapper ackPaymentSentMapper;
 
-    private final GrpcServiceAdapter<InputCsvFileProcessingSvc.PaymentRecord,
-            PaymentsProcessingSvc.AckPaymentSent,
-            PaymentRecord,
-            AckPaymentSent
-            > adapter =
-            new GrpcServiceAdapter<>() {
-
-                protected SendPaymentRecordService getService() {
-                    return domainService;
-                }
-
-                @Override
-                protected PaymentRecord fromGrpc(InputCsvFileProcessingSvc.PaymentRecord grpcIn) {
-                    return paymentRecordMapper.fromGrpc(grpcIn);
-                }
-
-                @Override
-                protected PaymentsProcessingSvc.AckPaymentSent toGrpc(AckPaymentSent domainOut) {
-                    return ackPaymentSentMapper.toGrpc(domainOut);
-                }
-            };
-
     @Blocking
-    @Transactional
-    public void remoteProcess(InputCsvFileProcessingSvc.PaymentRecord request,
-                       StreamObserver<PaymentsProcessingSvc.AckPaymentSent> responseObserver) {
-        adapter.remoteProcess(request, responseObserver);
+    @Override
+    public Uni<PaymentsProcessingSvc.AckPaymentSent> remoteProcess(
+            InputCsvFileProcessingSvc.PaymentRecord request) {
+
+        return new GrpcServiceAdapter<
+                        InputCsvFileProcessingSvc.PaymentRecord,              // GrpcIn
+                        PaymentsProcessingSvc.AckPaymentSent,                // GrpcOut
+                        PaymentRecord,                                       // DomainIn
+                        AckPaymentSent>()                                    // DomainOut
+        {
+            @Override
+            protected Service<PaymentRecord, AckPaymentSent> getService() {
+                return domainService;
+            }
+
+            @Override
+            protected PaymentRecord fromGrpc(InputCsvFileProcessingSvc.PaymentRecord grpcIn) {
+                return paymentRecordMapper.fromGrpc(grpcIn);
+            }
+
+            @Override
+            protected PaymentsProcessingSvc.AckPaymentSent toGrpc(AckPaymentSent domainOut) {
+                return ackPaymentSentMapper.toGrpc(domainOut);
+            }
+        }.remoteProcess(request);
     }
 }

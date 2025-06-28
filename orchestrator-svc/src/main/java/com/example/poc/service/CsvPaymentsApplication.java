@@ -50,12 +50,18 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
         watch.start();
 
         try {
-            orchestratorService.process(csvFolder);
-        } catch (URISyntaxException e) {
-            LOG.error("APPLICATION ABORTED processing {}", csvFolder);
-        } finally {
+            orchestratorService.process(csvFolder)
+                    .await().indefinitely();  // <--- blocks main thread
+
             watch.stop();
-            LOG.info("APPLICATION FINISHED processing of {} in {} seconds", csvFolder, watch.getTime(TimeUnit.SECONDS));
+            LOG.info("✅ APPLICATION FINISHED processing of {} in {} seconds", csvFolder, watch.getTime(TimeUnit.SECONDS));
+
+        } catch (URISyntaxException e) {
+            watch.stop();
+            LOG.error("❌ APPLICATION ABORTED due to invalid folder {} after {} seconds", csvFolder, watch.getTime(TimeUnit.SECONDS), e);
+        } catch (Exception e) {
+            watch.stop();
+            LOG.error("❌ APPLICATION FAILED processing {} after {} seconds", csvFolder, watch.getTime(TimeUnit.SECONDS), e);
         }
     }
 

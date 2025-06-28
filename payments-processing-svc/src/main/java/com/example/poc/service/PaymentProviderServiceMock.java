@@ -1,8 +1,8 @@
 package com.example.poc.service;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.PaymentStatus;
-import com.example.poc.mapper.SendPaymentRequestMapper;
+import com.example.poc.common.domain.AckPaymentSent;
+import com.example.poc.common.domain.PaymentStatus;
+import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import com.google.common.util.concurrent.RateLimiter;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -61,7 +61,8 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
                 .setStatus("nada")
                 .setFee(new BigDecimal("1.01"))
                 .setMessage("This is a test")
-                .setAckPaymentSent(ackPaymentSent);
+                .setAckPaymentSent(ackPaymentSent)
+                .setAckPaymentSentId(ackPaymentSent.getId());
     }
 
     // Custom exception for throttling

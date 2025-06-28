@@ -2,7 +2,6 @@ package com.example.poc.service;
 
 import com.example.poc.command.Command;
 import io.quarkus.hibernate.orm.panache.PanacheRepository;
-import jakarta.transaction.Transactional;
 import lombok.Getter;
 
 import java.util.List;

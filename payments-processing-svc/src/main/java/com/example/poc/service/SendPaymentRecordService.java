@@ -1,8 +1,9 @@
 package com.example.poc.service;
 
 import com.example.poc.command.SendPaymentRecordCommand;
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.PaymentRecord;
+import com.example.poc.common.domain.AckPaymentSent;
+import com.example.poc.common.domain.PaymentRecord;
+import com.example.poc.common.service.LocalAbstractServiceWithAudit;
 import com.example.poc.repository.PaymentRecordRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 

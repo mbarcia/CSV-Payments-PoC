@@ -1,19 +1,23 @@
 package com.example.poc.service;
 
-import com.example.poc.domain.CsvPaymentsInputFile;
-import com.example.poc.domain.PaymentRecord;
+import com.example.poc.common.domain.CsvPaymentsInputFile;
+import com.example.poc.common.domain.PaymentRecord;
+import com.example.poc.common.service.GrpcServiceStreamingAdapter;
+import com.example.poc.common.service.Service;
 import com.example.poc.grpc.InputCsvFileProcessingSvc;
-import com.example.poc.grpc.ProcessCsvPaymentsInputFileServiceGrpc;
-import com.example.poc.mapper.CsvPaymentsInputFileMapper;
-import com.example.poc.mapper.PaymentRecordMapper;
-import io.grpc.stub.StreamObserver;
+import com.example.poc.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
+import com.example.poc.common.mapper.CsvPaymentsInputFileMapper;
+import com.example.poc.common.mapper.PaymentRecordMapper;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
+
+import java.util.stream.Stream;
 
 @GrpcService
-public class ProcessCsvPaymentsInputFileGrpcService extends ProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase {
+public class ProcessCsvPaymentsInputFileGrpcService
+        extends MutinyProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase {
 
     @Inject
     ProcessCsvPaymentsInputFileService domainService;
@@ -24,31 +28,31 @@ public class ProcessCsvPaymentsInputFileGrpcService extends ProcessCsvPaymentsIn
     @Inject
     PaymentRecordMapper paymentRecordMapper;
 
-    private final GrpcServiceStreamingAdapter<InputCsvFileProcessingSvc.CsvPaymentsInputFile,
-            InputCsvFileProcessingSvc.PaymentRecord,
-            CsvPaymentsInputFile,
-            PaymentRecord> adapter =
-            new GrpcServiceStreamingAdapter<>() {
-
-                protected ProcessCsvPaymentsInputFileService getService() {
-                    return domainService;
-                }
-
-                @Override
-                protected CsvPaymentsInputFile fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile grpcIn) {
-                    return csvPaymentsInputFileMapper.fromGrpc(grpcIn);
-                }
-
-                @Override
-                protected InputCsvFileProcessingSvc.PaymentRecord toGrpc(PaymentRecord grpcOut) {
-                    return paymentRecordMapper.toGrpc(grpcOut);
-                }
-            };
-
     @Blocking
-    @Transactional
-    public void remoteProcess(InputCsvFileProcessingSvc.CsvPaymentsInputFile request,
-                       StreamObserver<InputCsvFileProcessingSvc.PaymentRecord> responseObserver) {
-        adapter.remoteProcess(request, responseObserver);
+    @Override
+    public Multi<InputCsvFileProcessingSvc.PaymentRecord> remoteProcess(
+            InputCsvFileProcessingSvc.CsvPaymentsInputFile request) {
+
+        return new GrpcServiceStreamingAdapter<
+                        InputCsvFileProcessingSvc.CsvPaymentsInputFile,                      // GrpcIn
+                        InputCsvFileProcessingSvc.PaymentRecord,                            // GrpcOut
+                        CsvPaymentsInputFile,                                               // DomainIn
+                        PaymentRecord>()                                                    // DomainOut
+        {
+            @Override
+            protected Service<CsvPaymentsInputFile, Stream<PaymentRecord>> getService() {
+                return domainService;
+            }
+
+            @Override
+            protected CsvPaymentsInputFile fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile grpcIn) {
+                return csvPaymentsInputFileMapper.fromGrpc(grpcIn);
+            }
+
+            @Override
+            protected InputCsvFileProcessingSvc.PaymentRecord toGrpc(PaymentRecord domainOut) {
+                return paymentRecordMapper.toGrpc(paymentRecordMapper.toDto(domainOut));
+            }
+        }.remoteProcess(request);
     }
 }

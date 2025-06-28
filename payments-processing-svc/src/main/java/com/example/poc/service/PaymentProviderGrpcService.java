@@ -1,21 +1,18 @@
 package com.example.poc.service;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.PaymentStatus;
-import com.example.poc.grpc.PaymentProviderServiceGrpc;
+import com.example.poc.grpc.MutinyPaymentProviderServiceGrpc;
 import com.example.poc.grpc.PaymentStatusSvc;
 import com.example.poc.grpc.PaymentsProcessingSvc;
-import com.example.poc.mapper.AckPaymentSentMapper;
-import com.example.poc.mapper.PaymentStatusMapper;
-import com.example.poc.mapper.SendPaymentRequestMapper;
-import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
+import com.example.poc.common.mapper.AckPaymentSentMapper;
+import com.example.poc.common.mapper.PaymentStatusMapper;
+import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.common.annotation.Blocking;
+import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 
 @GrpcService
-public class PaymentProviderGrpcService extends PaymentProviderServiceGrpc.PaymentProviderServiceImplBase {
+public class PaymentProviderGrpcService extends MutinyPaymentProviderServiceGrpc.PaymentProviderServiceImplBase {
 
     @Inject
     PaymentProviderService domainService;
@@ -29,34 +26,31 @@ public class PaymentProviderGrpcService extends PaymentProviderServiceGrpc.Payme
     @Inject
     PaymentStatusMapper paymentStatusMapper;
 
-    public void sendPayment(PaymentStatusSvc.SendPaymentRequest grpcRequest,
-                            StreamObserver<PaymentsProcessingSvc.AckPaymentSent> responseObserver) {
-        try {
-            SendPaymentRequestMapper.SendPaymentRequest domainIn = sendPaymentRequestMapper.fromGrpc(grpcRequest);
-            AckPaymentSent domainOut = domainService.sendPayment(domainIn);
-            PaymentsProcessingSvc.AckPaymentSent grpcResponse = ackPaymentSentMapper.toGrpc(domainOut);
-            responseObserver.onNext(grpcResponse);
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            responseObserver.onError(Status.INTERNAL
-                    .withDescription("Processing failed: " + e.getMessage())
-                    .withCause(e)
-                    .asRuntimeException());
-        }
+    @Blocking
+    @Override
+    public Uni<PaymentsProcessingSvc.AckPaymentSent> sendPayment(PaymentStatusSvc.SendPaymentRequest grpcRequest) {
+        return Uni.createFrom().item(() -> {
+            var domainIn = sendPaymentRequestMapper.fromGrpc(grpcRequest);
+            var domainOut = domainService.sendPayment(domainIn);
+            return ackPaymentSentMapper.toGrpc(domainOut);
+        });
     }
 
-    public void getPaymentStatus(PaymentsProcessingSvc.AckPaymentSent grpcRequest, StreamObserver<PaymentsProcessingSvc.PaymentStatus> responseObserver) {
-        try {
-            AckPaymentSent domainIn = ackPaymentSentMapper.fromGrpc(grpcRequest);
-            PaymentStatus domainOut = domainService.getPaymentStatus(domainIn);
-            PaymentsProcessingSvc.PaymentStatus grpcResponse = paymentStatusMapper.toGrpc(domainOut);
-            responseObserver.onNext(grpcResponse);
-            responseObserver.onCompleted();
-        } catch (Exception e) {
-            responseObserver.onError(Status.INTERNAL
-                    .withDescription("Processing failed: " + e.getMessage())
-                    .withCause(e)
-                    .asRuntimeException());
-        }
+    @Blocking
+    @Override
+    public Uni<PaymentsProcessingSvc.PaymentStatus> getPaymentStatus(PaymentsProcessingSvc.AckPaymentSent grpcRequest) {
+        return Uni.createFrom().emitter(emitter -> {
+            try {
+                var domainIn = ackPaymentSentMapper.fromGrpc(grpcRequest);
+                var domainOut = domainService.getPaymentStatus(domainIn); // throws checked exception
+                var grpcResponse = paymentStatusMapper.toGrpc(domainOut);
+                emitter.complete(grpcResponse);
+            } catch (Exception e) {
+                emitter.fail(io.grpc.Status.INTERNAL
+                        .withDescription("Processing failed: " + e.getMessage())
+                        .withCause(e)
+                        .asRuntimeException());
+            }
+        });
     }
 }

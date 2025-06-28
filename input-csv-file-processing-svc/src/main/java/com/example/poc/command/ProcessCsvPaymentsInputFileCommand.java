@@ -1,7 +1,8 @@
 package com.example.poc.command;
 
-import com.example.poc.domain.CsvPaymentsInputFile;
-import com.example.poc.domain.PaymentRecord;
+import com.example.poc.common.command.Command;
+import com.example.poc.common.domain.CsvPaymentsInputFile;
+import com.example.poc.common.domain.PaymentRecord;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -27,7 +28,7 @@ public class ProcessCsvPaymentsInputFileCommand implements Command<CsvPaymentsIn
                     .build();
 
             return csvReader.parse().stream()
-                    .map(record -> record.setCsvPaymentsInputFile(csvFile));
+                    .map(record -> record.assignInputFile(csvFile));
         } catch (Exception e) {
             logger.error(e.getLocalizedMessage());
             throw new RuntimeException(e);

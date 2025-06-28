@@ -33,3 +33,4 @@ bin/
 .idea/workspace.xml
 /target/
 *.out
+/common/target/

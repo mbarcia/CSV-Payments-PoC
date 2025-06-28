@@ -1,8 +1,8 @@
 package com.example.poc.service;
 
-import com.example.poc.domain.AckPaymentSent;
-import com.example.poc.domain.PaymentStatus;
-import com.example.poc.mapper.SendPaymentRequestMapper;
+import com.example.poc.common.domain.AckPaymentSent;
+import com.example.poc.common.domain.PaymentStatus;
+import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 public interface PaymentProviderService {

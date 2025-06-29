@@ -1,7 +1,6 @@
 package com.example.poc.service;
 
 
-import com.example.poc.common.domain.CsvFolder;
 import com.example.poc.common.domain.CsvPaymentsInputFile;
 import com.example.poc.common.domain.CsvPaymentsOutputFile;
 import com.example.poc.common.mapper.CsvPaymentsInputFileMapper;
@@ -20,7 +19,10 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @ApplicationScoped
 public class OrchestratorService {

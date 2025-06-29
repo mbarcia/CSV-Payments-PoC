@@ -23,12 +23,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 @ApplicationScoped
 public class OrchestratorService {
 
     private static final Logger LOG = LoggerFactory
             .getLogger(CsvPaymentsApplication.class);
+
+    public static final Executor VIRTUAL_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
     @Inject
     HybridResourceLoader resourceLoader;
@@ -61,29 +65,35 @@ public class OrchestratorService {
 
     public Uni<Void> process(String csvFolderPath) throws URISyntaxException {
         List<Uni<CsvPaymentsOutputFile>> processingUnis = readCsvFolder(csvFolderPath).keySet().stream()
-                .map(this::processOneFile)
-                .toList();
+            .map(inputFile ->
+                    Uni.createFrom().item(inputFile)
+                        .runSubscriptionOn(VIRTUAL_EXECUTOR)  // Shift execution to virtual thread
+                        .flatMap(this::processOneFile)
+                )
+            .toList();
 
         return Uni.combine().all().unis(processingUnis).discardItems();
     }
 
     private Uni<CsvPaymentsOutputFile> processOneFile(CsvPaymentsInputFile inputFile) {
+        LOG.info("🧵 {} running on thread: {}", inputFile, Thread.currentThread());
+
         Multi<InputCsvFileProcessingSvc.PaymentRecord> inputRecords = processCsvPaymentsInputFileService
-                .remoteProcess(csvPaymentsInputFileMapper.toGrpc(inputFile));
+            .remoteProcess(csvPaymentsInputFileMapper.toGrpc(inputFile));
 
-        Multi<PaymentsProcessingSvc.AckPaymentSent> acks = inputRecords
-                .onItem().transformToUniAndConcatenate(record -> sendPaymentRecordService.remoteProcess(record));
-
-        Multi<PaymentsProcessingSvc.PaymentStatus> statuses = acks
-                .onItem().transformToUniAndConcatenate(ack -> processAckPaymentSentService.remoteProcess(ack));
-
-        Multi<PaymentStatusSvc.PaymentOutput> outputs = statuses
-                .onItem().transformToUniAndConcatenate(status -> processPaymentStatusService.remoteProcess(status));
+        Multi<PaymentStatusSvc.PaymentOutput> outputs = inputRecords
+            .onItem().transformToUniAndConcatenate(record ->
+                Uni.createFrom().item(record)
+                .runSubscriptionOn(VIRTUAL_EXECUTOR) // One virtual thread per record
+                .flatMap(sendPaymentRecordService::remoteProcess)
+                .flatMap(processAckPaymentSentService::remoteProcess)
+                .flatMap(processPaymentStatusService::remoteProcess)
+            );
 
         return processCsvPaymentsOutputFileService.remoteProcess(outputs)
-                .onItem().transform(csvPaymentsOutputFileMapper::fromGrpc)
-                .onItem().invoke(result -> LOG.info("✅ Completed processing: {}", result))
-                .onFailure().invoke(e -> LOG.error("❌ Processing failed for: {}", inputFile, e));
+            .onItem().transform(csvPaymentsOutputFileMapper::fromGrpc)
+            .onItem().invoke(result -> LOG.info("✅ Completed processing: {}", result))
+            .onFailure().invoke(e -> LOG.error("❌ Processing failed for: {}", inputFile, e));
     }
 
     public Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> readCsvFolder(String csvFolderPath) throws URISyntaxException {
@@ -113,7 +123,6 @@ public class OrchestratorService {
                 CsvPaymentsOutputFile outputFile = new CsvPaymentsOutputFile(inputFile.getFilepath());
                 result.put(inputFile, outputFile);
             } catch (IOException e) {
-                // Consider logging the error
                 LOG.warn("Failed to setup output file for: {}", file.getAbsolutePath(), e);
             }
         }

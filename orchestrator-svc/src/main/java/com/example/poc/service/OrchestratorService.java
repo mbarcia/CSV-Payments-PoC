@@ -19,10 +19,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.text.MessageFormat;
+import java.util.*;
 
 @ApplicationScoped
 public class OrchestratorService {
@@ -60,9 +58,7 @@ public class OrchestratorService {
     CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
 
     public Uni<Void> process(String csvFolderPath) throws URISyntaxException {
-        CsvFolder csvFolder = setupCsvFolder(csvFolderPath);
-
-        List<Uni<CsvPaymentsOutputFile>> processingUnis = readFolder(csvFolder).keySet().stream()
+        List<Uni<CsvPaymentsOutputFile>> processingUnis = readCsvFolder(csvFolderPath).keySet().stream()
                 .map(this::processOneFile)
                 .toList();
 
@@ -88,63 +84,37 @@ public class OrchestratorService {
                 .onFailure().invoke(e -> LOG.error("❌ Processing failed for: {}", inputFile, e));
     }
 
-    /*
-     * Helper I/O methods
-     */
-
-    public File[] listCsvFiles(String directoryPath) {
-        if (Objects.nonNull(directoryPath)) {
-            File directory = new File(directoryPath);
-
-            return directory.listFiles((_, name) -> name.toLowerCase().endsWith(".csv"));
-        } else {
-            return new File[0];
-        }
-    }
-
-    private CsvFolder setupCsvFolder(String csvFolderPath) throws URISyntaxException, IllegalArgumentException {
-        LOG.info("Setting up CSV folder path: {}", csvFolderPath);
-
-        // In development, this might list example files from the JAR
-        // In production, it will list real files from the external directory
-        List<URL> csvFiles = resourceLoader.listResources(csvFolderPath);
-
-        if (csvFiles.isEmpty()) {
-            LOG.warn("No CSV files found in {}", csvFolderPath);
-            // Add diagnostic info if needed
-            resourceLoader.diagnoseResourceAccess(csvFolderPath);
-        }
+    public Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> readCsvFolder(String csvFolderPath) throws URISyntaxException {
+        LOG.info("Reading CSV folder from path: {}", csvFolderPath);
 
         URL resource = resourceLoader.getResource(csvFolderPath);
         if (resource == null) {
-            throw new IllegalArgumentException("Folder not found: " + csvFolderPath);
+            throw new IllegalArgumentException(MessageFormat.format("CSV folder not found: {0}", csvFolderPath));
         }
 
-        return new CsvFolder(resource.toURI().getPath());
-    }
+        File directory = new File(resource.toURI());
+        if (!directory.exists() || !directory.isDirectory()) {
+            throw new IllegalArgumentException(MessageFormat.format("CSV path is not a valid directory: {0}", directory.getAbsolutePath()));
+        }
 
-    public CsvPaymentsInputFile setupInputCsvFile(File file) {
-        return new CsvPaymentsInputFile(file);
-    }
+        File[] csvFiles = directory.listFiles((_, name) -> name.toLowerCase().endsWith(".csv"));
+        if (csvFiles == null || csvFiles.length == 0) {
+            LOG.warn("No CSV files found in {}", csvFolderPath);
+            resourceLoader.diagnoseResourceAccess(csvFolderPath);
+            return Collections.emptyMap();
+        }
 
-    public CsvPaymentsOutputFile setupOutputCsvFile(CsvPaymentsInputFile inputFile) throws IOException {
-        return new CsvPaymentsOutputFile(inputFile.getFilepath());
-    }
-
-    public Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> readFolder(CsvFolder csvFolder) {
-        File[] files = listCsvFiles(csvFolder.getFolderPath());
-        HashMap<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = new HashMap<>();
-
-        for (File file : files) {
-            CsvPaymentsInputFile inputFile = setupInputCsvFile(file);
+        Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = new HashMap<>();
+        for (File file : csvFiles) {
+            CsvPaymentsInputFile inputFile = new CsvPaymentsInputFile(file);
             try {
-                CsvPaymentsOutputFile outputFile = setupOutputCsvFile(inputFile);
+                CsvPaymentsOutputFile outputFile = new CsvPaymentsOutputFile(inputFile.getFilepath());
                 result.put(inputFile, outputFile);
-            } catch (IOException ignored) {
-                // TODO ignoring this is probably not a good thing
+            } catch (IOException e) {
+                // Consider logging the error
+                LOG.warn("Failed to setup output file for: {}", file.getAbsolutePath(), e);
             }
         }
 
         return result;
-    }
-}
+    }}

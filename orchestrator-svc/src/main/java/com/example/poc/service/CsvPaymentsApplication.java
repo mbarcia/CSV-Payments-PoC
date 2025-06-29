@@ -65,7 +65,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
         }
     }
 
-    // Optional: Add traditional main method for standard Java execution
+    // Traditional main method for standard Java execution
     public static void main(String[] args) {
         Quarkus.run(CsvPaymentsApplication.class, args);
     }

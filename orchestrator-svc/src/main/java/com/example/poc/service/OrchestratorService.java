@@ -6,6 +6,8 @@ import com.example.poc.common.domain.CsvPaymentsOutputFile;
 import com.example.poc.common.mapper.CsvPaymentsInputFileMapper;
 import com.example.poc.common.mapper.CsvPaymentsOutputFileMapper;
 import com.example.poc.grpc.*;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -66,9 +68,9 @@ public class OrchestratorService {
 
     // --- CONCURRENCY LIMITS ---
     // These directly apply to the merge operator.
-    private static final int CONCURRENCY_LIMIT_RECORDS = 1000;
-    private static final int CONCURRENCY_LIMIT_ACKS = 100;
-    private static final int CONCURRENCY_LIMIT_STATUSES = 1000;
+    private static final int CONCURRENCY_LIMIT_RECORDS = 200;
+    private static final int CONCURRENCY_LIMIT_ACKS = 200; // Note the current mock provider throttles at 100
+    private static final int CONCURRENCY_LIMIT_STATUSES = 200; // Note the current mock provider throttles at 100
 
     // --- RETRY SETTINGS ---
     private static final int MAX_RETRIES = 3;
@@ -99,7 +101,7 @@ public class OrchestratorService {
                                 .runSubscriptionOn(VIRTUAL_EXECUTOR) // Execute processing on a virtual thread
                                 .flatMap(sendPaymentRecordService::remoteProcess) // Step 1
                                 // Add retry with backoff for transient throttling errors
-                                .onFailure(throwable -> throwable instanceof PaymentProviderServiceMock.ThrottlingException || throwable.getCause() instanceof PaymentProviderServiceMock.ThrottlingException)
+                                .onFailure(this::isThrottlingError)
                                 .retry().withBackOff(INITIAL_RETRY_DELAY, INITIAL_RETRY_DELAY.multipliedBy(2)).atMost(MAX_RETRIES)
                 )
                 .merge(CONCURRENCY_LIMIT_RECORDS); // Ensures concurrency limit
@@ -115,7 +117,7 @@ public class OrchestratorService {
                         Uni.createFrom().item(record)
                                 .runSubscriptionOn(VIRTUAL_EXECUTOR)
                                 .flatMap(processAckPaymentSentService::remoteProcess) // Step 2
-                                .onFailure(throwable -> throwable instanceof PaymentProviderServiceMock.ThrottlingException || throwable.getCause() instanceof PaymentProviderServiceMock.ThrottlingException)
+                                .onFailure(this::isThrottlingError)
                                 .retry().withBackOff(INITIAL_RETRY_DELAY, INITIAL_RETRY_DELAY.multipliedBy(2)).atMost(MAX_RETRIES)
                 )
                 .merge(CONCURRENCY_LIMIT_ACKS); // Ensures concurrency limit
@@ -131,8 +133,6 @@ public class OrchestratorService {
                         Uni.createFrom().item(record)
                                 .runSubscriptionOn(VIRTUAL_EXECUTOR)
                                 .flatMap(processPaymentStatusService::remoteProcess) // Step 3
-                                .onFailure(throwable -> throwable instanceof PaymentProviderServiceMock.ThrottlingException || throwable.getCause() instanceof PaymentProviderServiceMock.ThrottlingException)
-                                .retry().withBackOff(INITIAL_RETRY_DELAY, INITIAL_RETRY_DELAY.multipliedBy(2)).atMost(MAX_RETRIES)
                 )
                 .merge(CONCURRENCY_LIMIT_STATUSES); // Ensures concurrency limit
 
@@ -181,4 +181,17 @@ public class OrchestratorService {
         return result;
     }
 
+    // Helper predicate for checking gRPC throttling errors
+    private boolean isThrottlingError(Throwable throwable) {
+        if (throwable instanceof StatusRuntimeException grpcEx) {
+            Status.Code code = grpcEx.getStatus().getCode();
+            // Common gRPC status codes for throttling/resource exhaustion:
+            // RESOURCE_EXHAUSTED: The system is out of resources, or the request is rejected by a rate limit.
+            // UNAVAILABLE: The service is currently unavailable. This is most likely a transient condition.
+            // ABORTED: The operation was aborted, typically due to a concurrency issue like a transaction abort.
+            return code == Status.Code.RESOURCE_EXHAUSTED || code == Status.Code.UNAVAILABLE || code == Status.Code.ABORTED;
+        }
+
+        return false;
+    }
 }

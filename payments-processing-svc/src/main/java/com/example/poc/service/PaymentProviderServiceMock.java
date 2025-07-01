@@ -4,6 +4,8 @@ import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentStatus;
 import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import com.google.common.util.concurrent.RateLimiter;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -41,7 +43,7 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
     public AckPaymentSent sendPayment(SendPaymentRequestMapper.SendPaymentRequest requestMap) {
         // Try to acquire with timeout
         if (this.timeoutMillis == -1L || !rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
-            throw new ThrottlingException("Failed to acquire permit within timeout period. The payment service is currently throttled.");
+            throw new StatusRuntimeException(Status.RESOURCE_EXHAUSTED.withDescription("Payment service is currently throttled. Please try again later."));
         }
 
         return new AckPaymentSent(UUID)
@@ -55,7 +57,7 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
     public PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent) {
         // Try to acquire with timeout
         if (this.timeoutMillis == -1L || !rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
-            throw new ThrottlingException("Failed to acquire permit within timeout period. The payment status service is currently throttled.");
+            throw new StatusRuntimeException(Status.RESOURCE_EXHAUSTED.withDescription("Failed to acquire permit within timeout period. The payment status service is currently throttled."));
         }
 
         return new PaymentStatus("101")
@@ -64,12 +66,5 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
                 .setMessage("This is a test")
                 .setAckPaymentSent(ackPaymentSent)
                 .setAckPaymentSentId(ackPaymentSent.getId());
-    }
-
-    // Custom exception for throttling
-    public static class ThrottlingException extends RuntimeException {
-        public ThrottlingException(String message) {
-            super(message);
-        }
     }
 }

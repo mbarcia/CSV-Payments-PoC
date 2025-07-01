@@ -5,7 +5,7 @@ import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = "csv-poc.payment-provider")
 public interface PaymentProviderConfig {
-    @WithDefault("10.0")
+    @WithDefault("100.0")
     double permitsPerSecond();
 
     @WithDefault("5000")

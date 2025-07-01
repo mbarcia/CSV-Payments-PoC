@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -63,6 +64,16 @@ public class OrchestratorService {
     @Inject
     CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
 
+    // --- CONCURRENCY LIMITS ---
+    // These directly apply to the merge operator.
+    private static final int CONCURRENCY_LIMIT_RECORDS = 1000;
+    private static final int CONCURRENCY_LIMIT_ACKS = 100;
+    private static final int CONCURRENCY_LIMIT_STATUSES = 1000;
+
+    // --- RETRY SETTINGS ---
+    private static final int MAX_RETRIES = 3;
+    private static final Duration INITIAL_RETRY_DELAY = Duration.ofMillis(100);
+
     public Uni<Void> process(String csvFolderPath) throws URISyntaxException {
         List<Uni<CsvPaymentsOutputFile>> processingUnis = readCsvFolder(csvFolderPath).keySet().stream()
             .map(inputFile ->
@@ -81,16 +92,56 @@ public class OrchestratorService {
         Multi<InputCsvFileProcessingSvc.PaymentRecord> inputRecords = processCsvPaymentsInputFileService
             .remoteProcess(csvPaymentsInputFileMapper.toGrpc(inputFile));
 
-        Multi<PaymentStatusSvc.PaymentOutput> outputs = inputRecords
-            .onItem().transformToUniAndConcatenate(record ->
-                Uni.createFrom().item(record)
-                .runSubscriptionOn(VIRTUAL_EXECUTOR) // One virtual thread per record
-                .flatMap(sendPaymentRecordService::remoteProcess)
-                .flatMap(processAckPaymentSentService::remoteProcess)
-                .flatMap(processPaymentStatusService::remoteProcess)
-            );
+        // Stage 1: Process all records with sendPaymentRecordService in parallel, with concurrency limit
+        Multi<PaymentsProcessingSvc.AckPaymentSent> ackPaymentSentMulti = inputRecords
+                .onItem().transformToUni(record -> // Transform each record into a Uni for processing
+                        Uni.createFrom().item(record)
+                                .runSubscriptionOn(VIRTUAL_EXECUTOR) // Execute processing on a virtual thread
+                                .flatMap(sendPaymentRecordService::remoteProcess) // Step 1
+                                // Add retry with backoff for transient throttling errors
+                                .onFailure(throwable -> throwable instanceof PaymentProviderServiceMock.ThrottlingException || throwable.getCause() instanceof PaymentProviderServiceMock.ThrottlingException)
+                                .retry().withBackOff(INITIAL_RETRY_DELAY, INITIAL_RETRY_DELAY.multipliedBy(2)).atMost(MAX_RETRIES)
+                )
+                .merge(CONCURRENCY_LIMIT_RECORDS); // Ensures concurrency limit
 
-        return processCsvPaymentsOutputFileService.remoteProcess(outputs)
+        // Collect results of Stage 1 to ensure all are complete before Stage 2
+        Multi<PaymentsProcessingSvc.AckPaymentSent> ackPaymentSentMultiIntermediate = ackPaymentSentMulti
+                .collect().asList()
+                .onItem().transformToMulti(Multi.createFrom()::iterable); // convert List to Multi
+
+        // Stage 2: Process all results from Stage 1 with processAckPaymentSentService in parallel, with concurrency limit
+        Multi<PaymentsProcessingSvc.PaymentStatus> paymentStatusMulti = ackPaymentSentMultiIntermediate
+                .onItem().transformToUni(record -> // Transform each record into a Uni for processing
+                        Uni.createFrom().item(record)
+                                .runSubscriptionOn(VIRTUAL_EXECUTOR)
+                                .flatMap(processAckPaymentSentService::remoteProcess) // Step 2
+                                .onFailure(throwable -> throwable instanceof PaymentProviderServiceMock.ThrottlingException || throwable.getCause() instanceof PaymentProviderServiceMock.ThrottlingException)
+                                .retry().withBackOff(INITIAL_RETRY_DELAY, INITIAL_RETRY_DELAY.multipliedBy(2)).atMost(MAX_RETRIES)
+                )
+                .merge(CONCURRENCY_LIMIT_ACKS); // Ensures concurrency limit
+
+        // Collect results of Stage 2 to ensure all are complete before Stage 3
+        Multi<PaymentsProcessingSvc.PaymentStatus> paymentStatusMultiIntermediate = paymentStatusMulti
+                .collect().asList()
+                .onItem().transformToMulti(Multi.createFrom()::iterable);
+
+        // Stage 3: Process all results from Stage 2 with processPaymentStatusService in parallel, with concurrency limit
+        Multi<PaymentStatusSvc.PaymentOutput> paymentOutputMulti = paymentStatusMultiIntermediate
+                .onItem().transformToUni(record -> // Transform each record into a Uni for processing
+                        Uni.createFrom().item(record)
+                                .runSubscriptionOn(VIRTUAL_EXECUTOR)
+                                .flatMap(processPaymentStatusService::remoteProcess) // Step 3
+                                .onFailure(throwable -> throwable instanceof PaymentProviderServiceMock.ThrottlingException || throwable.getCause() instanceof PaymentProviderServiceMock.ThrottlingException)
+                                .retry().withBackOff(INITIAL_RETRY_DELAY, INITIAL_RETRY_DELAY.multipliedBy(2)).atMost(MAX_RETRIES)
+                )
+                .merge(CONCURRENCY_LIMIT_STATUSES); // Ensures concurrency limit
+
+        // Collect results of Stage 3 to ensure all are complete before sending to output file
+        Multi<PaymentStatusSvc.PaymentOutput> paymentOutputMultiIntermediate = paymentOutputMulti
+                .collect().asList()
+                .onItem().transformToMulti(Multi.createFrom()::iterable);
+
+        return processCsvPaymentsOutputFileService.remoteProcess(paymentOutputMultiIntermediate)
             .onItem().transform(csvPaymentsOutputFileMapper::fromGrpc)
             .onItem().invoke(result -> LOG.info("✅ Completed processing: {}", result))
             .onFailure().invoke(e -> LOG.error("❌ Processing failed for: {}", inputFile, e));
@@ -128,4 +179,6 @@ public class OrchestratorService {
         }
 
         return result;
-    }}
+    }
+
+}

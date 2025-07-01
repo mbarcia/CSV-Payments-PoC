@@ -15,14 +15,14 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
 
     public Uni<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
         return requestStream
-                .onItem().transform(this::fromGrpc)
-                .collect().asList()
-                .onItem().transformToUni(inputList ->
-                        Uni.createFrom().item(getService().process(inputList))
-                )
-                .onItem().transform(this::toGrpc)
-                .onFailure().transform(throwable ->
+            .onItem().transform(this::fromGrpc)
+            .collect().asList()
+            .onItem().transformToUni(inputList ->
+                VirtualThreadRunner.runOnVirtualThread(() -> getService().process(inputList))
+                    .onItem().transform(this::toGrpc)
+                    .onFailure().transform(throwable ->
                         new RuntimeException("Processing failed: " + throwable.getMessage(), throwable)
-                );
+                    )
+            );
     }
 }

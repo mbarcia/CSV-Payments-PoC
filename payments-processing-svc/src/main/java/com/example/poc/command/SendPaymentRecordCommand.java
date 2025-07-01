@@ -6,11 +6,12 @@ import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import com.example.poc.service.PaymentProviderServiceMock;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class SendPaymentRecordCommand implements Command<PaymentRecord, AckPaymentSent> {
 
-    final
+    @Inject
     PaymentProviderServiceMock paymentProviderServiceMock;
 
     // Parameterised constructor for testing purposes

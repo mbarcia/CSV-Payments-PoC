@@ -13,17 +13,14 @@ public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, Dom
     protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
     public Multi<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
-        try {
-            DomainIn domainIn = fromGrpc(grpcRequest);
-            Stream<DomainOut> stream = getService().process(domainIn);
-
-            // Wrap the Java Stream as a Mutiny Multi
-            return Multi.createFrom().items(stream)
+        return VirtualThreadRunner.runOnVirtualThread(() -> {
+                DomainIn domainIn = fromGrpc(grpcRequest);
+                return getService().process(domainIn);
+            })
+            .onItem().transformToMulti(stream ->
+                Multi.createFrom().items(stream)
+                    .onTermination().invoke(stream::close)
                     .onItem().transform(this::toGrpc)
-                    .onTermination().invoke(stream::close); // Ensure stream is closed
-
-        } catch (Exception e) {
-            return Multi.createFrom().failure(e);
-        }
+            );
     }
 }

@@ -14,8 +14,8 @@ public class PollAckPaymentSentGrpcService extends
     @Inject
     PollAckPaymentSentGrpcAdapter adapter;
 
-    @Blocking
     @Override
+    @Blocking
     public Uni<PaymentsProcessingSvc.PaymentStatus> remoteProcess(
             PaymentsProcessingSvc.AckPaymentSent request) {
         return adapter.remoteProcess(request);

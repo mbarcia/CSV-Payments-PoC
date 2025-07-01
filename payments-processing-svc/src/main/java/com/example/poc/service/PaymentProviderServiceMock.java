@@ -31,6 +31,7 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
 
     // Constructor for testing with explicit values
     // Setting the timeout to -1 causes sendPayment() to throw an exception
+    @SuppressWarnings("unused")
     public PaymentProviderServiceMock(double permitsPerSecond, long timeoutMillis) {
         this.rateLimiter = RateLimiter.create(permitsPerSecond);
         this.timeoutMillis = timeoutMillis;

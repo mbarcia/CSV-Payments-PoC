@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 
 import java.net.URISyntaxException;
+import java.text.MessageFormat;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 @QuarkusMain
@@ -49,9 +51,22 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
         StopWatch watch = new StopWatch();
         watch.start();
 
+        CountDownLatch latch = new CountDownLatch(1);
+
         try {
             orchestratorService.process(csvFolder)
-                    .await().indefinitely();  // <--- blocks main thread
+                .subscribe().with(
+                    result -> {
+                        LOG.info(MessageFormat.format("Processing completed: {0}", result));
+                        System.exit(0);
+                    },
+                    failure -> {
+                        LOG.info(MessageFormat.format("Error: {0}", failure.getMessage()));
+                        System.exit(1);
+                    }
+                );
+
+            latch.await(); // block main thread here until completion
 
             watch.stop();
             LOG.info("✅ APPLICATION FINISHED processing of {} in {} seconds", csvFolder, watch.getTime(TimeUnit.SECONDS));

@@ -19,7 +19,7 @@ import java.util.List;
 @Setter
 @Accessors(chain = true)
 @NoArgsConstructor
-public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile {
+public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile implements AutoCloseable {
 
     @Transient
     private final List<PaymentOutput> paymentOutputs = new ArrayList<>();
@@ -47,5 +47,10 @@ public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile {
         if (o == null || getClass() != o.getClass()) return false;
         CsvPaymentsOutputFile that = (CsvPaymentsOutputFile) o;
         return this.getId() != null && this.getId().equals(that.getId());
+    }
+
+    @Override
+    public void close() throws Exception {
+        writer.close();
     }
 }

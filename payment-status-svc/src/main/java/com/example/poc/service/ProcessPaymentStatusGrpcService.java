@@ -4,12 +4,11 @@ import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.common.domain.PaymentStatus;
 import com.example.poc.common.mapper.PaymentOutputMapper;
 import com.example.poc.common.mapper.PaymentStatusMapper;
-import com.example.poc.common.service.GrpcServiceAdapter;
+import com.example.poc.common.service.GrpcReactiveServiceAdapter;
 import com.example.poc.grpc.MutinyProcessPaymentStatusServiceGrpc;
 import com.example.poc.grpc.PaymentStatusSvc;
 import com.example.poc.grpc.PaymentsProcessingSvc;
 import io.quarkus.grpc.GrpcService;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 
@@ -17,7 +16,7 @@ import jakarta.inject.Inject;
 public class ProcessPaymentStatusGrpcService extends MutinyProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceImplBase {
 
     @Inject
-    ProcessPaymentStatusService domainService;
+    ProcessPaymentStatusReactiveService domainService;
 
     @Inject
     PaymentStatusMapper paymentStatusMapper;
@@ -25,14 +24,14 @@ public class ProcessPaymentStatusGrpcService extends MutinyProcessPaymentStatusS
     @Inject
     PaymentOutputMapper paymentOutputMapper;
 
-    private final GrpcServiceAdapter<
-                PaymentsProcessingSvc.PaymentStatus,
-                PaymentStatusSvc.PaymentOutput,
-                PaymentStatus,
-                PaymentOutput> adapter = new GrpcServiceAdapter<>() {
+    private final GrpcReactiveServiceAdapter<
+                    PaymentsProcessingSvc.PaymentStatus,
+                    PaymentStatusSvc.PaymentOutput,
+                    PaymentStatus,
+                    PaymentOutput> adapter = new GrpcReactiveServiceAdapter<>() {
 
         @Override
-        protected ProcessPaymentStatusService getService() {
+        protected ProcessPaymentStatusReactiveService getService() {
             return domainService;
         }
 
@@ -48,7 +47,6 @@ public class ProcessPaymentStatusGrpcService extends MutinyProcessPaymentStatusS
     };
 
     @Override
-    @Blocking
     public Uni<PaymentStatusSvc.PaymentOutput> remoteProcess(PaymentsProcessingSvc.PaymentStatus request) {
         return adapter.remoteProcess(request);
     }

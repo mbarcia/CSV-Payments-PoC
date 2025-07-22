@@ -1,12 +1,10 @@
 package com.example.poc.common.command;
 
-/**
- * @param <T> Input type for the execute method
- * @param <S> Output type for the execute method
- */
+import io.smallrye.mutiny.Uni;
+
 @FunctionalInterface
-public interface Command<T, S> {
-    S execute(T processableObj);
+public interface ReactiveCommand<T, S> {
+    Uni<S> execute(T input);
 }
 
 /*

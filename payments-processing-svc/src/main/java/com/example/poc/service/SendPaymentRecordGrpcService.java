@@ -4,13 +4,12 @@ import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.mapper.AckPaymentSentMapper;
 import com.example.poc.common.mapper.PaymentRecordMapper;
-import com.example.poc.common.service.GrpcServiceAdapter;
-import com.example.poc.common.service.Service;
+import com.example.poc.common.service.GrpcReactiveServiceAdapter;
+import com.example.poc.common.service.ReactiveService;
 import com.example.poc.grpc.InputCsvFileProcessingSvc;
 import com.example.poc.grpc.MutinySendPaymentRecordServiceGrpc;
 import com.example.poc.grpc.PaymentsProcessingSvc;
 import io.quarkus.grpc.GrpcService;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 
@@ -19,7 +18,7 @@ public class SendPaymentRecordGrpcService extends
         MutinySendPaymentRecordServiceGrpc.SendPaymentRecordServiceImplBase {
 
     @Inject
-    SendPaymentRecordService domainService;
+    SendPaymentRecordReactiveService domainService;
 
     @Inject
     PaymentRecordMapper paymentRecordMapper;
@@ -27,19 +26,18 @@ public class SendPaymentRecordGrpcService extends
     @Inject
     AckPaymentSentMapper ackPaymentSentMapper;
 
-    @Blocking
     @Override
     public Uni<PaymentsProcessingSvc.AckPaymentSent> remoteProcess(
             InputCsvFileProcessingSvc.PaymentRecord request) {
 
-        return new GrpcServiceAdapter<
-                        InputCsvFileProcessingSvc.PaymentRecord,              // GrpcIn
-                        PaymentsProcessingSvc.AckPaymentSent,                // GrpcOut
-                        PaymentRecord,                                       // DomainIn
-                        AckPaymentSent>()                                    // DomainOut
+        return new GrpcReactiveServiceAdapter<
+                                InputCsvFileProcessingSvc.PaymentRecord,              // GrpcIn
+                                PaymentsProcessingSvc.AckPaymentSent,                // GrpcOut
+                                PaymentRecord,                                       // DomainIn
+                                AckPaymentSent>()                                    // DomainOut
         {
             @Override
-            protected Service<PaymentRecord, AckPaymentSent> getService() {
+            protected ReactiveService<PaymentRecord, AckPaymentSent> getService() {
                 return domainService;
             }
 

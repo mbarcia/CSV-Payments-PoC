@@ -6,8 +6,10 @@ import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import com.example.poc.grpc.MutinyPaymentProviderServiceGrpc;
 import com.example.poc.grpc.PaymentStatusSvc;
 import com.example.poc.grpc.PaymentsProcessingSvc;
+import io.grpc.Metadata;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcService;
-import io.smallrye.common.annotation.RunOnVirtualThread;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 
@@ -27,17 +29,20 @@ public class PaymentProviderGrpcService extends MutinyPaymentProviderServiceGrpc
     PaymentStatusMapper paymentStatusMapper;
 
     @Override
-    @RunOnVirtualThread
     public Uni<PaymentsProcessingSvc.AckPaymentSent> sendPayment(PaymentStatusSvc.SendPaymentRequest grpcRequest) {
         return Uni.createFrom().item(() -> {
             var domainIn = sendPaymentRequestMapper.fromGrpc(grpcRequest);
             var domainOut = domainService.sendPayment(domainIn);
             return ackPaymentSentMapper.toGrpc(domainOut);
+        }).onFailure().transform(throwable -> {
+            Metadata metadata = new Metadata();
+            metadata.put(Metadata.Key.of("details", Metadata.ASCII_STRING_MARSHALLER),
+                    "Error in gRPC server: " + throwable.getMessage());
+            return new StatusRuntimeException(Status.INTERNAL.withDescription(throwable.getMessage()).withCause(throwable), metadata);
         });
     }
 
     @Override
-    @RunOnVirtualThread
     public Uni<PaymentsProcessingSvc.PaymentStatus> getPaymentStatus(PaymentsProcessingSvc.AckPaymentSent grpcRequest) {
         return Uni.createFrom().emitter(emitter -> {
             try {

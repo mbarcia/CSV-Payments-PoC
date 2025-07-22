@@ -2,69 +2,74 @@ package com.example.poc.service;
 
 import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentStatus;
+import com.example.poc.common.dto.AckPaymentSentDto;
+import com.example.poc.common.dto.PaymentStatusDto;
+import com.example.poc.common.mapper.AckPaymentSentMapper;
+import com.example.poc.common.mapper.PaymentStatusMapper;
 import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import com.google.common.util.concurrent.RateLimiter;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @SuppressWarnings("UnstableApiUsage")
 @ApplicationScoped
 public class PaymentProviderServiceMock implements PaymentProviderService {
 
-    public static final String UUID = "ac007cbd-1504-4207-8d9f-0abc4b1d2bd8";
-
     private final RateLimiter rateLimiter;
     private final long timeoutMillis;
+    private final AckPaymentSentMapper ackPaymentSentMapper;
+    private final PaymentStatusMapper paymentStatusMapper;
 
     @Inject
-    @SuppressWarnings("unused")
-    public PaymentProviderServiceMock(PaymentProviderConfig config) {
+    public PaymentProviderServiceMock(AckPaymentSentMapper ackPaymentSentMapper, PaymentStatusMapper paymentStatusMapper, PaymentProviderConfig config) {
+        this.ackPaymentSentMapper = ackPaymentSentMapper;
+        this.paymentStatusMapper = paymentStatusMapper;
         rateLimiter = RateLimiter.create(config.permitsPerSecond());
         timeoutMillis = config.timeoutMillis();
 
         System.out.println("PaymentProviderConfig loaded: permitsPerSecond=" +
-                config.permitsPerSecond() + ", timeoutMillis=" + config.timeoutMillis());
-    }
-
-    // Constructor for testing with explicit values
-    // Setting the timeout to -1 causes sendPayment() to throw an exception
-    @SuppressWarnings("unused")
-    public PaymentProviderServiceMock(double permitsPerSecond, long timeoutMillis) {
-        this.rateLimiter = RateLimiter.create(permitsPerSecond);
-        this.timeoutMillis = timeoutMillis;
+            config.permitsPerSecond() + ", " +
+            "timeoutMillis=" + config.timeoutMillis());
     }
 
     @Override
-    public AckPaymentSent sendPayment(SendPaymentRequestMapper.SendPaymentRequest requestMap) {
+    public AckPaymentSent sendPayment(@NonNull SendPaymentRequestMapper.SendPaymentRequest requestMap) {
         // Try to acquire with timeout
         if (this.timeoutMillis == -1L || !rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
             throw new StatusRuntimeException(Status.RESOURCE_EXHAUSTED.withDescription("Payment service is currently throttled. Please try again later."));
         }
 
-        return new AckPaymentSent(UUID)
-                .setStatus(1000L)
-                .setMessage("OK but this is only a test")
-                .setPaymentRecord(requestMap.getPaymentRecord())
-                .setPaymentRecordId(requestMap.getPaymentRecordId());
+        return ackPaymentSentMapper.fromDto(AckPaymentSentDto.builder()
+                .status(1000L)
+                .message("OK but this is only a test")
+                .conversationId(UUID.randomUUID())
+                .paymentRecordId(requestMap.getPaymentRecordId())
+                .paymentRecord(requestMap.getPaymentRecord())
+                .build());
     }
 
     @Override
-    public PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent) {
+    public PaymentStatus getPaymentStatus(@NonNull AckPaymentSent ackPaymentSent) {
         // Try to acquire with timeout
         if (this.timeoutMillis == -1L || !rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
             throw new StatusRuntimeException(Status.RESOURCE_EXHAUSTED.withDescription("Failed to acquire permit within timeout period. The payment status service is currently throttled."));
         }
 
-        return new PaymentStatus("101")
-                .setStatus("nada")
-                .setFee(new BigDecimal("1.01"))
-                .setMessage("This is a test")
-                .setAckPaymentSent(ackPaymentSent)
-                .setAckPaymentSentId(ackPaymentSent.getId());
+        return paymentStatusMapper.fromDto(PaymentStatusDto.builder()
+                .reference("101")
+                .status("nada")
+                .fee(new BigDecimal("1.01"))
+                .message("This is a test")
+                .ackPaymentSent(ackPaymentSent)
+                .ackPaymentSentId(ackPaymentSent.getId())
+                .build());
     }
 }

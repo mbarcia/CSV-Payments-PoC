@@ -2,7 +2,7 @@ package com.example.poc.service;
 
 import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentStatus;
-import com.example.poc.common.service.GrpcServiceAdapter;
+import com.example.poc.common.service.GrpcReactiveServiceAdapter;
 import com.example.poc.grpc.PaymentsProcessingSvc;
 import com.example.poc.common.mapper.AckPaymentSentMapper;
 import com.example.poc.common.mapper.PaymentStatusMapper;
@@ -10,14 +10,14 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class ProcessAckPaymentSentGrpcAdapter extends GrpcServiceAdapter<
+public class PollAckPaymentSentGrpcAdapterReactive extends GrpcReactiveServiceAdapter<
         PaymentsProcessingSvc.AckPaymentSent,
         PaymentsProcessingSvc.PaymentStatus,
         AckPaymentSent,
         PaymentStatus> {
 
     @Inject
-    ProcessAckPaymentSentService domainService;
+    PollAckPaymentSentReactiveService domainService;
 
     @Inject
     AckPaymentSentMapper ackPaymentSentMapper;
@@ -26,7 +26,7 @@ public class ProcessAckPaymentSentGrpcAdapter extends GrpcServiceAdapter<
     PaymentStatusMapper paymentStatusMapper;
 
     @Override
-    protected ProcessAckPaymentSentService getService() {
+    protected PollAckPaymentSentReactiveService getService() {
         return domainService;
     }
 

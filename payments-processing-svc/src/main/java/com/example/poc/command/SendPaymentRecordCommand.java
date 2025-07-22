@@ -1,15 +1,16 @@
 package com.example.poc.command;
 
-import com.example.poc.common.command.Command;
+import com.example.poc.common.command.ReactiveCommand;
 import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import com.example.poc.service.PaymentProviderServiceMock;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class SendPaymentRecordCommand implements Command<PaymentRecord, AckPaymentSent> {
+public class SendPaymentRecordCommand implements ReactiveCommand<PaymentRecord, AckPaymentSent> {
 
     @Inject
     PaymentProviderServiceMock paymentProviderServiceMock;
@@ -20,7 +21,7 @@ public class SendPaymentRecordCommand implements Command<PaymentRecord, AckPayme
     }
 
     @Override
-    public AckPaymentSent execute(PaymentRecord paymentRecord) {
+    public Uni<AckPaymentSent> execute(PaymentRecord paymentRecord) {
         SendPaymentRequestMapper.SendPaymentRequest request = new SendPaymentRequestMapper.SendPaymentRequest()
                 .setAmount(paymentRecord.getAmount())
                 .setReference(paymentRecord.getRecipient())
@@ -28,6 +29,6 @@ public class SendPaymentRecordCommand implements Command<PaymentRecord, AckPayme
                 .setPaymentRecord(paymentRecord)
                 .setPaymentRecordId(paymentRecord.getId());
 
-        return paymentProviderServiceMock.sendPayment(request);
+        return Uni.createFrom().item(paymentProviderServiceMock.sendPayment(request));
     }
 }

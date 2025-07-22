@@ -1,8 +1,5 @@
 package com.example.poc.common.service;
 
-import io.grpc.Metadata;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 

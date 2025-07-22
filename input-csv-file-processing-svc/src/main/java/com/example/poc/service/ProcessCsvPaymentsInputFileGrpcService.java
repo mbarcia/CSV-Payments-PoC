@@ -5,22 +5,18 @@ import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.mapper.CsvPaymentsInputFileMapper;
 import com.example.poc.common.mapper.PaymentRecordMapper;
 import com.example.poc.common.service.GrpcServiceStreamingAdapter;
-import com.example.poc.common.service.Service;
 import com.example.poc.grpc.InputCsvFileProcessingSvc;
 import com.example.poc.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
 import io.quarkus.grpc.GrpcService;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
-
-import java.util.stream.Stream;
 
 @GrpcService
 public class ProcessCsvPaymentsInputFileGrpcService
         extends MutinyProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase {
 
     @Inject
-    ProcessCsvPaymentsInputFileService domainService;
+    ProcessCsvPaymentsInputFileReactiveService domainService;
 
     @Inject
     CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
@@ -28,7 +24,6 @@ public class ProcessCsvPaymentsInputFileGrpcService
     @Inject
     PaymentRecordMapper paymentRecordMapper;
 
-    @Blocking
     @Override
     public Multi<InputCsvFileProcessingSvc.PaymentRecord> remoteProcess(
             InputCsvFileProcessingSvc.CsvPaymentsInputFile request) {
@@ -40,7 +35,7 @@ public class ProcessCsvPaymentsInputFileGrpcService
                         PaymentRecord>()                                                    // DomainOut
         {
             @Override
-            protected Service<CsvPaymentsInputFile, Stream<PaymentRecord>> getService() {
+            protected ProcessCsvPaymentsInputFileReactiveService getService() {
                 return domainService;
             }
 

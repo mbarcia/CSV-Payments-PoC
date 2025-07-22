@@ -56,12 +56,12 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
         try {
             orchestratorService.process(csvFolder)
                 .subscribe().with(
-                    result -> {
-                        LOG.info(MessageFormat.format("Processing completed: {0}", result));
+                    _ -> {
+                        LOG.info("Processing completed.");
                         System.exit(0);
                     },
                     failure -> {
-                        LOG.info(MessageFormat.format("Error: {0}", failure.getMessage()));
+                        LOG.error(MessageFormat.format("Error: {0}", failure.getMessage()));
                         System.exit(1);
                     }
                 );

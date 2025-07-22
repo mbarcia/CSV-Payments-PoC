@@ -31,6 +31,5 @@ bin/
 # Project
 /.idea/
 .idea/workspace.xml
-/target/
+*/target/
 *.out
-/common/target/

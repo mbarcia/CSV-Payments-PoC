@@ -1,7 +1,11 @@
 package com.example.poc.common.domain;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import lombok.Setter;
 import lombok.experimental.Accessors;
 
 import java.io.Serializable;
@@ -13,11 +17,10 @@ import static java.text.MessageFormat.format;
 @Getter
 @Setter
 @Accessors(chain = true)
-@RequiredArgsConstructor
 @NoArgsConstructor
 public class AckPaymentSent extends BaseEntity implements Serializable {
     @NonNull
-    private String conversationId;
+    private UUID conversationId;
 
     private Long status;
     private String message;
@@ -25,6 +28,11 @@ public class AckPaymentSent extends BaseEntity implements Serializable {
     @Transient
     private PaymentRecord paymentRecord;
     private UUID paymentRecordId;
+
+    public AckPaymentSent(@NonNull UUID conversationId) {
+        super();
+        this.conversationId = conversationId;
+    }
 
     @Override
     public String toString() {

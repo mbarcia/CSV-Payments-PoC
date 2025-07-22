@@ -14,7 +14,6 @@ import static java.text.MessageFormat.format;
 @Getter
 @Setter
 @Accessors(chain = true)
-@RequiredArgsConstructor
 @NoArgsConstructor
 public class PaymentStatus extends BaseEntity implements Serializable {
     private String customerReference;
@@ -22,16 +21,21 @@ public class PaymentStatus extends BaseEntity implements Serializable {
     @NonNull
     @Column(nullable = false)
     private String reference;
+    @NonNull
     private String status;
+    @NonNull
     private String message;
+    @NonNull
     private BigDecimal fee;
 
     @Transient
     private AckPaymentSent ackPaymentSent;
+    @NonNull
     private UUID ackPaymentSentId;
 
     @Transient
     private PaymentRecord paymentRecord;
+    @NonNull
     private UUID paymentRecordId;
 
     @Override

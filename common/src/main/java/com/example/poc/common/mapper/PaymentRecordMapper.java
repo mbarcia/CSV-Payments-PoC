@@ -27,7 +27,6 @@ public interface PaymentRecordMapper {
     @Mapping(target = "currency", qualifiedByName = "stringToCurrency")
     @Mapping(target = "csvId")
     @Mapping(target = "csvPaymentsInputFilePath")
-    @Mapping(target = "csvPaymentsInputFile", ignore = true)
     PaymentRecord fromDto(PaymentRecordDto dto);
 
     // DTO ↔ gRPC

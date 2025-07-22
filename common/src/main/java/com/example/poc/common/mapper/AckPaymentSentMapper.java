@@ -15,12 +15,14 @@ public interface AckPaymentSentMapper {
     @Mapping(target = "paymentRecordId", qualifiedByName = "uuidToString")
     @Mapping(target = "status", qualifiedByName = "longToString")
     @Mapping(target = "message")
+    @Mapping(target = "paymentRecord")
     AckPaymentSentDto toDto(AckPaymentSent domain);
 
     @Mapping(target = "id", qualifiedByName = "stringToUUID")
     @Mapping(target = "paymentRecordId", qualifiedByName = "stringToUUID")
     @Mapping(target = "status", qualifiedByName = "stringToLong")
     @Mapping(target = "message")
+    @Mapping(target = "paymentRecord")
     AckPaymentSent fromDto(AckPaymentSentDto dto);
 
     // DTO ↔ gRPC

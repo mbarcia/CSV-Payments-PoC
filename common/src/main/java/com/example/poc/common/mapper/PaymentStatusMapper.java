@@ -14,11 +14,13 @@ public interface PaymentStatusMapper {
     @Mapping(source = "id", target = "id", qualifiedByName = "stringToUUID")
     @Mapping(target = "fee", qualifiedByName = "stringToBigDecimal")
     @Mapping(target = "ackPaymentSentId", qualifiedByName = "stringToUUID")
+    @Mapping(target = "ackPaymentSent")
     PaymentStatusDto toDto(PaymentStatus entity);
 
     @Mapping(source = "id", target = "id", qualifiedByName = "uuidToString")
     @Mapping(target = "fee", qualifiedByName = "bigDecimalToString")
     @Mapping(target = "ackPaymentSentId", qualifiedByName = "uuidToString")
+    @Mapping(target = "ackPaymentSent")
     PaymentStatus fromDto(PaymentStatusDto dto);
 
     // DTO ↔ gRPC

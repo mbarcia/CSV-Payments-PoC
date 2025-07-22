@@ -12,13 +12,13 @@ import java.util.Currency;
 import java.util.UUID;
 
 @Entity
-@RequiredArgsConstructor
 @Getter
 @Setter
+@NoArgsConstructor
 public class PaymentOutput extends BaseEntity implements Serializable {
 
     @Setter(AccessLevel.NONE) // Avoids override by MapStruct
-    private UUID id = UUID.randomUUID();
+    private UUID id;
 
     @CsvIgnore
     @Transient
@@ -29,12 +29,12 @@ public class PaymentOutput extends BaseEntity implements Serializable {
     @CsvBindByName(column = "Recipient") String recipient;
     @CsvBindByName(column = "Amount", locale = "en-UK") @CsvNumber("#,###.00") BigDecimal amount;
     @CsvBindByName(column = "Currency") Currency currency;
-    @CsvBindByName(column = "Reference") String conversationId;
+    @CsvBindByName(column = "Reference") UUID conversationId;
     @CsvBindByName(column = "Status") Long status;
     @CsvBindByName(column = "Message") String message;
     @CsvBindByName(column = "Fee", locale = "en-UK") @CsvNumber("#,###.00") BigDecimal fee;
 
-    public PaymentOutput(PaymentStatus paymentStatus, String csvId, String recipient, BigDecimal amount, Currency currency, String conversationId, Long status, String message, BigDecimal fee) {
+    public PaymentOutput(PaymentStatus paymentStatus, String csvId, String recipient, BigDecimal amount, Currency currency, UUID conversationId, Long status, String message, BigDecimal fee) {
         super();
         this.paymentStatus = paymentStatus;
         this.csvId = csvId;

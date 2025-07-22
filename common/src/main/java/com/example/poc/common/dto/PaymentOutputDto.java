@@ -1,5 +1,6 @@
 package com.example.poc.common.dto;
 
+import com.example.poc.common.domain.PaymentStatus;
 import lombok.Builder;
 import lombok.Value;
 
@@ -22,5 +23,5 @@ public class PaymentOutputDto implements Serializable {
     Long status;
     String message;
     BigDecimal fee;
-    PaymentStatusDto paymentStatus;
+    PaymentStatus paymentStatus;
 }

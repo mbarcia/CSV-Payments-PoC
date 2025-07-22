@@ -1,8 +1,8 @@
 package com.example.poc.common.domain;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 
@@ -13,7 +13,6 @@ import java.util.Objects;
 @Entity
 @Getter
 @Setter
-@NoArgsConstructor
 public class CsvFolder extends BaseEntity {
     @Transient
     private final List<CsvPaymentsInputFile> files = new ArrayList<>();
@@ -24,6 +23,10 @@ public class CsvFolder extends BaseEntity {
     public CsvFolder(@NonNull String folderPath) {
         super();
         this.folderPath = folderPath;
+    }
+
+    public CsvFolder() {
+        super();
     }
 
     public String toString() {

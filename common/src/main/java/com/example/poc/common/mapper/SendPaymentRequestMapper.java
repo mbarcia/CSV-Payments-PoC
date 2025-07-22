@@ -19,14 +19,14 @@ public interface SendPaymentRequestMapper {
     @Mapping(source = "amount", target = "amount", qualifiedByName = "stringToBigDecimal")
     @Mapping(source = "currency", target = "currency", qualifiedByName = "stringToCurrency")
     @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "stringToUUID")
-    @Mapping(source = "paymentRecord", target = "paymentRecord")
+    @Mapping(target = "paymentRecord")
 
     SendPaymentRequest fromGrpc(PaymentStatusSvc.SendPaymentRequest grpcRequest);
 
     @Mapping(source = "amount", target = "amount", qualifiedByName = "bigDecimalToString")
     @Mapping(source = "currency", target = "currency", qualifiedByName = "currencyToString")
     @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "uuidToString")
-    @Mapping(source = "paymentRecord", target = "paymentRecord")
+    @Mapping(target = "paymentRecord")
     PaymentStatusSvc.SendPaymentRequest toGrpc(SendPaymentRequest domainIn);
 
     @Setter

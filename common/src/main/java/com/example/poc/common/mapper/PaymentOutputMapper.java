@@ -15,12 +15,14 @@ public interface PaymentOutputMapper {
     @Mapping(target = "amount", qualifiedByName = "bigDecimalToString")
     @Mapping(target = "currency", qualifiedByName = "currencyToString")
     @Mapping(source = "fee", target = "fee", qualifiedByName = "bigDecimalToString")
+    @Mapping(target = "paymentStatus")
     PaymentOutputDto toDto(PaymentOutput entity);
 
     @Mapping(target = "id", qualifiedByName = "stringToUUID")
     @Mapping(target = "amount", qualifiedByName = "stringToBigDecimal")
     @Mapping(target = "currency", qualifiedByName = "stringToCurrency")
     @Mapping(target = "fee", qualifiedByName = "stringToBigDecimal")
+    @Mapping(target = "paymentStatus")
     PaymentOutput fromDto(PaymentOutputDto dto);
 
     // DTO ↔ gRPC

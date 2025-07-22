@@ -1,5 +1,6 @@
 package com.example.poc.common.dto;
 
+import com.example.poc.common.domain.AckPaymentSent;
 import lombok.Builder;
 import lombok.Value;
 
@@ -15,5 +16,5 @@ public class PaymentStatusDto {
     public String message;
     public BigDecimal fee;
     public UUID ackPaymentSentId;
-    public AckPaymentSentDto ackPaymentSent;
+    public AckPaymentSent ackPaymentSent;
 }

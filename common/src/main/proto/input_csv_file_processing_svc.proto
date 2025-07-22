@@ -12,8 +12,9 @@ message PaymentRecord {
 }
 
 message CsvPaymentsInputFile {
-  string filepath = 1;                // Path to the CSV file
-  string csvFolderPath = 2;
+  string id = 1;
+  string filepath = 2;                // Path to the CSV file
+  string csvFolderPath = 3;
 }
 
 service ProcessCsvPaymentsInputFileService {

@@ -10,7 +10,7 @@ message AckPaymentSent {
   int64  status = 3; // Long
   string message = 4;
   string paymentRecordId = 5;
-  PaymentRecord paymentRecord = 7;
+  PaymentRecord paymentRecord = 6;
 }
 
 message PaymentStatus {

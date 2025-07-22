@@ -5,8 +5,9 @@ option java_package = "com.example.poc.grpc";
 import "payment_status_svc.proto";
 
 message CsvPaymentsOutputFile {
-  string filepath = 1;
-  string csvFolderPath = 2;
+  string id = 1;
+  string filepath = 2;
+  string csvFolderPath = 3;
 }
 
 service ProcessCsvPaymentsOutputFileService {

@@ -5,23 +5,19 @@ import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.common.mapper.CsvPaymentsOutputFileMapper;
 import com.example.poc.common.mapper.PaymentOutputMapper;
 import com.example.poc.common.service.GrpcServiceClientStreamingAdapter;
-import com.example.poc.common.service.Service;
 import com.example.poc.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
 import com.example.poc.grpc.OutputCsvFileProcessingSvc;
 import com.example.poc.grpc.PaymentStatusSvc;
 import io.quarkus.grpc.GrpcService;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
-
-import java.util.List;
 
 @GrpcService
 public class ProcessCsvPaymentsOutputFileGrpcService extends MutinyProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceImplBase {
 
     @Inject
-    ProcessCsvPaymentsOutputFileService domainService;
+    ProcessCsvPaymentsOutputFileReactiveService domainService;
 
     @Inject
     CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
@@ -30,7 +26,6 @@ public class ProcessCsvPaymentsOutputFileGrpcService extends MutinyProcessCsvPay
     PaymentOutputMapper paymentOutputMapper;
 
     @Override
-    @Blocking
     public Uni<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> remoteProcess(Multi<PaymentStatusSvc.PaymentOutput> grpcStream) {
         return new GrpcServiceClientStreamingAdapter<
                         PaymentStatusSvc.PaymentOutput,
@@ -39,7 +34,7 @@ public class ProcessCsvPaymentsOutputFileGrpcService extends MutinyProcessCsvPay
                         CsvPaymentsOutputFile>() {
 
             @Override
-            protected Service<List<PaymentOutput>, CsvPaymentsOutputFile> getService() {
+            protected ProcessCsvPaymentsOutputFileReactiveService getService() {
                 return domainService;
             }
 

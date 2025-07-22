@@ -29,6 +29,16 @@ public class CommonConverters {
         return (str != null && !str.isEmpty()) ? new BigDecimal(str) : BigDecimal.ZERO;
     }
 
+    @Named("longToString")
+    public String longToString(Long value) {
+        return value != null ? value.toString() : "0";
+    }
+
+    @Named("stringToLong")
+    public Long stringToLong(String str) {
+        return (str != null && !str.isEmpty()) ? Long.parseLong(str) : 0L;
+    }
+
     @Named("currencyToString")
     public String currencyToString(Currency currency) {
         return currency != null ? currency.getCurrencyCode() : "";

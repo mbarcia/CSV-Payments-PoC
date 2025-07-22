@@ -12,4 +12,6 @@ public class AckPaymentSentDto {
     public UUID conversationId;
     public UUID paymentRecordId;
     public PaymentRecordDto paymentRecord;
+    public String message;
+    public Long status;
 }

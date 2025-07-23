@@ -1,5 +1,8 @@
 package com.example.poc.service;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.common.domain.PaymentStatus;
 import com.example.poc.common.mapper.PaymentOutputMapper;
@@ -13,45 +16,45 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
 class ProcessPaymentStatusGrpcServiceTest {
 
-    @Mock
-    ProcessPaymentStatusReactiveService domainService;
+  @Mock ProcessPaymentStatusReactiveService domainService;
 
-    @Mock
-    PaymentStatusMapper paymentStatusMapper;
+  @Mock PaymentStatusMapper paymentStatusMapper;
 
-    @Mock
-    PaymentOutputMapper paymentOutputMapper;
+  @Mock PaymentOutputMapper paymentOutputMapper;
 
-    @InjectMocks
-    ProcessPaymentStatusGrpcService processPaymentStatusGrpcService;
+  @InjectMocks ProcessPaymentStatusGrpcService processPaymentStatusGrpcService;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+  @BeforeEach
+  void setUp() {
+    MockitoAnnotations.openMocks(this);
+  }
 
-    @Test
-    void remoteProcess() {
-        // Given
-        PaymentsProcessingSvc.PaymentStatus grpcRequest = PaymentsProcessingSvc.PaymentStatus.newBuilder().build();
-        PaymentStatus domainPaymentStatus = new PaymentStatus();
-        PaymentOutput domainPaymentOutput = new PaymentOutput(null, null, null, null, null, null, null, null, null);
-        com.example.poc.grpc.PaymentStatusSvc.PaymentOutput grpcOutput = com.example.poc.grpc.PaymentStatusSvc.PaymentOutput.newBuilder().build();
+  @Test
+  void remoteProcess() {
+    // Given
+    PaymentsProcessingSvc.PaymentStatus grpcRequest =
+        PaymentsProcessingSvc.PaymentStatus.newBuilder().build();
+    PaymentStatus domainPaymentStatus = new PaymentStatus();
+    PaymentOutput domainPaymentOutput =
+        new PaymentOutput(null, null, null, null, null, null, null, null, null);
+    com.example.poc.grpc.PaymentStatusSvc.PaymentOutput grpcOutput =
+        com.example.poc.grpc.PaymentStatusSvc.PaymentOutput.newBuilder().build();
 
-        when(paymentStatusMapper.fromGrpc(any(PaymentsProcessingSvc.PaymentStatus.class))).thenReturn(domainPaymentStatus);
-        when(domainService.process(any(PaymentStatus.class))).thenReturn(Uni.createFrom().item(domainPaymentOutput));
-        when(paymentOutputMapper.toGrpc(any(PaymentOutput.class))).thenReturn(grpcOutput);
+    when(paymentStatusMapper.fromGrpc(any(PaymentsProcessingSvc.PaymentStatus.class)))
+        .thenReturn(domainPaymentStatus);
+    when(domainService.process(any(PaymentStatus.class)))
+        .thenReturn(Uni.createFrom().item(domainPaymentOutput));
+    when(paymentOutputMapper.toGrpc(any(PaymentOutput.class))).thenReturn(grpcOutput);
 
-        // When
-        Uni<com.example.poc.grpc.PaymentStatusSvc.PaymentOutput> resultUni = processPaymentStatusGrpcService.remoteProcess(grpcRequest);
+    // When
+    Uni<com.example.poc.grpc.PaymentStatusSvc.PaymentOutput> resultUni =
+        processPaymentStatusGrpcService.remoteProcess(grpcRequest);
 
-        // Then
-        UniAssertSubscriber<com.example.poc.grpc.PaymentStatusSvc.PaymentOutput> subscriber = resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-        subscriber.awaitItem().assertItem(grpcOutput);
-    }
+    // Then
+    UniAssertSubscriber<com.example.poc.grpc.PaymentStatusSvc.PaymentOutput> subscriber =
+        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+    subscriber.awaitItem().assertItem(grpcOutput);
+  }
 }

@@ -13,41 +13,42 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 
 @GrpcService
-public class ProcessPaymentStatusGrpcService extends MutinyProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceImplBase {
+public class ProcessPaymentStatusGrpcService
+    extends MutinyProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceImplBase {
 
-    @Inject
-    ProcessPaymentStatusReactiveService domainService;
+  @Inject ProcessPaymentStatusReactiveService domainService;
 
-    @Inject
-    PaymentStatusMapper paymentStatusMapper;
+  @Inject PaymentStatusMapper paymentStatusMapper;
 
-    @Inject
-    PaymentOutputMapper paymentOutputMapper;
+  @Inject PaymentOutputMapper paymentOutputMapper;
 
-    private final GrpcReactiveServiceAdapter<
-                    PaymentsProcessingSvc.PaymentStatus,
-                    PaymentStatusSvc.PaymentOutput,
-                    PaymentStatus,
-                    PaymentOutput> adapter = new GrpcReactiveServiceAdapter<>() {
+  private final GrpcReactiveServiceAdapter<
+          PaymentsProcessingSvc.PaymentStatus,
+          PaymentStatusSvc.PaymentOutput,
+          PaymentStatus,
+          PaymentOutput>
+      adapter =
+          new GrpcReactiveServiceAdapter<>() {
 
-        @Override
-        protected ProcessPaymentStatusReactiveService getService() {
-            return domainService;
-        }
+            @Override
+            protected ProcessPaymentStatusReactiveService getService() {
+              return domainService;
+            }
 
-        @Override
-        protected PaymentStatus fromGrpc(PaymentsProcessingSvc.PaymentStatus grpcIn) {
-            return paymentStatusMapper.fromGrpc(grpcIn);
-        }
+            @Override
+            protected PaymentStatus fromGrpc(PaymentsProcessingSvc.PaymentStatus grpcIn) {
+              return paymentStatusMapper.fromGrpc(grpcIn);
+            }
 
-        @Override
-        protected PaymentStatusSvc.PaymentOutput toGrpc(PaymentOutput domainOut) {
-            return paymentOutputMapper.toGrpc(domainOut);
-        }
-    };
+            @Override
+            protected PaymentStatusSvc.PaymentOutput toGrpc(PaymentOutput domainOut) {
+              return paymentOutputMapper.toGrpc(domainOut);
+            }
+          };
 
-    @Override
-    public Uni<PaymentStatusSvc.PaymentOutput> remoteProcess(PaymentsProcessingSvc.PaymentStatus request) {
-        return adapter.remoteProcess(request);
-    }
+  @Override
+  public Uni<PaymentStatusSvc.PaymentOutput> remoteProcess(
+      PaymentsProcessingSvc.PaymentStatus request) {
+    return adapter.remoteProcess(request);
+  }
 }

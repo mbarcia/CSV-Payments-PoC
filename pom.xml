@@ -27,7 +27,7 @@
         <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.63.0</grpc.version>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
-        <google-java-format.version>1.17.0</google-java-format.version>
+        <google-java-format.version>1.25.0</google-java-format.version>
     </properties>
 
     <dependencyManagement>

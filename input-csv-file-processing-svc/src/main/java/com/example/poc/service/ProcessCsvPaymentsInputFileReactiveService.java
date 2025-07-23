@@ -10,8 +10,8 @@ import lombok.Getter;
 
 @ApplicationScoped
 @Getter
-public class ProcessCsvPaymentsInputFileReactiveService extends BaseReactiveStreamingService<CsvPaymentsInputFile, PaymentRecord> {
+public class ProcessCsvPaymentsInputFileReactiveService
+    extends BaseReactiveStreamingService<CsvPaymentsInputFile, PaymentRecord> {
 
-    @Inject
-    ProcessCsvPaymentsInputFileCommand command;
+  @Inject ProcessCsvPaymentsInputFileCommand command;
 }

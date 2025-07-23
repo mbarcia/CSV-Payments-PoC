@@ -2,6 +2,9 @@ package com.example.poc.common.mapper;
 
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.grpc.PaymentStatusSvc;
+import java.math.BigDecimal;
+import java.util.Currency;
+import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -9,36 +12,34 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
-import java.math.BigDecimal;
-import java.util.Currency;
-import java.util.UUID;
-
-@Mapper(componentModel = "cdi", uses = {CommonConverters.class, PaymentStatusMapper.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
+@Mapper(
+    componentModel = "cdi",
+    uses = {CommonConverters.class, PaymentStatusMapper.class},
+    unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface SendPaymentRequestMapper {
 
-    @Mapping(source = "amount", target = "amount", qualifiedByName = "stringToBigDecimal")
-    @Mapping(source = "currency", target = "currency", qualifiedByName = "stringToCurrency")
-    @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "stringToUUID")
-    @Mapping(target = "paymentRecord")
+  @Mapping(source = "amount", target = "amount", qualifiedByName = "stringToBigDecimal")
+  @Mapping(source = "currency", target = "currency", qualifiedByName = "stringToCurrency")
+  @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "stringToUUID")
+  @Mapping(target = "paymentRecord")
+  SendPaymentRequest fromGrpc(PaymentStatusSvc.SendPaymentRequest grpcRequest);
 
-    SendPaymentRequest fromGrpc(PaymentStatusSvc.SendPaymentRequest grpcRequest);
+  @Mapping(source = "amount", target = "amount", qualifiedByName = "bigDecimalToString")
+  @Mapping(source = "currency", target = "currency", qualifiedByName = "currencyToString")
+  @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "uuidToString")
+  @Mapping(target = "paymentRecord")
+  PaymentStatusSvc.SendPaymentRequest toGrpc(SendPaymentRequest domainIn);
 
-    @Mapping(source = "amount", target = "amount", qualifiedByName = "bigDecimalToString")
-    @Mapping(source = "currency", target = "currency", qualifiedByName = "currencyToString")
-    @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "uuidToString")
-    @Mapping(target = "paymentRecord")
-    PaymentStatusSvc.SendPaymentRequest toGrpc(SendPaymentRequest domainIn);
-
-    @Setter
-    @Getter
-    @Accessors(chain = true)
-    class SendPaymentRequest {
-        private String msisdn;
-        private BigDecimal amount;
-        private Currency currency;
-        private String reference;
-        private String url;
-        private UUID paymentRecordId;
-        private PaymentRecord paymentRecord;
-    }
+  @Setter
+  @Getter
+  @Accessors(chain = true)
+  class SendPaymentRequest {
+    private String msisdn;
+    private BigDecimal amount;
+    private Currency currency;
+    private String reference;
+    private String url;
+    private UUID paymentRecordId;
+    private PaymentRecord paymentRecord;
+  }
 }

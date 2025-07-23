@@ -4,5 +4,5 @@ import io.smallrye.mutiny.Multi;
 
 @FunctionalInterface
 public interface ReactiveStreamingCommand<T, S> {
-    Multi<S> execute(T input);
+  Multi<S> execute(T input);
 }

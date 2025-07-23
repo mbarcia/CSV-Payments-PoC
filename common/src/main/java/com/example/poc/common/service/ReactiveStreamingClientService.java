@@ -5,7 +5,7 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public interface ReactiveStreamingClientService<T, S> {
-    Uni<S> process(Multi<T> processableObj);
+  Uni<S> process(Multi<T> processableObj);
 
-    ReactiveStreamingClientCommand<T, S> getCommand();
+  ReactiveStreamingClientCommand<T, S> getCommand();
 }

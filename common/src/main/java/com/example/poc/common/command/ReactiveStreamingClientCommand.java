@@ -5,5 +5,5 @@ import io.smallrye.mutiny.Uni;
 
 @FunctionalInterface
 public interface ReactiveStreamingClientCommand<T, S> {
-    Uni<S> execute(Multi<T> input);
+  Uni<S> execute(Multi<T> input);
 }

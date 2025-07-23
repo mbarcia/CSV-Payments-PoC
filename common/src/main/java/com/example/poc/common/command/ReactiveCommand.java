@@ -4,7 +4,7 @@ import io.smallrye.mutiny.Uni;
 
 @FunctionalInterface
 public interface ReactiveCommand<T, S> {
-    Uni<S> execute(T input);
+  Uni<S> execute(T input);
 }
 
 /*

@@ -9,8 +9,9 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface CsvPaymentsInputFileMapper {
 
-    @Mapping(target = "filepath")
-    @Mapping(target = "csvFolderPath")
-    InputCsvFileProcessingSvc.CsvPaymentsInputFile toGrpc(CsvPaymentsInputFile entity);
-    CsvPaymentsInputFile fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile proto);
+  @Mapping(target = "filepath")
+  @Mapping(target = "csvFolderPath")
+  InputCsvFileProcessingSvc.CsvPaymentsInputFile toGrpc(CsvPaymentsInputFile entity);
+
+  CsvPaymentsInputFile fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile proto);
 }

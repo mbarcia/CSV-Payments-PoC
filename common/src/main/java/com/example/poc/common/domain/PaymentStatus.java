@@ -1,14 +1,13 @@
 package com.example.poc.common.domain;
 
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.experimental.Accessors;
+import static java.text.MessageFormat.format;
 
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.UUID;
-
-import static java.text.MessageFormat.format;
+import lombok.*;
+import lombok.experimental.Accessors;
 
 @Entity
 @Getter
@@ -16,38 +15,34 @@ import static java.text.MessageFormat.format;
 @Accessors(chain = true)
 @NoArgsConstructor
 public class PaymentStatus extends BaseEntity implements Serializable {
-    private String customerReference;
+  private String customerReference;
 
-    @NonNull
-    @Column(nullable = false)
-    private String reference;
-    @NonNull
-    private String status;
-    @NonNull
-    private String message;
-    @NonNull
-    private BigDecimal fee;
+  @NonNull
+  @Column(nullable = false)
+  private String reference;
 
-    @Transient
-    private AckPaymentSent ackPaymentSent;
-    @NonNull
-    private UUID ackPaymentSentId;
+  @NonNull private String status;
+  @NonNull private String message;
+  @NonNull private BigDecimal fee;
 
-    @Transient
-    private PaymentRecord paymentRecord;
-    @NonNull
-    private UUID paymentRecordId;
+  @Transient private AckPaymentSent ackPaymentSent;
+  @NonNull private UUID ackPaymentSentId;
 
-    @Override
-    public String toString() {
-        return format("PaymentStatus'{'customerReference=''{0}'', reference=''{1}'', message=''{2}'', status={3}, fee={4}, recordId={5}'}'", customerReference, reference, message, status, fee, paymentRecordId);
-    }
+  @Transient private PaymentRecord paymentRecord;
+  @NonNull private UUID paymentRecordId;
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PaymentStatus that = (PaymentStatus) o;
-        return this.getId() != null && this.getId().equals(that.getId());
-    }
+  @Override
+  public String toString() {
+    return format(
+        "PaymentStatus'{'customerReference=''{0}'', reference=''{1}'', message=''{2}'', status={3}, fee={4}, recordId={5}'}'",
+        customerReference, reference, message, status, fee, paymentRecordId);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    PaymentStatus that = (PaymentStatus) o;
+    return this.getId() != null && this.getId().equals(that.getId());
+  }
 }

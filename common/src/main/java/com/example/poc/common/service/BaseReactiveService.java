@@ -8,19 +8,21 @@ import org.slf4j.MDC;
 
 public abstract class BaseReactiveService<T, S> implements ReactiveService<T, S> {
 
-    @Override
-    public Uni<S> process(T processableObj) {
+  @Override
+  public Uni<S> process(T processableObj) {
 
-        return getCommand().execute(processableObj)
-            .invoke(result -> {
-                String serviceId = this.getClass().toString();
-                Logger logger = LoggerFactory.getLogger(this.getClass());
-                MDC.put("serviceId", serviceId);
-                logger.info("Executed command on {} --> {}", processableObj, result);
-                MDC.clear();
+    return getCommand()
+        .execute(processableObj)
+        .invoke(
+            result -> {
+              String serviceId = this.getClass().toString();
+              Logger logger = LoggerFactory.getLogger(this.getClass());
+              MDC.put("serviceId", serviceId);
+              logger.info("Executed command on {} --> {}", processableObj, result);
+              MDC.clear();
             });
-    }
+  }
 
-    @Override
-    public abstract ReactiveCommand<T, S> getCommand();
+  @Override
+  public abstract ReactiveCommand<T, S> getCommand();
 }

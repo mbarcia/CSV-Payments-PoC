@@ -7,34 +7,38 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "cdi", uses = {CommonConverters.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
+@Mapper(
+    componentModel = "cdi",
+    uses = {CommonConverters.class},
+    unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface PaymentOutputMapper {
 
-    // Domain ↔ DTO
-    @Mapping(target = "id", qualifiedByName = "uuidToString")
-    @Mapping(target = "amount", qualifiedByName = "bigDecimalToString")
-    @Mapping(target = "currency", qualifiedByName = "currencyToString")
-    @Mapping(source = "fee", target = "fee", qualifiedByName = "bigDecimalToString")
-    @Mapping(target = "paymentStatus")
-    PaymentOutputDto toDto(PaymentOutput entity);
+  // Domain ↔ DTO
+  @Mapping(target = "id", qualifiedByName = "uuidToString")
+  @Mapping(target = "amount", qualifiedByName = "bigDecimalToString")
+  @Mapping(target = "currency", qualifiedByName = "currencyToString")
+  @Mapping(source = "fee", target = "fee", qualifiedByName = "bigDecimalToString")
+  @Mapping(target = "paymentStatus")
+  PaymentOutputDto toDto(PaymentOutput entity);
 
-    @Mapping(target = "id", qualifiedByName = "stringToUUID")
-    @Mapping(target = "amount", qualifiedByName = "stringToBigDecimal")
-    @Mapping(target = "currency", qualifiedByName = "stringToCurrency")
-    @Mapping(target = "fee", qualifiedByName = "stringToBigDecimal")
-    @Mapping(target = "paymentStatus")
-    PaymentOutput fromDto(PaymentOutputDto dto);
+  @Mapping(target = "id", qualifiedByName = "stringToUUID")
+  @Mapping(target = "amount", qualifiedByName = "stringToBigDecimal")
+  @Mapping(target = "currency", qualifiedByName = "stringToCurrency")
+  @Mapping(target = "fee", qualifiedByName = "stringToBigDecimal")
+  @Mapping(target = "paymentStatus")
+  PaymentOutput fromDto(PaymentOutputDto dto);
 
-    // DTO ↔ gRPC
-    PaymentStatusSvc.PaymentOutput fromDtoToGrpc(PaymentOutputDto dto);
-    PaymentOutputDto fromGrpcToDto(PaymentStatusSvc.PaymentOutput grpc);
+  // DTO ↔ gRPC
+  PaymentStatusSvc.PaymentOutput fromDtoToGrpc(PaymentOutputDto dto);
 
-    // Domain ↔ DTO ↔ gRPC
-    default PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpc) {
-        return fromDto(fromGrpcToDto(grpc));
-    }
+  PaymentOutputDto fromGrpcToDto(PaymentStatusSvc.PaymentOutput grpc);
 
-    default PaymentStatusSvc.PaymentOutput toGrpc(PaymentOutput entity) {
-        return fromDtoToGrpc(toDto(entity));
-    }
+  // Domain ↔ DTO ↔ gRPC
+  default PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpc) {
+    return fromDto(fromGrpcToDto(grpc));
+  }
+
+  default PaymentStatusSvc.PaymentOutput toGrpc(PaymentOutput entity) {
+    return fromDtoToGrpc(toDto(entity));
+  }
 }

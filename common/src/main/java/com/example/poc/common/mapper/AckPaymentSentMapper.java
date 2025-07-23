@@ -7,34 +7,38 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "cdi", uses = {CommonConverters.class, PaymentRecordMapper.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
+@Mapper(
+    componentModel = "cdi",
+    uses = {CommonConverters.class, PaymentRecordMapper.class},
+    unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface AckPaymentSentMapper {
 
-    // Domain ↔ DTO
-    @Mapping(target = "id", qualifiedByName = "uuidToString")
-    @Mapping(target = "paymentRecordId", qualifiedByName = "uuidToString")
-    @Mapping(target = "status", qualifiedByName = "longToString")
-    @Mapping(target = "message")
-    @Mapping(target = "paymentRecord")
-    AckPaymentSentDto toDto(AckPaymentSent domain);
+  // Domain ↔ DTO
+  @Mapping(target = "id", qualifiedByName = "uuidToString")
+  @Mapping(target = "paymentRecordId", qualifiedByName = "uuidToString")
+  @Mapping(target = "status", qualifiedByName = "longToString")
+  @Mapping(target = "message")
+  @Mapping(target = "paymentRecord")
+  AckPaymentSentDto toDto(AckPaymentSent domain);
 
-    @Mapping(target = "id", qualifiedByName = "stringToUUID")
-    @Mapping(target = "paymentRecordId", qualifiedByName = "stringToUUID")
-    @Mapping(target = "status", qualifiedByName = "stringToLong")
-    @Mapping(target = "message")
-    @Mapping(target = "paymentRecord")
-    AckPaymentSent fromDto(AckPaymentSentDto dto);
+  @Mapping(target = "id", qualifiedByName = "stringToUUID")
+  @Mapping(target = "paymentRecordId", qualifiedByName = "stringToUUID")
+  @Mapping(target = "status", qualifiedByName = "stringToLong")
+  @Mapping(target = "message")
+  @Mapping(target = "paymentRecord")
+  AckPaymentSent fromDto(AckPaymentSentDto dto);
 
-    // DTO ↔ gRPC
-    PaymentsProcessingSvc.AckPaymentSent toGrpc(AckPaymentSentDto dto);
-    AckPaymentSentDto fromGrpcToDto(PaymentsProcessingSvc.AckPaymentSent grpc);
+  // DTO ↔ gRPC
+  PaymentsProcessingSvc.AckPaymentSent toGrpc(AckPaymentSentDto dto);
 
-    // Domain ↔ DTO ↔ gRPC
-    default PaymentsProcessingSvc.AckPaymentSent toGrpc(AckPaymentSent domain) {
-        return toGrpc(toDto(domain));
-    }
+  AckPaymentSentDto fromGrpcToDto(PaymentsProcessingSvc.AckPaymentSent grpc);
 
-    default AckPaymentSent fromGrpc(PaymentsProcessingSvc.AckPaymentSent grpc) {
-        return fromDto(fromGrpcToDto(grpc));
-    }
+  // Domain ↔ DTO ↔ gRPC
+  default PaymentsProcessingSvc.AckPaymentSent toGrpc(AckPaymentSent domain) {
+    return toGrpc(toDto(domain));
+  }
+
+  default AckPaymentSent fromGrpc(PaymentsProcessingSvc.AckPaymentSent grpc) {
+    return fromDto(fromGrpcToDto(grpc));
+  }
 }

@@ -12,12 +12,12 @@ import lombok.Getter;
 
 @ApplicationScoped
 @Getter
-public class ProcessCsvPaymentsOutputFileReactiveService extends BaseReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
-    @Inject
-    ProcessPaymentOutputCommand command;
+public class ProcessCsvPaymentsOutputFileReactiveService
+    extends BaseReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
+  @Inject ProcessPaymentOutputCommand command;
 
-    @Override
-    public Uni<CsvPaymentsOutputFile> process(Multi<PaymentOutput> processableObj) {
-        return super.process(processableObj);
-    }
+  @Override
+  public Uni<CsvPaymentsOutputFile> process(Multi<PaymentOutput> processableObj) {
+    return super.process(processableObj);
+  }
 }

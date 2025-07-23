@@ -1,5 +1,8 @@
 package com.example.poc.service;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
 import com.example.poc.common.domain.CsvPaymentsOutputFile;
 import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.common.domain.PaymentStatus;
@@ -10,87 +13,83 @@ import com.example.poc.grpc.PaymentStatusSvc;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Currency;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.Currency;
-import java.util.UUID;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
 @SuppressWarnings("unchecked")
 class ProcessCsvPaymentsOutputFileGrpcServiceTest {
 
-    @InjectMocks
-    ProcessCsvPaymentsOutputFileGrpcService grpcService;
+  @InjectMocks ProcessCsvPaymentsOutputFileGrpcService grpcService;
 
-    @Mock
-    ProcessCsvPaymentsOutputFileReactiveService domainService;
+  @Mock ProcessCsvPaymentsOutputFileReactiveService domainService;
 
-    @Mock
-    CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
+  @Mock CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
 
-    @Mock
-    PaymentOutputMapper paymentOutputMapper;
+  @Mock PaymentOutputMapper paymentOutputMapper;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+  @BeforeEach
+  void setUp() {
+    MockitoAnnotations.openMocks(this);
+  }
 
-    @Test
-    void remoteProcess() throws IOException {
-        // Given
-        PaymentStatusSvc.PaymentOutput grpcPaymentOutput = PaymentStatusSvc.PaymentOutput.newBuilder()
-                .setCsvId(UUID.randomUUID().toString())
-                .setRecipient("John Doe")
-                .setAmount(new BigDecimal("100.00").toPlainString())
-                .setCurrency(Currency.getInstance("USD").getCurrencyCode())
-                .setConversationId(UUID.randomUUID().toString())
-                .setStatus(1L)
-                .setMessage("Success")
-                .setFee(new BigDecimal("1.50").toPlainString())
-                .build();
+  @Test
+  void remoteProcess() throws IOException {
+    // Given
+    PaymentStatusSvc.PaymentOutput grpcPaymentOutput =
+        PaymentStatusSvc.PaymentOutput.newBuilder()
+            .setCsvId(UUID.randomUUID().toString())
+            .setRecipient("John Doe")
+            .setAmount(new BigDecimal("100.00").toPlainString())
+            .setCurrency(Currency.getInstance("USD").getCurrencyCode())
+            .setConversationId(UUID.randomUUID().toString())
+            .setStatus(1L)
+            .setMessage("Success")
+            .setFee(new BigDecimal("1.50").toPlainString())
+            .build();
 
-        Multi<PaymentStatusSvc.PaymentOutput> grpcStream = Multi.createFrom().item(grpcPaymentOutput);
+    Multi<PaymentStatusSvc.PaymentOutput> grpcStream = Multi.createFrom().item(grpcPaymentOutput);
 
-        PaymentOutput domainPaymentOutput = new PaymentOutput(
-                new PaymentStatus(),
-                UUID.randomUUID().toString(),
-                "John Doe",
-                new BigDecimal("100.00"),
-                Currency.getInstance("USD"),
-                UUID.randomUUID(),
-                1L,
-                "Success",
-                new BigDecimal("1.50")
-        );
+    PaymentOutput domainPaymentOutput =
+        new PaymentOutput(
+            new PaymentStatus(),
+            UUID.randomUUID().toString(),
+            "John Doe",
+            new BigDecimal("100.00"),
+            Currency.getInstance("USD"),
+            UUID.randomUUID(),
+            1L,
+            "Success",
+            new BigDecimal("1.50"));
 
-        CsvPaymentsOutputFile domainOutputFile = new CsvPaymentsOutputFile("/tmp/output.csv");
+    CsvPaymentsOutputFile domainOutputFile = new CsvPaymentsOutputFile("/tmp/output.csv");
 
-        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpcOutputFile = OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder()
-                .setFilepath("/tmp/output.csv")
-                .setCsvFolderPath("/tmp/")
-                .build();
+    OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpcOutputFile =
+        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder()
+            .setFilepath("/tmp/output.csv")
+            .setCsvFolderPath("/tmp/")
+            .build();
 
-        when(paymentOutputMapper.fromGrpc(any(PaymentStatusSvc.PaymentOutput.class)))
-                .thenReturn(domainPaymentOutput);
-        when(domainService.process(any(Multi.class)))
-                .thenReturn(Uni.createFrom().item(domainOutputFile));
-        when(csvPaymentsOutputFileMapper.toGrpc(any(CsvPaymentsOutputFile.class)))
-                .thenReturn(grpcOutputFile);
+    when(paymentOutputMapper.fromGrpc(any(PaymentStatusSvc.PaymentOutput.class)))
+        .thenReturn(domainPaymentOutput);
+    when(domainService.process(any(Multi.class)))
+        .thenReturn(Uni.createFrom().item(domainOutputFile));
+    when(csvPaymentsOutputFileMapper.toGrpc(any(CsvPaymentsOutputFile.class)))
+        .thenReturn(grpcOutputFile);
 
-        // When
-        Uni<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> resultUni = grpcService.remoteProcess(grpcStream);
+    // When
+    Uni<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> resultUni =
+        grpcService.remoteProcess(grpcStream);
 
-        // Then
-        UniAssertSubscriber<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> subscriber = resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-        subscriber.awaitItem().assertItem(grpcOutputFile);
-    }
+    // Then
+    UniAssertSubscriber<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> subscriber =
+        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+    subscriber.awaitItem().assertItem(grpcOutputFile);
+  }
 }

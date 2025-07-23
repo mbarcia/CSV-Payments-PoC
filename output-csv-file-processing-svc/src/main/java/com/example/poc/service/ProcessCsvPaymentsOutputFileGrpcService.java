@@ -14,39 +14,40 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 
 @GrpcService
-public class ProcessCsvPaymentsOutputFileGrpcService extends MutinyProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceImplBase {
+public class ProcessCsvPaymentsOutputFileGrpcService
+    extends MutinyProcessCsvPaymentsOutputFileServiceGrpc
+        .ProcessCsvPaymentsOutputFileServiceImplBase {
 
-    @Inject
-    ProcessCsvPaymentsOutputFileReactiveService domainService;
+  @Inject ProcessCsvPaymentsOutputFileReactiveService domainService;
 
-    @Inject
-    CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
+  @Inject CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
 
-    @Inject
-    PaymentOutputMapper paymentOutputMapper;
+  @Inject PaymentOutputMapper paymentOutputMapper;
 
-    @Override
-    public Uni<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> remoteProcess(Multi<PaymentStatusSvc.PaymentOutput> grpcStream) {
-        return new GrpcServiceClientStreamingAdapter<
-                        PaymentStatusSvc.PaymentOutput,
-                        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile,
-                        PaymentOutput,
-                        CsvPaymentsOutputFile>() {
+  @Override
+  public Uni<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> remoteProcess(
+      Multi<PaymentStatusSvc.PaymentOutput> grpcStream) {
+    return new GrpcServiceClientStreamingAdapter<
+        PaymentStatusSvc.PaymentOutput,
+        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile,
+        PaymentOutput,
+        CsvPaymentsOutputFile>() {
 
-            @Override
-            protected ProcessCsvPaymentsOutputFileReactiveService getService() {
-                return domainService;
-            }
+      @Override
+      protected ProcessCsvPaymentsOutputFileReactiveService getService() {
+        return domainService;
+      }
 
-            @Override
-            protected PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpcIn) {
-                return paymentOutputMapper.fromGrpc(grpcIn);
-            }
+      @Override
+      protected PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpcIn) {
+        return paymentOutputMapper.fromGrpc(grpcIn);
+      }
 
-            @Override
-            protected OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(CsvPaymentsOutputFile domainOut) {
-                return csvPaymentsOutputFileMapper.toGrpc(domainOut);
-            }
-        }.remoteProcess(grpcStream); // <-- send Multi<> input instead
-    }
+      @Override
+      protected OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(
+          CsvPaymentsOutputFile domainOut) {
+        return csvPaymentsOutputFileMapper.toGrpc(domainOut);
+      }
+    }.remoteProcess(grpcStream); // <-- send Multi<> input instead
+  }
 }

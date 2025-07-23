@@ -7,15 +7,14 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 
 @GrpcService
-public class PollAckPaymentSentGrpcService extends
-        MutinyPollAckPaymentSentServiceGrpc.PollAckPaymentSentServiceImplBase {
+public class PollAckPaymentSentGrpcService
+    extends MutinyPollAckPaymentSentServiceGrpc.PollAckPaymentSentServiceImplBase {
 
-    @Inject
-    PollAckPaymentSentGrpcAdapterReactive adapter;
+  @Inject PollAckPaymentSentGrpcAdapterReactive adapter;
 
-    @Override
-    public Uni<PaymentsProcessingSvc.PaymentStatus> remoteProcess(
-            PaymentsProcessingSvc.AckPaymentSent request) {
-        return adapter.remoteProcess(request);
-    }
+  @Override
+  public Uni<PaymentsProcessingSvc.PaymentStatus> remoteProcess(
+      PaymentsProcessingSvc.AckPaymentSent request) {
+    return adapter.remoteProcess(request);
+  }
 }

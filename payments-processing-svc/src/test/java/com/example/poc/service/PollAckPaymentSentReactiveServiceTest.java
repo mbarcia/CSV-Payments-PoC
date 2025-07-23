@@ -1,5 +1,8 @@
 package com.example.poc.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
+
 import com.example.poc.command.PollAckPaymentSentCommand;
 import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentStatus;
@@ -10,34 +13,30 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.when;
-
 class PollAckPaymentSentReactiveServiceTest {
 
-    @Mock
-    private PollAckPaymentSentCommand pollAckPaymentSentCommand;
+  @Mock private PollAckPaymentSentCommand pollAckPaymentSentCommand;
 
-    @InjectMocks
-    private PollAckPaymentSentReactiveService pollAckPaymentSentReactiveService;
+  @InjectMocks private PollAckPaymentSentReactiveService pollAckPaymentSentReactiveService;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+  @BeforeEach
+  void setUp() {
+    MockitoAnnotations.openMocks(this);
+  }
 
-    @Test
-    void testExecute() {
-        // Given
-        AckPaymentSent ackPaymentSent = new AckPaymentSent();
-        PaymentStatus expectedStatus = new PaymentStatus();
+  @Test
+  void testExecute() {
+    // Given
+    AckPaymentSent ackPaymentSent = new AckPaymentSent();
+    PaymentStatus expectedStatus = new PaymentStatus();
 
-        when(pollAckPaymentSentCommand.execute(ackPaymentSent)).thenReturn(Uni.createFrom().item(expectedStatus));
+    when(pollAckPaymentSentCommand.execute(ackPaymentSent))
+        .thenReturn(Uni.createFrom().item(expectedStatus));
 
-        // When
-        Uni<PaymentStatus> result = pollAckPaymentSentReactiveService.process(ackPaymentSent);
+    // When
+    Uni<PaymentStatus> result = pollAckPaymentSentReactiveService.process(ackPaymentSent);
 
-        // Then
-        result.subscribe().with(status -> assertEquals(expectedStatus, status));
-    }
+    // Then
+    result.subscribe().with(status -> assertEquals(expectedStatus, status));
+  }
 }

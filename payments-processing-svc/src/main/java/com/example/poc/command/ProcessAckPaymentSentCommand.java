@@ -9,18 +9,18 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 @ApplicationScoped
-public class ProcessAckPaymentSentCommand implements ReactiveCommand<AckPaymentSent, PaymentStatus> {
-    @Inject
-    PollAckPaymentSentReactiveService pollAckPaymentSentService;
+public class ProcessAckPaymentSentCommand
+    implements ReactiveCommand<AckPaymentSent, PaymentStatus> {
+  @Inject PollAckPaymentSentReactiveService pollAckPaymentSentService;
 
-    // Parameterised constructor for testing purposes
-    public ProcessAckPaymentSentCommand(PollAckPaymentSentReactiveService pollAckPaymentSentService) {
-        this.pollAckPaymentSentService = pollAckPaymentSentService;
-    }
+  // Parameterised constructor for testing purposes
+  public ProcessAckPaymentSentCommand(PollAckPaymentSentReactiveService pollAckPaymentSentService) {
+    this.pollAckPaymentSentService = pollAckPaymentSentService;
+  }
 
-    @Override
-    public Uni<PaymentStatus> execute(AckPaymentSent ackPaymentSent) {
-        // Directly call the service without threading
-        return pollAckPaymentSentService.process(ackPaymentSent);
-    }
+  @Override
+  public Uni<PaymentStatus> execute(AckPaymentSent ackPaymentSent) {
+    // Directly call the service without threading
+    return pollAckPaymentSentService.process(ackPaymentSent);
+  }
 }

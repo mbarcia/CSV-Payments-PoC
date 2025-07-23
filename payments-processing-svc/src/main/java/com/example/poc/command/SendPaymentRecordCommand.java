@@ -12,23 +12,23 @@ import jakarta.inject.Inject;
 @ApplicationScoped
 public class SendPaymentRecordCommand implements ReactiveCommand<PaymentRecord, AckPaymentSent> {
 
-    @Inject
-    PaymentProviderServiceMock paymentProviderServiceMock;
+  @Inject PaymentProviderServiceMock paymentProviderServiceMock;
 
-    // Parameterised constructor for testing purposes
-    public SendPaymentRecordCommand(PaymentProviderServiceMock paymentProviderServiceMock) {
-        this.paymentProviderServiceMock = paymentProviderServiceMock;
-    }
+  // Parameterised constructor for testing purposes
+  public SendPaymentRecordCommand(PaymentProviderServiceMock paymentProviderServiceMock) {
+    this.paymentProviderServiceMock = paymentProviderServiceMock;
+  }
 
-    @Override
-    public Uni<AckPaymentSent> execute(PaymentRecord paymentRecord) {
-        SendPaymentRequestMapper.SendPaymentRequest request = new SendPaymentRequestMapper.SendPaymentRequest()
-                .setAmount(paymentRecord.getAmount())
-                .setReference(paymentRecord.getRecipient())
-                .setCurrency(paymentRecord.getCurrency())
-                .setPaymentRecord(paymentRecord)
-                .setPaymentRecordId(paymentRecord.getId());
+  @Override
+  public Uni<AckPaymentSent> execute(PaymentRecord paymentRecord) {
+    SendPaymentRequestMapper.SendPaymentRequest request =
+        new SendPaymentRequestMapper.SendPaymentRequest()
+            .setAmount(paymentRecord.getAmount())
+            .setReference(paymentRecord.getRecipient())
+            .setCurrency(paymentRecord.getCurrency())
+            .setPaymentRecord(paymentRecord)
+            .setPaymentRecordId(paymentRecord.getId());
 
-        return Uni.createFrom().item(paymentProviderServiceMock.sendPayment(request));
-    }
+    return Uni.createFrom().item(paymentProviderServiceMock.sendPayment(request));
+  }
 }

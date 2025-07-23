@@ -10,7 +10,7 @@ import lombok.Getter;
 
 @ApplicationScoped
 @Getter
-public class PollAckPaymentSentReactiveService extends BaseReactiveService<AckPaymentSent, PaymentStatus> {
-    @Inject
-    PollAckPaymentSentCommand command;
+public class PollAckPaymentSentReactiveService
+    extends BaseReactiveService<AckPaymentSent, PaymentStatus> {
+  @Inject PollAckPaymentSentCommand command;
 }

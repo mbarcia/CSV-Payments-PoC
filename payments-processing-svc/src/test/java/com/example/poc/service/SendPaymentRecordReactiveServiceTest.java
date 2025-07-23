@@ -1,5 +1,9 @@
 package com.example.poc.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.when;
+
 import com.example.poc.command.SendPaymentRecordCommand;
 import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentRecord;
@@ -10,38 +14,32 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.when;
-
 class SendPaymentRecordReactiveServiceTest {
 
-    @Mock
-    private SendPaymentRecordCommand sendPaymentRecordCommand;
+  @Mock private SendPaymentRecordCommand sendPaymentRecordCommand;
 
-    @Mock
-    private PaymentRecord paymentRecord;
+  @Mock private PaymentRecord paymentRecord;
 
-    @InjectMocks
-    private SendPaymentRecordReactiveService sendPaymentRecordReactiveService;
+  @InjectMocks private SendPaymentRecordReactiveService sendPaymentRecordReactiveService;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
+  @BeforeEach
+  void setUp() {
+    MockitoAnnotations.openMocks(this);
+  }
 
-    @Test
-    void testExecute() {
-        // Given
-        AckPaymentSent expectedAck = new AckPaymentSent();
+  @Test
+  void testExecute() {
+    // Given
+    AckPaymentSent expectedAck = new AckPaymentSent();
 
-        when(sendPaymentRecordCommand.execute(paymentRecord)).thenReturn(Uni.createFrom().item(expectedAck));
-        doReturn(Uni.createFrom().item(paymentRecord)).when(paymentRecord).save();
+    when(sendPaymentRecordCommand.execute(paymentRecord))
+        .thenReturn(Uni.createFrom().item(expectedAck));
+    doReturn(Uni.createFrom().item(paymentRecord)).when(paymentRecord).save();
 
-        // When
-        Uni<AckPaymentSent> result = sendPaymentRecordReactiveService.process(paymentRecord);
+    // When
+    Uni<AckPaymentSent> result = sendPaymentRecordReactiveService.process(paymentRecord);
 
-        // Then
-        result.subscribe().with(ack -> assertEquals(expectedAck, ack));
-    }
+    // Then
+    result.subscribe().with(ack -> assertEquals(expectedAck, ack));
+  }
 }

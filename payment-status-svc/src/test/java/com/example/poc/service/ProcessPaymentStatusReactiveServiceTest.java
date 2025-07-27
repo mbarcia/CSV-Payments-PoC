@@ -1,30 +1,41 @@
+/*
+ * Copyright © 2023-2025 Mariano Barcia
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.poc.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.example.poc.command.ProcessPaymentStatusCommand;
+import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.domain.PaymentStatus;
-import io.quarkus.test.vertx.RunOnVertxContext;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
-import java.math.BigDecimal;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 class ProcessPaymentStatusReactiveServiceTest {
 
   @InjectMocks ProcessPaymentStatusReactiveService service;
-
-  @Mock ProcessPaymentStatusCommand command;
 
   @BeforeEach
   void setUp() {
@@ -32,7 +43,6 @@ class ProcessPaymentStatusReactiveServiceTest {
   }
 
   @Test
-  @RunOnVertxContext
   void process() {
     // Given
     PaymentRecord paymentRecord =
@@ -41,8 +51,8 @@ class ProcessPaymentStatusReactiveServiceTest {
             "recipient123",
             new java.math.BigDecimal("100.00"),
             java.util.Currency.getInstance("USD"));
-    com.example.poc.common.domain.AckPaymentSent ackPaymentSent =
-        new com.example.poc.common.domain.AckPaymentSent(UUID.randomUUID())
+    AckPaymentSent ackPaymentSent =
+        new AckPaymentSent(UUID.randomUUID())
             .setPaymentRecord(paymentRecord)
             .setStatus(1L)
             .setMessage("SUCCESS");
@@ -53,21 +63,6 @@ class ProcessPaymentStatusReactiveServiceTest {
     when(paymentStatus.getFee()).thenReturn(new java.math.BigDecimal("1.50"));
     when(paymentStatus.save()).thenReturn(Uni.createFrom().voidItem());
 
-    PaymentOutput expectedOutput =
-        new PaymentOutput(
-            new PaymentStatus(),
-            paymentRecord.getCsvId(),
-            paymentRecord.getRecipient(),
-            paymentRecord.getAmount(),
-            paymentRecord.getCurrency(),
-            ackPaymentSent.getConversationId(),
-            ackPaymentSent.getStatus(),
-            ackPaymentSent.getMessage(),
-            new BigDecimal("1.50"));
-
-    when(command.execute(any(PaymentStatus.class)))
-        .thenReturn(Uni.createFrom().item(expectedOutput));
-
     // When
     Uni<PaymentOutput> resultUni = service.process(paymentStatus);
 
@@ -75,6 +70,15 @@ class ProcessPaymentStatusReactiveServiceTest {
     UniAssertSubscriber<PaymentOutput> subscriber =
         resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
     subscriber.awaitItem();
-    assertNotNull(subscriber.getItem());
+    PaymentOutput result = subscriber.getItem();
+    assertNotNull(result);
+    assertEquals(paymentRecord.getCsvId(), result.getCsvId());
+    assertEquals(paymentRecord.getRecipient(), result.getRecipient());
+    assertEquals(paymentRecord.getAmount(), result.getAmount());
+    assertEquals(paymentRecord.getCurrency(), result.getCurrency());
+    assertEquals(ackPaymentSent.getConversationId(), result.getConversationId());
+    assertEquals(ackPaymentSent.getStatus(), result.getStatus());
+    assertEquals(paymentStatus.getMessage(), result.getMessage());
+    assertEquals(paymentStatus.getFee(), result.getFee());
   }
 }

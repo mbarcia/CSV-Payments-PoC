@@ -1,5 +1,3 @@
-[![Workflow for CSV-Payments-PoC](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml/badge.svg)](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml)
-
 # Motivation
 Write a command-line client to process CSV files containing payments.
 
@@ -62,26 +60,15 @@ Key features include:
 
 ## Repository Structure
 
-The repository is organized as follows:
+This project now consists of Maven submodules, each module containing a microservice that runs independently from the others.
 
-- `src/main/java/com/example/poc/`: Contains the main application code
-   - `CsvPaymentsApplication.java`: Main entry point of the application
-   - `client/`: Client-related classes
-   - `command/`: Command pattern implementations for various operations
-   - `domain/`: Domain model classes
-   - `repository/`: Data access layer interfaces
-   - `service/`: Service layer classes implementing business logic
-- `src/main/resources/`: Configuration files
-   - `application.yaml`: Application configuration file
-- `src/test/`: Test classes mirroring the main package structure
-- `pom.xml`: Maven project configuration file
+The repository is organized as follows
 
-Key integration points:
-- `PaymentProvider` interface: Defines the contract for interacting with the third-party payment processor
-- `OrchestratorService`: Orchestrates the entire payment processing workflow
-- `CsvPaymentsApplication`: Processes the CLI parameters and calls the OrchestratorService
+# TODO
 
 ## Usage Instructions
+
+# TODO
 
 ### Prerequisites
 
@@ -95,79 +82,31 @@ Key integration points:
    ```
    git clone <repository-url>
    ```
-2. Navigate to the project directory:
-   ```
-   cd csv-payments-processing
-   ```
-3. Build the project:
-   ```
-   mvn -f pom-monolith.xml clean install
-   ```
+
+# TODO
 
 ### Running the CLI application
 
-To run the application, use the following command:
-#### Using Maven
-```
-# Run with Maven
-mvn -f pom-monolith.xml quarkus:dev -Dquarkus.args="--csv-folder=csv/"
-
-# Or for production build
-mvn -f pom-monolith.xml package
-java -jar target/quarkus-app/quarkus-run.jar -Dquarkus.args="--csv-folder=csv/"
-```
-
-#### Using the Quarkys CLI tool
-```
-# Install Quarkus CLI if you haven't
-# curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force quarkus@quarkusio
-
-# Run in dev mode
-quarkus dev --args="--csv-folder=csv/"
-
-# Build and run
-quarkus build
-java -jar target/quarkus-app/quarkus-run.jar --csv-folder=csv/
-```
-
-Use --csv-folder=folder-path with the path to the folder containing the CSV input files. If not specified, the application will default to the "csv/" folder.
-
-The output is generated with the extension `csv.out` under `target/classes/csv/`
-
-The data is persisted to an H2 database, using JPA/Hibernate.
-
-In order to inspect the db, set a debug breakpoint and use:
-```
-http://localhost:8080/h2-console
-```
-
-Driver Class: `org.h2.Driver`
-JDBC URL: `jdbc:h2:mem:poc`
-Username: `sa`
-Password:
+# TODO
 
 ### Configuration
 
-The application can be configured using the `application.yaml` file located in the `src/main/resources/` directory. Key configuration options include:
-
-- Database settings (URL, username, password)
-- Logging levels
-- Third-party payment processor API settings (if applicable)
+# TODO
 
 ### Testing
 
 To run the tests, execute:
 
 ```
-mvn -f pom-monolith.xml test
+mvn -f pom.xml test
 ```
 
 ### Troubleshooting
 
 1. Issue: Application fails to start
    - Check if the Java version is correct (Java 21 required)
-   - Ensure all dependencies are properly downloaded (run `mvn -f pom-monolith.xml dependency:resolve`)
-   - Verify the `application.yaml` configuration
+   - Ensure all dependencies are properly downloaded (run `mvn -f pom.xml dependency:resolve`)
+   - Verify the `application.properties` configurations
 
 2. Issue: CSV files not being processed
    - Confirm the correct folder path is provided as an argument

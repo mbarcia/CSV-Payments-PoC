@@ -1,0 +1,13 @@
+**/target
+**/.idea
+**/*.iml
+.git
+.gitignore
+mvnw
+mvnw.cmd
+README.md
+HELP.md
+LICENSE
+.dockerignore
+data-persistence-svc
+**/data

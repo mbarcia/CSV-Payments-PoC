@@ -1,20 +1,50 @@
-# Stage 1: Build the application
 FROM maven:3.9-eclipse-temurin-21 AS builder
 WORKDIR /app
 
-# Copy the entire project structure to handle the multi-module build
-COPY .. .
+# Copy the parent pom
+COPY pom.xml .
 
-# Build the payment-status-svc module
-RUN mvn -f payment-status-svc/pom.xml clean package -DskipTests
+# Copy the common pom
+COPY common/pom.xml common/pom.xml
 
-# Stage 2: Create the production image
+# Copy the project pom
+COPY payment-status-svc/pom.xml payment-status-svc/pom.xml
+
+# Filter unwanted modules and overwrite the original pom.xml
+RUN sed -n '\
+  1,/<modules>/p; \
+  /<module>common<\/module>/p; \
+  /<module>payment-status-svc<\/module>/p; \
+  /<\/modules>/,$p' pom.xml > filtered-pom.xml \
+  && mv filtered-pom.xml pom.xml
+
+# Now install the stripped-down parent POM
+RUN mvn -B install:install-file \
+    -Dfile=pom.xml \
+    -DpomFile=pom.xml \
+    -DgroupId=com.example \
+    -DartifactId=csv-payments \
+    -Dversion=1.0.0 \
+    -Dpackaging=pom \
+    -DgeneratePom=false
+
+# Copy and install common module
+COPY common/ common/
+RUN mvn -B install -f common/pom.xml -DskipTests
+
+# Copy and prepare the app module
+RUN mvn -B dependency:go-offline -f payment-status-svc/pom.xml
+
+COPY payment-status-svc/ payment-status-svc/
+RUN mvn -B clean package -f payment-status-svc/pom.xml \
+    -DskipTests \
+    -Dquarkus.package.jar.enabled=true \
+    -Dquarkus.package.jar.type=fast-jar \
+    -Dquarkus.profile=prod
+
+# Runtime image
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-
-# Copy the runnable artifacts from the builder stage
-COPY --from=builder /app/payment-status-svc/target/quarkus-app .
-
+COPY --from=builder /app/payment-status-svc/target/quarkus-app/ .
 EXPOSE 8083
-
 CMD ["java", "-jar", "quarkus-run.jar"]

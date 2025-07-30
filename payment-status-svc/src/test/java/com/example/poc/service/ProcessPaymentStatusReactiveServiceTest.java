@@ -25,17 +25,26 @@ import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.domain.PaymentStatus;
+import com.example.poc.common.dto.PaymentOutputDto;
+import com.example.poc.common.mapper.PaymentOutputMapper;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 class ProcessPaymentStatusReactiveServiceTest {
 
+  @Mock PaymentOutputMapper mapper;
+
   @InjectMocks ProcessPaymentStatusReactiveService service;
+
+  @Captor ArgumentCaptor<PaymentOutputDto> dtoCaptor;
 
   @BeforeEach
   void setUp() {
@@ -63,6 +72,9 @@ class ProcessPaymentStatusReactiveServiceTest {
     when(paymentStatus.getFee()).thenReturn(new java.math.BigDecimal("1.50"));
     when(paymentStatus.save()).thenReturn(Uni.createFrom().voidItem());
 
+    PaymentOutput expectedOutput = new PaymentOutput();
+    when(mapper.fromDto(dtoCaptor.capture())).thenReturn(expectedOutput);
+
     // When
     Uni<PaymentOutput> resultUni = service.process(paymentStatus);
 
@@ -72,13 +84,16 @@ class ProcessPaymentStatusReactiveServiceTest {
     subscriber.awaitItem();
     PaymentOutput result = subscriber.getItem();
     assertNotNull(result);
-    assertEquals(paymentRecord.getCsvId(), result.getCsvId());
-    assertEquals(paymentRecord.getRecipient(), result.getRecipient());
-    assertEquals(paymentRecord.getAmount(), result.getAmount());
-    assertEquals(paymentRecord.getCurrency(), result.getCurrency());
-    assertEquals(ackPaymentSent.getConversationId(), result.getConversationId());
-    assertEquals(ackPaymentSent.getStatus(), result.getStatus());
-    assertEquals(paymentStatus.getMessage(), result.getMessage());
-    assertEquals(paymentStatus.getFee(), result.getFee());
+
+    PaymentOutputDto capturedDto = dtoCaptor.getValue();
+    assertEquals(paymentStatus, capturedDto.getPaymentStatus());
+    assertEquals(paymentRecord.getCsvId(), capturedDto.getCsvId());
+    assertEquals(paymentRecord.getRecipient(), capturedDto.getRecipient());
+    assertEquals(paymentRecord.getAmount(), capturedDto.getAmount());
+    assertEquals(paymentRecord.getCurrency(), capturedDto.getCurrency());
+    assertEquals(ackPaymentSent.getConversationId().toString(), capturedDto.getConversationId());
+    assertEquals(ackPaymentSent.getStatus(), capturedDto.getStatus());
+    assertEquals(paymentStatus.getMessage(), capturedDto.getMessage());
+    assertEquals(paymentStatus.getFee(), capturedDto.getFee());
   }
 }

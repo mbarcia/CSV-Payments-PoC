@@ -19,9 +19,12 @@ package com.example.poc.service;
 import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.domain.PaymentStatus;
+import com.example.poc.common.dto.PaymentOutputDto;
+import com.example.poc.common.mapper.PaymentOutputMapper;
 import com.example.poc.common.service.ReactiveService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,25 +32,32 @@ import org.slf4j.MDC;
 
 @ApplicationScoped
 @Getter
-public class ProcessPaymentStatusReactiveService implements ReactiveService<PaymentStatus, PaymentOutput> {
+public class ProcessPaymentStatusReactiveService
+    implements ReactiveService<PaymentStatus, PaymentOutput> {
+
+  @Inject PaymentOutputMapper mapper;
+
   @Override
   public Uni<PaymentOutput> process(PaymentStatus paymentStatus) {
     paymentStatus.save();
 
     PaymentRecord paymentRecord = paymentStatus.getAckPaymentSent().getPaymentRecord();
 
+    PaymentOutputDto dto =
+        PaymentOutputDto.builder()
+            .paymentStatus(paymentStatus)
+            .csvId(paymentRecord.getCsvId())
+            .recipient(paymentRecord.getRecipient())
+            .amount(paymentRecord.getAmount())
+            .currency(paymentRecord.getCurrency())
+            .conversationId(paymentStatus.getAckPaymentSent().getConversationId().toString())
+            .status(paymentStatus.getAckPaymentSent().getStatus())
+            .message(paymentStatus.getMessage())
+            .fee(paymentStatus.getFee())
+            .build();
+
     return Uni.createFrom()
-        .item(
-            new PaymentOutput(
-                paymentStatus,
-                paymentRecord.getCsvId(),
-                paymentRecord.getRecipient(),
-                paymentRecord.getAmount(),
-                paymentRecord.getCurrency(),
-                paymentStatus.getAckPaymentSent().getConversationId(),
-                paymentStatus.getAckPaymentSent().getStatus(),
-                paymentStatus.getMessage(),
-                paymentStatus.getFee()))
+        .item(mapper.fromDto(dto))
         .invoke(
             result -> {
               String serviceId = this.getClass().toString();

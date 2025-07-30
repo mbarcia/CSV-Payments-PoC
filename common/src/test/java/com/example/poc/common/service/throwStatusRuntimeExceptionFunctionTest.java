@@ -23,7 +23,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.junit.jupiter.api.Test;
 
-class throwStatusRuntimeExceptionFunctionTest {
+class ThrowStatusRuntimeExceptionFunctionTest {
 
   @Test
   void apply_ShouldWrapThrowableInStatusRuntimeException() {
@@ -36,7 +36,7 @@ class throwStatusRuntimeExceptionFunctionTest {
 
     // Then
     assertNotNull(result);
-    assertTrue(result instanceof StatusRuntimeException);
+    assertInstanceOf(StatusRuntimeException.class, result);
 
     StatusRuntimeException statusRuntimeException = (StatusRuntimeException) result;
     assertEquals(Status.INTERNAL.getCode(), statusRuntimeException.getStatus().getCode());

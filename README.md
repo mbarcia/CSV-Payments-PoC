@@ -1,3 +1,5 @@
+[![Workflow for CSV-Payments-PoC](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml/badge.svg)](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml)
+
 # Motivation
 Write a command-line client to process CSV files containing payments.
 

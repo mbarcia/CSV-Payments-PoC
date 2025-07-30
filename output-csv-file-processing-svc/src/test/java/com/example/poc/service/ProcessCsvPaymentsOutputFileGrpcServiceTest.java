@@ -1,6 +1,7 @@
 package com.example.poc.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.example.poc.common.domain.CsvPaymentsOutputFile;
@@ -34,15 +35,16 @@ class ProcessCsvPaymentsOutputFileGrpcServiceTest {
 
   @Mock PaymentOutputMapper paymentOutputMapper;
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-  }
+  private PaymentStatusSvc.PaymentOutput grpcPaymentOutput;
+  private PaymentOutput domainPaymentOutput;
+  private CsvPaymentsOutputFile domainOutputFile;
+  private OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpcOutputFile;
 
-  @Test
-  void remoteProcess() throws IOException {
-    // Given
-    PaymentStatusSvc.PaymentOutput grpcPaymentOutput =
+  @BeforeEach
+  void setUp() throws IOException {
+    MockitoAnnotations.openMocks(this);
+
+    grpcPaymentOutput =
         PaymentStatusSvc.PaymentOutput.newBuilder()
             .setCsvId(UUID.randomUUID().toString())
             .setRecipient("John Doe")
@@ -54,9 +56,7 @@ class ProcessCsvPaymentsOutputFileGrpcServiceTest {
             .setFee(new BigDecimal("1.50").toPlainString())
             .build();
 
-    Multi<PaymentStatusSvc.PaymentOutput> grpcStream = Multi.createFrom().item(grpcPaymentOutput);
-
-    PaymentOutput domainPaymentOutput =
+    domainPaymentOutput =
         new PaymentOutput(
             new PaymentStatus(),
             UUID.randomUUID().toString(),
@@ -68,18 +68,28 @@ class ProcessCsvPaymentsOutputFileGrpcServiceTest {
             "Success",
             new BigDecimal("1.50"));
 
-    CsvPaymentsOutputFile domainOutputFile = new CsvPaymentsOutputFile("/tmp/output.csv");
+    domainOutputFile = new CsvPaymentsOutputFile("/tmp/output.csv");
 
-    OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpcOutputFile =
+    grpcOutputFile =
         OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder()
             .setFilepath("/tmp/output.csv")
             .setCsvFolderPath("/tmp/")
             .build();
+  }
+
+  @Test
+  void remoteProcess() throws IOException {
+    // Given
+    Multi<PaymentStatusSvc.PaymentOutput> grpcStream = Multi.createFrom().item(grpcPaymentOutput);
 
     when(paymentOutputMapper.fromGrpc(any(PaymentStatusSvc.PaymentOutput.class)))
         .thenReturn(domainPaymentOutput);
     when(domainService.process(any(Multi.class)))
-        .thenReturn(Uni.createFrom().item(domainOutputFile));
+        .thenAnswer(
+            invocation -> {
+              Multi<PaymentOutput> input = invocation.getArgument(0);
+              return input.collect().asList().onItem().transform(list -> domainOutputFile);
+            });
     when(csvPaymentsOutputFileMapper.toGrpc(any(CsvPaymentsOutputFile.class)))
         .thenReturn(grpcOutputFile);
 
@@ -91,5 +101,27 @@ class ProcessCsvPaymentsOutputFileGrpcServiceTest {
     UniAssertSubscriber<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> subscriber =
         resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
     subscriber.awaitItem().assertItem(grpcOutputFile);
+  }
+
+  @Test
+  void testRemoteProcess_ShouldInvokeMappers() {
+    // Given
+    Multi<PaymentStatusSvc.PaymentOutput> grpcStream = Multi.createFrom().item(grpcPaymentOutput);
+
+    when(paymentOutputMapper.fromGrpc(grpcPaymentOutput)).thenReturn(domainPaymentOutput);
+    when(domainService.process(any(Multi.class)))
+        .thenAnswer(
+            invocation -> {
+              Multi<PaymentOutput> input = invocation.getArgument(0);
+              return input.collect().asList().onItem().transform(list -> domainOutputFile);
+            });
+    when(csvPaymentsOutputFileMapper.toGrpc(domainOutputFile)).thenReturn(grpcOutputFile);
+
+    // When
+    grpcService.remoteProcess(grpcStream).await().indefinitely();
+
+    // Then
+    verify(paymentOutputMapper).fromGrpc(grpcPaymentOutput);
+    verify(csvPaymentsOutputFileMapper).toGrpc(domainOutputFile);
   }
 }

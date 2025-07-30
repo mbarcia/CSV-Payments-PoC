@@ -25,22 +25,26 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import java.io.IOException;
 import java.util.concurrent.Executor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 @ApplicationScoped
 public class ProcessCsvPaymentsOutputFileReactiveService
     implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
 
-  @Inject
-  @Named("virtualExecutor")
   Executor executor;
 
-  // for testing purposes only
-  public ProcessCsvPaymentsOutputFileReactiveService(Executor executor) {
+  @Inject
+  public ProcessCsvPaymentsOutputFileReactiveService(@Named("virtualExecutor") Executor executor) {
     this.executor = executor;
   }
 
   @Override
   public Uni<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputList) {
+    Logger logger = LoggerFactory.getLogger(getClass());
+    String serviceId = this.getClass().toString();
+
     return paymentOutputList
         .collect()
         .asList()
@@ -53,6 +57,10 @@ public class ProcessCsvPaymentsOutputFileReactiveService
                           try (CsvPaymentsOutputFile file =
                               this.getCsvPaymentsOutputFile(paymentOutputs.getFirst())) {
                             file.getSbc().write(paymentOutputs);
+                            MDC.put("serviceId", serviceId);
+                            logger.info("Executed command on stream --> {}", file.getFilepath());
+                            MDC.clear();
+
                             return file;
                           } catch (Exception e) {
                             throw new RuntimeException("Failed to write output file.", e);

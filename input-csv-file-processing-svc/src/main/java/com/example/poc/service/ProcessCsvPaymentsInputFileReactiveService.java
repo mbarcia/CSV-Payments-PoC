@@ -38,12 +38,10 @@ import org.slf4j.MDC;
 public class ProcessCsvPaymentsInputFileReactiveService
     implements ReactiveStreamingService<CsvPaymentsInputFile, PaymentRecord> {
 
-  @Inject
-  @Named("virtualExecutor")
   Executor executor;
 
-    /* for test purposes only */
-    public ProcessCsvPaymentsInputFileReactiveService(Executor executor) {
+  @Inject
+  public ProcessCsvPaymentsInputFileReactiveService(@Named("virtualExecutor") Executor executor) {
         this.executor = executor;
     }
 

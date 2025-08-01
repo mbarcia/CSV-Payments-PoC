@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2023-2025 Mariano Barcia
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.poc.service;
 
 import io.quarkus.runtime.Quarkus;
@@ -27,6 +43,8 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
 
   @Inject CommandLine.IFactory factory;
 
+  @Inject SystemExiter exiter;
+
   @CommandLine.Option(
       names = {"-c", "--csv-folder"},
       description = "The folder path containing CSV payment files (defaults to csv/ internal path)",
@@ -51,23 +69,29 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
       orchestratorService
           .process(csvFolder)
           .subscribe()
-          .with(
-              _ -> {
+          .with(_ -> {
                 LOG.info("Processing completed.");
-                System.exit(0);
+                watch.stop();
+                LOG.info(
+                    "✅ APPLICATION FINISHED processing of {} in {} seconds",
+                    csvFolder,
+                    watch.getTime(TimeUnit.SECONDS));
+                latch.countDown();
+                exiter.exit(0);
               },
               failure -> {
                 LOG.error(MessageFormat.format("Error: {0}", failure.getMessage()));
-                System.exit(1);
+                watch.stop();
+                LOG.error(
+                    "❌ APPLICATION FAILED processing {} after {} seconds",
+                    csvFolder,
+                    watch.getTime(TimeUnit.SECONDS),
+                    failure);
+                latch.countDown();
+                exiter.exit(1);
               });
 
       latch.await(); // block main thread here until completion
-
-      watch.stop();
-      LOG.info(
-          "✅ APPLICATION FINISHED processing of {} in {} seconds",
-          csvFolder,
-          watch.getTime(TimeUnit.SECONDS));
 
     } catch (URISyntaxException e) {
       watch.stop();
@@ -76,13 +100,15 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
           csvFolder,
           watch.getTime(TimeUnit.SECONDS),
           e);
-    } catch (Exception e) {
+      exiter.exit(1);
+    } catch (Throwable e) {
       watch.stop();
       LOG.error(
           "❌ APPLICATION FAILED processing {} after {} seconds",
           csvFolder,
           watch.getTime(TimeUnit.SECONDS),
           e);
+      exiter.exit(1);
     }
   }
 

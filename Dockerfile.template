@@ -8,13 +8,13 @@ COPY pom.xml .
 COPY common/pom.xml common/pom.xml
 
 # Copy the project pom
-COPY payment-status-svc/pom.xml payment-status-svc/pom.xml
+COPY ${SERVICE_NAME}/pom.xml ${SERVICE_NAME}/pom.xml
 
 # Filter unwanted modules and overwrite the original pom.xml
 RUN sed -n '\
   1,/<modules>/p; \
   /<module>common<\/module>/p; \
-  /<module>payment-status-svc<\/module>/p; \
+  /<module>${SERVICE_NAME}<\/module>/p; \
   /<\/modules>/,$p' pom.xml > filtered-pom.xml \
   && mv filtered-pom.xml pom.xml
 
@@ -36,11 +36,11 @@ RUN --mount=type=cache,target=/root/.m2 \
 
 # Copy and prepare the app module
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -B dependency:go-offline -f payment-status-svc/pom.xml
+    mvn -B dependency:go-offline -f ${SERVICE_NAME}/pom.xml
 
-COPY payment-status-svc/ payment-status-svc/
+COPY ${SERVICE_NAME}/ ${SERVICE_NAME}/
 RUN --mount=type=cache,target=/root/.m2 \
-    mvn -B clean package -f payment-status-svc/pom.xml \
+    mvn -B clean package -f ${SERVICE_NAME}/pom.xml \
     -DskipTests \
     -Dquarkus.package.jar.enabled=true \
     -Dquarkus.package.jar.type=fast-jar \
@@ -49,5 +49,5 @@ RUN --mount=type=cache,target=/root/.m2 \
 # Runtime image
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=builder /app/payment-status-svc/target/quarkus-app/ .
+COPY --from=builder /app/${SERVICE_NAME}/target/quarkus-app/ .
 CMD ["java", "--enable-preview", "-jar", "quarkus-run.jar"]

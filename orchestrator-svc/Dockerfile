@@ -19,7 +19,8 @@ RUN sed -n '\
   && mv filtered-pom.xml pom.xml
 
 # Now install the stripped-down parent POM
-RUN mvn -B install:install-file \
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B install:install-file \
     -Dfile=pom.xml \
     -DpomFile=pom.xml \
     -DgroupId=com.example \
@@ -30,13 +31,16 @@ RUN mvn -B install:install-file \
 
 # Copy and install common module
 COPY common/ common/
-RUN mvn -B install -f common/pom.xml -DskipTests
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B install -f common/pom.xml -DskipTests
 
 # Copy and prepare the app module
-RUN mvn -B dependency:go-offline -f orchestrator-svc/pom.xml
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B dependency:go-offline -f orchestrator-svc/pom.xml
 
 COPY orchestrator-svc/ orchestrator-svc/
-RUN mvn -B clean package -f orchestrator-svc/pom.xml \
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B clean package -f orchestrator-svc/pom.xml \
     -DskipTests \
     -Dquarkus.package.jar.enabled=true \
     -Dquarkus.package.jar.type=fast-jar \
@@ -46,5 +50,4 @@ RUN mvn -B clean package -f orchestrator-svc/pom.xml \
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=builder /app/orchestrator-svc/target/quarkus-app/ .
-EXPOSE 8083
 CMD ["java", "--enable-preview", "-jar", "quarkus-run.jar"]

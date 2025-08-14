@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2023-2025 Mariano Barcia
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.poc.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -9,6 +25,7 @@ import static org.mockito.Mockito.when;
 import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.domain.PaymentStatus;
+import com.example.poc.common.dto.PaymentRecordDto;
 import com.example.poc.common.mapper.*;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -17,6 +34,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 
 class PaymentProviderServiceMockTest {
 
@@ -34,13 +52,16 @@ class PaymentProviderServiceMockTest {
   @DisplayName("Should successfully send payment and return AckPaymentSent")
   void sendPayment_happyPath_shouldReturnAckPaymentSent() {
     // Given
-    PaymentRecord paymentRecord =
-        new PaymentRecord(
-            "csvId-" + UUID.randomUUID(),
-            "John Doe",
-            new BigDecimal("100.00"),
-            java.util.Currency.getInstance("USD"));
-    paymentRecord.setId(UUID.randomUUID());
+    PaymentRecordDto dtoIn =
+        PaymentRecordDto.builder()
+            .id(UUID.randomUUID())
+            .csvId(String.valueOf(UUID.randomUUID()))
+            .recipient("John Doe")
+            .amount(BigDecimal.valueOf(100.00))
+            .currency(java.util.Currency.getInstance("USD"))
+            .build();
+    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
 
     SendPaymentRequestMapper.SendPaymentRequest request =
         new SendPaymentRequestMapper.SendPaymentRequest()
@@ -94,13 +115,16 @@ class PaymentProviderServiceMockTest {
     // Ensure enough time passes for the rate limiter to be truly exhausted if it's not already
     Thread.sleep(10); // Small delay to ensure rate limiter state settles
 
-    PaymentRecord paymentRecord =
-        new PaymentRecord(
-            "csvId-" + UUID.randomUUID(),
-            "John Doe",
-            new BigDecimal("100.00"),
-            java.util.Currency.getInstance("USD"));
-    paymentRecord.setId(UUID.randomUUID());
+    PaymentRecordDto dtoIn =
+        PaymentRecordDto.builder()
+            .id(UUID.randomUUID())
+            .csvId(String.valueOf(UUID.randomUUID()))
+            .recipient("John Doe")
+            .amount(BigDecimal.valueOf(100.00))
+            .currency(java.util.Currency.getInstance("USD"))
+            .build();
+    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
 
     SendPaymentRequestMapper.SendPaymentRequest request =
         new SendPaymentRequestMapper.SendPaymentRequest()
@@ -130,13 +154,16 @@ class PaymentProviderServiceMockTest {
     this.paymentProviderServiceMock =
         new PaymentProviderServiceMock(ackPaymentSentMapper, paymentStatusMapper, config);
 
-    PaymentRecord paymentRecord =
-        new PaymentRecord(
-            "csvId-" + UUID.randomUUID(),
-            "John Doe",
-            new BigDecimal("100.00"),
-            java.util.Currency.getInstance("USD"));
-    paymentRecord.setId(UUID.randomUUID());
+    PaymentRecordDto dtoIn =
+        PaymentRecordDto.builder()
+            .id(UUID.randomUUID())
+            .csvId(String.valueOf(UUID.randomUUID()))
+            .recipient("John Doe")
+            .amount(BigDecimal.valueOf(100.00))
+            .currency(java.util.Currency.getInstance("USD"))
+            .build();
+    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
 
     SendPaymentRequestMapper.SendPaymentRequest request =
         new SendPaymentRequestMapper.SendPaymentRequest()
@@ -164,13 +191,16 @@ class PaymentProviderServiceMockTest {
         new PaymentProviderServiceMock(this.ackPaymentSentMapper, this.paymentStatusMapper, config);
 
     // When
-    PaymentRecord paymentRecord =
-        new PaymentRecord(
-            "csvId-" + UUID.randomUUID(),
-            "John Doe",
-            new BigDecimal("100.00"),
-            java.util.Currency.getInstance("USD"));
-    paymentRecord.setId(UUID.randomUUID());
+    PaymentRecordDto dtoIn =
+        PaymentRecordDto.builder()
+            .id(UUID.randomUUID())
+            .csvId(String.valueOf(UUID.randomUUID()))
+            .recipient("John Doe")
+            .amount(BigDecimal.valueOf(100.00))
+            .currency(java.util.Currency.getInstance("USD"))
+            .build();
+    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
 
     AckPaymentSent testAckPaymentSent =
         new AckPaymentSent(UUID.randomUUID())
@@ -212,13 +242,16 @@ class PaymentProviderServiceMockTest {
         new PaymentProviderServiceMock(this.ackPaymentSentMapper, this.paymentStatusMapper, config);
 
     // When
-    PaymentRecord paymentRecord =
-        new PaymentRecord(
-            "csvId-" + UUID.randomUUID(),
-            "John Doe",
-            new BigDecimal("100.00"),
-            java.util.Currency.getInstance("USD"));
-    paymentRecord.setId(UUID.randomUUID());
+    PaymentRecordDto dtoIn =
+        PaymentRecordDto.builder()
+            .id(UUID.randomUUID())
+            .csvId(String.valueOf(UUID.randomUUID()))
+            .recipient("John Doe")
+            .amount(BigDecimal.valueOf(100.00))
+            .currency(java.util.Currency.getInstance("USD"))
+            .build();
+    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
 
     AckPaymentSent testAckPaymentSent =
         new AckPaymentSent(UUID.randomUUID())

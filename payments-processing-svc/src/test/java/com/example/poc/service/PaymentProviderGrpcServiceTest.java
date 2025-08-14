@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2023-2025 Mariano Barcia
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.poc.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -8,7 +24,9 @@ import static org.mockito.Mockito.when;
 import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.domain.PaymentStatus;
+import com.example.poc.common.dto.PaymentRecordDto;
 import com.example.poc.common.mapper.AckPaymentSentMapper;
+import com.example.poc.common.mapper.PaymentRecordMapper;
 import com.example.poc.common.mapper.PaymentStatusMapper;
 import com.example.poc.common.mapper.SendPaymentRequestMapper;
 import com.example.poc.grpc.PaymentsProcessingSvc;
@@ -21,6 +39,7 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -54,10 +73,17 @@ class PaymentProviderGrpcServiceTest {
             .setPaymentRecordId(UUID.randomUUID().toString())
             .build();
 
-    PaymentRecord paymentRecord =
-        new PaymentRecord(
-            "csvId", "John Doe", new BigDecimal("100.00"), java.util.Currency.getInstance("USD"));
-    paymentRecord.setId(UUID.randomUUID());
+    PaymentRecordDto dtoIn =
+        PaymentRecordDto.builder()
+            .id(UUID.randomUUID())
+            .csvId(String.valueOf(UUID.randomUUID()))
+            .recipient("John Doe")
+            .amount(BigDecimal.valueOf(100.00))
+            .currency(java.util.Currency.getInstance("USD"))
+            .build();
+    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
+
     SendPaymentRequestMapper.SendPaymentRequest request =
         new SendPaymentRequestMapper.SendPaymentRequest()
             .setAmount(paymentRecord.getAmount())
@@ -106,10 +132,17 @@ class PaymentProviderGrpcServiceTest {
             .setPaymentRecordId(UUID.randomUUID().toString())
             .build();
 
-    PaymentRecord paymentRecord =
-        new PaymentRecord(
-            "csvId", "John Doe", new BigDecimal("100.00"), java.util.Currency.getInstance("USD"));
-    paymentRecord.setId(UUID.randomUUID());
+    PaymentRecordDto dtoIn =
+        PaymentRecordDto.builder()
+            .id(UUID.randomUUID())
+            .csvId(String.valueOf(UUID.randomUUID()))
+            .recipient("John Doe")
+            .amount(BigDecimal.valueOf(100.00))
+            .currency(java.util.Currency.getInstance("USD"))
+            .build();
+    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
+
     SendPaymentRequestMapper.SendPaymentRequest request =
         new SendPaymentRequestMapper.SendPaymentRequest()
             .setAmount(paymentRecord.getAmount())

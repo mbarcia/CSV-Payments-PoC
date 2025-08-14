@@ -48,12 +48,15 @@ public class ProcessCsvPaymentsInputFileReactiveService
   @Override
   public Multi<PaymentRecord> process(CsvPaymentsInputFile csvFile) {
     Logger logger = LoggerFactory.getLogger(getClass());
+    var strategy = new FilePathAwareMappingStrategy<PaymentRecord>(csvFile.getFilepath());
+    strategy.setType(PaymentRecord.class);
 
     try {
       CsvToBean<PaymentRecord> csvReader =
               new CsvToBeanBuilder<PaymentRecord>(
-                      new BufferedReader(new FileReader(csvFile.getFilepath())))
+                      new BufferedReader(new FileReader(String.valueOf(csvFile.getFilepath()))))
                       .withType(PaymentRecord.class)
+                      .withMappingStrategy(strategy)
                       .withSeparator(',')
                       .withIgnoreLeadingWhiteSpace(true)
                       .withIgnoreEmptyLine(true)
@@ -61,7 +64,7 @@ public class ProcessCsvPaymentsInputFileReactiveService
       String serviceId = this.getClass().toString();
 
       return Multi.createFrom()
-              .items(() -> csvReader.parse().stream().map(record -> record.assignInputFile(csvFile)))
+              .items(() -> csvReader.parse().stream())
               .runSubscriptionOn(executor)
               .invoke(result -> {
                 MDC.put("serviceId", serviceId);

@@ -24,6 +24,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,9 +74,12 @@ public class ProcessCsvPaymentsOutputFileReactiveService
       throws IOException {
     assert paymentOutput != null;
     PaymentStatus paymentStatus = paymentOutput.getPaymentStatus();
+    assert paymentStatus != null;
     AckPaymentSent ackPaymentSent = paymentStatus.getAckPaymentSent();
+    assert ackPaymentSent != null;
     PaymentRecord paymentRecord = ackPaymentSent.getPaymentRecord();
-    String csvPaymentsInputFilePath = paymentRecord.getCsvPaymentsInputFilePath();
+    assert paymentRecord != null;
+    Path csvPaymentsInputFilePath = paymentRecord.getCsvPaymentsInputFilePath();
 
     return new CsvPaymentsOutputFile(csvPaymentsInputFilePath);
   }

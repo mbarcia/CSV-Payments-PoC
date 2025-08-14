@@ -26,12 +26,15 @@ import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.domain.PaymentStatus;
 import com.example.poc.common.dto.PaymentOutputDto;
+import com.example.poc.common.dto.PaymentRecordDto;
 import com.example.poc.common.mapper.PaymentOutputMapper;
+import com.example.poc.common.mapper.PaymentRecordMapper;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mapstruct.factory.Mappers;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -46,6 +49,9 @@ class ProcessPaymentStatusReactiveServiceTest {
 
   @Captor ArgumentCaptor<PaymentOutputDto> dtoCaptor;
 
+  private final PaymentRecordMapper paymentRecordMapper =
+      Mappers.getMapper(PaymentRecordMapper.class);
+
   @BeforeEach
   void setUp() {
     MockitoAnnotations.openMocks(this);
@@ -54,12 +60,16 @@ class ProcessPaymentStatusReactiveServiceTest {
   @Test
   void process() {
     // Given
-    PaymentRecord paymentRecord =
-        new com.example.poc.common.domain.PaymentRecord(
-            UUID.randomUUID().toString(),
-            "recipient123",
-            new java.math.BigDecimal("100.00"),
-            java.util.Currency.getInstance("USD"));
+    PaymentRecordDto paymentRecordDto =
+        PaymentRecordDto.builder()
+            .id(UUID.randomUUID())
+            .csvId(String.valueOf(UUID.randomUUID()))
+            .recipient("recipient123")
+            .amount(new java.math.BigDecimal("100.00"))
+            .currency(java.util.Currency.getInstance("USD"))
+            .csvPaymentsInputFilePath(null)
+            .build();
+    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(paymentRecordDto);
     AckPaymentSent ackPaymentSent =
         new AckPaymentSent(UUID.randomUUID())
             .setPaymentRecord(paymentRecord)
@@ -70,7 +80,7 @@ class ProcessPaymentStatusReactiveServiceTest {
     when(paymentStatus.getAckPaymentSent()).thenReturn(ackPaymentSent);
     when(paymentStatus.getMessage()).thenReturn("Payment processed successfully");
     when(paymentStatus.getFee()).thenReturn(new java.math.BigDecimal("1.50"));
-    when(paymentStatus.save()).thenReturn(Uni.createFrom().voidItem());
+    when(paymentStatus.save()).thenReturn(Uni.createFrom().item(paymentStatus));
 
     PaymentOutput expectedOutput = new PaymentOutput();
     when(mapper.fromDto(dtoCaptor.capture())).thenReturn(expectedOutput);
@@ -91,7 +101,7 @@ class ProcessPaymentStatusReactiveServiceTest {
     assertEquals(paymentRecord.getRecipient(), capturedDto.getRecipient());
     assertEquals(paymentRecord.getAmount(), capturedDto.getAmount());
     assertEquals(paymentRecord.getCurrency(), capturedDto.getCurrency());
-    assertEquals(ackPaymentSent.getConversationId().toString(), capturedDto.getConversationId());
+    assertEquals(ackPaymentSent.getConversationId(), capturedDto.getConversationId());
     assertEquals(ackPaymentSent.getStatus(), capturedDto.getStatus());
     assertEquals(paymentStatus.getMessage(), capturedDto.getMessage());
     assertEquals(paymentStatus.getFee(), capturedDto.getFee());

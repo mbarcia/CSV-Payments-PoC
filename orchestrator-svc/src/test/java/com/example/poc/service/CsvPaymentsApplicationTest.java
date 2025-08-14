@@ -34,11 +34,9 @@ class CsvPaymentsApplicationTest {
 
   CsvPaymentsApplication application;
 
-  @InjectMock
-  OrchestratorService orchestratorService;
+  @InjectMock OrchestratorService orchestratorService;
 
-  @InjectMock
-  SystemExiter exiter;
+  @InjectMock SystemExiter exiter;
 
   @BeforeEach
   void setUp() {

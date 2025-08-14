@@ -1,3 +1,19 @@
+/*
+ * Copyright © 2023-2025 Mariano Barcia
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.example.poc.common.mapper;
 
 import com.example.poc.common.domain.PaymentStatus;
@@ -14,21 +30,29 @@ import org.mapstruct.ReportingPolicy;
 public interface PaymentStatusMapper {
 
   // Domain ↔ DTO
-  @Mapping(source = "id", target = "id", qualifiedByName = "stringToUUID")
-  @Mapping(target = "fee", qualifiedByName = "stringToBigDecimal")
-  @Mapping(target = "ackPaymentSentId", qualifiedByName = "stringToUUID")
+  @Mapping(target = "id")
+  @Mapping(target = "fee")
+  @Mapping(target = "ackPaymentSentId")
   @Mapping(target = "ackPaymentSent")
   PaymentStatusDto toDto(PaymentStatus entity);
 
-  @Mapping(source = "id", target = "id", qualifiedByName = "uuidToString")
-  @Mapping(target = "fee", qualifiedByName = "bigDecimalToString")
-  @Mapping(target = "ackPaymentSentId", qualifiedByName = "uuidToString")
+  @Mapping(target = "id")
+  @Mapping(target = "fee")
+  @Mapping(target = "ackPaymentSentId")
   @Mapping(target = "ackPaymentSent")
   PaymentStatus fromDto(PaymentStatusDto dto);
 
   // DTO ↔ gRPC
+  @Mapping(target = "id", qualifiedByName = "uuidToString")
+  @Mapping(target = "fee", qualifiedByName = "bigDecimalToString")
+  @Mapping(target = "ackPaymentSentId", qualifiedByName = "uuidToString")
+  @Mapping(target = "ackPaymentSent")
   PaymentsProcessingSvc.PaymentStatus toGrpc(PaymentStatusDto dto);
 
+  @Mapping(target = "id", qualifiedByName = "stringToUUID")
+  @Mapping(target = "fee", qualifiedByName = "stringToBigDecimal")
+  @Mapping(target = "ackPaymentSentId", qualifiedByName = "stringToUUID")
+  @Mapping(target = "ackPaymentSent")
   PaymentStatusDto toDto(PaymentsProcessingSvc.PaymentStatus grpc);
 
   // Domain ↔ DTO ↔ gRPC

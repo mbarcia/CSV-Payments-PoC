@@ -3,12 +3,12 @@ syntax = "proto3";
 option java_package = "com.example.poc.grpc";
 
 message PaymentRecord {
-  string id = 1;                      // UUID of PaymentRecord (inherited from BaseEntity)
-  string csvId = 2;                   // Field "ID" of the CSV
-  string recipient = 3;               // Field "Recipient"
-  string amount = 4;                  // BigDecimal represented as string for accuracy
-  string currency = 5;                // ISO 4217 code (ie. "GBP", "USD")
-  string csvPaymentsInputFilePath = 6;
+  string id = 1;                        // UUID of PaymentRecord (inherited from BaseEntity)
+  string csvId = 2;                     // Field "ID" of the CSV
+  string recipient = 3;                 // Field "Recipient"
+  string amount = 4;                    // BigDecimal represented as string for accuracy
+  string currency = 5;                  // ISO 4217 code (ie. "GBP", "USD")
+  string csvPaymentsInputFilePath = 6;  // Path to the input CSV file
 }
 
 message CsvPaymentsInputFile {

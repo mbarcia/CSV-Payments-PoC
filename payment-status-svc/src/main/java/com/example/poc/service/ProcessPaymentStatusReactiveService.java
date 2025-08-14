@@ -16,9 +16,7 @@
 
 package com.example.poc.service;
 
-import com.example.poc.common.domain.PaymentOutput;
-import com.example.poc.common.domain.PaymentRecord;
-import com.example.poc.common.domain.PaymentStatus;
+import com.example.poc.common.domain.*;
 import com.example.poc.common.dto.PaymentOutputDto;
 import com.example.poc.common.mapper.PaymentOutputMapper;
 import com.example.poc.common.service.ReactiveService;
@@ -39,9 +37,12 @@ public class ProcessPaymentStatusReactiveService
 
   @Override
   public Uni<PaymentOutput> process(PaymentStatus paymentStatus) {
-    paymentStatus.save();
+    Uni<BaseEntity> saveUni = paymentStatus.save(); // Capture the publisher
 
-    PaymentRecord paymentRecord = paymentStatus.getAckPaymentSent().getPaymentRecord();
+      AckPaymentSent ackPaymentSent = paymentStatus.getAckPaymentSent();
+      assert ackPaymentSent != null;
+      PaymentRecord paymentRecord = ackPaymentSent.getPaymentRecord();
+      assert paymentRecord != null;
 
     PaymentOutputDto dto =
         PaymentOutputDto.builder()
@@ -50,14 +51,14 @@ public class ProcessPaymentStatusReactiveService
             .recipient(paymentRecord.getRecipient())
             .amount(paymentRecord.getAmount())
             .currency(paymentRecord.getCurrency())
-            .conversationId(paymentStatus.getAckPaymentSent().getConversationId().toString())
-            .status(paymentStatus.getAckPaymentSent().getStatus())
+            .conversationId(ackPaymentSent.getConversationId())
+            .status(ackPaymentSent.getStatus())
             .message(paymentStatus.getMessage())
             .fee(paymentStatus.getFee())
             .build();
 
-    return Uni.createFrom()
-        .item(mapper.fromDto(dto))
+    return saveUni
+        .onItem().transformToUni(v -> Uni.createFrom().item(mapper.fromDto(dto)))
         .invoke(
             result -> {
               String serviceId = this.getClass().toString();

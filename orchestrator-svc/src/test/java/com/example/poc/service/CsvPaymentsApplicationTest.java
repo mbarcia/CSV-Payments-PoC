@@ -16,36 +16,34 @@
 
 package com.example.poc.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-import io.quarkus.test.InjectMock;
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.runtime.Quarkus;
 import io.smallrye.mutiny.Uni;
 import java.net.URISyntaxException;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.mockito.*;
+import picocli.CommandLine;
 
-@QuarkusTest
 class CsvPaymentsApplicationTest {
 
-  CsvPaymentsApplication application;
+  @InjectMocks CsvPaymentsApplication application;
 
-  @InjectMock OrchestratorService orchestratorService;
+  @Mock OrchestratorService orchestratorService;
 
-  @InjectMock SystemExiter exiter;
+  @Mock SystemExiter exiter;
+
+  @Mock Sync sync;
+
+  @Mock CommandLine.IFactory factory;
 
   @BeforeEach
   void setUp() {
-    application = new CsvPaymentsApplication();
-    application.orchestratorService = orchestratorService;
-    application.exiter = exiter;
-
-    Mockito.reset(orchestratorService, exiter);
-    // Mock the exiter to prevent System.exit during tests
+    MockitoAnnotations.openMocks(this);
     doNothing().when(exiter).exit(anyInt());
   }
 
@@ -81,6 +79,23 @@ class CsvPaymentsApplicationTest {
   }
 
   @Test
+  @SneakyThrows
+  void testRun_InterruptedException() {
+    // Arrange
+    String csvFolder = "test-folder";
+    application.csvFolder = csvFolder;
+    when(orchestratorService.process(csvFolder)).thenReturn(Uni.createFrom().voidItem());
+    doThrow(new InterruptedException("Simulated interrupt")).when(sync).await();
+
+    // Act
+    application.run();
+
+    // Assert
+    verify(orchestratorService).process(csvFolder);
+    verify(exiter).exit(2);
+  }
+
+  @Test
   void testRun_InvalidFolder() throws URISyntaxException {
     // Arrange
     String csvFolder = "invalid-folder";
@@ -94,5 +109,33 @@ class CsvPaymentsApplicationTest {
     // Assert
     verify(orchestratorService).process(csvFolder);
     verify(exiter).exit(1);
+  }
+
+  @Test
+  void testRun_Args() throws URISyntaxException {
+    // Arrange
+    String[] args = {"--csv-folder", "test-folder"};
+    when(orchestratorService.process("test-folder")).thenReturn(Uni.createFrom().voidItem());
+
+    // Act
+    int exitCode = application.run(args);
+
+    // Assert
+    assertEquals(0, exitCode);
+    verify(orchestratorService).process("test-folder");
+    verify(exiter).exit(0);
+  }
+
+  @Test
+  void testMain() {
+    // Arrange
+    String[] args = {"--csv-folder", "test-folder"};
+    try (MockedStatic<Quarkus> quarkusMock = Mockito.mockStatic(Quarkus.class)) {
+      // Act
+      CsvPaymentsApplication.main(args);
+
+      // Assert
+      quarkusMock.verify(() -> Quarkus.run(CsvPaymentsApplication.class, args));
+    }
   }
 }

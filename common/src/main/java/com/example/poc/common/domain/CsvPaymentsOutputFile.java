@@ -38,7 +38,7 @@ import lombok.experimental.Accessors;
 @NoArgsConstructor
 public class CsvPaymentsOutputFile extends BaseCsvPaymentsFile implements AutoCloseable {
 
-  @Transient private final List<PaymentOutput> paymentOutputs = new ArrayList<>();
+  @Transient private List<PaymentOutput> paymentOutputs = new ArrayList<>();
 
   @Transient StatefulBeanToCsv<PaymentOutput> sbc;
 

@@ -16,341 +16,125 @@
 
 package com.example.poc.service;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 import com.example.poc.common.domain.CsvPaymentsInputFile;
-import com.example.poc.common.mapper.CsvPaymentsInputFileMapper;
-import com.example.poc.common.mapper.CsvPaymentsOutputFileMapper;
-import com.example.poc.grpc.*;
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
-import io.quarkus.test.junit.QuarkusTest;
+import com.example.poc.common.domain.CsvPaymentsOutputFile;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import java.io.File;
-import java.net.URL;
-import java.nio.file.Files;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-@QuarkusTest
-public class OrchestratorServiceTest {
+class OrchestratorServiceTest {
 
-  // TODO
+  @TempDir Path tempDir;
 
-  @InjectMocks OrchestratorService orchestratorService;
+  @InjectMocks private OrchestratorService orchestratorService;
 
-  @Mock HybridResourceLoader resourceLoader;
+  @Mock private ProcessFileService processFileService;
 
-  @Mock
-  MutinyProcessCsvPaymentsInputFileServiceGrpc.MutinyProcessCsvPaymentsInputFileServiceStub
-      processCsvPaymentsInputFileService;
+  @Mock private ProcessFolderService processFolderService;
 
-  @Mock
-  MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub
-      processAckPaymentSentService;
-
-  @Mock
-  MutinySendPaymentRecordServiceGrpc.MutinySendPaymentRecordServiceStub sendPaymentRecordService;
-
-  @Mock
-  MutinyProcessCsvPaymentsOutputFileServiceGrpc.MutinyProcessCsvPaymentsOutputFileServiceStub
-      processCsvPaymentsOutputFileService;
-
-  @Mock
-  MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub
-      processPaymentStatusService;
-
-  @Mock CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
-
-  @Mock CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
+  private CsvPaymentsInputFile inputFile1;
+  private CsvPaymentsInputFile inputFile2;
+  private CsvPaymentsOutputFile outputFile1;
+  private CsvPaymentsOutputFile outputFile2;
 
   @BeforeEach
-  public void setup() {
+  void setUp() throws IOException {
     MockitoAnnotations.openMocks(this);
+    inputFile1 = new CsvPaymentsInputFile(new File(tempDir.toFile(), "test1.csv"));
+    inputFile2 = new CsvPaymentsInputFile(new File(tempDir.toFile(), "test2.csv"));
+    outputFile1 = new CsvPaymentsOutputFile(inputFile1.getFilepath());
+    outputFile2 = new CsvPaymentsOutputFile(inputFile2.getFilepath());
   }
 
   @Test
-  public void testReadCsvFolder_whenFolderNotFound() {
-    String nonExistentFolder = "non-existent-folder";
-    Mockito.lenient().when(resourceLoader.getResource(nonExistentFolder)).thenReturn(null);
+  void testProcess_Success() throws URISyntaxException {
+    // Given
+    String folderPath = "test-folder";
+    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> fileMap = new HashMap<>();
+    fileMap.put(inputFile1, outputFile1);
+    fileMap.put(inputFile2, outputFile2);
 
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          orchestratorService.readCsvFolder(nonExistentFolder);
-        });
+    when(processFolderService.process(folderPath)).thenReturn(fileMap);
+    when(processFileService.process(inputFile1)).thenReturn(Uni.createFrom().item(outputFile1));
+    when(processFileService.process(inputFile2)).thenReturn(Uni.createFrom().item(outputFile2));
+
+    // When
+    Uni<Void> resultUni = orchestratorService.process(folderPath);
+    UniAssertSubscriber<Void> subscriber =
+        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+
+    // Then
+    subscriber.awaitItem().assertCompleted();
+    verify(processFolderService).process(folderPath);
+    verify(processFileService).process(inputFile1);
+    verify(processFileService).process(inputFile2);
   }
 
   @Test
-  public void testReadCsvFolder_whenPathIsNotDirectory(@TempDir Path tempDir) throws Exception {
-    String filePath = "file.csv";
-    File file = tempDir.resolve(filePath).toFile();
-    file.createNewFile();
-    URL fileUrl = file.toURI().toURL();
-    Mockito.lenient().when(resourceLoader.getResource(filePath)).thenReturn(fileUrl);
+  void testProcess_EmptyFolder() throws URISyntaxException {
+    // Given
+    String folderPath = "empty-folder";
+    when(processFolderService.process(folderPath)).thenReturn(Collections.emptyMap());
 
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> {
-          orchestratorService.readCsvFolder(filePath);
-        });
+    // When
+    Uni<Void> resultUni = orchestratorService.process(folderPath);
+    UniAssertSubscriber<Void> subscriber =
+        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+
+    // Then
+    subscriber.awaitItem().assertCompleted();
+    verify(processFolderService).process(folderPath);
+    verify(processFileService, never()).process(any());
   }
 
   @Test
-  @SneakyThrows
-  public void testReadCsvFolder_whenFolderIsEmpty(@TempDir Path tempDir) {
-    String emptyFolderPath = "empty-folder";
-    File emptyDir = tempDir.resolve(emptyFolderPath).toFile();
-    emptyDir.mkdirs();
-    URL folderUrl = emptyDir.toURI().toURL();
-    Mockito.lenient().when(resourceLoader.getResource(emptyFolderPath)).thenReturn(folderUrl);
+  void testProcess_FolderServiceThrowsException() throws URISyntaxException {
+    // Given
+    String folderPath = "error-folder";
+    when(processFolderService.process(folderPath))
+        .thenThrow(new URISyntaxException("input", "reason"));
 
-    assertEquals(Collections.emptyMap(), orchestratorService.readCsvFolder(emptyFolderPath));
+    // When & Then
+    assertThrows(URISyntaxException.class, () -> orchestratorService.process(folderPath));
+    verify(processFolderService).process(folderPath);
+    verify(processFileService, never()).process(any());
   }
 
   @Test
-  public void testReadCsvFolder_whenFolderContainsCsvFiles(@TempDir Path tempDir) throws Exception {
-    String csvFolderPath = "csv-folder-full";
-    Path csvDir = tempDir.resolve(csvFolderPath);
-    Files.createDirectories(csvDir);
-    Files.createFile(csvDir.resolve("test1.csv"));
-    Files.createFile(csvDir.resolve("test2.csv"));
-    Files.createFile(csvDir.resolve("test3.csv"));
-    URL folderUrl = csvDir.toUri().toURL();
-    Mockito.lenient().when(resourceLoader.getResource(csvFolderPath)).thenReturn(folderUrl);
+  void testProcess_FileServiceThrowsException() throws URISyntaxException {
+    // Given
+    String folderPath = "test-folder";
+    RuntimeException exception = new RuntimeException("File processing failed");
+    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> fileMap = new HashMap<>();
+    fileMap.put(inputFile1, outputFile1);
 
-    Map<CsvPaymentsInputFile, ?> result = orchestratorService.readCsvFolder(csvFolderPath);
+    when(processFolderService.process(folderPath)).thenReturn(fileMap);
+    when(processFileService.process(inputFile1)).thenReturn(Uni.createFrom().failure(exception));
 
-    assertEquals(3, result.size());
+    // When
+    Uni<Void> resultUni = orchestratorService.process(folderPath);
+    UniAssertSubscriber<Void> subscriber =
+        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+
+    // Then
+    subscriber.awaitFailure().assertFailedWith(RuntimeException.class, "File processing failed");
+    verify(processFolderService).process(folderPath);
+    verify(processFileService).process(inputFile1);
   }
-
-  @Test
-  public void testIsThrottlingError_withResourceExhausted() {
-    assertTrue(
-        orchestratorService.isThrottlingError(
-            new StatusRuntimeException(Status.RESOURCE_EXHAUSTED)));
-  }
-
-  @Test
-  public void testIsThrottlingError_withUnavailable() {
-    assertTrue(
-        orchestratorService.isThrottlingError(new StatusRuntimeException(Status.UNAVAILABLE)));
-  }
-
-  @Test
-  public void testIsThrottlingError_withAborted() {
-    assertTrue(orchestratorService.isThrottlingError(new StatusRuntimeException(Status.ABORTED)));
-  }
-
-  @Test
-  public void testIsThrottlingError_withDifferentStatus() {
-    assertFalse(
-        orchestratorService.isThrottlingError(new StatusRuntimeException(Status.INVALID_ARGUMENT)));
-  }
-
-  @Test
-  public void testIsThrottlingError_withNonGrpcException() {
-    assertFalse(orchestratorService.isThrottlingError(new RuntimeException()));
-  }
-
-  //  @Test
-  //  @SneakyThrows
-  //  public void testProcess_failure_sendPaymentRecord(@TempDir Path tempDir) {
-  //    // Arrange
-  //    String csvFolderPath = "csv-folder";
-  //    Path csvDir = tempDir.resolve(csvFolderPath);
-  //    Files.createDirectories(csvDir);
-  //    File testFile = csvDir.resolve("test.csv").toFile();
-  //    testFile.createNewFile();
-  //    URL folderUrl = csvDir.toUri().toURL();
-  //
-  //    Mockito.lenient().when(resourceLoader.getResource(csvFolderPath)).thenReturn(folderUrl);
-  //
-  //    InputCsvFileProcessingSvc.PaymentRecord paymentRecord =
-  //        InputCsvFileProcessingSvc.PaymentRecord.newBuilder().build();
-  //
-  //    Mockito.lenient()
-  //        .when(csvPaymentsInputFileMapper.toGrpc(any(CsvPaymentsInputFile.class)))
-  //        .thenReturn(InputCsvFileProcessingSvc.CsvPaymentsInputFile.newBuilder().build());
-  //    Mockito.lenient()
-  //        .when(
-  //            processCsvPaymentsInputFileService.remoteProcess(
-  //                any(InputCsvFileProcessingSvc.CsvPaymentsInputFile.class)))
-  //        .thenReturn(Multi.createFrom().item(paymentRecord));
-  //    Mockito.lenient()
-  //        .when(
-  //            sendPaymentRecordService.remoteProcess(
-  //                any(InputCsvFileProcessingSvc.PaymentRecord.class)))
-  //        .thenReturn(Uni.createFrom().failure(new StatusRuntimeException(Status.INTERNAL)));
-  //
-  //    // Act & Assert
-  //    StatusRuntimeException thrown =
-  //            assertThrows(
-  //                    StatusRuntimeException.class,
-  //                    () -> orchestratorService.process(csvFolderPath).await().indefinitely());
-  //
-  //    assertEquals(Status.INTERNAL.getCode(), thrown.getStatus().getCode());
-  //  }
-
-  //  @Test
-  //  public void testProcess_failure_processAckPaymentSent(@TempDir Path tempDir) throws
-  // URISyntaxException, IOException {
-  //    // Arrange
-  //    String csvFolderPath = "csv-folder";
-  //    Path csvDir = tempDir.resolve(csvFolderPath);
-  //    Files.createDirectories(csvDir);
-  //    File testFile = csvDir.resolve("test.csv").toFile();
-  //    testFile.createNewFile();
-  //    URL folderUrl = csvDir.toUri().toURL();
-  //
-  //    Mockito.lenient().when(resourceLoader.getResource(csvFolderPath)).thenReturn(folderUrl);
-  //
-  //    InputCsvFileProcessingSvc.PaymentRecord paymentRecord =
-  //        InputCsvFileProcessingSvc.PaymentRecord.newBuilder().build();
-  //    PaymentsProcessingSvc.AckPaymentSent ackPaymentSent =
-  //        PaymentsProcessingSvc.AckPaymentSent.newBuilder().build();
-  //
-  //    Mockito.lenient()
-  //        .when(csvPaymentsInputFileMapper.toGrpc(any(CsvPaymentsInputFile.class)))
-  //        .thenReturn(InputCsvFileProcessingSvc.CsvPaymentsInputFile.newBuilder().build());
-  //    Mockito.lenient()
-  //        .when(
-  //            processCsvPaymentsInputFileService.remoteProcess(
-  //                any(InputCsvFileProcessingSvc.CsvPaymentsInputFile.class)))
-  //        .thenReturn(Multi.createFrom().item(paymentRecord));
-  //    Mockito.lenient()
-  //        .when(
-  //            sendPaymentRecordService.remoteProcess(
-  //                any(InputCsvFileProcessingSvc.PaymentRecord.class)))
-  //        .thenReturn(Uni.createFrom().item(ackPaymentSent));
-  //    Mockito.lenient()
-  //        .when(
-  //            processAckPaymentSentService.remoteProcess(
-  //                any(PaymentsProcessingSvc.AckPaymentSent.class)))
-  //        .thenReturn(Uni.createFrom().failure(new StatusRuntimeException(Status.INTERNAL)));
-  //
-  //    // Act & Assert
-  //    assertThrows(
-  //        StatusRuntimeException.class,
-  //        () -> {
-  //          orchestratorService.process(csvFolderPath).await().indefinitely();
-  //        });
-  //  }
-
-  //  @Test
-  //  public void testProcess_failure_processPaymentStatus(@TempDir Path tempDir) throws
-  // URISyntaxException, IOException {
-  //    // Arrange
-  //    String csvFolderPath = "csv-folder";
-  //    Path csvDir = tempDir.resolve(csvFolderPath);
-  //    Files.createDirectories(csvDir);
-  //    File testFile = csvDir.resolve("test.csv").toFile();
-  //    testFile.createNewFile();
-  //    URL folderUrl = csvDir.toUri().toURL();
-  //
-  //    Mockito.lenient().when(resourceLoader.getResource(csvFolderPath)).thenReturn(folderUrl);
-  //
-  //    InputCsvFileProcessingSvc.PaymentRecord paymentRecord =
-  //        InputCsvFileProcessingSvc.PaymentRecord.newBuilder().build();
-  //    PaymentsProcessingSvc.AckPaymentSent ackPaymentSent =
-  //        PaymentsProcessingSvc.AckPaymentSent.newBuilder().build();
-  //    PaymentsProcessingSvc.PaymentStatus paymentStatus =
-  //        PaymentsProcessingSvc.PaymentStatus.newBuilder().build();
-  //
-  //    Mockito.lenient()
-  //        .when(csvPaymentsInputFileMapper.toGrpc(any(CsvPaymentsInputFile.class)))
-  //        .thenReturn(InputCsvFileProcessingSvc.CsvPaymentsInputFile.newBuilder().build());
-  //    Mockito.lenient()
-  //        .when(
-  //            processCsvPaymentsInputFileService.remoteProcess(
-  //                any(InputCsvFileProcessingSvc.CsvPaymentsInputFile.class)))
-  //        .thenReturn(Multi.createFrom().item(paymentRecord));
-  //    Mockito.lenient()
-  //        .when(
-  //            sendPaymentRecordService.remoteProcess(
-  //                any(InputCsvFileProcessingSvc.PaymentRecord.class)))
-  //        .thenReturn(Uni.createFrom().item(ackPaymentSent));
-  //    Mockito.lenient()
-  //        .when(
-  //            processAckPaymentSentService.remoteProcess(
-  //                any(PaymentsProcessingSvc.AckPaymentSent.class)))
-  //        .thenReturn(Uni.createFrom().item(paymentStatus));
-  //    Mockito.lenient()
-  //        .when(
-  //            processPaymentStatusService.remoteProcess(
-  //                any(PaymentsProcessingSvc.PaymentStatus.class)))
-  //        .thenReturn(Uni.createFrom().failure(new StatusRuntimeException(Status.INTERNAL)));
-  //
-  //    // Act & Assert
-  //    assertThrows(
-  //        StatusRuntimeException.class,
-  //        () -> {
-  //          orchestratorService.process(csvFolderPath).await().indefinitely();
-  //        });
-  //  }
-
-  //    @Test
-  //    public void testProcess_retry() throws URISyntaxException, IOException {
-  //        // Arrange
-  //        String csvFolderPath = "src/test/resources/csv-folder-retry";
-  //        File csvDir = new File(csvFolderPath);
-  //        csvDir.mkdirs();
-  //        File testFile = new File(csvDir, "test.csv");
-  //        testFile.createNewFile();
-  //        URL folderUrl = csvDir.toURI().toURL();
-  //
-  //        Mockito.lenient().when(resourceLoader.getResource(csvFolderPath)).thenReturn(folderUrl);
-  //
-  //        CsvPaymentsInputFile inputFile = new CsvPaymentsInputFile(testFile);
-  //        InputCsvFileProcessingSvc.PaymentRecord paymentRecord =
-  // InputCsvFileProcessingSvc.PaymentRecord.newBuilder().build();
-  //        PaymentsProcessingSvc.AckPaymentSent ackPaymentSent =
-  // PaymentsProcessingSvc.AckPaymentSent.newBuilder().build();
-  //        PaymentsProcessingSvc.PaymentStatus paymentStatus =
-  // PaymentsProcessingSvc.PaymentStatus.newBuilder().build();
-  //        PaymentStatusSvc.PaymentOutput paymentOutput =
-  // PaymentStatusSvc.PaymentOutput.newBuilder().build();
-  //        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpcOutputFile =
-  // OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder().build();
-  //        CsvPaymentsOutputFile expectedOutputFile = new CsvPaymentsOutputFile(csvFolderPath +
-  // "/test.csv");
-  //
-  //
-  // Mockito.lenient().when(csvPaymentsInputFileMapper.toGrpc(any(CsvPaymentsInputFile.class))).thenReturn(InputCsvFileProcessingSvc.CsvPaymentsInputFile.newBuilder().build());
-  //
-  // Mockito.lenient().when(processCsvPaymentsInputFileService.remoteProcess(any(InputCsvFileProcessingSvc.CsvPaymentsInputFile.class))).thenReturn(Multi.createFrom().item(paymentRecord));
-  //
-  // Mockito.lenient().when(sendPaymentRecordService.remoteProcess(any(InputCsvFileProcessingSvc.PaymentRecord.class)))
-  //                .thenReturn(Uni.createFrom().failure(new
-  // StatusRuntimeException(Status.RESOURCE_EXHAUSTED)))
-  //                .thenReturn(Uni.createFrom().failure(new
-  // StatusRuntimeException(Status.RESOURCE_EXHAUSTED)))
-  //                .thenReturn(Uni.createFrom().item(ackPaymentSent));
-  //
-  // Mockito.lenient().when(processAckPaymentSentService.remoteProcess(any(PaymentsProcessingSvc.AckPaymentSent.class))).thenReturn(Uni.createFrom().item(paymentStatus));
-  //
-  // Mockito.lenient().when(processPaymentStatusService.remoteProcess(any(PaymentsProcessingSvc.PaymentStatus.class))).thenReturn(Uni.createFrom().item(paymentOutput));
-  //
-  // Mockito.lenient().when(processCsvPaymentsOutputFileService.remoteProcess(any(Multi.class))).thenReturn(Uni.createFrom().item(grpcOutputFile));
-  //
-  // Mockito.lenient().when(csvPaymentsOutputFileMapper.fromGrpc(any(OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.class))).thenReturn(expectedOutputFile);
-  //
-  //        // Act
-  //        orchestratorService.process(csvFolderPath).await().indefinitely();
-  //
-  //        // Assert
-  //        Mockito.verify(sendPaymentRecordService,
-  // times(3)).remoteProcess(any(InputCsvFileProcessingSvc.PaymentRecord.class));
-  //
-  //        // Cleanup
-  //        testFile.delete();
-  //    }
 }

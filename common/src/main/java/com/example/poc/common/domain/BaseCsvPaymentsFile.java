@@ -29,9 +29,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
+import lombok.experimental.Accessors;
 
 @Getter
 @Setter
+@Accessors(chain = true)
 @MappedSuperclass
 @NoArgsConstructor
 public abstract class BaseCsvPaymentsFile extends BaseEntity implements Serializable {

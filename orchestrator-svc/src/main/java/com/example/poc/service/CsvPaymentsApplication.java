@@ -22,8 +22,8 @@ import io.quarkus.runtime.annotations.QuarkusMain;
 import jakarta.inject.Inject;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +38,8 @@ import picocli.CommandLine;
 public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
 
   private static final Logger LOG = LoggerFactory.getLogger(CsvPaymentsApplication.class);
+
+  @Inject Sync sync;
 
   @Inject OrchestratorService orchestratorService;
 
@@ -63,8 +65,6 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
     StopWatch watch = new StopWatch();
     watch.start();
 
-    CountDownLatch latch = new CountDownLatch(1);
-
     try {
       orchestratorService
           .process(csvFolder)
@@ -76,7 +76,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
                     "✅ APPLICATION FINISHED processing of {} in {} seconds",
                     csvFolder,
                     watch.getTime(TimeUnit.SECONDS));
-                latch.countDown();
+                    sync.signal();
                 exiter.exit(0);
               },
               failure -> {
@@ -87,11 +87,11 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
                     csvFolder,
                     watch.getTime(TimeUnit.SECONDS),
                     failure);
-                latch.countDown();
+                sync.signal();
                 exiter.exit(1);
               });
 
-      latch.await(); // block main thread here until completion
+      sync.await(); // block main thread here until completion
 
     } catch (URISyntaxException e) {
       watch.stop();
@@ -101,14 +101,12 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
           watch.getTime(TimeUnit.SECONDS),
           e);
       exiter.exit(1);
-    } catch (Throwable e) {
-      watch.stop();
+    } catch (InterruptedException e) {
       LOG.error(
-          "❌ APPLICATION FAILED processing {} after {} seconds",
+          "❌ APPLICATION FAILED processing {}",
           csvFolder,
-          watch.getTime(TimeUnit.SECONDS),
           e);
-      exiter.exit(1);
+      exiter.exit(2);
     }
   }
 

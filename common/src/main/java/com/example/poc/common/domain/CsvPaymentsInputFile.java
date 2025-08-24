@@ -33,7 +33,7 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 @NoArgsConstructor
 public class CsvPaymentsInputFile extends BaseCsvPaymentsFile {
-  @Transient private final List<PaymentRecord> records = new ArrayList<>();
+  @Transient private List<PaymentRecord> records = new ArrayList<>();
 
   public CsvPaymentsInputFile(@NonNull File csvFile) {
     super(csvFile);

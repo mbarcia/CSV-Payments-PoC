@@ -1,95 +1,146 @@
 # Payment Status Service
 
-This microservice is responsible for processing payment status updates in a CSV payment processing system. It receives payment status information and persists it to a PostgreSQL database for internal auditing purposes only, following the data sovereignty principle where each microservice owns its data.
+[![Workflow for CSV-Payments-PoC](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml/badge.svg)](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml)
 
-## Architecture Overview
+## Overview
 
+The Payment Status Service is a Quarkus-based microservice responsible for processing payment status updates in the CSV payment processing system. It receives payment status information, transforms it into output records, and provides the data for generating output CSV files. 
+
+This service is part of the [CSV Payments POC](../README.md) project, which processes CSV files containing payment information through a series of microservices.
+
+## Key Responsibilities
+
+- Receive payment status updates via REST API or gRPC
+- Transform payment status data into output records for CSV generation
+- Provide processed payment data to downstream services
+- Handle both unary and streaming gRPC requests
+
+## Architecture
+
+```mermaid
+graph LR
+    A[Payment Status Updates] --> B[Payment Status Service]
+    B --> C[Processed Payment Output]
+    
+    subgraph "Payment Status Service"
+        B
+    end
+    
+    subgraph "External Services"
+        A
+        C
+    end
 ```
-┌────────────────────────────────────────────────────────────────────────────┐
-│                          CSV Payments System                               │
-├────────────────────────────────────────────────────────────────────────────┤
-│                                                                            │
-│  ┌─────────────────────┐    ┌────────────────────────┐                     │
-│  │   CSV Processor     │    │  Payment Status Svc    │                     │
-│  │                     │    │                        │                     │
-│  │ ┌─────────────────┐ │    │ ┌────────────────────┐ │                     │
-│  │ │  Reads CSV      │ │    │ │  REST/gRPC         │ │                     │
-│  │ │  Payments       │─┼────┼─▶  Endpoint          │ │                     │
-│  │ └─────────────────┘ │    │ └────────────────────┘ │                     │
-│  │ ┌─────────────────┐ │    │ ┌────────────────────┐ │    ┌──────────────┐ │
-│  │ │ Sends Payment   │ │    │ │  Business Logic    │ │    │   Output     │ │
-│  │ │   Requests      │─┼────┼─▶  Processing        │─┼───▶│   Files      │ │
-│  │ │                 │ │    │ └────────────────────┘ │    │  (CSV)       │ │
-│  │ └─────────────────┘ │    │ ┌────────────────────┐ │    └──────────────┘ │
-│  └─────────────────────┘    │ │  Data Storage      │ │                     │
-│                             │ │   (Auditing)       │ │                     │
-│                             │ └────────────────────┘ │                     │
-│                             │ ┌────────────────────┐ │                     │
-│                             │ │   PostgreSQL       │ │                     │
-│                             │ │   Database         │ │                     │
-│                             │ └────────────────────┘ │                     │
-│                             └────────────────────────┘                     │
-└────────────────────────────────────────────────────────────────────────────┘
+
+## Technology Stack
+
+- **Quarkus**: Kubernetes-native Java framework
+- **RESTEasy**: JAX-RS implementation for REST endpoints
+- **gRPC**: High-performance RPC communication
+- **Mutiny**: Reactive programming library
+- **Lombok**: Boilerplate code reduction
+- **MapStruct**: Java bean mappings
+
+## Data Model
+
+The service processes `PaymentStatus` objects which contain:
+- Payment reference and status information
+- Fee and message details
+- Associated payment records and acknowledgment data
+
+The service produces `PaymentOutput` objects which contain:
+- All the fields needed for output CSV generation
+- Properly formatted data for the output files
+
+## Service Interfaces
+
+### REST API
+
+```http
+POST /payments/status
+Content-Type: application/json
+
+{
+  "customerReference": "string",
+  "reference": "string",
+  "status": "string",
+  "message": "string",
+  "fee": 0,
+  "ackPaymentSentId": "UUID",
+  "paymentRecordId": "UUID"
+}
 ```
 
-## Core Functionality
+### gRPC Method
 
-1. **Input Handling**:
-   - Receives payment status information via REST API (`POST /payments/status`) or gRPC
-   - Accepts payment status data containing payment reference, status, message, fee, and related IDs
+```proto
+rpc remoteProcess(PaymentStatus) returns (PaymentOutput);
+```
 
-2. **Processing**:
-   - Maps incoming data to domain entities
-   - Associates payment statuses with their corresponding payment records
-   - Persists payment status information to a PostgreSQL database for auditing purposes only
+This method takes a payment status object and returns a processed payment output object, making it a unary RPC.
 
-3. **Output Generation**:
-   - Processes payment status data for internal use
-   - Provides data for generating output CSV files (handled by other components)
-   - Does not expose data to other services
+## Performance Features
 
-4. **Architecture**:
-   - Uses reactive programming patterns with Mutiny
-   - Implements both REST and gRPC interfaces
-   - Depends on a shared `common` module for domain objects and common services
-   - Follows a hexagonal architecture with clear separation between REST resources, service layers, and domain entities
+- **Reactive Processing**: Uses Mutiny for non-blocking operations
+- **Virtual Threads**: Leverages virtual threads for efficient concurrency
 
-## Running the Application with Docker
+## Getting Started
 
-This document provides instructions on how to run the `payment-status-svc` application using Docker and Docker Compose for both production and development environments.
+### Prerequisites
 
-### Production Mode
+- Java 21
+- Maven 3.6+
+- Quarkus 3.x
 
-To build and run the application in a production-like environment, use the provided `docker-compose.yml` file. This will start both the `payment-status-svc` application and a PostgreSQL database.
-
-From the `payment-status-svc` directory, run the following command:
+### Building the Service
 
 ```bash
-docker-compose up --build
+mvn clean package
 ```
 
-This command will:
-1.  Build the Docker image for the `payment-status-svc` using the provided `Dockerfile`.
-2.  Start a PostgreSQL container.
-3.  Start the `payment-status-svc` container, connected to the PostgreSQL container.
-
-The application will be accessible on port `8083`.
-
-### Development Mode
-
-For development, you can run the application in a Docker container with hot-reloading enabled. This allows you to see your code changes without rebuilding the image.
-
-From the root of the `CSV-Payments-PoC` project, run the following command:
+### Running the Service
 
 ```bash
-docker run -it --rm -p 8083:8083 -v "$(pwd)":/app maven:3.9-eclipse-temurin-21 \
-  mvn -f /app/payment-status-svc/pom.xml quarkus:dev
+mvn quarkus:dev
 ```
 
-This command will:
-1.  Start a Maven container.
-2.  Mount your local project directory into the container.
-3.  Start the Quarkus application in development mode, which enables hot-reloading.
+Or as a standalone JAR:
 
-The application will be accessible on port `8083`.
+```bash
+java -jar target/payment-status-svc-0.0.1-SNAPSHOT.jar
+```
 
+### Running in Native Mode
+
+```bash
+mvn clean package -Pnative
+./target/payment-status-svc-0.0.1-SNAPSHOT-runner
+```
+
+## Testing
+
+To run the tests, execute:
+
+```bash
+mvn test
+```
+
+## Integration with Other Services
+
+This service is typically invoked by the Orchestrator Service as part of the payment processing workflow:
+
+1. Orchestrator receives processed payment statuses from the Payments Processing Service
+2. Orchestrator calls this service to transform the status data
+3. This service returns processed payment output records
+4. Orchestrator forwards records to the Output CSV File Processing Service
+
+## Configuration
+
+The service inherits its configuration from the parent Quarkus application. See the main [README](../README.md) for general configuration options.
+
+## Related Services
+
+- [Common Module](../common/README.md): Shared domain models and utilities
+- [Payments Processing Service](../payments-processing-svc/README.md): Processes individual payment records
+- [Output CSV File Processing Service](../output-csv-file-processing-svc/README.md): Generates output CSV files
+- [Orchestrator Service](../orchestrator-svc/README.md): Coordinates the overall workflow

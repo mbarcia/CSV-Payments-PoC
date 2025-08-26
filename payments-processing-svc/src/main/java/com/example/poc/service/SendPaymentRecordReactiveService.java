@@ -41,8 +41,6 @@ public class SendPaymentRecordReactiveService
 
   @Override
   public Uni<AckPaymentSent> process(PaymentRecord paymentRecord) {
-    paymentRecord.save();
-
     SendPaymentRequestMapper.SendPaymentRequest request =
         new SendPaymentRequestMapper.SendPaymentRequest()
             .setAmount(paymentRecord.getAmount())

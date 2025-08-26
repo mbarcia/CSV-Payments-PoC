@@ -17,7 +17,6 @@
 package com.example.poc.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.example.poc.common.domain.AckPaymentSent;
@@ -49,7 +48,6 @@ class ProcessAckPaymentSentReactiveServiceTest {
 
     when(pollAckPaymentSentReactiveService.process(ackPaymentSent))
         .thenReturn(Uni.createFrom().item(expectedStatus));
-    doReturn(Uni.createFrom().item(ackPaymentSent)).when(ackPaymentSent).save();
 
     // When
     Uni<PaymentStatus> result = processAckPaymentSentReactiveService.process(ackPaymentSent);

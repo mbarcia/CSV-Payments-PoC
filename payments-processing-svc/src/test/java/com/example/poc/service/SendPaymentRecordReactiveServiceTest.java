@@ -18,7 +18,6 @@ package com.example.poc.service;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 import com.example.poc.common.domain.AckPaymentSent;
@@ -52,7 +51,6 @@ class SendPaymentRecordReactiveServiceTest {
     when(paymentProviderServiceMock.sendPayment(
             any(SendPaymentRequestMapper.SendPaymentRequest.class)))
         .thenReturn(expectedAck);
-    doReturn(Uni.createFrom().item(paymentRecord)).when(paymentRecord).save();
 
     // When
     Uni<AckPaymentSent> result = sendPaymentRecordReactiveService.process(paymentRecord);

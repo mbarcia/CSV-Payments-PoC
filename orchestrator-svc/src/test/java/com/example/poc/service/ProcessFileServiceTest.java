@@ -24,15 +24,7 @@ import com.example.poc.common.domain.CsvPaymentsInputFile;
 import com.example.poc.common.domain.CsvPaymentsOutputFile;
 import com.example.poc.common.mapper.CsvPaymentsInputFileMapper;
 import com.example.poc.common.mapper.CsvPaymentsOutputFileMapper;
-import com.example.poc.grpc.InputCsvFileProcessingSvc;
-import com.example.poc.grpc.MutinyProcessAckPaymentSentServiceGrpc;
-import com.example.poc.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
-import com.example.poc.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
-import com.example.poc.grpc.MutinyProcessPaymentStatusServiceGrpc;
-import com.example.poc.grpc.MutinySendPaymentRecordServiceGrpc;
-import com.example.poc.grpc.OutputCsvFileProcessingSvc;
-import com.example.poc.grpc.PaymentStatusSvc;
-import com.example.poc.grpc.PaymentsProcessingSvc;
+import com.example.poc.grpc.*;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Multi;
@@ -60,21 +52,29 @@ class ProcessFileServiceTest {
       processCsvPaymentsInputFileService;
 
   @Mock
-  private MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub
-      processAckPaymentSentService;
+  MutinyPersistPaymentRecordServiceGrpc.MutinyPersistPaymentRecordServiceStub
+      persistPaymentRecordService;
 
   @Mock
   private MutinySendPaymentRecordServiceGrpc.MutinySendPaymentRecordServiceStub
       sendPaymentRecordService;
 
   @Mock
-  private MutinyProcessCsvPaymentsOutputFileServiceGrpc
-          .MutinyProcessCsvPaymentsOutputFileServiceStub
-      processCsvPaymentsOutputFileService;
+  MutinyPersistAckPaymentSentServiceGrpc.MutinyPersistAckPaymentSentServiceStub
+      persistAckPaymentSentService;
+
+  @Mock
+  private MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub
+      processAckPaymentSentService;
 
   @Mock
   private MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub
       processPaymentStatusService;
+
+  @Mock
+  private MutinyProcessCsvPaymentsOutputFileServiceGrpc
+          .MutinyProcessCsvPaymentsOutputFileServiceStub
+      processCsvPaymentsOutputFileService;
 
   @Mock private CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
 
@@ -117,7 +117,11 @@ class ProcessFileServiceTest {
     when(csvPaymentsInputFileMapper.toGrpc(domainInputFile)).thenReturn(grpcInputFile);
     when(processCsvPaymentsInputFileService.remoteProcess(grpcInputFile))
         .thenReturn(Multi.createFrom().item(grpcPaymentRecord));
+    when(persistPaymentRecordService.remoteProcess(grpcPaymentRecord))
+        .thenReturn(Uni.createFrom().item(grpcPaymentRecord));
     when(sendPaymentRecordService.remoteProcess(grpcPaymentRecord))
+        .thenReturn(Uni.createFrom().item(grpcAckPaymentSent));
+    when(persistAckPaymentSentService.remoteProcess(grpcAckPaymentSent))
         .thenReturn(Uni.createFrom().item(grpcAckPaymentSent));
     when(processAckPaymentSentService.remoteProcess(grpcAckPaymentSent))
         .thenReturn(Uni.createFrom().item(grpcPaymentStatus));
@@ -154,7 +158,9 @@ class ProcessFileServiceTest {
     // Verify interactions
     verify(csvPaymentsInputFileMapper).toGrpc(domainInputFile);
     verify(processCsvPaymentsInputFileService).remoteProcess(grpcInputFile);
+    verify(persistPaymentRecordService).remoteProcess(grpcPaymentRecord);
     verify(sendPaymentRecordService).remoteProcess(grpcPaymentRecord);
+    verify(persistAckPaymentSentService).remoteProcess(grpcAckPaymentSent);
     verify(processAckPaymentSentService).remoteProcess(grpcAckPaymentSent);
     verify(processPaymentStatusService).remoteProcess(grpcPaymentStatus);
     verify(processCsvPaymentsOutputFileService).remoteProcess(any(Multi.class));
@@ -174,6 +180,8 @@ class ProcessFileServiceTest {
     when(csvPaymentsInputFileMapper.toGrpc(domainInputFile)).thenReturn(grpcInputFile);
     when(processCsvPaymentsInputFileService.remoteProcess(grpcInputFile))
         .thenReturn(Multi.createFrom().item(grpcPaymentRecord));
+    when(persistPaymentRecordService.remoteProcess(grpcPaymentRecord))
+        .thenReturn(Uni.createFrom().item(grpcPaymentRecord));
 
     when(sendPaymentRecordService.remoteProcess(grpcPaymentRecord))
         // Fail twice, then succeed
@@ -181,6 +189,8 @@ class ProcessFileServiceTest {
         .thenReturn(Uni.createFrom().failure(throttlingError))
         .thenReturn(Uni.createFrom().item(grpcAckPaymentSent));
 
+    when(persistAckPaymentSentService.remoteProcess(grpcAckPaymentSent))
+        .thenReturn(Uni.createFrom().item(grpcAckPaymentSent));
     when(processAckPaymentSentService.remoteProcess(grpcAckPaymentSent))
         .thenReturn(Uni.createFrom().item(grpcPaymentStatus));
     when(processPaymentStatusService.remoteProcess(grpcPaymentStatus))
@@ -213,6 +223,8 @@ class ProcessFileServiceTest {
     when(csvPaymentsInputFileMapper.toGrpc(domainInputFile)).thenReturn(grpcInputFile);
     when(processCsvPaymentsInputFileService.remoteProcess(grpcInputFile))
         .thenReturn(Multi.createFrom().item(grpcPaymentRecord));
+    when(persistPaymentRecordService.remoteProcess(grpcPaymentRecord))
+        .thenReturn(Uni.createFrom().item(grpcPaymentRecord));
 
     // Fail more than max retries
     when(sendPaymentRecordService.remoteProcess(grpcPaymentRecord))

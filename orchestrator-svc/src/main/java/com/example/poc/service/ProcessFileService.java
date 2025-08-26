@@ -53,8 +53,16 @@ public class ProcessFileService {
       processAckPaymentSentService;
 
   @Inject
+  @GrpcClient("persist-payment-record")
+  MutinyPersistPaymentRecordServiceGrpc.MutinyPersistPaymentRecordServiceStub persistPaymentRecordService;
+
+  @Inject
   @GrpcClient("send-payment-record")
   MutinySendPaymentRecordServiceGrpc.MutinySendPaymentRecordServiceStub sendPaymentRecordService;
+
+  @Inject
+  @GrpcClient("persist-ack-payment-sent")
+  MutinyPersistAckPaymentSentServiceGrpc.MutinyPersistAckPaymentSentServiceStub persistAckPaymentSentService;
 
   @Inject
   @GrpcClient("process-csv-payments-output-file")
@@ -92,19 +100,21 @@ public class ProcessFileService {
                     Uni.createFrom()
                         .item(record)
                         .runSubscriptionOn(VIRTUAL_EXECUTOR)
-                        // Step 1: Send Payment
+                        // Step 1: Persist PaymentRecord and Send Payment
+                        .flatMap(persistPaymentRecordService::remoteProcess)
                         .flatMap(sendPaymentRecordService::remoteProcess)
                         .onFailure(this::isThrottlingError)
                         .retry()
                         .withBackOff(INITIAL_RETRY_DELAY, INITIAL_RETRY_DELAY.multipliedBy(2))
                         .atMost(MAX_RETRIES)
 
-                        // Step 2: Process Ack
+                        // Step 2: Persist and Process Ack
                         .flatMap(
                             ack ->
                                 Uni.createFrom()
                                     .item(ack)
                                     .runSubscriptionOn(VIRTUAL_EXECUTOR)
+                                    .flatMap(persistAckPaymentSentService::remoteProcess)
                                     .flatMap(processAckPaymentSentService::remoteProcess)
                                     .onFailure(this::isThrottlingError)
                                     .retry()

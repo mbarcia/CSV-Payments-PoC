@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+option java_package = "com.example.poc.grpc";
+
+import "input_csv_file_processing_svc.proto";
+import "payments_processing_svc.proto";
+
+service PersistPaymentRecordService {
+  rpc remoteProcess(PaymentRecord) returns (PaymentRecord);
+}
+
+service PersistAckPaymentSentService {
+  rpc remoteProcess(AckPaymentSent) returns (AckPaymentSent);
+}

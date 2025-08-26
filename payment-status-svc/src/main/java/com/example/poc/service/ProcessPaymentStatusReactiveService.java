@@ -37,8 +37,6 @@ public class ProcessPaymentStatusReactiveService
 
   @Override
   public Uni<PaymentOutput> process(PaymentStatus paymentStatus) {
-    Uni<BaseEntity> saveUni = paymentStatus.save(); // Capture the publisher
-
       AckPaymentSent ackPaymentSent = paymentStatus.getAckPaymentSent();
       assert ackPaymentSent != null;
       PaymentRecord paymentRecord = ackPaymentSent.getPaymentRecord();
@@ -57,9 +55,9 @@ public class ProcessPaymentStatusReactiveService
             .fee(paymentStatus.getFee())
             .build();
 
-    return saveUni
-        .onItem().transformToUni(v -> Uni.createFrom().item(mapper.fromDto(dto)))
-        .invoke(
+    return Uni.createFrom()
+            .item(mapper.fromDto(dto))
+            .invoke(
             result -> {
               String serviceId = this.getClass().toString();
               Logger logger = LoggerFactory.getLogger(this.getClass());

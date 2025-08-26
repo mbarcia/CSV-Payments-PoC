@@ -80,7 +80,6 @@ class ProcessPaymentStatusReactiveServiceTest {
     when(paymentStatus.getAckPaymentSent()).thenReturn(ackPaymentSent);
     when(paymentStatus.getMessage()).thenReturn("Payment processed successfully");
     when(paymentStatus.getFee()).thenReturn(new java.math.BigDecimal("1.50"));
-    when(paymentStatus.save()).thenReturn(Uni.createFrom().item(paymentStatus));
 
     PaymentOutput expectedOutput = new PaymentOutput();
     when(mapper.fromDto(dtoCaptor.capture())).thenReturn(expectedOutput);

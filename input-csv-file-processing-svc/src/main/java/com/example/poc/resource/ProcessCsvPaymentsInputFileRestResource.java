@@ -73,18 +73,12 @@ public class ProcessCsvPaymentsInputFileRestResource {
   }
 
   @ServerExceptionMapper
-  public RestResponse handleFileNotFoundException(FileNotFoundException ex) {
-    return RestResponse.ResponseBuilder
-        .create(Response.Status.BAD_REQUEST)
-        .entity("File not found: " + ex.getMessage())
-        .build();
+  public RestResponse<String> handleFileNotFoundException(FileNotFoundException ex) {
+    return RestResponse.status(Response.Status.BAD_REQUEST, "File not found: " + ex.getMessage());
   }
 
   @ServerExceptionMapper
-  public RestResponse handleRuntimeException(RuntimeException ex) {
-    return RestResponse.ResponseBuilder
-        .create(Response.Status.BAD_REQUEST)
-        .entity("Error processing file: " + ex.getMessage())
-        .build();
+  public RestResponse<String> handleRuntimeException(RuntimeException ex) {
+    return RestResponse.status(Response.Status.BAD_REQUEST, "Error processing file: " + ex.getMessage());
   }
 }

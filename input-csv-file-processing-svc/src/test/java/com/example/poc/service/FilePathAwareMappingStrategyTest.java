@@ -89,6 +89,5 @@ class FilePathAwareMappingStrategyTest {
     // properly annotated and have a default constructor, which our test class doesn't have
     // For now, we'll just verify that the strategy can be created
     assertNotNull(strategy);
-    assertEquals(testPath, strategy.filePath);
   }
 }

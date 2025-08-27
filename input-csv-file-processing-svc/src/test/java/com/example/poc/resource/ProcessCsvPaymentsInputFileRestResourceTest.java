@@ -17,6 +17,7 @@
 package com.example.poc.resource;
 
 import static io.restassured.RestAssured.given;
+import static org.hamcrest.CoreMatchers.containsString;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
@@ -27,8 +28,98 @@ import org.junit.jupiter.api.Test;
 class ProcessCsvPaymentsInputFileRestResourceTest {
 
   @Test
-  void testProcessEndpoint() {
-    // Create a test DTO
+  void testProcessEndpointWithNonExistentFile() {
+    // Create a test DTO with a non-existent file
+    String requestBody =
+        """
+        {
+          "id": "%s",
+          "filepath": "%s",
+          "csvFolderPath": "%s"
+        }
+        """
+            .formatted(UUID.randomUUID(), "/tmp/nonexistent.csv", "/tmp");
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(requestBody)
+        .when()
+        .post("/api/v1/csv-processing/process")
+        .then()
+        .statusCode(400)
+        .body(containsString("Error processing file"));
+  }
+
+  @Test
+  void testProcessToListEndpointWithNonExistentFile() {
+    // Create a test DTO with a non-existent file
+    String requestBody =
+        """
+        {
+          "id": "%s",
+          "filepath": "%s",
+          "csvFolderPath": "%s"
+        }
+        """
+            .formatted(UUID.randomUUID(), "/tmp/nonexistent.csv", "/tmp");
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(requestBody)
+        .when()
+        .post("/api/v1/csv-processing/process-list")
+        .then()
+        .statusCode(400)
+        .body(containsString("Error processing file"));
+  }
+
+  @Test
+  void testProcessEndpointWithInvalidData() {
+    // Create a test DTO with invalid data that will cause a runtime exception
+    String requestBody =
+        """
+        {
+          "id": "invalid-uuid",
+          "filepath": "%s",
+          "csvFolderPath": "%s"
+        }
+        """
+            .formatted("/tmp/test.csv", "/tmp");
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(requestBody)
+        .when()
+        .post("/api/v1/csv-processing/process")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void testProcessToListEndpointWithInvalidData() {
+    // Create a test DTO with invalid data that will cause a runtime exception
+    String requestBody =
+        """
+        {
+          "id": "invalid-uuid",
+          "filepath": "%s",
+          "csvFolderPath": "%s"
+        }
+        """
+            .formatted("/tmp/test.csv", "/tmp");
+
+    given()
+        .contentType(ContentType.JSON)
+        .body(requestBody)
+        .when()
+        .post("/api/v1/csv-processing/process-list")
+        .then()
+        .statusCode(400);
+  }
+
+  @Test
+  void testProcessEndpointWithValidStructure() {
+    // Create a test DTO with valid structure but non-existent file
     String requestBody =
         """
         {
@@ -45,12 +136,12 @@ class ProcessCsvPaymentsInputFileRestResourceTest {
         .when()
         .post("/api/v1/csv-processing/process")
         .then()
-        .statusCode(400); // We expect 400 because the file doesn't exist
+        .statusCode(400);
   }
 
   @Test
-  void testProcessToListEndpoint() {
-    // Create a test DTO
+  void testProcessToListEndpointWithValidStructure() {
+    // Create a test DTO with valid structure but non-existent file
     String requestBody =
         """
         {
@@ -67,6 +158,6 @@ class ProcessCsvPaymentsInputFileRestResourceTest {
         .when()
         .post("/api/v1/csv-processing/process-list")
         .then()
-        .statusCode(400); // We expect 400 because the file doesn't exist
+        .statusCode(400);
   }
 }

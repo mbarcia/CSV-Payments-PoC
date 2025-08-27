@@ -96,9 +96,9 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
         PaymentStatusDto.builder()
             .id(UUID.randomUUID())
             .reference("101")
-            .status("nada")
+            .status("Complete")
             .fee(new BigDecimal("1.01"))
-            .message("This is a test")
+            .message("Mock response")
             .ackPaymentSent(ackPaymentSent)
             .ackPaymentSentId(ackPaymentSent.getId())
             .build());

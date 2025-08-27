@@ -16,8 +16,10 @@
 
 package com.example.poc.service;
 
-import io.smallrye.mutiny.Uni;
+import com.example.poc.common.domain.CsvPaymentsOutputFile;
+import io.quarkus.hibernate.reactive.panache.PanacheRepository;
+import jakarta.enterprise.context.ApplicationScoped;
 
-public interface PersistReactiveRepository<T> {
-    Uni<T> persist(T entity);
+@ApplicationScoped
+public class CsvPaymentsOutputFileRepository implements PanacheRepository<CsvPaymentsOutputFile> {
 }

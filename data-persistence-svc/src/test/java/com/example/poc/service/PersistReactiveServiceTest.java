@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 import com.example.poc.common.domain.PaymentRecord;
+import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,7 @@ import org.slf4j.MDC;
 
 class PersistReactiveServiceTest {
 
-  @Mock private PersistReactiveRepository<PaymentRecord> repository;
+  @Mock private PanacheRepository<PaymentRecord> repository;
 
   private TestPersistReactiveService persistReactiveService;
   private PaymentRecord testRecord;
@@ -85,20 +86,20 @@ class PersistReactiveServiceTest {
   @Test
   void testGetRepository() {
     // Test that getRepository returns the correct repository
-    PersistReactiveRepository<PaymentRecord> repo = persistReactiveService.getRepository();
+    PanacheRepository<PaymentRecord> repo = persistReactiveService.getRepository();
     assertThat(repo).isEqualTo(repository);
   }
 
   // Test implementation of the interface
   private static class TestPersistReactiveService implements PersistReactiveService<PaymentRecord> {
-    private final PersistReactiveRepository<PaymentRecord> repository;
+    private final PanacheRepository<PaymentRecord> repository;
 
-    public TestPersistReactiveService(PersistReactiveRepository<PaymentRecord> repository) {
+    public TestPersistReactiveService(PanacheRepository<PaymentRecord> repository) {
       this.repository = repository;
     }
 
     @Override
-    public PersistReactiveRepository<PaymentRecord> getRepository() {
+    public PanacheRepository<PaymentRecord> getRepository() {
       return repository;
     }
 

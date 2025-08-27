@@ -17,25 +17,26 @@
 package com.example.poc.service;
 
 import com.example.poc.common.domain.PaymentRecord;
+import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class PersistPaymentRecordReactiveService implements PersistReactiveService<PaymentRecord> {
     
-    private PersistReactiveRepository<PaymentRecord> repository;
-    
-    // Constructor for dependency injection
-    public PersistPaymentRecordReactiveService() {}
+    @Inject
+    PaymentRecordRepository repository;
     
     // Constructor for testing
-    public PersistPaymentRecordReactiveService(PersistReactiveRepository<PaymentRecord> repository) {
+    public PersistPaymentRecordReactiveService(PaymentRecordRepository repository) {
         this.repository = repository;
     }
     
+    // Default constructor for CDI
+    public PersistPaymentRecordReactiveService() {}
+    
     @Override
-    public PersistReactiveRepository<PaymentRecord> getRepository() {
-        // In a real implementation, this would be injected
-        // For now, we'll return the injected one or create a default
+    public PanacheRepository<PaymentRecord> getRepository() {
         return repository;
     }
 }

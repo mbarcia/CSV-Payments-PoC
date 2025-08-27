@@ -7,6 +7,10 @@ This service is responsible for persisting payment records and acknowledgment me
 The Data Persistence Service provides reactive persistence capabilities for:
 - Payment records processed from CSV files
 - Acknowledgment messages received from the payment provider
+- CSV input and output files
+- Payment outputs for processed payments
+- Payment status information
+- CSV folder structures
 
 It implements a clean architecture with repository patterns and reactive programming principles using Mutiny.
 
@@ -24,10 +28,25 @@ It implements a clean architecture with repository patterns and reactive program
 3. **PersistAckPaymentSentReactiveService** - Implementation for AckPaymentSent entities
    - Persists payment acknowledgment messages to the database
 
+4. **PersistCsvPaymentsInputFileReactiveService** - Implementation for CsvPaymentsInputFile entities
+   - Persists CSV input file metadata to the database
+
+5. **PersistCsvPaymentsOutputFileReactiveService** - Implementation for CsvPaymentsOutputFile entities
+   - Persists CSV output file metadata to the database
+
+6. **PersistPaymentOutputReactiveService** - Implementation for PaymentOutput entities
+   - Persists payment output records to the database
+
+7. **PersistPaymentStatusReactiveService** - Implementation for PaymentStatus entities
+   - Persists payment status information to the database
+
+8. **PersistCsvFolderReactiveService** - Implementation for CsvFolder entities
+   - Persists CSV folder metadata to the database
+
 ### Repository Pattern
 
 The service uses a repository pattern to abstract data access:
-- **PersistReactiveRepository<T>** - Interface for reactive persistence operations
+- **PanacheRepository<T>** - Quarkus Hibernate Panache repository for reactive persistence operations
 
 ## Technology Stack
 
@@ -90,6 +109,16 @@ The service can be configured using environment variables or application.propert
 ## API Endpoints
 
 This service is designed to work as part of a gRPC microservices architecture and doesn't expose REST endpoints directly.
+
+The following gRPC services are available:
+
+1. **PersistPaymentRecordService** - Persists PaymentRecord entities
+2. **PersistAckPaymentSentService** - Persists AckPaymentSent entities
+3. **PersistCsvPaymentsInputFileService** - Persists CsvPaymentsInputFile entities
+4. **PersistCsvPaymentsOutputFileService** - Persists CsvPaymentsOutputFile entities
+5. **PersistPaymentOutputService** - Persists PaymentOutput entities
+6. **PersistPaymentStatusService** - Persists PaymentStatus entities
+7. **PersistCsvFolderService** - Persists CsvFolder entities
 
 ## Testing Approach
 

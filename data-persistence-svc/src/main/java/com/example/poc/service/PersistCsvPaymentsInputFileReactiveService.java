@@ -17,25 +17,26 @@
 package com.example.poc.service;
 
 import com.example.poc.common.domain.CsvPaymentsInputFile;
+import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
 
 @ApplicationScoped
 public class PersistCsvPaymentsInputFileReactiveService implements PersistReactiveService<CsvPaymentsInputFile> {
     
-    private PersistReactiveRepository<CsvPaymentsInputFile> repository;
-    
-    // Constructor for dependency injection
-    public PersistCsvPaymentsInputFileReactiveService() {}
+    @Inject
+    CsvPaymentsInputFileRepository repository;
     
     // Constructor for testing
-    public PersistCsvPaymentsInputFileReactiveService(PersistReactiveRepository<CsvPaymentsInputFile> repository) {
+    public PersistCsvPaymentsInputFileReactiveService(CsvPaymentsInputFileRepository repository) {
         this.repository = repository;
     }
     
+    // Default constructor for CDI
+    public PersistCsvPaymentsInputFileReactiveService() {}
+    
     @Override
-    public PersistReactiveRepository<CsvPaymentsInputFile> getRepository() {
-        // In a real implementation, this would be injected
-        // For now, we'll return the injected one or create a default
+    public PanacheRepository<CsvPaymentsInputFile> getRepository() {
         return repository;
     }
 }

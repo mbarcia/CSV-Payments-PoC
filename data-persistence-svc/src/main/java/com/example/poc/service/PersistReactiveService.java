@@ -17,6 +17,7 @@
 package com.example.poc.service;
 
 import com.example.poc.common.service.ReactiveService;
+import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +25,7 @@ import org.slf4j.MDC;
 
 public interface PersistReactiveService<T> extends ReactiveService<T, T> {
     
-    PersistReactiveRepository<T> getRepository();
+    PanacheRepository<T> getRepository();
 
     @Override
     default Uni<T> process(T processableObj) {

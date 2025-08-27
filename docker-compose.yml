@@ -55,10 +55,19 @@ services:
     environment:
       - CSV_FOLDER_PATH=/app/csv
       - PROCESS_CSV_PAYMENTS_INPUT_FILE_SVC_HOST=input-csv-file-processing-svc
+      - PROCESS_CSV_PAYMENTS_INPUT_FILE_SVC_PORT=8081
+      - PERSIST_PAYMENT_RECORD_SVC_HOST=data-persistence-svc
+      - PERSIST_PAYMENT_RECORD_SVC_PORT=8085
       - SEND_PAYMENT_RECORD_SVC_HOST=payments-processing-svc
+      - SEND_PAYMENT_RECORD_SVC_PORT=8082
+      - PERSIST_ACK_PAYMENT_SENT_SVC_HOST=data-persistence-svc
+      - PERSIST_ACK_PAYMENT_SENT_SVC_PORT=8085
       - PROCESS_ACK_PAYMENT_SENT_SVC_HOST=payments-processing-svc
+      - PROCESS_ACK_PAYMENT_SENT_SVC_PORT=8082
       - PROCESS_PAYMENT_STATUS_SVC_HOST=payment-status-svc
+      - PROCESS_PAYMENT_STATUS_SVC_PORT=8083
       - PROCESS_CSV_PAYMENTS_OUTPUT_FILE_SVC_HOST=output-csv-file-processing-svc
+      - PROCESS_CSV_PAYMENTS_OUTPUT_FILE_SVC_PORT=8084
     volumes:
       - ./data/csv:/app/csv:rw
     depends_on:

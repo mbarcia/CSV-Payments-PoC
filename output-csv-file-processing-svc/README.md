@@ -38,6 +38,7 @@ graph LR
 - **Quarkus**: Kubernetes-native Java framework
 - **OpenCSV**: CSV writing library
 - **gRPC**: High-performance RPC communication
+- **RESTEasy**: REST API framework
 - **Mutiny**: Reactive programming library
 - **Lombok**: Boilerplate code reduction
 - **MapStruct**: Java bean mappings
@@ -60,7 +61,7 @@ The service generates `CsvPaymentsOutputFile` objects which contain:
 
 ## Service Interface
 
-The service exposes a gRPC interface defined in `ProcessCsvPaymentsOutputFileGrpcService` which implements the `ProcessCsvPaymentsOutputFileService` contract.
+The service exposes both gRPC and REST interfaces:
 
 ### gRPC Method
 
@@ -69,6 +70,22 @@ rpc remoteProcess(stream PaymentOutput) returns (CsvPaymentsOutputFile);
 ```
 
 This method takes a stream of payment output records and returns a single output file descriptor, making it a client-streaming RPC.
+
+### REST APIs
+
+The service also exposes REST endpoints for easier integration with web applications:
+
+#### Process Payment Outputs to File
+```
+POST /api/v1/output-processing/process-file
+```
+Accepts a list of `PaymentOutput` objects and returns a response with the file path and success message.
+
+#### Process Payment Outputs Stream
+```
+POST /api/v1/output-processing/process
+```
+Accepts a list of `PaymentOutput` objects and returns a stream of processed outputs.
 
 ## Performance Features
 
@@ -125,6 +142,8 @@ This service is typically invoked by the Orchestrator Service as part of the pay
 2. Orchestrator calls this service with a stream of payment output records
 3. This service generates and writes the output CSV file
 4. Orchestrator receives confirmation of successful file creation
+
+The service can also be called directly via REST APIs for integration with web applications and dashboards.
 
 ## Configuration
 

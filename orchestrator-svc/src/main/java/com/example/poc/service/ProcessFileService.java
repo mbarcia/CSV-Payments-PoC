@@ -78,13 +78,10 @@ public class ProcessFileService {
 
   @Inject CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
 
-  private static final int CONCURRENCY_LIMIT_RECORDS = 1000;
+  @Inject
+  ProcessFileServiceConfig config;
 
-  // --- RETRY SETTINGS ---
-  private static final int MAX_RETRIES = 3;
-  private static final Duration INITIAL_RETRY_DELAY = Duration.ofMillis(100);
-
-  public Uni<CsvPaymentsOutputFile> process(CsvPaymentsInputFile inputFile) {
+    public Uni<CsvPaymentsOutputFile> process(CsvPaymentsInputFile inputFile) {
     LOG.info("🧵 {} running on thread: {}", inputFile, Thread.currentThread());
 
     Multi<InputCsvFileProcessingSvc.PaymentRecord> inputRecords =
@@ -105,8 +102,8 @@ public class ProcessFileService {
                         .flatMap(sendPaymentRecordService::remoteProcess)
                         .onFailure(this::isThrottlingError)
                         .retry()
-                        .withBackOff(INITIAL_RETRY_DELAY, INITIAL_RETRY_DELAY.multipliedBy(2))
-                        .atMost(MAX_RETRIES)
+                        .withBackOff(Duration.ofMillis(config.getInitialRetryDelay()), Duration.ofMillis(config.getInitialRetryDelay() * 2))
+                        .atMost(config.getMaxRetries())
 
                         // Step 2: Persist and Process Ack
                         .flatMap(
@@ -118,9 +115,8 @@ public class ProcessFileService {
                                     .flatMap(processAckPaymentSentService::remoteProcess)
                                     .onFailure(this::isThrottlingError)
                                     .retry()
-                                    .withBackOff(
-                                        INITIAL_RETRY_DELAY, INITIAL_RETRY_DELAY.multipliedBy(2))
-                                    .atMost(MAX_RETRIES))
+                                    .withBackOff(Duration.ofMillis(config.getInitialRetryDelay()), Duration.ofMillis(config.getInitialRetryDelay() * 2))
+                                    .atMost(config.getMaxRetries()))
 
                         // Step 3: Process Status
                         .flatMap(
@@ -129,7 +125,7 @@ public class ProcessFileService {
                                     .item(status)
                                     .runSubscriptionOn(VIRTUAL_EXECUTOR)
                                     .flatMap(processPaymentStatusService::remoteProcess)))
-            .merge(CONCURRENCY_LIMIT_RECORDS); // Control concurrency across full pipelines
+            .merge(config.getConcurrencyLimitRecords()); // Control concurrency across full pipelines
 
     // Now send final output for entire file
     Multi<PaymentStatusSvc.PaymentOutput> paymentOutputMultiIntermediate =

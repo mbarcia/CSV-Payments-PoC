@@ -80,6 +80,8 @@ class ProcessFileServiceTest {
 
   @Mock private CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
 
+  @Mock private ProcessFileServiceConfig config;
+
   // Test data
   private CsvPaymentsInputFile domainInputFile;
   private InputCsvFileProcessingSvc.CsvPaymentsInputFile grpcInputFile;
@@ -109,6 +111,11 @@ class ProcessFileServiceTest {
         OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder()
             .setFilepath("test.csv.out")
             .build();
+
+    // Configure mock values
+    when(config.getConcurrencyLimitRecords()).thenReturn(1000);
+    when(config.getMaxRetries()).thenReturn(3);
+    when(config.getInitialRetryDelay()).thenReturn(100L);
   }
 
   @Test

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.example.poc.service;
+package com.example.poc.repository;
 
-import com.example.poc.common.domain.CsvPaymentsOutputFile;
+import com.example.poc.common.domain.CsvFolder;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class CsvPaymentsOutputFileRepository implements PanacheRepository<CsvPaymentsOutputFile> {
+public class CsvFolderRepository implements PanacheRepository<CsvFolder> {
 }

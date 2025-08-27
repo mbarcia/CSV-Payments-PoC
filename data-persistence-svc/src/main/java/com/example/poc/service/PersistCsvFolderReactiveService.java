@@ -17,6 +17,7 @@
 package com.example.poc.service;
 
 import com.example.poc.common.domain.CsvFolder;
+import com.example.poc.repository.CsvFolderRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

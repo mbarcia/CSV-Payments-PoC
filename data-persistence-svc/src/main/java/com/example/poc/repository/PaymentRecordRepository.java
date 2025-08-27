@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.example.poc.service;
+package com.example.poc.repository;
 
-import com.example.poc.common.domain.AckPaymentSent;
+import com.example.poc.common.domain.PaymentRecord;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
-public class AckPaymentSentRepository implements PanacheRepository<AckPaymentSent> {
+public class PaymentRecordRepository implements PanacheRepository<PaymentRecord> {
 }

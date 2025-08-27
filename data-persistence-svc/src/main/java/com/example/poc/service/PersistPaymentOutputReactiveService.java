@@ -17,6 +17,7 @@
 package com.example.poc.service;
 
 import com.example.poc.common.domain.PaymentOutput;
+import com.example.poc.repository.PaymentOutputRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

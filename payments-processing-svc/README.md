@@ -62,7 +62,7 @@ The service processes several key domain objects:
 
 ## Service Interfaces
 
-The service exposes three gRPC services defined in the proto files:
+The service exposes three gRPC services defined in the proto files, each with equivalent REST endpoints:
 
 ### SendPaymentRecordService
 
@@ -72,6 +72,23 @@ rpc remoteProcess(PaymentRecord) returns (AckPaymentSent);
 
 Sends a payment record to the payment provider and returns an initial acknowledgment.
 
+REST Endpoint:
+```
+POST /api/v1/send-payment
+Content-Type: application/json
+
+{
+  "id": "UUID",
+  "csvId": "string",
+  "recipient": "string",
+  "amount": "BigDecimal",
+  "currency": "Currency",
+  "csvPaymentsInputFilePath": "Path"
+}
+```
+
+Returns an AckPaymentSentDto object in JSON format.
+
 ### ProcessAckPaymentSentService
 
 ```proto
@@ -80,6 +97,25 @@ rpc remoteProcess(AckPaymentSent) returns (PaymentStatus);
 
 Processes an acknowledgment and retrieves the final payment status.
 
+REST Endpoint:
+```
+POST /api/v1/process-ack-payment
+Content-Type: application/json
+
+{
+  "id": "UUID",
+  "conversationId": "UUID",
+  "paymentRecordId": "UUID",
+  "paymentRecord": {
+    // PaymentRecord object
+  },
+  "message": "string",
+  "status": "Long"
+}
+```
+
+Returns a PaymentStatusDto object in JSON format.
+
 ### PollAckPaymentSentService
 
 ```proto
@@ -87,6 +123,25 @@ rpc remoteProcess(AckPaymentSent) returns (PaymentStatus);
 ```
 
 Polls the payment provider for the final status of a payment.
+
+REST Endpoint:
+```
+POST /api/v1/poll-ack-payment
+Content-Type: application/json
+
+{
+  "id": "UUID",
+  "conversationId": "UUID",
+  "paymentRecordId": "UUID",
+  "paymentRecord": {
+    // PaymentRecord object
+  },
+  "message": "string",
+  "status": "Long"
+}
+```
+
+Returns a PaymentStatusDto object in JSON format.
 
 ## Performance Features
 

@@ -46,7 +46,7 @@ class PollAckPaymentSentResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/poll-ack-payment")
+        .post("/api/v1/payments-processing/poll-ack-payment")
         .then()
         .statusCode(200)
         .body("id", notNullValue())
@@ -72,7 +72,7 @@ class PollAckPaymentSentResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/poll-ack-payment")
+        .post("/api/v1/payments-processing/poll-ack-payment")
         .then()
         .statusCode(400); // Jackson deserialization error results in 400
   }
@@ -92,7 +92,7 @@ class PollAckPaymentSentResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/poll-ack-payment")
+        .post("/api/v1/payments-processing/poll-ack-payment")
         .then()
         .statusCode(500); // Missing required fields results in 500 due to NPE in mapper
   }

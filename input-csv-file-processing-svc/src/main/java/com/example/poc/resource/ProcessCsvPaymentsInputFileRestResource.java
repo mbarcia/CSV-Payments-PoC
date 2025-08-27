@@ -34,11 +34,11 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.io.FileNotFoundException;
 import java.util.List;
-import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.RestResponse;
+import org.jboss.resteasy.reactive.RestStreamElementType;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
-@Path("/api/v1/csv-processing")
+@Path("/api/v1/input-processing")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProcessCsvPaymentsInputFileRestResource {

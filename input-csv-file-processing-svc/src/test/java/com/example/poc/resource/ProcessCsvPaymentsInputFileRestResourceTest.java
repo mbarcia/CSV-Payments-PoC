@@ -44,7 +44,7 @@ class ProcessCsvPaymentsInputFileRestResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/csv-processing/process")
+        .post("/api/v1/input-processing/process")
         .then()
         .statusCode(400)
         .body(containsString("Error processing file"));
@@ -67,7 +67,7 @@ class ProcessCsvPaymentsInputFileRestResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/csv-processing/process-list")
+        .post("/api/v1/input-processing/process-list")
         .then()
         .statusCode(400)
         .body(containsString("Error processing file"));
@@ -90,7 +90,7 @@ class ProcessCsvPaymentsInputFileRestResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/csv-processing/process")
+        .post("/api/v1/input-processing/process")
         .then()
         .statusCode(400);
   }
@@ -112,7 +112,7 @@ class ProcessCsvPaymentsInputFileRestResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/csv-processing/process-list")
+        .post("/api/v1/input-processing/process-list")
         .then()
         .statusCode(400);
   }
@@ -134,7 +134,7 @@ class ProcessCsvPaymentsInputFileRestResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/csv-processing/process")
+        .post("/api/v1/input-processing/process")
         .then()
         .statusCode(400);
   }
@@ -156,7 +156,7 @@ class ProcessCsvPaymentsInputFileRestResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/csv-processing/process-list")
+        .post("/api/v1/input-processing/process-list")
         .then()
         .statusCode(400);
   }

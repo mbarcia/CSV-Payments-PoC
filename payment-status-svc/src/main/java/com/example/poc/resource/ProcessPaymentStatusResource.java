@@ -31,7 +31,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-@Path("/payments/status")
+@Path("/api/v1/payment-status")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class ProcessPaymentStatusResource {
@@ -46,6 +46,7 @@ public class ProcessPaymentStatusResource {
     PaymentOutputMapper paymentOutputMapper;
 
     @POST
+    @Path("/process")
     public Uni<PaymentOutputDto> process(PaymentStatusDto paymentStatusDto) {
         PaymentStatus paymentStatus = paymentStatusMapper.fromDto(paymentStatusDto);
         Uni<PaymentOutput> paymentOutput = service.process(paymentStatus);

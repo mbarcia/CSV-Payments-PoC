@@ -31,7 +31,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-@Path("/api/v1/poll-ack-payment")
+@Path("/api/v1/payments-processing")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class PollAckPaymentSentResource {
@@ -46,6 +46,7 @@ public class PollAckPaymentSentResource {
     PaymentStatusMapper paymentStatusMapper;
 
     @POST
+    @Path("/poll-ack-payment")
     public Uni<PaymentStatusDto> process(AckPaymentSentDto ackPaymentSentDto) {
         AckPaymentSent ackPaymentSent = ackPaymentSentMapper.fromDto(ackPaymentSentDto);
         Uni<PaymentStatus> paymentStatus = service.process(ackPaymentSent);

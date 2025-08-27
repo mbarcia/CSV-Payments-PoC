@@ -31,7 +31,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-@Path("/api/v1/send-payment")
+@Path("/api/v1/payments-processing")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class SendPaymentRecordResource {
@@ -46,6 +46,7 @@ public class SendPaymentRecordResource {
     AckPaymentSentMapper ackPaymentSentMapper;
 
     @POST
+    @Path("/send-payment")
     public Uni<AckPaymentSentDto> process(PaymentRecordDto paymentRecordDto) {
         PaymentRecord paymentRecord = paymentRecordMapper.fromDto(paymentRecordDto);
         Uni<AckPaymentSent> ackPaymentSent = service.process(paymentRecord);

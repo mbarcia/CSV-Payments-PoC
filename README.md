@@ -308,6 +308,14 @@ quarkus.log.level=DEBUG
 - Adjust the `CONCURRENCY_LIMIT_RECORDS` parameter in ProcessFileService for optimal throughput
 - Tune the rate limiting parameters in the Payments Processing Service
 
+### REST APIs
+
+In addition to gRPC interfaces, some services expose REST APIs for easier integration:
+
+- **Output CSV File Processing Service**: Exposes REST endpoints for processing payment outputs
+  - `POST /api/v1/output-processing/process-file` - Process payment outputs to a file
+  - `POST /api/v1/output-processing/process` - Process payment outputs stream
+
 ### Docker Deployment Issues
 
 When running with Docker:

@@ -47,7 +47,7 @@ class SendPaymentRecordResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/send-payment")
+        .post("/api/v1/payments-processing/send-payment")
         .then()
         .statusCode(200)
         .body("id", notNullValue())
@@ -74,7 +74,7 @@ class SendPaymentRecordResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/send-payment")
+        .post("/api/v1/payments-processing/send-payment")
         .then()
         .statusCode(400); // Jackson deserialization error results in 400
   }
@@ -94,7 +94,7 @@ class SendPaymentRecordResourceTest {
         .contentType(ContentType.JSON)
         .body(requestBody)
         .when()
-        .post("/api/v1/send-payment")
+        .post("/api/v1/payments-processing/send-payment")
         .then()
         .statusCode(200); // Missing non-required fields still works
   }

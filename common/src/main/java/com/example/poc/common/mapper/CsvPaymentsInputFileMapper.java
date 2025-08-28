@@ -17,6 +17,7 @@
 package com.example.poc.common.mapper;
 
 import com.example.poc.common.domain.CsvPaymentsInputFile;
+import com.example.poc.common.dto.CsvPaymentsInputFileDto;
 import com.example.poc.grpc.InputCsvFileProcessingSvc;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -25,11 +26,32 @@ import org.mapstruct.ReportingPolicy;
 @Mapper(componentModel = "cdi", uses = {CommonConverters.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface CsvPaymentsInputFileMapper {
 
+  @Mapping(target = "id")
+  @Mapping(target = "filepath")
+  @Mapping(target = "csvFolderPath")
+  CsvPaymentsInputFileDto toDto(CsvPaymentsInputFile entity);
+
+  @Mapping(target = "id")
+  @Mapping(target = "filepath")
+  @Mapping(target = "csvFolderPath")
+  CsvPaymentsInputFile fromDto(CsvPaymentsInputFileDto dto);
+
+  @Mapping(target = "id", qualifiedByName = "uuidToString")
   @Mapping(target = "filepath", qualifiedByName = "pathToString")
   @Mapping(target = "csvFolderPath", qualifiedByName = "pathToString")
-  InputCsvFileProcessingSvc.CsvPaymentsInputFile toGrpc(CsvPaymentsInputFile entity);
+  InputCsvFileProcessingSvc.CsvPaymentsInputFile toGrpc(CsvPaymentsInputFileDto entity);
 
+  @Mapping(target = "id", qualifiedByName = "stringToUUID")
   @Mapping(target = "filepath", qualifiedByName = "stringToPath")
   @Mapping(target = "csvFolderPath", qualifiedByName = "stringToPath")
-  CsvPaymentsInputFile fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile proto);
+  CsvPaymentsInputFileDto fromGrpcToDto(InputCsvFileProcessingSvc.CsvPaymentsInputFile proto);
+
+  // Domain ↔ DTO ↔ gRPC
+  default InputCsvFileProcessingSvc.CsvPaymentsInputFile toGrpc(CsvPaymentsInputFile domain) {
+    return toGrpc(toDto(domain));
+  }
+
+  default CsvPaymentsInputFile fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile grpc) {
+    return fromDto(fromGrpcToDto(grpc));
+  }
 }

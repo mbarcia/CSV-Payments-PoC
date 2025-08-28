@@ -20,7 +20,7 @@ import com.example.poc.common.domain.CsvPaymentsInputFile;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.common.dto.CsvPaymentsInputFileDto;
 import com.example.poc.common.dto.PaymentRecordDto;
-import com.example.poc.common.mapper.CsvPaymentsInputFileDtoMapper;
+import com.example.poc.common.mapper.CsvPaymentsInputFileMapper;
 import com.example.poc.common.mapper.PaymentRecordMapper;
 import com.example.poc.service.ProcessCsvPaymentsInputFileReactiveService;
 import io.smallrye.mutiny.Multi;
@@ -45,7 +45,8 @@ public class ProcessCsvPaymentsInputFileRestResource {
 
   @Inject ProcessCsvPaymentsInputFileReactiveService domainService;
 
-  @Inject CsvPaymentsInputFileDtoMapper csvPaymentsInputFileDtoMapper;
+  @Inject
+  CsvPaymentsInputFileMapper csvPaymentsInputFileDtoMapper;
 
   @Inject PaymentRecordMapper paymentRecordMapper;
 

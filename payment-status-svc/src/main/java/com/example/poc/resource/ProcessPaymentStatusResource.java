@@ -25,6 +25,7 @@ import com.example.poc.common.mapper.PaymentStatusMapper;
 import com.example.poc.service.ProcessPaymentStatusReactiveService;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
+import jakarta.validation.Valid;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -47,7 +48,7 @@ public class ProcessPaymentStatusResource {
 
     @POST
     @Path("/process")
-    public Uni<PaymentOutputDto> process(PaymentStatusDto paymentStatusDto) {
+    public Uni<PaymentOutputDto> process(@Valid PaymentStatusDto paymentStatusDto) {
         PaymentStatus paymentStatus = paymentStatusMapper.fromDto(paymentStatusDto);
         Uni<PaymentOutput> paymentOutput = service.process(paymentStatus);
         return paymentOutput.onItem().transform(paymentOutputMapper::toDto);

@@ -198,10 +198,17 @@
   width: 100%;
 }
 
+.gauge-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
 .gauge-container {
   position: relative;
   width: 100%;
-  height: 120px;
+  height: 150px;
 }
 
 .gauge-header {
@@ -216,12 +223,7 @@
   font-weight: 600;
 }
 
-.gauge-value {
-  font-size: 0.9rem;
-  font-weight: bold;
-}
-
-.gauge-percentage {
+.gauge-value-display {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -230,6 +232,30 @@
   font-weight: bold;
   color: white;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.gauge-unit {
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+.gauge-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.gauge-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
 /* Mobile-specific styles */

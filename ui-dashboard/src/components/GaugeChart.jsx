@@ -23,9 +23,11 @@ export const GaugeChart = ({ value, max, label, unit, color }) => {
       value: value,
       fill: color,
     },
+    {
+      value: max - value,
+      fill: '#333',
+    },
   ];
-  
-  const percentage = (value / max) * 100;
   
   return (
     <div className="gauge-chart">
@@ -34,7 +36,7 @@ export const GaugeChart = ({ value, max, label, unit, color }) => {
           <RadialBarChart 
             innerRadius="80%" 
             outerRadius="100%" 
-            barSize={10}
+            barSize={8}
             data={data}
             startAngle={180} 
             endAngle={0}
@@ -46,21 +48,18 @@ export const GaugeChart = ({ value, max, label, unit, color }) => {
               tick={false}
             />
             <RadialBar
-              background
+              background={{ fill: '#333' }}
               cornerRadius={10}
               dataKey="value"
             />
           </RadialBarChart>
         </ResponsiveContainer>
-        <div className="gauge-percentage">
-          {percentage.toFixed(0)}%
+        <div className="gauge-value-display">
+          {value.toFixed(1)} <span className="gauge-unit">{unit}</span>
         </div>
       </div>
       <div className="gauge-header">
         <h3>{label}</h3>
-        <div className="gauge-value">
-          {value.toFixed(1)} {unit}
-        </div>
       </div>
     </div>
   );

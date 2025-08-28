@@ -1,0 +1,24 @@
+{
+  "name": "csv-payments-file-upload-server",
+  "version": "1.0.0",
+  "description": "File upload server for CSV Payments Processing Application",
+  "main": "file-upload-server.js",
+  "scripts": {
+    "start": "node file-upload-server.js",
+    "dev": "nodemon file-upload-server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "csv",
+    "payments",
+    "file-upload"
+  ],
+  "author": "Mariano Barcia",
+  "license": "Apache-2.0"
+}

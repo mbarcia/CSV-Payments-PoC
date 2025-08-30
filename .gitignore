@@ -33,3 +33,8 @@ bin/
 .idea/workspace.xml
 target/
 *.out
+
+# Observability
+prometheus_data/
+grafana_data/
+tempo_data/

@@ -172,6 +172,15 @@ sequenceDiagram
 - **MapStruct**: Java bean mappings
 - **OpenCSV**: CSV processing library
 
+## Observability Stack
+
+- **Micrometer**: Application metrics collection integrated with Quarkus
+- **OpenTelemetry**: Distributed tracing and metrics collection
+- **Prometheus**: Metrics storage and querying
+- **Grafana**: Metrics visualization and dashboarding
+- **Tempo**: Distributed tracing backend
+- **Loki**: Log aggregation system
+
 ## Getting Started
 
 ### Prerequisites
@@ -325,6 +334,69 @@ When running with Docker:
 3. Check that environment variables are properly passed to containers
 4. Confirm that port mappings don't conflict with other services
 
+## Observability
+
+The CSV Payments Processing Application includes a comprehensive observability stack to monitor and visualize the performance of the microservices pipeline. This stack helps demonstrate the importance of backpressure, retry with back-off, and lazy evaluation in a distributed system.
+
+### Components
+
+- **Micrometer**: Integrated with Quarkus to collect application-level metrics such as throughput, latency, and JVM statistics
+- **OpenTelemetry**: Provides distributed tracing and metrics collection across all services
+- **Prometheus**: Scrapes and stores metrics from all services for querying and alerting
+- **Grafana**: Visualizes metrics and provides dashboards for real-time monitoring
+- **Tempo**: Stores and queries distributed traces for end-to-end request tracking
+- **Loki**: Aggregates and stores logs from all services
+
+### Running with Observability
+
+To run the application with the full observability stack:
+
+```bash
+docker-compose up
+```
+
+This command starts all microservices along with the observability components. The following ports are exposed:
+
+- **Grafana**: http://localhost:3000 (admin/admin)
+- **Prometheus**: http://localhost:9090
+- **Tempo**: http://localhost:3200
+- **Loki**: http://localhost:3100
+
+### Dashboards
+
+The application includes a pre-configured Grafana dashboard that visualizes key metrics:
+
+1. **Throughput Metrics**: Requests per second and average response time by service
+2. **JVM Metrics**: Heap memory usage and garbage collection time percentage
+
+### Custom Metrics
+
+The application exposes custom metrics to demonstrate reactive programming concepts:
+
+- **Backpressure Events**: Count of backpressure events triggered by rate limiting
+- **Retry Attempts**: Number of retry attempts with exponential back-off
+- **Lazy Evaluation**: Metrics showing the benefits of lazy stream processing
+
+### Distributed Tracing
+
+OpenTelemetry provides distributed tracing capabilities that allow you to:
+
+1. Follow a request as it flows through multiple services
+2. Identify bottlenecks and performance issues
+3. Understand the impact of retry mechanisms
+4. Visualize the lazy evaluation of streams across services
+
+### Accessing Metrics Endpoints
+
+Each service exposes a `/q/metrics` endpoint that provides Prometheus-formatted metrics:
+
+- Input CSV File Processing Service: http://localhost:8081/q/metrics
+- Payments Processing Service: http://localhost:8082/q/metrics
+- Payment Status Service: http://localhost:8083/q/metrics
+- Output CSV File Processing Service: http://localhost:8084/q/metrics
+- Data Persistence Service: http://localhost:8085/q/metrics
+- Orchestrator Service: http://localhost:8080/q/metrics
+
 ## Related Services
 
 - [Orchestrator Service](./orchestrator-svc/README.md): Main coordination service
@@ -333,6 +405,10 @@ When running with Docker:
 - [Payment Status Service](./payment-status-svc/README.md): Processes payment statuses
 - [Output CSV File Processing Service](./output-csv-file-processing-svc/README.md): Generates output CSV files
 - [Common Module](./common/README.md): Shared domain models and utilities
+
+## Observability
+
+For detailed information about the observability stack, see [OBSERVABILITY.md](./OBSERVABILITY.md).
 
 ## Contributing
 

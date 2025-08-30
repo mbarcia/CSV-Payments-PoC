@@ -33,9 +33,11 @@ services:
     ports:
       - "8085:8085"
     environment:
-      - QUARKUS_DATASOURCE_JDBC_URL=jdbc:postgresql://postgres:5432/payments
+      - QUARKUS_DATASOURCE_REACTIVE_URL=postgresql://postgres:5432/payments
       - QUARKUS_DATASOURCE_USERNAME=user
       - QUARKUS_DATASOURCE_PASSWORD=password
+#      - QUARKUS_GRPC_SERVER_USE_SEPARATE_SERVER=false
+#      - QUARKUS_HTTP_HTTP2=false
     depends_on:
       - postgres
 
@@ -68,6 +70,21 @@ services:
       - PROCESS_PAYMENT_STATUS_SVC_PORT=8083
       - PROCESS_CSV_PAYMENTS_OUTPUT_FILE_SVC_HOST=output-csv-file-processing-svc
       - PROCESS_CSV_PAYMENTS_OUTPUT_FILE_SVC_PORT=8084
+      - QUARKUS_GRPC_CLIENTS_PERSIST-PAYMENT-RECORD_HOST=data-persistence-svc
+      - QUARKUS_GRPC_CLIENTS_PERSIST-PAYMENT-RECORD_PORT=8085
+      - QUARKUS_GRPC_CLIENTS_PROCESS-CSV-PAYMENTS-INPUT-FILE_HOST=input-csv-file-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS-CSV-PAYMENTS-INPUT-FILE_PORT=8081
+      - QUARKUS_GRPC_CLIENTS_SEND-PAYMENT-RECORD_HOST=payments-processing-svc
+      - QUARKUS_GRPC_CLIENTS_SEND-PAYMENT-RECORD_PORT=8082
+      - QUARKUS_GRPC_CLIENTS_PERSIST-ACK-PAYMENT-SENT_HOST=data-persistence-svc
+      - QUARKUS_GRPC_CLIENTS_PERSIST-ACK-PAYMENT-SENT_PORT=8085
+      - QUARKUS_GRPC_CLIENTS_PROCESS-ACK-PAYMENT-SENT_HOST=payments-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS-ACK-PAYMENT-SENT_PORT=8082
+      - QUARKUS_GRPC_CLIENTS_PROCESS-PAYMENT-STATUS_HOST=payment-status-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS-PAYMENT-STATUS_PORT=8083
+      - QUARKUS_GRPC_CLIENTS_PROCESS-CSV-PAYMENTS-OUTPUT-FILE_HOST=output-csv-file-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS-CSV-PAYMENTS-OUTPUT-FILE_PORT=8084
+      - QUARKUS_HTTP_HTTP2=false
     volumes:
       - ./data/csv:/app/csv:rw
     depends_on:
@@ -88,5 +105,65 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  # Observability services
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.112.0
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Prometheus metrics
+      - "8889:8889"   # Health check
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana-enterprise:11.2.2
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana-datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ./grafana-dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./dashboards:/etc/grafana/dashboards
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    ports:
+      - "3000:3000"
+
+  tempo:
+    image: grafana/tempo:2.6.1
+    command: [ "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - ./tempo.yaml:/etc/tempo.yaml
+      - tempo_data:/var/tempo
+      - tempo_data:/tmp/tempo
+    ports:
+      - "3200:3200"   # Tempo
+
+  loki:
+    image: grafana/loki:3.2.1
+    command: [ "-config.file=/etc/loki/local-config.yaml" ]
+    ports:
+      - "3100:3100"
+
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:
+  tempo_data:

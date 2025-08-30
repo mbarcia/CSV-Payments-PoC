@@ -30,6 +30,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+/**
+ * Reactive service for processing streams of payment outputs and writing them to CSV files.
+ * 
+ * This service implements a reactive streaming pattern using Mutiny, but with a pragmatic
+ * approach to file writing:
+ * 1. It collects the stream into a list to work with OpenCSV's iterator-based write method
+ * 2. The blocking file I/O is executed on a virtual thread to minimize resource impact
+ * 3. As the terminal operation in the pipeline, it doesn't create backpressure issues
+ * 
+ * The service uses the iterator-based write method from OpenCSV which provides better
+ * streaming characteristics than list-based writing, even though we collect the stream
+ * for compatibility with the library's API.
+ */
 @ApplicationScoped
 public class ProcessCsvPaymentsOutputFileReactiveService
     implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
@@ -41,6 +54,18 @@ public class ProcessCsvPaymentsOutputFileReactiveService
     this.executor = executor;
   }
 
+  /**
+   * Process a stream of payment outputs and write them to a CSV file.
+   * 
+   * Implementation notes:
+   * - Collects the stream to a list to work with OpenCSV's iterator-based write method
+   * - Uses virtual threads for the blocking file I/O operation
+   * - As the terminal operation in the service pipeline, it doesn't create backpressure
+   * - Uses try-with-resources to ensure proper file cleanup
+   * 
+   * @param paymentOutputList stream of payment outputs to process
+   * @return Uni containing the generated CSV file information
+   */
   @Override
   public Uni<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputList) {
     Logger logger = LoggerFactory.getLogger(getClass());
@@ -57,7 +82,8 @@ public class ProcessCsvPaymentsOutputFileReactiveService
                         () -> {
                           try (CsvPaymentsOutputFile file =
                               this.getCsvPaymentsOutputFile(paymentOutputs.getFirst())) {
-                            file.getSbc().write(paymentOutputs);
+                            // Use iterator-based write method for better streaming characteristics
+                            file.getSbc().write(paymentOutputs.iterator());
                             MDC.put("serviceId", serviceId);
                             logger.info("Executed command on stream --> {}", file.getFilepath());
                             MDC.clear();
@@ -70,6 +96,16 @@ public class ProcessCsvPaymentsOutputFileReactiveService
                     .runSubscriptionOn(executor));
   }
 
+  /**
+   * Create a CSV output file based on the first payment output in the stream.
+   * 
+   * Extracts the input file path from the payment output to determine where
+   * the output file should be written.
+   * 
+   * @param paymentOutput first payment output in the stream
+   * @return CsvPaymentsOutputFile instance for writing
+   * @throws IOException if there's an error creating the file
+   */
   protected CsvPaymentsOutputFile getCsvPaymentsOutputFile(PaymentOutput paymentOutput)
       throws IOException {
     assert paymentOutput != null;

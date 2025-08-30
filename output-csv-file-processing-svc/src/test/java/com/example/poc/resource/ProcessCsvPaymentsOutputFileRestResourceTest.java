@@ -19,11 +19,13 @@ package com.example.poc.resource;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.*;
 
+import com.example.poc.common.domain.AckPaymentSent;
+import com.example.poc.common.domain.PaymentRecord;
+import com.example.poc.common.domain.PaymentStatus;
 import com.example.poc.common.dto.PaymentOutputDto;
-import com.example.poc.common.mapper.PaymentOutputMapper;
 import io.quarkus.test.junit.QuarkusTest;
-import jakarta.inject.Inject;
 import java.math.BigDecimal;
+import java.nio.file.Paths;
 import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
@@ -32,64 +34,105 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class ProcessCsvPaymentsOutputFileRestResourceTest {
 
-  @Inject PaymentOutputMapper paymentOutputMapper;
-
   @Test
   void testProcessToFile() {
-    // Given
-    List<PaymentOutputDto> request =
-        List.of(
-            PaymentOutputDto.builder()
-                .id(UUID.randomUUID())
-                .csvId("CSV001")
-                .recipient("123456789")
-                .amount(new BigDecimal("100.00"))
-                .currency(Currency.getInstance("USD"))
-                .conversationId(UUID.randomUUID())
-                .status(200L)
-                .message("Success")
-                .fee(new BigDecimal("2.50"))
-                .build());
+    // Given - Create proper nested structure
+    PaymentRecord paymentRecord = new PaymentRecord();
+    paymentRecord.setCsvId("CSV001");
+    paymentRecord.setRecipient("123456789");
+    paymentRecord.setAmount(new BigDecimal("100.00"));
+    paymentRecord.setCurrency(Currency.getInstance("USD"));
+    paymentRecord.setCsvPaymentsInputFilePath(Paths.get("/tmp/test.csv"));
+
+    AckPaymentSent ackPaymentSent = new AckPaymentSent(UUID.randomUUID());
+    ackPaymentSent.setStatus(200L);
+    ackPaymentSent.setMessage("Success");
+    ackPaymentSent.setPaymentRecord(paymentRecord);
+    ackPaymentSent.setPaymentRecordId(paymentRecord.getId());
+
+    PaymentStatus paymentStatus = new PaymentStatus();
+    paymentStatus.setReference("REF001");
+    paymentStatus.setStatus("SUCCESS");
+    paymentStatus.setMessage("Payment processed successfully");
+    paymentStatus.setFee(new BigDecimal("2.50"));
+    paymentStatus.setAckPaymentSent(ackPaymentSent);
+    paymentStatus.setAckPaymentSentId(ackPaymentSent.getId());
+    paymentStatus.setPaymentRecord(paymentRecord);
+    paymentStatus.setPaymentRecordId(paymentRecord.getId());
+
+    PaymentOutputDto requestDto =
+        PaymentOutputDto.builder()
+            .csvId("CSV001")
+            .recipient("123456789")
+            .amount(new BigDecimal("100.00"))
+            .currency(Currency.getInstance("USD"))
+            .conversationId(UUID.randomUUID())
+            .status(200L)
+            .message("Success")
+            .fee(new BigDecimal("2.50"))
+            .paymentStatus(paymentStatus)
+            .build();
 
     // When & Then
     given()
         .contentType("application/json")
-        .body(request)
+        .body(List.of(requestDto))
         .when()
         .post("/api/v1/output-processing/process-file")
         .then()
         .statusCode(200)
-        .body("filepath", startsWith("/tmp/output_"))
+        .body("filepath", notNullValue())
         .body("message", equalTo("File processed successfully"));
   }
 
   @Test
   void testProcessToFileWithError() {
-    // Since our implementation now catches all exceptions and returns a success response,
-    // this test should expect a 200 status code
-    List<PaymentOutputDto> request =
-        List.of(
-            PaymentOutputDto.builder()
-                .id(UUID.randomUUID())
-                .csvId("CSV001")
-                .recipient("123456789")
-                .amount(new BigDecimal("100.00"))
-                .currency(Currency.getInstance("USD"))
-                .conversationId(UUID.randomUUID())
-                .status(200L)
-                .message("Success")
-                .fee(new BigDecimal("2.50"))
-                .build());
+    // Create proper nested structure
+    PaymentRecord paymentRecord = new PaymentRecord();
+    paymentRecord.setCsvId("CSV001");
+    paymentRecord.setRecipient("123456789");
+    paymentRecord.setAmount(new BigDecimal("100.00"));
+    paymentRecord.setCurrency(Currency.getInstance("USD"));
+    paymentRecord.setCsvPaymentsInputFilePath(Paths.get("/tmp/test.csv"));
+
+    AckPaymentSent ackPaymentSent = new AckPaymentSent(UUID.randomUUID());
+    ackPaymentSent.setStatus(200L);
+    ackPaymentSent.setMessage("Success");
+    ackPaymentSent.setPaymentRecord(paymentRecord);
+    ackPaymentSent.setPaymentRecordId(paymentRecord.getId());
+
+    PaymentStatus paymentStatus = new PaymentStatus();
+    paymentStatus.setReference("REF001");
+    paymentStatus.setStatus("SUCCESS");
+    paymentStatus.setMessage("Payment processed successfully");
+    paymentStatus.setFee(new BigDecimal("2.50"));
+    paymentStatus.setAckPaymentSent(ackPaymentSent);
+    paymentStatus.setAckPaymentSentId(ackPaymentSent.getId());
+    paymentStatus.setPaymentRecord(paymentRecord);
+    paymentStatus.setPaymentRecordId(paymentRecord.getId());
+
+    PaymentOutputDto requestDto =
+        PaymentOutputDto.builder()
+            .csvId("CSV001")
+            .recipient("123456789")
+            .amount(new BigDecimal("100.00"))
+            .currency(Currency.getInstance("USD"))
+            .conversationId(UUID.randomUUID())
+            .status(200L)
+            .message("Success")
+            .fee(new BigDecimal("2.50"))
+            .paymentStatus(paymentStatus)
+            .build();
 
     // When & Then
     given()
         .contentType("application/json")
-        .body(request)
+        .body(List.of(requestDto))
         .when()
         .post("/api/v1/output-processing/process-file")
         .then()
         .statusCode(200)
-        .body("filepath", startsWith("/tmp/output_"))
+        .body("filepath", notNullValue())
         .body("message", equalTo("File processed successfully"));
   }
 }

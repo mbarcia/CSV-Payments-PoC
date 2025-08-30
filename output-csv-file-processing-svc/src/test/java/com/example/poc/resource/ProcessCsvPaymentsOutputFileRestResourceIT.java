@@ -84,6 +84,7 @@ class ProcessCsvPaymentsOutputFileRestResourceIT {
             .status(paymentOutput.getStatus())
             .message(paymentOutput.getMessage())
             .fee(paymentOutput.getFee())
+            .paymentStatus(paymentOutput.getPaymentStatus())
             .build();
 
     // When & Then

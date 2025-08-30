@@ -21,21 +21,26 @@ import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.common.dto.PaymentOutputDto;
 import com.example.poc.common.mapper.PaymentOutputMapper;
 import com.example.poc.service.ProcessCsvPaymentsOutputFileReactiveService;
+import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.StreamingOutput;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
-import java.util.UUID;
-import org.jboss.resteasy.reactive.RestStreamElementType;
+import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("BlockingMethodInNonBlockingContext")
 @Path("/api/v1/output-processing")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -48,12 +53,20 @@ public class ProcessCsvPaymentsOutputFileRestResource {
 
     @Inject
     PaymentOutputMapper paymentOutputMapper;
+    
+    Executor executor;
+
+    @Inject
+    public ProcessCsvPaymentsOutputFileRestResource(@Named("virtualExecutor") Executor executor) {
+        this.executor = executor;
+    }
 
     @POST
     @Path("/process")
-    @RestStreamElementType(MediaType.APPLICATION_JSON)
-    public Multi<PaymentOutputDto> process(List<PaymentOutputDto> request) {
-        LOG.info("Processing {} payment outputs via REST API", request.size());
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    @Blocking
+    public Uni<Response> processAndDownload(List<PaymentOutputDto> request) {
+        LOG.info("Processing {} payment outputs and preparing file download via REST API", request.size());
         
         Multi<PaymentOutput> domainInput = Multi.createFrom().iterable(request)
                 .onItem().transform(paymentOutputMapper::fromDto)
@@ -62,41 +75,66 @@ public class ProcessCsvPaymentsOutputFileRestResource {
         Uni<CsvPaymentsOutputFile> domainResult = domainService.process(domainInput);
         
         return domainResult
-                .onItem().transformToMulti(csvPaymentsOutputFile -> 
-                    Multi.createFrom().item(PaymentOutputDto.builder().build()))
-                .onFailure().recoverWithMulti(Multi.createFrom().empty());
+                .emitOn(executor)  // Ensure file operations run on virtual threads
+                .onItem().transformToUni(this::createFileDownloadResponse)
+                .onFailure().recoverWithUni(this::handleProcessingError);
     }
 
     @POST
     @Path("/process-file")
+    @Produces(MediaType.APPLICATION_JSON)
+    @Blocking
     public Uni<Response> processToFile(List<PaymentOutputDto> request) {
         LOG.info("Processing {} payment outputs to file via REST API", request.size());
         
-        // For testing purposes, we'll create a mock file path
-        // In a real implementation, we would process the actual data
-        try {
-            java.nio.file.Path mockPath = java.nio.file.Paths.get("/tmp/output_" + UUID.randomUUID().toString() + ".csv");
-            LOG.info("Successfully processed output file: {}", mockPath);
-            return Uni.createFrom().item(
-                Response.ok(new ProcessOutputResponse(
-                    mockPath.toString(),
-                    "File processed successfully")).build());
-        } catch (Exception e) {
-            LOG.error("Error processing output file", e);
-            return Uni.createFrom().item(
-                Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                    .entity(new ProcessOutputResponse(null, "Error: " + e.getMessage()))
-                    .build());
-        }
+        Multi<PaymentOutput> domainInput = Multi.createFrom().iterable(request)
+                .onItem().transform(paymentOutputMapper::fromDto)
+                .onFailure().recoverWithMulti(Multi.createFrom().empty());
+        
+        Uni<CsvPaymentsOutputFile> domainResult = domainService.process(domainInput);
+        
+        return domainResult
+                .onItem().transform(file -> 
+                    Response.ok(new ProcessOutputResponse(
+                        file.getFilepath().toString(),
+                        "File processed successfully"))
+                    .build())
+                .onFailure().recoverWithUni(this::handleProcessingError);
     }
 
-    public static class ProcessOutputResponse {
-        public final String filepath;
-        public final String message;
+    private Uni<Response> createFileDownloadResponse(CsvPaymentsOutputFile file) {
+        java.nio.file.Path filePath = file.getFilepath();
+        String fileName = filePath.getFileName().toString();
+        
+        // Create streaming output for file content
+        StreamingOutput output = outputStream -> {
+            try {
+                Files.copy(filePath, outputStream);
+            } finally {
+                // Clean up the temporary file after streaming
+                try {
+                    Files.deleteIfExists(filePath);
+                } catch (IOException e) {
+                    LOG.warn("Failed to delete temporary file: {}", filePath, e);
+                }
+            }
+        };
+        
+        return Uni.createFrom().item(
+            Response.ok(output)
+                .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+                .header("Content-Type", "text/csv")
+                .build());
+    }
 
-        public ProcessOutputResponse(String filepath, String message) {
-            this.filepath = filepath;
-            this.message = message;
-        }
+    private Uni<Response> handleProcessingError(Throwable throwable) {
+        LOG.error("Error processing payment outputs", throwable);
+        return Uni.createFrom().item(
+            Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity(new ProcessOutputResponse(null, "Error processing payment outputs: " + throwable.getMessage()))
+                .build());
+    }
+
+    public record ProcessOutputResponse(String filepath, String message) {
     }
 }

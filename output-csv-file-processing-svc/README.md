@@ -90,7 +90,7 @@ Accepts a list of `PaymentOutput` objects and returns a stream of processed outp
 ## Performance Features
 
 - **Asynchronous File Writing**: Uses virtual threads for concurrent file operations
-- **Stream Processing**: Processes records as streams rather than loading entire datasets into memory
+- **Stream Processing**: Processes records as streams and uses iterator-based writing for efficient memory usage
 - **Reactive Patterns**: Implements reactive programming with Mutiny for efficient resource utilization
 
 ## Getting Started

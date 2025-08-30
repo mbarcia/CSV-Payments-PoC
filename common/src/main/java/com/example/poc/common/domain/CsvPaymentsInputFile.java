@@ -16,11 +16,10 @@
 
 package com.example.poc.common.domain;
 
+import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Transient;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
@@ -32,11 +31,28 @@ import lombok.experimental.Accessors;
 @Setter
 @Accessors(chain = true)
 @NoArgsConstructor
-public class CsvPaymentsInputFile extends BaseCsvPaymentsFile {
-  @Transient private List<PaymentRecord> records = new ArrayList<>();
+public class CsvPaymentsInputFile extends BaseCsvPaymentsFile implements CsvPaymentsInput {
 
   public CsvPaymentsInputFile(@NonNull File csvFile) {
     super(csvFile);
+  }
+
+  @Override
+  public Reader openReader() throws IOException {
+    return new BufferedReader(new FileReader(filepath.toFile(), StandardCharsets.UTF_8));
+  }
+
+  @Override
+  public String getSourceName() {
+    return getFilepath().toString();
+  }
+
+  @Override
+  public HeaderColumnNameMappingStrategy<PaymentRecord> veryOwnStrategy() {
+    var strategy = new FilePathAwareMappingStrategy<PaymentRecord>(this.getFilepath());
+    strategy.setType(PaymentRecord.class);
+
+    return strategy;
   }
 
   @Override

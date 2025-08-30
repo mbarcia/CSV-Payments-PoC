@@ -29,19 +29,20 @@ import java.nio.file.Path;
 import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockitoAnnotations;
 
-class ProcessCsvPaymentsInputFileReactiveServiceTest {
+class ProcessCsvPaymentsInputReactiveServiceTest {
 
   @TempDir Path tempDir;
 
   private Path tempCsvFile;
 
-  private ProcessCsvPaymentsInputFileReactiveService service;
+  private ProcessCsvPaymentsInputReactiveService service;
 
   @BeforeEach
   void setUp() throws IOException {
@@ -54,7 +55,7 @@ class ProcessCsvPaymentsInputFileReactiveServiceTest {
             + ",Jane Smith,200.50,EUR\n";
     Files.writeString(tempCsvFile, csvContent);
     MockitoAnnotations.openMocks(this);
-    service = new ProcessCsvPaymentsInputFileReactiveService(Runnable::run);
+    service = new ProcessCsvPaymentsInputReactiveService(Runnable::run);
   }
 
   @AfterEach
@@ -94,33 +95,19 @@ class ProcessCsvPaymentsInputFileReactiveServiceTest {
   }
 
   @Test
+  @SneakyThrows
   void process_fileNotFound() {
-    // Given
-    CsvPaymentsInputFile csvFile =
-        new CsvPaymentsInputFile(tempDir.resolve("nonexistent.csv").toFile());
+    try (CsvPaymentsInputFile csvFile =
+        new CsvPaymentsInputFile(tempDir.resolve("nonexistent.csv").toFile())) {
+      Multi<PaymentRecord> result = service.process(csvFile);
 
-    // When Then
-    assertThrows(RuntimeException.class, () -> service.process(csvFile));
-  }
+      // Subscribe to trigger the lazy processing
+      AssertSubscriber<PaymentRecord> subscriber =
+          result.subscribe().withSubscriber(AssertSubscriber.create(1));
 
-  @Test
-  void process_failedIntrospection() {
-    // This test validates that when FilePathAwareMappingStrategy fails,
-    // it properly throws a CsvBeanIntrospectionException which gets wrapped
-    // in a RuntimeException by the service
-
-    // Note: To properly test this scenario, we would need to inject a faulty
-    // mapping strategy into the service, which isn't currently possible
-    // with the existing design. The FilePathAwareMappingStrategyTest
-    // directly tests this failure case.
-
-    // For now, we'll just verify that the service throws a RuntimeException
-    // when processing fails for any reason
-    CsvPaymentsInputFile csvFile = new CsvPaymentsInputFile(tempCsvFile.toFile());
-
-    // We're not actually testing the introspection failure here,
-    // but we can verify that exceptions are properly wrapped
-    assertNotNull(csvFile);
+      subscriber.awaitFailure();
+      subscriber.assertFailedWith(RuntimeException.class);
+    }
   }
 
   @Test

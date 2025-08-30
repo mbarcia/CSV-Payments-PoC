@@ -17,6 +17,10 @@ message CsvPaymentsInputFile {
   string csvFolderPath = 3;
 }
 
+message CsvPaymentsInputStream {
+  string source = 1;
+}
+
 message CsvFolder {
   string id = 1;
   string folderPath = 2;
@@ -24,4 +28,8 @@ message CsvFolder {
 
 service ProcessCsvPaymentsInputFileService {
   rpc remoteProcess(CsvPaymentsInputFile) returns (stream PaymentRecord);
+}
+
+service ProcessCsvPaymentsInputStreamService {
+  rpc remoteProcess(CsvPaymentsInputStream) returns (stream PaymentRecord);
 }

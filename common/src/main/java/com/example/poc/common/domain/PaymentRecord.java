@@ -63,7 +63,7 @@ public class PaymentRecord extends BaseEntity implements Serializable {
         recipient,
         NumberFormat.getCurrencyInstance(Locale.UK).format(amount),
         currency,
-        csvPaymentsInputFilePath.toString());
+        csvPaymentsInputFilePath != null ? csvPaymentsInputFilePath.toString() : "null");
   }
 
   @Override

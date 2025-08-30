@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.example.poc.service;
+package com.example.poc.common.domain;
 
 import com.opencsv.bean.HeaderColumnNameMappingStrategy;
 import com.opencsv.exceptions.CsvBeanIntrospectionException;

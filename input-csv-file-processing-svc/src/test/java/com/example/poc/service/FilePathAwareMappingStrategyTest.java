@@ -18,6 +18,7 @@ package com.example.poc.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.example.poc.common.domain.FilePathAwareMappingStrategy;
 import com.opencsv.exceptions.CsvBeanIntrospectionException;
 import java.nio.file.Path;
 import java.nio.file.Paths;

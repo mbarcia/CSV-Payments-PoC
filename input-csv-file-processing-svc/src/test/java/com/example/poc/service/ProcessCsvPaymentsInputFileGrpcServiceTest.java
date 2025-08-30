@@ -39,13 +39,13 @@ class ProcessCsvPaymentsInputFileGrpcServiceTest {
 
   private ProcessCsvPaymentsInputFileGrpcService service;
 
-  private ProcessCsvPaymentsInputFileReactiveService domainService;
+  private ProcessCsvPaymentsInputReactiveService domainService;
   private CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
   private PaymentRecordMapper paymentRecordMapper;
 
   @BeforeEach
   void setUp() {
-    domainService = mock(ProcessCsvPaymentsInputFileReactiveService.class);
+    domainService = mock(ProcessCsvPaymentsInputReactiveService.class);
     csvPaymentsInputFileMapper = mock(CsvPaymentsInputFileMapper.class);
     paymentRecordMapper = mock(PaymentRecordMapper.class);
 

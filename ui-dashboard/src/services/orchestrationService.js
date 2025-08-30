@@ -15,7 +15,7 @@
  */
 
 import axios from 'axios';
-import Papa from 'papaparse';
+import pLimit from 'p-limit';
 
 // Simple UUID generator function
 function generateUUID() {
@@ -27,6 +27,7 @@ function generateUUID() {
 }
 
 // Service endpoints - direct Quarkus service ports
+const INPUT_PROCESSING_SVC = 'http://localhost:8081';
 const PAYMENTS_PROCESSING_SVC = 'http://localhost:8082';
 const PAYMENT_STATUS_SVC = 'http://localhost:8083';
 const OUTPUT_PROCESSING_SVC = 'http://localhost:8084';
@@ -34,255 +35,292 @@ const OUTPUT_PROCESSING_SVC = 'http://localhost:8084';
 class OrchestrationService {
   async processFile(file, onStatsUpdate) {
     console.log('OrchestrationService.processFile called with file:', file.name);
-    
-    // Initialize processing stats
+
     const stats = {
-      uploadSpeed: 100, // File is already uploaded when this function is called
+      uploadSpeed: 0,
       inputProcessingSpeed: 0,
       paymentsProcessingSpeed: 0,
       paymentStatusSpeed: 0,
-      outputProcessingSpeed: 0
+      outputProcessingSpeed: 0 // Keep this for UI compatibility, but won't be updated
     };
 
-    const updateStats = (newStats) => {
-      Object.assign(stats, newStats);
-      console.log('Updating stats:', stats);
-      onStatsUpdate({ ...stats });
+    const counters = {
+      inputProcessed: 0,
+      paymentsProcessed: 0,
+      statusProcessed: 0,
+      outputProcessed: 0
     };
 
     try {
-      // Process CSV file in streaming fashion - one line at a time
-      console.log('Streaming CSV file processing...');
-      updateStats({ inputProcessingSpeed: 0 });
-      
+      // Process CSV file using the new input processing service
+      console.log('Streaming CSV file processing through input service...');
+
       const paymentOutputs = [];
-      let recordCount = 0;
+      // Create a concurrency limit of 500 to prevent ERR_INSUFFICIENT_RESOURCES
+      const limit = pLimit(500);
+      
+      // Track start time for upload speed calculation
+      const startTime = Date.now();
+      
+      // Track timestamps for rate calculations
+      const timestamps = {
+        input: [],
+        payments: [],
+        status: []
+      };
 
-      // Process records one by one in streaming fashion
-      await this.streamCSVFile(file, async (record) => {
-        recordCount++;
-        console.log(`Processing record ${recordCount}:`, record);
+      const updateSpeed = (type) => {
+        const now = Date.now();
+        const timestampsArray = timestamps[type];
         
-        try {
-          // Ensure the record has an ID
-          const recordWithId = {
-            ...record,
-            id: record.id || generateUUID()
-          };
-
-          // Send payment record to payments processing service
-          console.log('Sending payment record to:', `${PAYMENTS_PROCESSING_SVC}/api/v1/payments-processing/send-payment`);
-          console.log('Payment record data:', recordWithId);
-
-          const sendResponse = await axios.post(
-            `${PAYMENTS_PROCESSING_SVC}/api/v1/payments-processing/send-payment`,
-            recordWithId,
-            {
-              timeout: 10000, // 10 second timeout
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            }
-          );
-
-          console.log('Send payment response status:', sendResponse.status);
-          console.log('Send payment response data:', sendResponse.data);
-          const ackPayment = sendResponse.data;
-
-          // Process ack payment with retries
-          console.log('Processing ack payment to:', `${PAYMENTS_PROCESSING_SVC}/api/v1/payments-processing/process-ack-payment`);
-          const processAckResponse = await this.processWithRetry(
-            () => axios.post(
-              `${PAYMENTS_PROCESSING_SVC}/api/v1/payments-processing/process-ack-payment`, 
-              ackPayment,
-              {
-                headers: {
-                  'Content-Type': 'application/json'
-                }
-              }
-            ),
-            3
-          );
-          console.log('Process ack payment response status:', processAckResponse.status);
-          console.log('Process ack payment response data:', processAckResponse.data);
-          const paymentStatus = processAckResponse.data;
-
-          // Ensure paymentStatus has all required fields
-          if (!paymentStatus) {
-            throw new Error('Payment status is null or undefined');
-          }
-
-          // Fix the paymentStatus object to ensure it has all required fields
-          const fixedPaymentStatus = {
-            id: paymentStatus.id || generateUUID(),
-            reference: paymentStatus.reference || ("REF-" + (paymentStatus.id ? paymentStatus.id.substring(0, 8) : generateUUID().substring(0, 8))),
-            fee: paymentStatus.fee !== undefined && paymentStatus.fee !== null ? paymentStatus.fee : (paymentStatus.ackPaymentSent && paymentStatus.ackPaymentSent.fee !== undefined && paymentStatus.ackPaymentSent.fee !== null ? paymentStatus.ackPaymentSent.fee : 1.01),
-            status: paymentStatus.status || "Complete",
-            message: paymentStatus.message || "Mock response",
-            ackPaymentSentId: paymentStatus.ackPaymentSentId || (paymentStatus.ackPaymentSent ? paymentStatus.ackPaymentSent.id : null) || generateUUID(),
-            paymentRecordId: paymentStatus.paymentRecordId || (paymentStatus.paymentRecord ? paymentStatus.paymentRecord.id : null) || recordWithId.id,
-            paymentRecord: paymentStatus.paymentRecord || recordWithId,
-            ackPaymentSent: paymentStatus.ackPaymentSent || {
-              id: generateUUID(),
-              conversationId: recordWithId.conversationId || generateUUID(),
-              status: "1000",
-              message: "OK but this is only a test",
-              paymentRecordId: recordWithId.id,
-              paymentRecord: recordWithId
-            }
-          };
-
-          // Ensure ackPaymentSent has required fields
-          if (fixedPaymentStatus.ackPaymentSent) {
-            fixedPaymentStatus.ackPaymentSent = {
-              id: fixedPaymentStatus.ackPaymentSent.id || generateUUID(),
-              conversationId: fixedPaymentStatus.ackPaymentSent.conversationId || recordWithId.conversationId || generateUUID(),
-              status: fixedPaymentStatus.ackPaymentSent.status || "1000",
-              message: fixedPaymentStatus.ackPaymentSent.message || "OK but this is only a test",
-              paymentRecordId: fixedPaymentStatus.ackPaymentSent.paymentRecordId || recordWithId.id,
-              paymentRecord: fixedPaymentStatus.ackPaymentSent.paymentRecord || recordWithId
-            };
-          }
-
-          // Log the fixed payment status for debugging
-          console.log('Fixed payment status data:', JSON.stringify(fixedPaymentStatus, null, 2));
-
-          // Process payment status
-          console.log('Processing payment status to:', `${PAYMENT_STATUS_SVC}/api/v1/payment-status/process`);
-          const statusResponse = await axios.post(
-            `${PAYMENT_STATUS_SVC}/api/v1/payment-status/process`,
-            fixedPaymentStatus,
-            {
-              headers: {
-                'Content-Type': 'application/json'
-                }
-            }
-          );
-          console.log('Payment status response status:', statusResponse.status);
-          console.log('Payment status response data:', statusResponse.data);
-          const paymentOutput = {
-            ...statusResponse.data,
-            id: statusResponse.data.id || generateUUID(),
-            paymentStatus: statusResponse.data.paymentStatus ? {
-              ...statusResponse.data.paymentStatus,
-              id: statusResponse.data.paymentStatus.id || generateUUID(),
-              paymentRecordId: statusResponse.data.paymentStatus.paymentRecordId || (statusResponse.data.paymentStatus.paymentRecord ? statusResponse.data.paymentStatus.paymentRecord.id : null) || recordWithId.id,
-              paymentRecord: statusResponse.data.paymentStatus.paymentRecord || recordWithId
-            } : null
-          };
-          
-          paymentOutputs.push(paymentOutput);
-          
-          // Update stats after each record is processed (real-time)
-          updateStats({ 
-            inputProcessingSpeed: 100,
-            paymentsProcessingSpeed: 100,
-            paymentStatusSpeed: 100
-          });
-
-        } catch (error) {
-          console.error('Error processing record:', error);
-          if (error.response) {
-            console.error('Error response status:', error.response.status);
-            console.error('Error response data:', JSON.stringify(error.response.data, null, 2));
-            console.error('Error response headers:', error.response.headers);
-          } else if (error.request) {
-            console.error('Error request made but no response received:', error.request);
-          } else {
-            console.error('Error message:', error.message);
-          }
-          // Continue with next record instead of failing completely
-          
-          // Update stats even if there's an error
-          updateStats({ 
-            inputProcessingSpeed: 100,
-            paymentsProcessingSpeed: 100,
-            paymentStatusSpeed: 100
-          });
+        // Add current timestamp
+        timestampsArray.push(now);
+        
+        // Remove timestamps older than 5 seconds
+        const cutoff = now - 5000;
+        while (timestampsArray.length > 0 && timestampsArray[0] < cutoff) {
+          timestampsArray.shift();
         }
+        
+        // Calculate rate per second (events in last 5 seconds divided by 5)
+        return timestampsArray.length / 5; // events per second
+      };
+
+      // Track last update time to avoid too frequent updates
+      let lastUpdate = 0;
+      const minUpdateInterval = 100; // ms
+
+      const updateStats = (type) => {
+        const now = Date.now();
+        // Only update if enough time has passed
+        if (now - lastUpdate < minUpdateInterval && type !== undefined) {
+          return;
+        }
+        lastUpdate = now;
+
+        if (type === 'input') {
+          stats.inputProcessingSpeed = updateSpeed('input');
+        } else if (type === 'payments') {
+          stats.paymentsProcessingSpeed = updateSpeed('payments');
+        } else if (type === 'status') {
+          stats.paymentStatusSpeed = updateSpeed('status');
+        }
+        // outputProcessingSpeed is kept at 0 as it's not feasible to measure throughput for file download
+        onStatsUpdate({ ...stats });
+      };
+
+      // Create a promise to track when all processing is complete
+      let resolveAllProcessing;
+      const allProcessingComplete = new Promise((resolve) => {
+        resolveAllProcessing = resolve;
       });
+
+      // Track processing promises separately
+      const processingPromises = [];
+
+      // Start processing records immediately as they arrive
+      this.processInputFile(file, async (record) => {
+        // INPUT STAGE - Process records as they arrive
+        updateStats('input');
+
+        // Wrap the processing in the concurrency limit
+        const processingPromise = limit(async () => {
+          try {
+            const recordWithId = {
+              ...record,
+              id: record.id
+            };
+
+            // Only add an ID if one doesn't exist
+            if (!recordWithId.id) {
+              recordWithId.id = generateUUID();
+            }
+
+            // ---- PAYMENTS PROCESSING ----
+            const sendResponse = await axios.post(
+                `${PAYMENTS_PROCESSING_SVC}/api/v1/payments-processing/send-payment`,
+                recordWithId,
+                { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+            );
+            updateStats('payments');
+
+            const ackPayment = sendResponse.data;
+
+            const processAckResponse = await this.processWithRetry(
+                () => axios.post(
+                    `${PAYMENTS_PROCESSING_SVC}/api/v1/payments-processing/process-ack-payment`,
+                    ackPayment,
+                    { headers: { 'Content-Type': 'application/json' } }
+                ),
+                3
+            );
+            console.log('Process ack payment response status:', processAckResponse.status);
+            console.log('Process ack payment response data:', processAckResponse.data);
+            const paymentStatus = processAckResponse.data;
+
+            updateStats('status');
+
+            // Ensure paymentStatus has all required fields
+            if (!paymentStatus) {
+              throw new Error('Payment status is null or undefined');
+            }
+
+            // Use the actual paymentStatus data without adding default fabricated values
+            const fixedPaymentStatus = {
+              id: paymentStatus.id,
+              reference: paymentStatus.reference,
+              fee: paymentStatus.fee,
+              status: paymentStatus.status,
+              message: paymentStatus.message,
+              ackPaymentSentId: paymentStatus.ackPaymentSentId,
+              paymentRecordId: paymentStatus.paymentRecordId,
+              paymentRecord: paymentStatus.paymentRecord,
+              ackPaymentSent: paymentStatus.ackPaymentSent
+            };
+
+            // Only fix ackPaymentSent if it exists, without adding default values
+            if (fixedPaymentStatus.ackPaymentSent) {
+              fixedPaymentStatus.ackPaymentSent = {
+                id: fixedPaymentStatus.ackPaymentSent.id,
+                conversationId: fixedPaymentStatus.ackPaymentSent.conversationId,
+                status: fixedPaymentStatus.ackPaymentSent.status,
+                message: fixedPaymentStatus.ackPaymentSent.message,
+                paymentRecordId: fixedPaymentStatus.ackPaymentSent.paymentRecordId,
+                paymentRecord: fixedPaymentStatus.ackPaymentSent.paymentRecord
+              };
+            }
+
+            // Log the fixed payment status for debugging
+            console.log('Fixed payment status data:', JSON.stringify(fixedPaymentStatus, null, 2));
+
+            // Process payment status
+            console.log('Processing payment status to:', `${PAYMENT_STATUS_SVC}/api/v1/payment-status/process`);
+            const statusResponse = await axios.post(
+                `${PAYMENT_STATUS_SVC}/api/v1/payment-status/process`,
+                fixedPaymentStatus,
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+            console.log('Payment status response status:', statusResponse.status);
+            console.log('Payment status response data:', statusResponse.data);
+            const paymentOutput = {
+              ...statusResponse.data,
+              id: statusResponse.data.id || generateUUID(),
+              paymentStatus: statusResponse.data.paymentStatus ? {
+                ...statusResponse.data.paymentStatus,
+                id: statusResponse.data.paymentStatus.id || generateUUID(),
+                paymentRecordId: statusResponse.data.paymentStatus.paymentRecordId || (statusResponse.data.paymentStatus.paymentRecord ? statusResponse.data.paymentStatus.paymentRecord.id : null) || recordWithId.id,
+                paymentRecord: statusResponse.data.paymentStatus.paymentRecord || recordWithId
+              } : null
+            };
+            
+            paymentOutputs.push(paymentOutput);
+            onStatsUpdate({ ...stats }); // Always update for final results
+
+          } catch (error) {
+            console.error('Error processing record:', error);
+            if (error.response) {
+              console.error('Error response status:', error.response.status);
+              console.error('Error response data:', JSON.stringify(error.response.data, null, 2));
+              console.error('Error response headers:', error.response.headers);
+            } else if (error.request) {
+              console.error('Error request made but no response received:', error.request);
+            } else {
+              console.error('Error message:', error.message);
+            }
+            // Continue with next record instead of failing completely
+
+            // still update stats to keep gauges alive
+            onStatsUpdate({ ...stats }); // Always update for error cases
+          }
+        });
+
+        processingPromises.push(processingPromise);
+      }, (loaded, total) => {
+        // Update upload speed
+        const elapsedMs = Date.now() - startTime;
+        if (elapsedMs > 0) {
+          // Calculate upload speed in KB/s
+          stats.uploadSpeed = (loaded / 1024) / (elapsedMs / 1000);
+          onStatsUpdate({ ...stats }); // Always update for upload progress
+        }
+      }).then(() => {
+        // When streaming is complete, wait for all processing to finish
+        Promise.all(processingPromises).then(() => {
+          resolveAllProcessing();
+        }).catch((error) => {
+          console.error('Error waiting for processing to complete:', error);
+          resolveAllProcessing();
+        });
+      }).catch((error) => {
+        console.error('Error in processInputFile:', error);
+        resolveAllProcessing();
+      });
+
+      // Wait for all processing to complete
+      await allProcessingComplete;
+
+      // Reset upload speed after processing completes
+      stats.uploadSpeed = 0;
+      onStatsUpdate({ ...stats }); // Always update for final reset
 
       // Step 3: Generate output CSV file
       console.log('Processing output file with', paymentOutputs.length, 'records to:', `${OUTPUT_PROCESSING_SVC}/api/v1/output-processing/process`);
 
-      // Ensure all payment outputs have IDs and required fields
+      // Ensure all payment outputs have IDs and required fields without adding default values
       const fixedPaymentOutputs = paymentOutputs.map(output => {
-        // Fix the paymentStatus object to ensure it has all required fields
+        // Use actual paymentStatus data without adding default fabricated values
         let fixedPaymentStatus = output.paymentStatus;
         if (fixedPaymentStatus) {
           fixedPaymentStatus = {
-            ...fixedPaymentStatus,
-            id: fixedPaymentStatus.id || generateUUID(),
-            reference: fixedPaymentStatus.reference || ("REF-" + (fixedPaymentStatus.id ? fixedPaymentStatus.id.substring(0, 8) : generateUUID().substring(0, 8))),
-            fee: fixedPaymentStatus.fee !== undefined && fixedPaymentStatus.fee !== null ? fixedPaymentStatus.fee : 1.01,
-            status: fixedPaymentStatus.status || "Complete",
-            message: fixedPaymentStatus.message || "Mock response",
-            ackPaymentSentId: fixedPaymentStatus.ackPaymentSentId || (fixedPaymentStatus.ackPaymentSent ? fixedPaymentStatus.ackPaymentSent.id : null) || generateUUID(),
-            paymentRecordId: fixedPaymentStatus.paymentRecordId || (fixedPaymentStatus.paymentRecord ? fixedPaymentStatus.paymentRecord.id : null) || output.id,
-            paymentRecord: fixedPaymentStatus.paymentRecord || {
-              id: output.id,
-              csvId: output.csvId,
-              recipient: output.recipient,
-              amount: output.amount,
-              currency: output.currency,
-              csvPaymentsInputFilePath: output.csvPaymentsInputFilePath
-            }
+            id: fixedPaymentStatus.id,
+            reference: fixedPaymentStatus.reference,
+            fee: fixedPaymentStatus.fee,
+            status: fixedPaymentStatus.status,
+            message: fixedPaymentStatus.message,
+            ackPaymentSentId: fixedPaymentStatus.ackPaymentSentId,
+            paymentRecordId: fixedPaymentStatus.paymentRecordId,
+            paymentRecord: fixedPaymentStatus.paymentRecord,
+            ackPaymentSent: fixedPaymentStatus.ackPaymentSent
           };
 
-          // Ensure ackPaymentSent has required fields
+          // Only fix ackPaymentSent if it exists, without adding default values
           if (fixedPaymentStatus.ackPaymentSent) {
             fixedPaymentStatus.ackPaymentSent = {
-              ...fixedPaymentStatus.ackPaymentSent,
-              id: fixedPaymentStatus.ackPaymentSent.id || generateUUID(),
-              conversationId: fixedPaymentStatus.ackPaymentSent.conversationId || output.conversationId || generateUUID(),
-              status: fixedPaymentStatus.ackPaymentSent.status || "1000",
-              message: fixedPaymentStatus.ackPaymentSent.message || "OK but this is only a test",
-              paymentRecordId: fixedPaymentStatus.ackPaymentSent.paymentRecordId || output.id,
-              paymentRecord: fixedPaymentStatus.ackPaymentSent.paymentRecord || {
-                id: output.id,
-                csvId: output.csvId,
-                recipient: output.recipient,
-                amount: output.amount,
-                currency: output.currency,
-                csvPaymentsInputFilePath: output.csvPaymentsInputFilePath
-              }
+              id: fixedPaymentStatus.ackPaymentSent.id,
+              conversationId: fixedPaymentStatus.ackPaymentSent.conversationId,
+              status: fixedPaymentStatus.ackPaymentSent.status,
+              message: fixedPaymentStatus.ackPaymentSent.message,
+              paymentRecordId: fixedPaymentStatus.ackPaymentSent.paymentRecordId,
+              paymentRecord: fixedPaymentStatus.ackPaymentSent.paymentRecord
             };
           }
         }
 
         return {
           ...output,
-          id: output.id || generateUUID(),
-          status: output.status !== undefined && output.status !== null ? output.status : 1000,
-          message: output.message || "Processed successfully",
+          id: output.id,
+          status: output.status,
+          message: output.message,
           paymentStatus: fixedPaymentStatus
         };
       });
 
-      console.log('Fixed payment outputs:', JSON.stringify(fixedPaymentOutputs, null, 2));
-
-      const outputResponse = await axios.post(
-        `${OUTPUT_PROCESSING_SVC}/api/v1/output-processing/process`,
-        fixedPaymentOutputs,
-        {
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      console.log('Output processing response status:', outputResponse.status);
-      console.log('Output processing response data:', JSON.stringify(outputResponse.data, null, 2));
-
-      // Set all stats to 100% to indicate completion
-      updateStats({
-        uploadSpeed: 100,
-        inputProcessingSpeed: 100,
-        paymentsProcessingSpeed: 100,
-        paymentStatusSpeed: 100,
-        outputProcessingSpeed: 100
-      });
+      // Process and download the output file
+      console.log('Processing and downloading output file with', paymentOutputs.length, 'records');
       
-      return outputResponse.data;
+      // Create a Blob from the data to enable client-side download
+      const blob = new Blob([JSON.stringify(fixedPaymentOutputs)], { type: 'application/json' });
+      const tempUrl = URL.createObjectURL(blob);
+      
+      // Trigger the download via the new endpoint
+      const downloadUrl = `${OUTPUT_PROCESSING_SVC}/api/v1/output-processing/process`;
+      
+      // Return the download URL for the UI to create a download link
+      return {
+        downloadUrl: downloadUrl,
+        data: fixedPaymentOutputs
+      };
+
     } catch (error) {
       console.error('Pipeline processing failed:', error);
       if (error.response) {
@@ -292,89 +330,62 @@ class OrchestrationService {
       throw error;
     }
   }
-  
-  async streamCSVFile(file, onRecord) {
+
+  async processInputFile(file, onRecord, onProgress) {
+    // Use XMLHttpRequest for upload progress tracking with streaming response
+    const xhr = new XMLHttpRequest();
+    
     return new Promise((resolve, reject) => {
-      // For browser environments with File API
-      if (typeof window !== 'undefined' && typeof FileReader !== 'undefined') {
-        const reader = new FileReader();
-        let csvString = '';
-        
-        reader.onload = (event) => {
-          try {
-            csvString = event.target.result;
-            this.parseCSVString(csvString, onRecord).then(resolve).catch(reject);
-          } catch (error) {
-            reject(error);
+      // Set up upload progress tracking
+      if (onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable) {
+            onProgress(event.loaded, event.total);
           }
         };
-        
-        reader.onerror = () => {
-          reject(new Error('Failed to read file'));
-        };
-        
-        reader.readAsText(file);
-      } else {
-        // For Node.js environments
-        // Convert to string and parse
-        const chunks = [];
-        const stream = file.stream();
-        
-        stream.on('data', (chunk) => {
-          chunks.push(chunk);
-        });
-        
-        stream.on('end', async () => {
-          try {
-            const csvString = Buffer.concat(chunks).toString('utf-8');
-            await this.parseCSVString(csvString, onRecord);
-            resolve();
-          } catch (error) {
-            reject(error);
-          }
-        });
-        
-        stream.on('error', (error) => {
-          reject(error);
-        });
       }
-    });
-  }
-  
-  async parseCSVString(csvString, onRecord) {
-    return new Promise((resolve, reject) => {
-      let lineNumber = 0;
       
-      Papa.parse(csvString, {
-        header: true,
-        skipEmptyLines: true,
-        step: async (row) => {
-          lineNumber++;
-          if (lineNumber === 1) return; // Skip header row
+      // Set up response streaming
+      let buffer = '';
+      
+      xhr.onreadystatechange = function() {
+        if (xhr.readyState === 3) { // LOADING state - response is being received
+          // Process chunks as they arrive
+          const newChunk = xhr.responseText.substring(buffer.length);
+          buffer = xhr.responseText;
           
-          try {
-            // Convert string values to appropriate types
-            const record = { ...row.data };
-            
-            // Convert amount to number if it exists
-            if (record.amount) {
-              record.amount = parseFloat(record.amount);
+          // Process the new chunk
+          processChunk(newChunk, false, onRecord).catch(error => {
+            console.error('Error processing chunk:', error);
+          });
+        } else if (xhr.readyState === 4) { // DONE state - request complete
+          if (xhr.status === 200) {
+            // Process any remaining data in the buffer
+            if (buffer.trim()) {
+              processChunk(buffer, false, onRecord).then(() => {
+                resolve();
+              }).catch(error => {
+                reject(error);
+              });
+            } else {
+              resolve();
             }
-            
-            // Process this record
-            await onRecord(record);
-          } catch (error) {
-            console.error(`Error processing record on line ${lineNumber}:`, error);
-            // Continue with next record
+          } else {
+            reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
           }
-        },
-        complete: () => {
-          resolve();
-        },
-        error: (error) => {
-          reject(error);
         }
-      });
+      };
+
+      xhr.onerror = function() {
+        reject(new Error('Network error occurred'));
+      };
+
+      // Send the request
+      xhr.open('POST', `${INPUT_PROCESSING_SVC}/api/v1/input-processing/process`);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('filename', file.name);
+      xhr.send(formData);
     });
   }
   
@@ -411,6 +422,40 @@ class OrchestrationService {
              (data && (data.message || '').toLowerCase().includes('resource exhausted'));
     }
     return false;
+  }
+}
+
+// Helper function to process streaming chunks
+async function processChunk(chunk, isFirstChunk, onRecord) {
+  // Split the chunk by newlines to get individual lines
+  const lines = chunk.split('\n');
+  
+  for (const line of lines) {
+    if (line.trim() === '') continue;
+    
+    try {
+      let jsonData = line.trim();
+      
+      // Handle Server-Sent Events format (data: prefix)
+      if (jsonData.startsWith('data:')) {
+        jsonData = jsonData.substring(5).trim(); // Remove 'data:' prefix
+      }
+      
+      // Handle SSE end-of-stream message
+      if (jsonData === '[DONE]') {
+        continue;
+      }
+      
+      // Parse the JSON object
+      const record = JSON.parse(jsonData);
+      await onRecord(record);
+    } catch (error) {
+      // Ignore parsing errors for incomplete lines
+      // These will be handled when the complete line arrives
+      if (!line.includes('}{')) { // Not a split JSON object
+        console.warn('Could not parse line as JSON:', line);
+      }
+    }
   }
 }
 

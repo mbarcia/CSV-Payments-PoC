@@ -29,10 +29,12 @@ export const Dashboard = () => {
     paymentStatusSpeed: 0,
     outputProcessingSpeed: 0
   });
+  const [downloadInfo, setDownloadInfo] = useState(null);
 
   const handleFileUpload = async (file) => {
     console.log('File upload triggered:', file.name, file.size, 'bytes');
     setIsProcessing(true);
+    setDownloadInfo(null); // Reset download info
     
     // Reset stats
     setProcessingStats({
@@ -46,16 +48,36 @@ export const Dashboard = () => {
     try {
       // Start the orchestration process
       console.log('Starting orchestration process...');
-      await orchestrationService.processFile(file, (stats) => {
+      const result = await orchestrationService.processFile(file, (stats) => {
         console.log('Stats update:', stats);
         setProcessingStats(stats);
       });
       console.log('Orchestration process completed successfully');
+      
+      // Set download info when processing is complete
+      if (result && result.downloadUrl) {
+        setDownloadInfo({
+          url: result.downloadUrl,
+          filename: file.name.replace('.csv', '-processed.csv')
+        });
+      }
     } catch (error) {
       console.error('Error processing file:', error);
       alert(`Error processing file: ${error.message}`);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (downloadInfo) {
+      // Create a temporary link and click it to trigger download
+      const link = document.createElement('a');
+      link.href = downloadInfo.url;
+      link.download = downloadInfo.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
   };
 
@@ -75,6 +97,17 @@ export const Dashboard = () => {
         <div className="upload-section">
           <FileUpload onFileUpload={handleFileUpload} isProcessing={isProcessing} />
         </div>
+        
+        {downloadInfo && (
+          <div className="download-section">
+            <button 
+              onClick={handleDownload}
+              className="btn btn-primary download-button"
+            >
+              Download Processed CSV
+            </button>
+          </div>
+        )}
         
         <div className="pipeline-section">
           <PipelineVisualization />

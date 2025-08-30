@@ -19,6 +19,8 @@ package com.example.poc.service;
 import com.example.poc.common.domain.CsvFolder;
 import com.example.poc.repository.CsvFolderRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -39,5 +41,11 @@ public class PersistCsvFolderReactiveService implements PersistReactiveService<C
     @Override
     public PanacheRepository<CsvFolder> getRepository() {
         return repository;
+    }
+
+    @Override
+    @WithTransaction
+    public Uni<CsvFolder> process(CsvFolder processableObj) {
+        return PersistReactiveService.super.process(processableObj);
     }
 }

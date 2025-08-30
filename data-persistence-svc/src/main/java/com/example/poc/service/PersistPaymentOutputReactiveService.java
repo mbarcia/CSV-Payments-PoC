@@ -19,6 +19,8 @@ package com.example.poc.service;
 import com.example.poc.common.domain.PaymentOutput;
 import com.example.poc.repository.PaymentOutputRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
@@ -39,5 +41,11 @@ public class PersistPaymentOutputReactiveService implements PersistReactiveServi
     @Override
     public PanacheRepository<PaymentOutput> getRepository() {
         return repository;
+    }
+
+    @Override
+    @WithTransaction
+    public Uni<PaymentOutput> process(PaymentOutput processableObj) {
+        return PersistReactiveService.super.process(processableObj);
     }
 }

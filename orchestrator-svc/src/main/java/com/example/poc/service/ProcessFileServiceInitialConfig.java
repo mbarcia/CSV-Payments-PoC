@@ -27,6 +27,6 @@ public interface ProcessFileServiceInitialConfig {
     @WithDefault("3")
     Integer maxRetries();
 
-    @WithDefault("100") // milliseconds
+    @WithDefault("1000") // milliseconds
     Long initialRetryDelay();
 }

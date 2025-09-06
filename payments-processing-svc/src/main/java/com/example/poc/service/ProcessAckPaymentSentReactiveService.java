@@ -23,22 +23,41 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 @Getter
 public class ProcessAckPaymentSentReactiveService
     implements ReactiveService<AckPaymentSent, PaymentStatus> {
+    
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessAckPaymentSentReactiveService.class);
+
   private final PollAckPaymentSentReactiveService pollAckPaymentSentService;
 
   @Inject
   public ProcessAckPaymentSentReactiveService(
       PollAckPaymentSentReactiveService pollAckPaymentSentService) {
     this.pollAckPaymentSentService = pollAckPaymentSentService;
+    LOG.debug("ProcessAckPaymentSentReactiveService initialized");
   }
 
   @Override
   public Uni<PaymentStatus> process(AckPaymentSent ackPaymentSent) {
+    LOG.debug("Processing AckPaymentSent in ProcessAckPaymentSentReactiveService: id={}, conversationId={}, paymentRecordId={}", 
+        ackPaymentSent.getId(), ackPaymentSent.getConversationId(), ackPaymentSent.getPaymentRecordId());
+    
     // Directly call the service without threading
-    return pollAckPaymentSentService.process(ackPaymentSent);
+    Uni<PaymentStatus> result = pollAckPaymentSentService.process(ackPaymentSent);
+    
+    LOG.debug("Returning Uni from ProcessAckPaymentSentReactiveService");
+    return result
+        .onItem()
+        .invoke(paymentStatus -> 
+            LOG.debug("Successfully processed AckPaymentSent, resulting PaymentStatus: id={}, reference={}, status={}", 
+                paymentStatus.getId(), paymentStatus.getReference(), paymentStatus.getStatus()))
+        .onFailure()
+        .invoke(failure -> 
+            LOG.error("Failed to process AckPaymentSent in ProcessAckPaymentSentReactiveService", failure));
   }
 }

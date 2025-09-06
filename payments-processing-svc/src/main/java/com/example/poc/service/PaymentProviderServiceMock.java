@@ -32,10 +32,14 @@ import java.math.BigDecimal;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import lombok.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("UnstableApiUsage")
 @ApplicationScoped
 public class PaymentProviderServiceMock implements PaymentProviderService {
+    
+  private static final Logger LOG = LoggerFactory.getLogger(PaymentProviderServiceMock.class);
 
   private final RateLimiter rateLimiter;
   private final long timeoutMillis;
@@ -52,24 +56,30 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
     rateLimiter = RateLimiter.create(config.permitsPerSecond());
     timeoutMillis = config.timeoutMillis();
 
-    System.out.println(
-        "PaymentProviderConfig loaded: permitsPerSecond="
-            + config.permitsPerSecond()
-            + ", "
-            + "timeoutMillis="
-            + config.timeoutMillis());
+    LOG.info(
+        "PaymentProviderServiceMock initialized: permitsPerSecond={}, timeoutMillis={}",
+        config.permitsPerSecond(),
+        config.timeoutMillis());
   }
 
   @Override
   public AckPaymentSent sendPayment(
       @NonNull SendPaymentRequestMapper.SendPaymentRequest requestMap) {
+    LOG.debug("sendPayment called with request: amount={}, currency={}, reference={}, paymentRecordId={}",
+        requestMap.getAmount(), requestMap.getCurrency(), requestMap.getReference(), requestMap.getPaymentRecordId());
+        
     // Try to acquire with timeout
-    if (this.timeoutMillis == -1L
-        || !rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
+    LOG.debug("Attempting to acquire rate limiter permit with timeout: {}ms", timeoutMillis);
+    boolean acquired = (this.timeoutMillis != -1L && rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS));
+    
+    if (!acquired) {
+      LOG.debug("Failed to acquire rate limiter permit within timeout period: {}ms", timeoutMillis);
       throw new StatusRuntimeException(
           Status.RESOURCE_EXHAUSTED.withDescription(
               "Payment service is currently throttled. Please try again later."));
     }
+    
+    LOG.debug("Rate limiter permit acquired successfully");
 
     return ackPaymentSentMapper.fromDto(
         AckPaymentSentDto.builder()
@@ -84,13 +94,21 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
 
   @Override
   public PaymentStatus getPaymentStatus(@NonNull AckPaymentSent ackPaymentSent) {
+    LOG.debug("getPaymentStatus called with AckPaymentSent: id={}, conversationId={}, paymentRecordId={}", 
+        ackPaymentSent.getId(), ackPaymentSent.getConversationId(), ackPaymentSent.getPaymentRecordId());
+        
     // Try to acquire with timeout
-    if (this.timeoutMillis == -1L
-        || !rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS)) {
+    LOG.debug("Attempting to acquire rate limiter permit with timeout: {}ms", timeoutMillis);
+    boolean acquired = (this.timeoutMillis != -1L && rateLimiter.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS));
+    
+    if (!acquired) {
+      LOG.warn("Failed to acquire rate limiter permit within timeout period: {}ms", timeoutMillis);
       throw new StatusRuntimeException(
           Status.RESOURCE_EXHAUSTED.withDescription(
               "Failed to acquire permit within timeout period. The payment status service is currently throttled."));
     }
+    
+    LOG.debug("Rate limiter permit acquired successfully");
 
     return paymentStatusMapper.fromDto(
         PaymentStatusDto.builder()

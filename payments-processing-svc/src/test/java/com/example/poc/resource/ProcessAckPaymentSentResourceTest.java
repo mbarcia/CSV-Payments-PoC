@@ -20,12 +20,25 @@ import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
+import io.restassured.config.SSLConfig;
 import io.restassured.http.ContentType;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class ProcessAckPaymentSentResourceTest {
+
+  @BeforeAll
+  static void setUp() {
+    // Configure RestAssured to use HTTPS and trust all certificates for testing
+    RestAssured.useRelaxedHTTPSValidation();
+    RestAssured.config =
+        RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
+    // Update the port to match the HTTPS port
+    RestAssured.port = 8446;
+  }
 
   @Test
   void testProcessAckPaymentEndpointWithValidData() {

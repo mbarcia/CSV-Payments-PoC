@@ -26,10 +26,14 @@ import com.example.poc.grpc.PaymentsProcessingSvc;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @GrpcService
 public class ProcessAckPaymentSentGrpcService
     extends MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessAckPaymentSentGrpcService.class);
 
   @Inject ProcessAckPaymentSentReactiveService domainService;
 
@@ -63,6 +67,19 @@ public class ProcessAckPaymentSentGrpcService
   @Override
   public Uni<PaymentsProcessingSvc.PaymentStatus> remoteProcess(
       PaymentsProcessingSvc.AckPaymentSent request) {
-    return adapter.remoteProcess(request);
+    LOG.debug("Received gRPC request in ProcessAckPaymentSentGrpcService: id={}, conversationId={}, paymentRecordId={}", 
+        request.getId(), request.getConversationId(), request.getPaymentRecordId());
+        
+    Uni<PaymentsProcessingSvc.PaymentStatus> result = adapter.remoteProcess(request);
+    
+    LOG.debug("Returning Uni from ProcessAckPaymentSentGrpcService");
+    return result
+        .onItem()
+        .invoke(response -> 
+            LOG.debug("Successfully processed gRPC request, response: id={}, reference={}, status={}", 
+                response.getId(), response.getReference(), response.getStatus()))
+        .onFailure()
+        .invoke(failure -> 
+            LOG.error("Failed to process gRPC request in ProcessAckPaymentSentGrpcService", failure));
   }
 }

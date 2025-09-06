@@ -8,31 +8,41 @@ scrape_configs:
       - targets: ['otel-collector:8889']
   
   - job_name: 'input-csv-file-processing-svc'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     metrics_path: /q/metrics
     static_configs:
-      - targets: ['input-csv-file-processing-svc:8081']
+      - targets: ['input-csv-file-processing-svc:8444']
   
   - job_name: 'payments-processing-svc'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     metrics_path: /q/metrics
     static_configs:
-      - targets: ['payments-processing-svc:8082']
+      - targets: ['payments-processing-svc:8445']
   
   - job_name: 'payment-status-svc'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     metrics_path: /q/metrics
     static_configs:
-      - targets: ['payment-status-svc:8083']
+      - targets: ['payment-status-svc:8446']
   
   - job_name: 'output-csv-file-processing-svc'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     metrics_path: /q/metrics
     static_configs:
-      - targets: ['output-csv-file-processing-svc:8084']
+      - targets: ['output-csv-file-processing-svc:8447']
   
   - job_name: 'data-persistence-svc'
+    scheme: https
+    tls_config:
+      insecure_skip_verify: true
     metrics_path: /q/metrics
     static_configs:
-      - targets: ['data-persistence-svc:8085']
-  
-  - job_name: 'orchestrator-svc'
-    metrics_path: /q/metrics
-    static_configs:
-      - targets: ['orchestrator-svc:8080']
+      - targets: ['data-persistence-svc:8448']

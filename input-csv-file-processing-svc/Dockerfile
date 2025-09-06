@@ -49,5 +49,10 @@ RUN --mount=type=cache,target=/root/.m2 \
 # Runtime image
 FROM eclipse-temurin:21-jre
 WORKDIR /app
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 COPY --from=builder /app/input-csv-file-processing-svc/target/quarkus-app/ .
-CMD ["java", "--enable-preview", "-jar", "quarkus-run.jar"]
+
+# Add JVM tuning options for Docker environments
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication"
+
+CMD ["sh", "-c", "java $JAVA_OPTS --enable-preview -jar quarkus-run.jar"]

@@ -52,7 +52,10 @@ class ProcessCsvPaymentsInputStreamRestResourceTest {
 
   @Test
   void process_invalidCsv_shouldFail() {
-    String csv = "ID,Recipient,Amount,Currency\n" + "1,John Doe,INVALID,USD\n";
+    String csv = """
+            ID,Recipient,Amount,Currency
+            1,John Doe,INVALID,USD
+            """;
 
     RestAssured.given()
         .relaxedHTTPSValidation() // <- ignores PKIX errors

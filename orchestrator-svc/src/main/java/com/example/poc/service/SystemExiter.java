@@ -22,6 +22,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 public class SystemExiter {
 
   public void exit(int status) {
-    System.exit(status);
+    // Force immediate shutdown by closing the runtime
+    Runtime.getRuntime().halt(status);
   }
 }

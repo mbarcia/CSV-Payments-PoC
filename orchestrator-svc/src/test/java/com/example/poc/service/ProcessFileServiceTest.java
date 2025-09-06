@@ -167,7 +167,6 @@ class ProcessFileServiceTest {
     verify(processCsvPaymentsInputFileService).remoteProcess(grpcInputFile);
     verify(persistPaymentRecordService).remoteProcess(grpcPaymentRecord);
     verify(sendPaymentRecordService).remoteProcess(grpcPaymentRecord);
-    verify(persistAckPaymentSentService).remoteProcess(grpcAckPaymentSent);
     verify(processAckPaymentSentService).remoteProcess(grpcAckPaymentSent);
     verify(processPaymentStatusService).remoteProcess(grpcPaymentStatus);
     verify(processCsvPaymentsOutputFileService).remoteProcess(any(Multi.class));

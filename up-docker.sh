@@ -133,9 +133,9 @@ else
     echo "Docker certificates already exist."
 fi
 
-# Start the services using docker-compose with both the main and override files
+# Start the services using docker compose with both the main and override files
 echo "Starting services with Docker..."
-docker compose -f docker-compose.yml -f docker-compose.local.yml up --build -d
+docker compose -f docker-compose.yml -f docker-compose.local.yml up  -d
 
 if [[ $? -eq 0 ]]; then
     echo "Services started successfully in Docker."

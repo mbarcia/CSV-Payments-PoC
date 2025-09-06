@@ -19,7 +19,7 @@ package com.example.poc.service;
 import com.example.poc.common.domain.AckPaymentSent;
 import com.example.poc.repository.AckPaymentSentRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -44,7 +44,7 @@ public class PersistAckPaymentSentReactiveService implements PersistReactiveServ
     }
 
     @Override
-    @WithTransaction
+    @WithSession
     public Uni<AckPaymentSent> process(AckPaymentSent processableObj) {
         return PersistReactiveService.super.process(processableObj);
     }

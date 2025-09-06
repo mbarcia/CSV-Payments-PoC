@@ -19,7 +19,7 @@ package com.example.poc.service;
 import com.example.poc.common.domain.CsvPaymentsInputFile;
 import com.example.poc.repository.CsvPaymentsInputFileRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -44,7 +44,7 @@ public class PersistCsvPaymentsInputFileReactiveService implements PersistReacti
     }
 
     @Override
-    @WithTransaction
+    @WithSession
     public Uni<CsvPaymentsInputFile> process(CsvPaymentsInputFile processableObj) {
         return PersistReactiveService.super.process(processableObj);
     }

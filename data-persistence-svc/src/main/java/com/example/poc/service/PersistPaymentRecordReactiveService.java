@@ -19,7 +19,7 @@ package com.example.poc.service;
 import com.example.poc.common.domain.PaymentRecord;
 import com.example.poc.repository.PaymentRecordRepository;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -44,8 +44,9 @@ public class PersistPaymentRecordReactiveService implements PersistReactiveServi
     }
 
     @Override
-    @WithTransaction
+    @WithSession
     public Uni<PaymentRecord> process(PaymentRecord processableObj) {
+        // Call the parent implementation which handles the persistence
         return PersistReactiveService.super.process(processableObj);
     }
 }

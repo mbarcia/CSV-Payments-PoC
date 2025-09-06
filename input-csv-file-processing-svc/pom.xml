@@ -83,10 +83,10 @@
             <artifactId>grpc-protobuf</artifactId>
             <version>${grpc.version}</version>
         </dependency>
+        <!-- Health check dependency -->
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc-codegen</artifactId>
-            <scope>provided</scope>
+            <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
 
         <!-- Test Dependencies -->

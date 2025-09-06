@@ -80,6 +80,11 @@
             <artifactId>slf4j-jboss-logmanager</artifactId>
             <scope>runtime</scope>
         </dependency>
+        <!-- Health check dependency -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
+        </dependency>
 
         <!-- Test Dependencies -->
         <dependency>

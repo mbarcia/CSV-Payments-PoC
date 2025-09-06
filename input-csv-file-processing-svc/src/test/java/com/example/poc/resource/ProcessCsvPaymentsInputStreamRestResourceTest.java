@@ -52,7 +52,8 @@ class ProcessCsvPaymentsInputStreamRestResourceTest {
 
   @Test
   void process_invalidCsv_shouldFail() {
-    String csv = """
+    String csv =
+        """
             ID,Recipient,Amount,Currency
             1,John Doe,INVALID,USD
             """;

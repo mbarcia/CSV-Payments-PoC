@@ -17,8 +17,12 @@
 package com.example.poc.service;
 
 import com.example.poc.common.service.ReactiveService;
+import io.grpc.Metadata;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import io.smallrye.mutiny.Uni;
+import java.text.MessageFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -29,14 +33,28 @@ public interface PersistReactiveService<T> extends ReactiveService<T, T> {
 
     @Override
     default Uni<T> process(T processableObj) {
-        Uni<T> uni = getRepository().persist(processableObj);
-
-        String serviceId = this.getClass().toString();
-        Logger logger = LoggerFactory.getLogger(this.getClass());
-        MDC.put("serviceId", serviceId);
-        logger.info("Persisted entity {}", processableObj);
-        MDC.clear();
-
-        return uni;
+        // Perform the database operation
+        return getRepository().persist(processableObj)
+            // Log after the operation completes without blocking the reactive thread
+            .invoke(() -> {
+                String serviceId = this.getClass().toString();
+                Logger logger = LoggerFactory.getLogger(this.getClass());
+                MDC.put("serviceId", serviceId);
+                logger.info("Persisted entity {} for service {}", processableObj, serviceId);
+                MDC.clear();
+            })
+            .onFailure()
+            .transform(
+                throwable -> {
+                    Metadata metadata = new Metadata();
+                    metadata.put(
+                        Metadata.Key.of("details", Metadata.ASCII_STRING_MARSHALLER),
+                            MessageFormat.format("Error persisting {0}: {1}", processableObj, throwable.getMessage())
+                    );
+                    return new StatusRuntimeException(
+                        Status.INTERNAL.withDescription(throwable.getMessage()).withCause(throwable),
+                        metadata
+                    );
+                });
     }
 }

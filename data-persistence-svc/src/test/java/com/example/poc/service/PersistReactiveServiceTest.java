@@ -78,7 +78,11 @@ class PersistReactiveServiceTest {
         mdcMock.verify(MDC::clear);
 
         // Verify logger interaction
-        verify(mockLogger).info("Persisted entity {}", testRecord);
+        verify(mockLogger)
+            .info(
+                "Persisted entity {} for service {}",
+                testRecord,
+                TestPersistReactiveService.class.toString());
       }
     }
   }

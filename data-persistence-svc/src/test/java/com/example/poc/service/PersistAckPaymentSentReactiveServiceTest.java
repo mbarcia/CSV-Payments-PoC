@@ -82,7 +82,11 @@ class PersistAckPaymentSentReactiveServiceTest {
         mdcMock.verify(MDC::clear);
 
         // Verify logger interaction
-        verify(mockLogger).info("Persisted entity {}", testAck);
+        verify(mockLogger)
+            .info(
+                "Persisted entity {} for service {}",
+                testAck,
+                PersistAckPaymentSentReactiveService.class.toString());
       }
     }
   }

@@ -84,7 +84,11 @@ class PersistCsvPaymentsInputFileReactiveServiceTest {
         mdcMock.verify(MDC::clear);
 
         // Verify logger interaction
-        verify(mockLogger).info("Persisted entity {}", testInputFile);
+        verify(mockLogger)
+            .info(
+                "Persisted entity {} for service {}",
+                testInputFile,
+                PersistCsvPaymentsInputFileReactiveService.class.toString());
       }
     }
   }

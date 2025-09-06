@@ -81,7 +81,11 @@ class PersistCsvFolderReactiveServiceTest {
         mdcMock.verify(MDC::clear);
 
         // Verify logger interaction
-        verify(mockLogger).info("Persisted entity {}", testFolder);
+        verify(mockLogger)
+            .info(
+                "Persisted entity {} for service {}",
+                testFolder,
+                PersistCsvFolderReactiveService.class.toString());
       }
     }
   }

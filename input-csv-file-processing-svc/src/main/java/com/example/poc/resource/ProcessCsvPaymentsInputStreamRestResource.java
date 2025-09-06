@@ -59,7 +59,9 @@ public class ProcessCsvPaymentsInputStreamRestResource {
         );
 
     return domainService.process(domainObject)
-            .map(paymentRecordMapper::toDto);
+            .map(paymentRecordMapper::toDto)
+            // Catch exceptions in the reactive stream
+            .onFailure().recoverWithMulti(ex -> Multi.createFrom().empty());
   }
 
   @ServerExceptionMapper

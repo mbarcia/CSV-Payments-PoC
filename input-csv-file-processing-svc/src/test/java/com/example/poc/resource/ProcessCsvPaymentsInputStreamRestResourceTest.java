@@ -37,6 +37,7 @@ class ProcessCsvPaymentsInputStreamRestResourceTest {
         """;
 
     RestAssured.given()
+        .relaxedHTTPSValidation() // <- ignores PKIX errors
         .multiPart(
             "file", "payments.csv", new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)))
         .multiPart("filename", "payments.csv")
@@ -54,6 +55,7 @@ class ProcessCsvPaymentsInputStreamRestResourceTest {
     String csv = "ID,Recipient,Amount,Currency\n" + "1,John Doe,INVALID,USD\n";
 
     RestAssured.given()
+        .relaxedHTTPSValidation() // <- ignores PKIX errors
         .multiPart(
             "file", "bad.csv", new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)))
         .multiPart("filename", "bad.csv")

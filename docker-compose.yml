@@ -5,97 +5,144 @@ services:
     build:
       dockerfile: input-csv-file-processing-svc/Dockerfile
     ports:
-      - "8081:8081"
+      - "8444:8444"
+    environment:
+      - PROCESS_CSV_PAYMENTS_INPUT_FILE_SVC_PORT=8444
     volumes:
       - ./data/csv:/app/csv:rw
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:8444/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
 
   payments-processing-svc:
     build:
       dockerfile: payments-processing-svc/Dockerfile
     ports:
-      - "8082:8082"
+      - "8445:8445"
+    environment:
+      - PROCESS_PAYMENTS_PROCESSING_SVC_PORT=8445
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:8445/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 64M
+          cpus: '0.5'
 
   payment-status-svc:
     build:
       dockerfile: payment-status-svc/Dockerfile
     ports:
-      - "8083:8083"
+      - "8446:8446"
+    environment:
+      - PROCESS_PAYMENT_STATUS_SVC_PORT=8446
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:8446/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 64M
+          cpus: '0.5'
 
   data-persistence-svc:
     build:
       dockerfile: data-persistence-svc/Dockerfile
     ports:
-      - "8085:8085"
+      - "8448:8448"
     environment:
       - QUARKUS_DATASOURCE_REACTIVE_URL=postgresql://postgres:5432/payments
       - QUARKUS_DATASOURCE_USERNAME=user
       - QUARKUS_DATASOURCE_PASSWORD=password
-#      - QUARKUS_GRPC_SERVER_USE_SEPARATE_SERVER=false
-#      - QUARKUS_HTTP_HTTP2=false
+      - QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY=drop-and-create
+      - DATA_PERSISTENCE_SVC_PORT=8448
+      - QUARKUS_LOG_CATEGORY.COM_EXAMPLE_POC_SERVICE_LEVEL=DEBUG
+      - QUARKUS_LOG_CATEGORY.COM_EXAMPLE_POC_SERVICE_MIN_LEVEL=DEBUG
+      - QUARKUS_LOG_CATEGORY.IO_GRPC_LEVEL=DEBUG
+      - QUARKUS_LOG_CATEGORY.IO_QUARKUS_GRPC_LEVEL=DEBUG
+      - QUARKUS_LOG_CATEGORY.IO_VERTX_GRPC_LEVEL=DEBUG
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:8448/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 64M
+          cpus: '0.5'
 
   output-csv-file-processing-svc:
     build:
       dockerfile: output-csv-file-processing-svc/Dockerfile
     ports:
-      - "8084:8084"
-    volumes:
-      - ./data/csv:/app/csv:rw
-    depends_on:
-      - postgres
-
-  orchestrator-svc:
-    build:
-      dockerfile: orchestrator-svc/Dockerfile
+      - "8447:8447"
     environment:
-      - CSV_FOLDER_PATH=/app/csv
-      - PROCESS_CSV_PAYMENTS_INPUT_FILE_SVC_HOST=input-csv-file-processing-svc
-      - PROCESS_CSV_PAYMENTS_INPUT_FILE_SVC_PORT=8081
-      - PERSIST_PAYMENT_RECORD_SVC_HOST=data-persistence-svc
-      - PERSIST_PAYMENT_RECORD_SVC_PORT=8085
-      - SEND_PAYMENT_RECORD_SVC_HOST=payments-processing-svc
-      - SEND_PAYMENT_RECORD_SVC_PORT=8082
-      - PERSIST_ACK_PAYMENT_SENT_SVC_HOST=data-persistence-svc
-      - PERSIST_ACK_PAYMENT_SENT_SVC_PORT=8085
-      - PROCESS_ACK_PAYMENT_SENT_SVC_HOST=payments-processing-svc
-      - PROCESS_ACK_PAYMENT_SENT_SVC_PORT=8082
-      - PROCESS_PAYMENT_STATUS_SVC_HOST=payment-status-svc
-      - PROCESS_PAYMENT_STATUS_SVC_PORT=8083
-      - PROCESS_CSV_PAYMENTS_OUTPUT_FILE_SVC_HOST=output-csv-file-processing-svc
-      - PROCESS_CSV_PAYMENTS_OUTPUT_FILE_SVC_PORT=8084
-      - QUARKUS_GRPC_CLIENTS_PERSIST-PAYMENT-RECORD_HOST=data-persistence-svc
-      - QUARKUS_GRPC_CLIENTS_PERSIST-PAYMENT-RECORD_PORT=8085
-      - QUARKUS_GRPC_CLIENTS_PROCESS-CSV-PAYMENTS-INPUT-FILE_HOST=input-csv-file-processing-svc
-      - QUARKUS_GRPC_CLIENTS_PROCESS-CSV-PAYMENTS-INPUT-FILE_PORT=8081
-      - QUARKUS_GRPC_CLIENTS_SEND-PAYMENT-RECORD_HOST=payments-processing-svc
-      - QUARKUS_GRPC_CLIENTS_SEND-PAYMENT-RECORD_PORT=8082
-      - QUARKUS_GRPC_CLIENTS_PERSIST-ACK-PAYMENT-SENT_HOST=data-persistence-svc
-      - QUARKUS_GRPC_CLIENTS_PERSIST-ACK-PAYMENT-SENT_PORT=8085
-      - QUARKUS_GRPC_CLIENTS_PROCESS-ACK-PAYMENT-SENT_HOST=payments-processing-svc
-      - QUARKUS_GRPC_CLIENTS_PROCESS-ACK-PAYMENT-SENT_PORT=8082
-      - QUARKUS_GRPC_CLIENTS_PROCESS-PAYMENT-STATUS_HOST=payment-status-svc
-      - QUARKUS_GRPC_CLIENTS_PROCESS-PAYMENT-STATUS_PORT=8083
-      - QUARKUS_GRPC_CLIENTS_PROCESS-CSV-PAYMENTS-OUTPUT-FILE_HOST=output-csv-file-processing-svc
-      - QUARKUS_GRPC_CLIENTS_PROCESS-CSV-PAYMENTS-OUTPUT-FILE_PORT=8084
-      - QUARKUS_HTTP_HTTP2=false
+      - PROCESS_CSV_PAYMENTS_OUTPUT_FILE_SVC_PORT=8447
     volumes:
       - ./data/csv:/app/csv:rw
-    depends_on:
-      - input-csv-file-processing-svc
-      - payments-processing-svc
-      - payment-status-svc
-      - output-csv-file-processing-svc
-      - postgres
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://localhost:8447/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 64M
+          cpus: '0.5'
 
   postgres:
-    image: postgres:16
+    image: postgres:17
     environment:
       - POSTGRES_DB=payments
       - POSTGRES_USER=user
@@ -104,6 +151,26 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d payments"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c work_mem=4MB
+      -c max_connections=50
 
   # Observability services
   otel-collector:
@@ -116,6 +183,15 @@ services:
       - "4318:4318"   # OTLP HTTP receiver
       - "8888:8888"   # Prometheus metrics
       - "8889:8889"   # Health check
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
 
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -131,6 +207,15 @@ services:
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   grafana:
     image: grafana/grafana-enterprise:11.2.2
@@ -145,6 +230,15 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     ports:
       - "3000:3000"
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 256M
+        reservations:
+          cpus: "0.1"
+          memory: 128M
 
   tempo:
     image: grafana/tempo:2.6.1
@@ -155,12 +249,77 @@ services:
       - tempo_data:/tmp/tempo
     ports:
       - "3200:3200"   # Tempo
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
 
   loki:
     image: grafana/loki:3.2.1
     command: [ "-config.file=/etc/loki/local-config.yaml" ]
     ports:
       - "3100:3100"
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+
+  orchestrator-svc:
+    build:
+      dockerfile: orchestrator-svc/Dockerfile
+    environment:
+      - CSV_FOLDER_PATH=/app/csv
+      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_HOST=input-csv-file-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_PORT=8444
+      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_HOST=payments-processing-svc
+      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_PORT=8445
+      - QUARKUS_GRPC_CLIENTS_PERSIST_ACK_PAYMENT_SENT_HOST=payments-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PERSIST_ACK_PAYMENT_SENT_PORT=8445
+      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_HOST=payments-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_PORT=8445
+      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_HOST=payment-status-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_PORT=8446
+      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_HOST=output-csv-file-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_PORT=8447
+      - QUARKUS_GRPC_CLIENTS_PERSIST_PAYMENT_RECORD_HOST=data-persistence-svc
+      - QUARKUS_GRPC_CLIENTS_PERSIST_PAYMENT_RECORD_PORT=8448
+      # Increase retry configuration
+      - CSV_POC_PROCESS_FILE_INITIAL_RETRY_DELAY=500
+      - CSV_POC_PROCESS_FILE_MAX_RETRIES=10
+    depends_on:
+      input-csv-file-processing-svc:
+        condition: service_healthy
+      data-persistence-svc:
+        condition: service_healthy
+      payments-processing-svc:
+        condition: service_healthy
+      payment-status-svc:
+        condition: service_healthy
+      output-csv-file-processing-svc:
+        condition: service_healthy
+    volumes:
+      - ./data/csv:/app/csv:rw
+    # Run once and exit
+    restart: "no"
+    # Add resource limits to prevent the service from being killed
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 64M
+          cpus: '0.5'
 
 volumes:
   postgres_data:

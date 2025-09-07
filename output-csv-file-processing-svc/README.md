@@ -116,14 +116,14 @@ mvn quarkus:dev
 Or as a standalone JAR:
 
 ```bash
-java -jar target/output-csv-file-processing-svc-0.0.1-SNAPSHOT.jar
+java -jar target/output-csv-file-processing-svc-1.0.jar
 ```
 
 ### Running in Native Mode
 
 ```bash
 mvn clean package -Pnative
-./target/output-csv-file-processing-svc-0.0.1-SNAPSHOT-runner
+./target/output-csv-file-processing-svc-1.0-runner
 ```
 
 ## Testing

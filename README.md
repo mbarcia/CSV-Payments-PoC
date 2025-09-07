@@ -214,7 +214,23 @@ mvn clean package
 To run the application in development mode with hot reloading:
 
 ```bash
-mvn quarkus:dev
+# Start the services (excluding orchestrator-svc which is a CLI application)
+./up-local.sh
+
+# Or, for more control, start services individually:
+# In separate terminals, run:
+# cd input-csv-file-processing-svc && mvn quarkus:dev
+# cd payments-processing-svc && mvn quarkus:dev
+# cd payment-status-svc && mvn quarkus:dev
+# cd output-csv-file-processing-svc && mvn quarkus:dev
+# cd data-persistence-svc && ./run-data-persistence-dev.sh
+
+# Run the orchestrator-svc as a CLI application (after all services are up)
+# In a separate terminal:
+# cd orchestrator-svc && mvn quarkus:dev
+#
+# Stop the services
+./down-local.sh
 ```
 
 #### Running as JAR Files
@@ -222,7 +238,21 @@ mvn quarkus:dev
 Each service can be run as a standalone JAR:
 
 ```bash
-java -jar orchestrator-svc/target/orchestrator-svc-0.0.1-SNAPSHOT.jar --csv-folder=/path/to/csv/files
+# Start the services (excluding orchestrator-svc which is a CLI application)
+# Build all services first
+mvn clean package
+
+# Start each service in a separate terminal
+java -jar input-csv-file-processing-svc/target/input-csv-file-processing-svc-1.0.jar
+java -jar payments-processing-svc/target/payments-processing-svc-1.0.jar
+java -jar payment-status-svc/target/payment-status-svc-1.0.jar
+java -jar output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0.jar
+java -jar data-persistence-svc/target/data-persistence-svc-1.0.jar
+
+# Run the orchestrator-svc as a CLI application (after all services are up)
+java -jar orchestrator-svc/target/orchestrator-svc-1.0.jar --csv-folder=/path/to/csv/files
+
+# Note: You'll need to stop each service manually in each terminal
 ```
 
 #### Running in Native Mode
@@ -230,8 +260,20 @@ java -jar orchestrator-svc/target/orchestrator-svc-0.0.1-SNAPSHOT.jar --csv-fold
 To build and run in native mode for better performance:
 
 ```bash
+# Build all services in native mode
 mvn clean package -Pnative
-./orchestrator-svc/target/orchestrator-svc-0.0.1-SNAPSHOT-runner --csv-folder=/path/to/csv/files
+
+# Start each service in a separate terminal
+./input-csv-file-processing-svc/target/input-csv-file-processing-svc-1.0-runner
+./payments-processing-svc/target/payments-processing-svc-1.0-runner
+./payment-status-svc/target/payment-status-svc-1.0-runner
+./output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0-runner
+./data-persistence-svc/target/data-persistence-svc-1.0-runner
+
+# Run the orchestrator-svc as a CLI application (after all services are up)
+./orchestrator-svc/target/orchestrator-svc-1.0-runner --csv-folder=/path/to/csv/files
+
+# Note: You'll need to stop each service manually in each terminal
 ```
 
 ### Configuration
@@ -247,6 +289,15 @@ The application uses environment variables for configuration:
 
 See [application.properties](./orchestrator-svc/src/main/resources/application.properties) for complete configuration options.
 
+For development with Dev Services, the following environment variables can be used:
+
+- `ENABLE_DEV_SERVICES`: Enable or disable Dev Services for data-persistence-svc (default: true)
+- `QUARKUS_DATASOURCE_DEVSERVICES_PORT`: Port to map the Dev Services database container to (default: randomly assigned)
+- `QUARKUS_DATASOURCE_DEVSERVICES_IMAGE_NAME`: Docker image to use for the database (default: postgres:16)
+- `QUARKUS_DATASOURCE_DEVSERVICES_DB_NAME`: Name of the database to create (default: quarkus)
+- `QUARKUS_DATASOURCE_DEVSERVICES_USERNAME`: Username for the database (default: quarkus)
+- `QUARKUS_DATASOURCE_DEVSERVICES_PASSWORD`: Password for the database (default: quarkus)
+
 ### Testing
 
 To run the tests, execute:
@@ -261,78 +312,79 @@ To run tests with code coverage:
 mvn clean test jacoco:report
 ```
 
-## Troubleshooting
+## SSL Certificate Handling in Development
 
-### Common Issues and Solutions
+When running the services with HTTPS enabled, self-signed certificates are used for development purposes. To avoid browser security warnings, you need to add these certificates to your system's trusted certificate store.
 
-1. **Application fails to start**
-   - Check if the Java version is correct (Java 21 required)
-   - Ensure all dependencies are properly downloaded (run `mvn dependency:resolve`)
-   - Verify the `application.properties` configurations
-   - Check that all required services are running and accessible
+### Trusting the Existing Certificate
 
-2. **CSV files not being processed**
-   - Confirm the correct folder path is provided as an argument
-   - Check file permissions on the input folder
-   - Verify CSV file format matches expected structure
-   - Ensure CSV files have the `.csv` extension
+The repository already includes a pre-generated certificate (`server-keystore.jks`) that you can trust:
 
-3. **gRPC connection issues**
-   - Verify that all microservices are running
-   - Check that service ports are correctly configured
-   - Ensure there are no firewall or network connectivity issues
-   - Validate that service names in configuration match actual service names
+1. **Add the existing certificate to your macOS keychain**:
+   ```bash
+   # Start one of the services first (e.g., in a separate terminal):
+   # cd input-csv-file-processing-svc && mvn quarkus:dev
 
-4. **Performance issues**
-   - Monitor CPU and memory usage during processing
-   - Check if rate limiting is causing delays
-   - Verify that virtual threads are being used effectively
-   - Consider adjusting concurrency limits in the orchestrator
+   # Export the certificate from the running service
+   echo | openssl s_client -connect localhost:8444 2>/dev/null | openssl x509 > /tmp/quarkus-cert.pem
 
-5. **Rate limiting errors**
-   - The mock payment provider simulates rate limiting
-   - The application includes retry logic for throttling errors
-   - Adjust `payment.provider.permits-per-second` in configuration to change rate limits
+   # Add to user keychain
+   security add-trusted-cert -d -r trustRoot -k ~/Library/Keychains/login.keychain-db ./kong/quarkus-cert.pem
+ ```
 
-### Logging and Debugging
+2. **Restart your browser** to ensure it picks up the new trusted certificate.
 
-The application provides comprehensive logging at different levels:
+3. **Restart all services**:
+   ```bash
+   # In separate terminals, start each service:
+   # Terminal 1:
+   cd input-csv-file-processing-svc && mvn quarkus:dev
 
-- INFO: General workflow information
-- WARN: Non-critical issues that should be addressed
-- ERROR: Critical failures that stop processing
-- DEBUG: Detailed information for troubleshooting
+   # Terminal 2:
+   cd payments-processing-svc && mvn quarkus:dev
 
-To enable debug logging, set the log level in `application.properties`:
+   # Terminal 3:
+   cd payment-status-svc && mvn quarkus:dev
 
-```properties
-quarkus.log.level=DEBUG
+   # Terminal 4:
+   cd output-csv-file-processing-svc && mvn quarkus:dev
+   ```
+
+### Troubleshooting Certificate Issues
+
+If you encounter certificate errors:
+
+1. **ERR_CERT_AUTHORITY_INVALID**: The certificate is not trusted by your system. Follow the steps above to add it to your keychain.
+
+2. **ERR_CERT_COMMON_NAME_INVALID**: The certificate doesn't include the correct Subject Alternative Names. Regenerate the certificate using the steps above.
+
+3. **Certificate not updating**: Ensure all services are stopped before regenerating certificates, and restart them afterward.
+
+The certificate is intended for development use only and should never be used in production environments.
+
+### Docker Certificate Handling
+
+When running the services in Docker, the `up-docker.sh` script automatically generates certificates that include the Docker service names as Subject Alternative Names (SANs). This ensures that the services can communicate with each other securely within the Docker network.
+
+The generated certificates include the following SANs:
+- DNS: localhost
+- DNS: input-csv-file-processing-svc
+- DNS: payments-processing-svc
+- DNS: payment-status-svc
+- DNS: data-persistence-svc
+- DNS: output-csv-file-processing-svc
+- DNS: orchestrator-svc
+- DNS: kong
+- IP: 127.0.0.1
+- IP: ::1 (IPv6 localhost)
+
+The Docker environment is configured to disable TLS hostname verification for gRPC clients through environment variables in the docker-compose.yml file. This allows the services to communicate with each other using the generated certificates even when the hostnames don't exactly match the certificate's CN.
+
+If you need to regenerate the Docker certificates manually, you can use the `generate-dev-certs.sh` script:
+
+```bash
+./generate-dev-certs.sh
 ```
-
-### Performance Optimization
-
-- Monitor CPU and memory usage during processing
-- Consider increasing the parallel processing threads if hardware resources allow
-- Profile the application using tools like VisualVM to identify bottlenecks
-- Adjust the `CONCURRENCY_LIMIT_RECORDS` parameter in ProcessFileService for optimal throughput
-- Tune the rate limiting parameters in the Payments Processing Service
-
-### REST APIs
-
-In addition to gRPC interfaces, some services expose REST APIs for easier integration:
-
-- **Output CSV File Processing Service**: Exposes REST endpoints for processing payment outputs
-  - `POST /api/v1/output-processing/process-file` - Process payment outputs to a file
-  - `POST /api/v1/output-processing/process` - Process payment outputs stream
-
-### Docker Deployment Issues
-
-When running with Docker:
-
-1. Ensure all services are on the same Docker network
-2. Verify that volume mounts are correctly configured for CSV file access
-3. Check that environment variables are properly passed to containers
-4. Confirm that port mappings don't conflict with other services
 
 ## Observability
 
@@ -352,15 +404,91 @@ The CSV Payments Processing Application includes a comprehensive observability s
 To run the application with the full observability stack:
 
 ```bash
-docker-compose up
+# Start the services (excluding orchestrator-svc which is a CLI application)
+./up-docker.sh
+
+# Run the orchestrator-svc as a CLI application (after all services are up)
+# Using Maven (in a separate terminal):
+# cd orchestrator-svc && mvn quarkus:dev
+# 
+# Or build and run the JAR:
+# mvn package && java -jar target/orchestrator-svc-1.0.jar --csv-folder=/path/to/csv/files
+#
+# Or using Docker:
+# ./run-orchestrator-docker.sh
+
+# Stop the services
+./down-docker.sh
 ```
 
-This command starts all microservices along with the observability components. The following ports are exposed:
+This command starts all microservices (except the orchestrator-svc) along with the observability components. The following ports are exposed:
 
 - **Grafana**: http://localhost:3000 (admin/admin)
 - **Prometheus**: http://localhost:9090
 - **Tempo**: http://localhost:3200
 - **Loki**: http://localhost:3100
+
+### Running with Dev Services for Local Development
+
+For local development, you can use Quarkus Dev Services to automatically start a PostgreSQL container for the `data-persistence-svc`. This is especially useful when you want to work on the `data-persistence-svc` independently.
+
+To enable Dev Services for local development:
+
+1. Make sure you have Docker installed and running.
+2. Run the following command to start the services with Dev Services enabled for the `data-persistence-svc`:
+
+```bash
+# Start the services (excluding orchestrator-svc which is a CLI application)
+./up-docker.sh
+
+# Run the orchestrator-svc as a CLI application (after all services are up)
+# Using Maven (in a separate terminal):
+# cd orchestrator-svc && mvn quarkus:dev
+# 
+# Or build and run the JAR:
+# mvn package && java -jar target/orchestrator-svc-1.0.jar --csv-folder=/path/to/csv/files
+#
+# Or using Docker:
+# ./run-orchestrator-docker.sh
+
+# Stop the services
+./down-docker.sh
+```
+
+This will use the `docker-compose.override.local.yml` file to override the environment variables for the `data-persistence-svc` and enable Dev Services.
+
+### Using the Convenience Scripts
+
+For easier management of the development environment, the project includes several convenience scripts:
+
+- `up-local.sh` / `down-local.sh`: Start/stop services in development mode using Maven
+- `up-docker.sh` / `down-docker.sh`: Start/stop services using Docker with the local override file
+
+To use the Maven-based development scripts:
+```bash
+# Start services
+./up-local.sh
+
+# Stop services
+./down-local.sh
+```
+
+To use the Docker-based scripts:
+```bash
+# Start services (creates docker-compose.local.yml from template if it doesn't exist)
+./up-docker.sh
+
+# Stop services
+./down-docker.sh
+```
+
+The `docker-compose.override.local.yml` and `docker-compose.orchestrator.yml` files are created from their respective template files on first run and are ignored by Git, allowing you to customize them for your local environment without affecting other developers.
+
+# Stop services
+./down-docker.sh
+```
+
+The `docker-compose.override.local.yml` and `docker-compose.orchestrator.yml` files are created from their respective template files on first run and are ignored by Git, allowing you to customize them for your local environment without affecting other developers.
 
 ### Dashboards
 
@@ -395,7 +523,6 @@ Each service exposes a `/q/metrics` endpoint that provides Prometheus-formatted 
 - Payment Status Service: http://localhost:8083/q/metrics
 - Output CSV File Processing Service: http://localhost:8084/q/metrics
 - Data Persistence Service: http://localhost:8085/q/metrics
-- Orchestrator Service: http://localhost:8080/q/metrics
 
 ## Related Services
 

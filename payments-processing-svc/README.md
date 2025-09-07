@@ -173,14 +173,14 @@ mvn quarkus:dev
 Or as a standalone JAR:
 
 ```bash
-java -jar target/payments-processing-svc-0.0.1-SNAPSHOT.jar
+java -jar target/payments-processing-svc-1.0.jar
 ```
 
 ### Running in Native Mode
 
 ```bash
 mvn clean package -Pnative
-./target/payments-processing-svc-0.0.1-SNAPSHOT-runner
+./target/payments-processing-svc-1.0-runner
 ```
 
 ## Testing

@@ -409,7 +409,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "rate(grpc_server_processing_duration_seconds_count{statusCode=\"OK\"}[1m]) / rate(grpc_server_requests_received_messages_total[1m]) * 100",
+          "expr": "rate(grpc_server_processing_duration_seconds_count{statusCode=\"OK\"}[1m]) / ignoring(statusCode) rate(grpc_server_requests_received_messages_total[1m]) * 100",
           "instant": false,
           "legendFormat": "{{service}}",
           "range": true,
@@ -425,7 +425,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 17
+        "y": 25
       },
       "id": 4,
       "panels": [],
@@ -496,7 +496,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 18
+        "y": 26
       },
       "id": 5,
       "options": {
@@ -592,7 +592,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 18
+        "y": 26
       },
       "id": 6,
       "options": {

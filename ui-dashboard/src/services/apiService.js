@@ -17,30 +17,31 @@
 import axios from 'axios';
 
 // Service endpoints - adjust these to match your actual service ports
-const INPUT_PROCESSING_URL = 'http://localhost:8081';
-const PAYMENTS_PROCESSING_URL = 'http://localhost:8082';
-const PAYMENT_STATUS_URL = 'http://localhost:8083';
-const OUTPUT_PROCESSING_URL = 'http://localhost:8084';
+// Updated to use HTTPS and new ports
+const INPUT_PROCESSING_URL = 'https://localhost:8444';
+const PAYMENTS_PROCESSING_URL = 'https://localhost:8445';
+const PAYMENT_STATUS_URL = 'https://localhost:8446';
+const OUTPUT_PROCESSING_URL = 'https://localhost:8447';
 
 // Create axios instances with default configurations
 const inputProcessingApi = axios.create({
   baseURL: INPUT_PROCESSING_URL,
-  timeout: 10000,
+  timeout: 10000
 });
 
 const paymentsProcessingApi = axios.create({
   baseURL: PAYMENTS_PROCESSING_URL,
-  timeout: 10000,
+  timeout: 10000
 });
 
 const paymentStatusApi = axios.create({
   baseURL: PAYMENT_STATUS_URL,
-  timeout: 10000,
+  timeout: 10000
 });
 
 const outputProcessingApi = axios.create({
   baseURL: OUTPUT_PROCESSING_URL,
-  timeout: 10000,
+  timeout: 10000
 });
 
 // Request interceptor to add authorization headers if needed

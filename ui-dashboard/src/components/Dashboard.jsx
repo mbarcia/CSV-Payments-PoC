@@ -18,7 +18,7 @@ import React, {useState} from 'react';
 import {FileUpload} from './FileUpload';
 import {PipelineVisualization} from './PipelineVisualization';
 import {PipelineGauges} from './PipelineGauges';
-import {orchestrationService} from '../services/orchestrationService';
+import {orchestrationService} from '../services/optimizedRestOrchestrationService';
 
 export const Dashboard = () => {
   const [isProcessing, setIsProcessing] = useState(false);

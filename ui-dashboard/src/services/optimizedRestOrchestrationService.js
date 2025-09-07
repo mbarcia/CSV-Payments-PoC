@@ -17,31 +17,35 @@
 import axios from 'axios';
 import pLimit from 'p-limit';
 
-// Simple UUID generator function
-function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
+// Check if we're in development mode
+const isDevelopment = process.env.NODE_ENV === 'development';
 
-// Service endpoints - direct Quarkus service ports
-const INPUT_PROCESSING_SVC = 'http://localhost:8081';
-const PAYMENTS_PROCESSING_SVC = 'http://localhost:8082';
-const PAYMENT_STATUS_SVC = 'http://localhost:8083';
-const OUTPUT_PROCESSING_SVC = 'http://localhost:8084';
+// Create an axios instance
+const httpsAxios = axios.create({
+  timeout: 10000
+});
 
-class OrchestrationService {
+// In development mode, disable certificate validation
+// Note: This is handled differently in browsers vs Node.js
+// For browsers, users may need to manually proceed through security warnings
+// For Node.js (testing), we can configure the agent
+
+// Service endpoints - going through Kong API Gateway
+const INPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/input-processing';
+const PAYMENTS_PROCESSING_SVC = 'https://localhost:8843/api/v1/payments-processing';
+const PAYMENT_STATUS_SVC = 'https://localhost:8843/api/v1/payment-status';
+const OUTPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/output-processing';
+
+class OptimizedRestOrchestrationService {
   async processFile(file, onStatsUpdate) {
-    console.log('OrchestrationService.processFile called with file:', file.name);
+    console.log('OptimizedRestOrchestrationService.processFile called with file:', file.name);
 
     const stats = {
       uploadSpeed: 0,
       inputProcessingSpeed: 0,
       paymentsProcessingSpeed: 0,
       paymentStatusSpeed: 0,
-      outputProcessingSpeed: 0 // Keep this for UI compatibility, but won't be updated
+      outputProcessingSpeed: 0
     };
 
     const counters = {
@@ -56,8 +60,8 @@ class OrchestrationService {
       console.log('Streaming CSV file processing through input service...');
 
       const paymentOutputs = [];
-      // Create a concurrency limit of 500 to prevent ERR_INSUFFICIENT_RESOURCES
-      const limit = pLimit(500);
+      // Set concurrency limit to avoid ERR_INSUFFICIENT_RESOURCES
+      const limit = pLimit(50);
       
       // Track start time for upload speed calculation
       const startTime = Date.now();
@@ -88,7 +92,7 @@ class OrchestrationService {
 
       // Track last update time to avoid too frequent updates
       let lastUpdate = 0;
-      const minUpdateInterval = 100; // ms
+      const minUpdateInterval = 25; // ms
 
       const updateStats = (type) => {
         const now = Date.now();
@@ -126,92 +130,47 @@ class OrchestrationService {
         // Wrap the processing in the concurrency limit
         const processingPromise = limit(async () => {
           try {
-            const recordWithId = {
-              ...record,
-              id: record.id
-            };
-
-            // Only add an ID if one doesn't exist
-            if (!recordWithId.id) {
-              recordWithId.id = generateUUID();
-            }
-
             // ---- PAYMENTS PROCESSING ----
-            const sendResponse = await axios.post(
-                `${PAYMENTS_PROCESSING_SVC}/api/v1/payments-processing/send-payment`,
-                recordWithId,
-                { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+            // In browser environments, we can't configure httpsAgent directly
+            // Certificate handling is done by the browser
+            const sendResponse = await httpsAxios.post(
+                `${PAYMENTS_PROCESSING_SVC}/send-payment`,
+                record,
+                { 
+                  headers: { 'Content-Type': 'application/json' },
+                  timeout: 10000
+                }
             );
             updateStats('payments');
 
             const ackPayment = sendResponse.data;
 
             const processAckResponse = await this.processWithRetry(
-                () => axios.post(
-                    `${PAYMENTS_PROCESSING_SVC}/api/v1/payments-processing/process-ack-payment`,
+                () => httpsAxios.post(
+                    `${PAYMENTS_PROCESSING_SVC}/process-ack-payment`,
                     ackPayment,
-                    { headers: { 'Content-Type': 'application/json' } }
+                    { 
+                      headers: { 'Content-Type': 'application/json' }
+                    }
                 ),
                 3
             );
             console.log('Process ack payment response status:', processAckResponse.status);
-            console.log('Process ack payment response data:', processAckResponse.data);
             const paymentStatus = processAckResponse.data;
 
             updateStats('status');
 
-            // Ensure paymentStatus has all required fields
-            if (!paymentStatus) {
-              throw new Error('Payment status is null or undefined');
-            }
-
-            // Use the actual paymentStatus data without adding default fabricated values
-            const fixedPaymentStatus = {
-              id: paymentStatus.id,
-              reference: paymentStatus.reference,
-              fee: paymentStatus.fee,
-              status: paymentStatus.status,
-              message: paymentStatus.message,
-              ackPaymentSentId: paymentStatus.ackPaymentSentId,
-              paymentRecordId: paymentStatus.paymentRecordId,
-              paymentRecord: paymentStatus.paymentRecord,
-              ackPaymentSent: paymentStatus.ackPaymentSent
-            };
-
-            // Only fix ackPaymentSent if it exists, without adding default values
-            if (fixedPaymentStatus.ackPaymentSent) {
-              fixedPaymentStatus.ackPaymentSent = {
-                id: fixedPaymentStatus.ackPaymentSent.id,
-                conversationId: fixedPaymentStatus.ackPaymentSent.conversationId,
-                status: fixedPaymentStatus.ackPaymentSent.status,
-                message: fixedPaymentStatus.ackPaymentSent.message,
-                paymentRecordId: fixedPaymentStatus.ackPaymentSent.paymentRecordId,
-                paymentRecord: fixedPaymentStatus.ackPaymentSent.paymentRecord
-              };
-            }
-
-            // Log the fixed payment status for debugging
-            console.log('Fixed payment status data:', JSON.stringify(fixedPaymentStatus, null, 2));
-
             // Process payment status
-            console.log('Processing payment status to:', `${PAYMENT_STATUS_SVC}/api/v1/payment-status/process`);
-            const statusResponse = await axios.post(
-                `${PAYMENT_STATUS_SVC}/api/v1/payment-status/process`,
-                fixedPaymentStatus,
-                { headers: { 'Content-Type': 'application/json' } }
+            console.log('Processing payment status to:', `${PAYMENT_STATUS_SVC}/process`);
+            const statusResponse = await httpsAxios.post(
+                `${PAYMENT_STATUS_SVC}/process`,
+                paymentStatus,
+                { 
+                  headers: { 'Content-Type': 'application/json' }
+                }
             );
             console.log('Payment status response status:', statusResponse.status);
-            console.log('Payment status response data:', statusResponse.data);
-            const paymentOutput = {
-              ...statusResponse.data,
-              id: statusResponse.data.id || generateUUID(),
-              paymentStatus: statusResponse.data.paymentStatus ? {
-                ...statusResponse.data.paymentStatus,
-                id: statusResponse.data.paymentStatus.id || generateUUID(),
-                paymentRecordId: statusResponse.data.paymentStatus.paymentRecordId || (statusResponse.data.paymentStatus.paymentRecord ? statusResponse.data.paymentStatus.paymentRecord.id : null) || recordWithId.id,
-                paymentRecord: statusResponse.data.paymentStatus.paymentRecord || recordWithId
-              } : null
-            };
+            const paymentOutput = statusResponse.data;
             
             paymentOutputs.push(paymentOutput);
             onStatsUpdate({ ...stats }); // Always update for final results
@@ -221,11 +180,6 @@ class OrchestrationService {
             if (error.response) {
               console.error('Error response status:', error.response.status);
               console.error('Error response data:', JSON.stringify(error.response.data, null, 2));
-              console.error('Error response headers:', error.response.headers);
-            } else if (error.request) {
-              console.error('Error request made but no response received:', error.request);
-            } else {
-              console.error('Error message:', error.message);
             }
             // Continue with next record instead of failing completely
 
@@ -263,63 +217,51 @@ class OrchestrationService {
       stats.uploadSpeed = 0;
       onStatsUpdate({ ...stats }); // Always update for final reset
 
-      // Step 3: Generate output CSV file
-      console.log('Processing output file with', paymentOutputs.length, 'records to:', `${OUTPUT_PROCESSING_SVC}/api/v1/output-processing/process`);
-
-      // Ensure all payment outputs have IDs and required fields without adding default values
-      const fixedPaymentOutputs = paymentOutputs.map(output => {
-        // Use actual paymentStatus data without adding default fabricated values
-        let fixedPaymentStatus = output.paymentStatus;
-        if (fixedPaymentStatus) {
-          fixedPaymentStatus = {
-            id: fixedPaymentStatus.id,
-            reference: fixedPaymentStatus.reference,
-            fee: fixedPaymentStatus.fee,
-            status: fixedPaymentStatus.status,
-            message: fixedPaymentStatus.message,
-            ackPaymentSentId: fixedPaymentStatus.ackPaymentSentId,
-            paymentRecordId: fixedPaymentStatus.paymentRecordId,
-            paymentRecord: fixedPaymentStatus.paymentRecord,
-            ackPaymentSent: fixedPaymentStatus.ackPaymentSent
-          };
-
-          // Only fix ackPaymentSent if it exists, without adding default values
-          if (fixedPaymentStatus.ackPaymentSent) {
-            fixedPaymentStatus.ackPaymentSent = {
-              id: fixedPaymentStatus.ackPaymentSent.id,
-              conversationId: fixedPaymentStatus.ackPaymentSent.conversationId,
-              status: fixedPaymentStatus.ackPaymentSent.status,
-              message: fixedPaymentStatus.ackPaymentSent.message,
-              paymentRecordId: fixedPaymentStatus.ackPaymentSent.paymentRecordId,
-              paymentRecord: fixedPaymentStatus.ackPaymentSent.paymentRecord
-            };
+      // Process and download the output file
+      console.log('Processing output file with', paymentOutputs.length, 'records to:', `${OUTPUT_PROCESSING_SVC}/process`);
+      
+      // Instead of returning a download URL, we'll make a direct request to get the file
+      // and let the browser handle the download
+      try {
+        const response = await httpsAxios.post(
+          `${OUTPUT_PROCESSING_SVC}/process`,
+          paymentOutputs,
+          { 
+            headers: { 'Content-Type': 'application/json' },
+            responseType: 'blob' // Important for file downloads
+          }
+        );
+        
+        // Extract filename from Content-Disposition header if available
+        const contentDisposition = response.headers['content-disposition'];
+        let filename = 'payment-outputs.csv';
+        if (contentDisposition) {
+          const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+          if (filenameMatch && filenameMatch[1]) {
+            filename = filenameMatch[1];
           }
         }
-
+        
+        // Create a blob URL for download
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', filename);
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up
+        link.parentNode.removeChild(link);
+        window.URL.revokeObjectURL(url);
+        
         return {
-          ...output,
-          id: output.id,
-          status: output.status,
-          message: output.message,
-          paymentStatus: fixedPaymentStatus
+          success: true,
+          message: 'File downloaded successfully'
         };
-      });
-
-      // Process and download the output file
-      console.log('Processing and downloading output file with', paymentOutputs.length, 'records');
-      
-      // Create a Blob from the data to enable client-side download
-      const blob = new Blob([JSON.stringify(fixedPaymentOutputs)], { type: 'application/json' });
-      const tempUrl = URL.createObjectURL(blob);
-      
-      // Trigger the download via the new endpoint
-      const downloadUrl = `${OUTPUT_PROCESSING_SVC}/api/v1/output-processing/process`;
-      
-      // Return the download URL for the UI to create a download link
-      return {
-        downloadUrl: downloadUrl,
-        data: fixedPaymentOutputs
-      };
+      } catch (error) {
+        console.error('Error downloading file:', error);
+        throw error;
+      }
 
     } catch (error) {
       console.error('Pipeline processing failed:', error);
@@ -381,7 +323,7 @@ class OrchestrationService {
       };
 
       // Send the request
-      xhr.open('POST', `${INPUT_PROCESSING_SVC}/api/v1/input-processing/process`);
+      xhr.open('POST', `${INPUT_PROCESSING_SVC}/process`);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('filename', file.name);
@@ -459,4 +401,4 @@ async function processChunk(chunk, isFirstChunk, onRecord) {
   }
 }
 
-export const orchestrationService = new OrchestrationService();
+export const orchestrationService = new OptimizedRestOrchestrationService();

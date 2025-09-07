@@ -18,10 +18,10 @@ A React-based dashboard for visualizing the CSV Payments Processing pipeline in 
 The dashboard connects to the microservices backend through REST APIs:
 
 1. **Orchestrator Service** (http://localhost:8080) - Main coordination service
-2. **Input CSV File Processing Service** (http://localhost:8081) - Processes input CSV files
-3. **Payments Processing Service** (http://localhost:8082) - Handles payment processing
-4. **Payment Status Service** (http://localhost:8083) - Processes payment statuses
-5. **Output CSV File Processing Service** (http://localhost:8084) - Generates output files
+2. **Input CSV File Processing Service** (https://localhost:8444) - Processes input CSV files
+3. **Payments Processing Service** (https://localhost:8445) - Handles payment processing
+4. **Payment Status Service** (https://localhost:8446) - Processes payment statuses
+5. **Output CSV File Processing Service** (https://localhost:8447) - Generates output files
 
 ## Getting Started
 
@@ -128,19 +128,18 @@ ui-dashboard/
 
 To connect to the real backend services, ensure all microservices are running on their respective ports:
 - Orchestrator Service: http://localhost:8080
-- Input CSV File Processing Service: http://localhost:8081
-- Payments Processing Service: http://localhost:8082
-- Payment Status Service: http://localhost:8083
-- Output CSV File Processing Service: http://localhost:8084
+- Input CSV File Processing Service: https://localhost:8444
+- Payments Processing Service: https://localhost:8445
+- Payment Status Service: https://localhost:8446
+- Output CSV File Processing Service: https://localhost:8447
 
-## Contributing
+### Handling Self-Signed Certificates
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a pull request
+During development, the backend services use self-signed SSL certificates. When connecting to these services, your browser may show a security warning. This is expected in a development environment.
 
-## License
+To proceed:
+1. When you see a security warning, click "Advanced" or "Details"
+2. Choose "Proceed to localhost (unsafe)" or similar option
+3. You may need to do this for each service port (8444, 8445, 8446, 8447)
 
-This project is licensed under the MIT License.
+Note: These warnings only appear in development. In a production environment, proper SSL certificates should be used.

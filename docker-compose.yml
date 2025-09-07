@@ -1,6 +1,63 @@
 version: '3.8'
 
+networks:
+  csv-payments-network:
+    driver: bridge
+
 services:
+  # API Gateway
+  kong:
+    image: kong:3.9.1-ubuntu
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /opt/kong/kong.yml
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001, 0.0.0.0:8844 ssl
+      KONG_PROXY_LISTEN: 0.0.0.0:8000, 0.0.0.0:8843 ssl http2
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 128k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: 4 256k
+      KONG_NGINX_WORKER_PROCESSES: 2
+      KONG_PLUGINS: bundled
+      KONG_LOG_LEVEL: debug
+      KONG_SSL_CERT: /opt/kong/quarkus-cert.pem
+      KONG_SSL_CERT_KEY: /opt/kong/quarkus-key.pem
+      KONG_CLIENT_SSL_CERT: /opt/kong/quarkus-cert.pem
+      KONG_CLIENT_SSL_CERT_KEY: /opt/kong/quarkus-key.pem
+      KONG_ADMIN_SSL_CERT: /opt/kong/quarkus-cert.pem
+      KONG_ADMIN_SSL_CERT_KEY: /opt/kong/quarkus-key.pem
+      # Enable SNI for upstream connections
+      KONG_NGINX_PROXY_PROXY_SSL_SERVER_NAME: "on"
+      # gRPC specific settings
+      KONG_NGINX_PROXY_LARGE_CLIENT_HEADER_BUFFERS: "8 64k"
+      KONG_NGINX_PROXY_PROXY_MAX_TEMP_FILE_SIZE: "1024m"
+      KONG_NGINX_PROXY_CLIENT_MAX_BODY_SIZE: "1024m"
+      KONG_NGINX_PROXY_GRPC_READ_TIMEOUT: "600s"
+      KONG_NGINX_PROXY_GRPC_SEND_TIMEOUT: "600s"
+      KONG_NGINX_PROXY_GRPC_SOCKET_KEEPALIVE: "on"
+      KONG_NGINX_PROXY_KEEPALIVE_TIMEOUT: "600s"
+#      KONG_NGINX_PROXY_PROXY_TIMEOUT: "600s"
+    volumes:
+      - ./kong/quarkus-cert.pem:/opt/kong/quarkus-cert.pem:ro
+      - ./kong/quarkus-key.pem:/opt/kong/quarkus-key.pem:ro
+      - ./kong/kong.yml:/opt/kong/kong.yml:ro
+      - kong_tmp:/tmp
+    ports:
+      - "8000:8000"     # HTTP proxy
+      - "8843:8843"     # HTTPS proxy with HTTP/2
+      - "8001:8001"     # HTTP admin API
+      - "8844:8844"     # HTTPS admin API
+    healthcheck:
+      test: ["CMD", "kong", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - csv-payments-network
+
   input-csv-file-processing-svc:
     build:
       dockerfile: input-csv-file-processing-svc/Dockerfile
@@ -14,20 +71,13 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:8444/q/health"]
+      test: ["CMD", "curl", "-k", "-f", "https://input-csv-file-processing-svc:8444/q/health"]
       interval: 5s
       timeout: 2s
       retries: 10
       start_period: 3s
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
+    networks:
+      - csv-payments-network
 
   payments-processing-svc:
     build:
@@ -40,20 +90,13 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:8445/q/health"]
+      test: ["CMD", "curl", "-k", "-f", "https://payments-processing-svc:8445/q/health"]
       interval: 5s
       timeout: 2s
       retries: 10
       start_period: 3s
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 64M
-          cpus: '0.5'
+    networks:
+      - csv-payments-network
 
   payment-status-svc:
     build:
@@ -66,20 +109,13 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:8446/q/health"]
+      test: ["CMD", "curl", "-k", "-f", "https://payment-status-svc:8446/q/health"]
       interval: 5s
       timeout: 2s
       retries: 10
       start_period: 3s
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 64M
-          cpus: '0.5'
+    networks:
+      - csv-payments-network
 
   data-persistence-svc:
     build:
@@ -101,20 +137,13 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:8448/q/health"]
+      test: ["CMD", "curl", "-k", "-f", "https://data-persistence-svc:8448/q/health"]
       interval: 5s
       timeout: 2s
       retries: 10
       start_period: 3s
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 64M
-          cpus: '0.5'
+    networks:
+      - csv-payments-network
 
   output-csv-file-processing-svc:
     build:
@@ -126,20 +155,13 @@ services:
     volumes:
       - ./data/csv:/app/csv:rw
     healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://localhost:8447/q/health"]
+      test: ["CMD", "curl", "-k", "-f", "https://output-csv-file-processing-svc:8447/q/health"]
       interval: 5s
       timeout: 2s
       retries: 10
       start_period: 3s
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 64M
-          cpus: '0.5'
+    networks:
+      - csv-payments-network
 
   postgres:
     image: postgres:17
@@ -157,20 +179,13 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
     command: >
       postgres
       -c shared_buffers=128MB
       -c work_mem=4MB
       -c max_connections=50
+    networks:
+      - csv-payments-network
 
   # Observability services
   otel-collector:
@@ -183,15 +198,8 @@ services:
       - "4318:4318"   # OTLP HTTP receiver
       - "8888:8888"   # Prometheus metrics
       - "8889:8889"   # Health check
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 512M
-          cpus: '0.5'
+    networks:
+      - csv-payments-network
 
   prometheus:
     image: prom/prometheus:v2.54.1
@@ -207,15 +215,8 @@ services:
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
+    networks:
+      - csv-payments-network
 
   grafana:
     image: grafana/grafana-enterprise:11.2.2
@@ -230,15 +231,8 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     ports:
       - "3000:3000"
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          cpus: "0.25"
-          memory: 256M
-        reservations:
-          cpus: "0.1"
-          memory: 128M
+    networks:
+      - csv-payments-network
 
   tempo:
     image: grafana/tempo:2.6.1
@@ -249,30 +243,16 @@ services:
       - tempo_data:/tmp/tempo
     ports:
       - "3200:3200"   # Tempo
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
+    networks:
+      - csv-payments-network
 
   loki:
     image: grafana/loki:3.2.1
     command: [ "-config.file=/etc/loki/local-config.yaml" ]
     ports:
       - "3100:3100"
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          cpus: "0.5"
-          memory: 512M
-        reservations:
-          cpus: "0.25"
-          memory: 256M
+    networks:
+      - csv-payments-network
 
   orchestrator-svc:
     build:
@@ -296,6 +276,7 @@ services:
       # Increase retry configuration
       - CSV_POC_PROCESS_FILE_INITIAL_RETRY_DELAY=500
       - CSV_POC_PROCESS_FILE_MAX_RETRIES=10
+      - CSV_POC_PROCESS_FILE_CONCURRENCY_LIMIT_RECORDS=1000
     depends_on:
       input-csv-file-processing-svc:
         condition: service_healthy
@@ -311,18 +292,12 @@ services:
       - ./data/csv:/app/csv:rw
     # Run once and exit
     restart: "no"
-    # Add resource limits to prevent the service from being killed
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '1.0'
-        reservations:
-          memory: 64M
-          cpus: '0.5'
+    networks:
+      - csv-payments-network
 
 volumes:
   postgres_data:
   prometheus_data:
   grafana_data:
   tempo_data:
+  kong_tmp:

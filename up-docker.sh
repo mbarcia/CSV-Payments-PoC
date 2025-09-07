@@ -87,13 +87,17 @@ DNS.4 = payment-status-svc
 DNS.5 = data-persistence-svc
 DNS.6 = output-csv-file-processing-svc
 DNS.7 = orchestrator-svc
+DNS.8 = kong
 IP.1 = 127.0.0.1
 IP.2 = ::1
 EOF
     
     # Generate the certificate and key
     openssl req -x509 -newkey rsa:2048 -keyout "${CERT_DIR}/quarkus-key.pem" -out "${CERT_DIR}/quarkus-cert.pem" -days 365 -nodes -config "${CERT_DIR}/cert.conf" -extensions v3_req
-    
+
+    cp "${CERT_DIR}/quarkus-key.pem" ./kong/
+    cp "${CERT_DIR}/quarkus-cert.pem" ./kong/
+
     # Convert to PKCS12 format
     openssl pkcs12 -export -in "${CERT_DIR}/quarkus-cert.pem" -inkey "${CERT_DIR}/quarkus-key.pem" -out "${CERT_DIR}/server-keystore.p12" -name server -passout pass:secret
     
@@ -135,7 +139,7 @@ fi
 
 # Start the services using docker compose with both the main and override files
 echo "Starting services with Docker..."
-docker compose -f docker-compose.yml -f docker-compose.local.yml up  -d
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
 
 if [[ $? -eq 0 ]]; then
     echo "Services started successfully in Docker."

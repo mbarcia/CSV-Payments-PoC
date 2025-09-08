@@ -53,6 +53,7 @@ class PersistReactiveServiceTest {
         .thenReturn(Uni.createFrom().item(testRecord));
   }
 
+  @SuppressWarnings("UnnecessaryToStringCall")
   @Test
   void testProcess() {
     // Mock static methods

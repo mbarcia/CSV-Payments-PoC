@@ -32,13 +32,13 @@ import org.slf4j.MDC;
 
 /**
  * Reactive service for processing streams of payment outputs and writing them to CSV files.
- * 
+ * <p>
  * This service implements a reactive streaming pattern using Mutiny, but with a pragmatic
  * approach to file writing:
  * 1. It collects the stream into a list to work with OpenCSV's iterator-based write method
  * 2. The blocking file I/O is executed on a virtual thread to minimize resource impact
  * 3. As the terminal operation in the pipeline, it doesn't create backpressure issues
- * 
+ * <p>
  * The service uses the iterator-based write method from OpenCSV which provides better
  * streaming characteristics than list-based writing, even though we collect the stream
  * for compatibility with the library's API.
@@ -56,7 +56,7 @@ public class ProcessCsvPaymentsOutputFileReactiveService
 
   /**
    * Process a stream of payment outputs and write them to a CSV file.
-   * 
+   * <p>
    * Implementation notes:
    * - Collects the stream to a list to work with OpenCSV's iterator-based write method
    * - Uses virtual threads for the blocking file I/O operation
@@ -98,7 +98,7 @@ public class ProcessCsvPaymentsOutputFileReactiveService
 
   /**
    * Create a CSV output file based on the first payment output in the stream.
-   * 
+   * <p>
    * Extracts the input file path from the payment output to determine where
    * the output file should be written.
    * 

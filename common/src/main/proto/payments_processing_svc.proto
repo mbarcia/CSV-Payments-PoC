@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option java_package = "com.example.poc.grpc";
+option java_package = "io.github.mbarcia.csv.grpc";
 
 import "input_csv_file_processing_svc.proto";
 

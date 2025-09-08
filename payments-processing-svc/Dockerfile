@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/root/.m2 \
     mvn -B install:install-file \
     -Dfile=pom.xml \
     -DpomFile=pom.xml \
-    -DgroupId=com.example \
+    -DgroupId=io.github.mbarcia \
     -DartifactId=csv-payments \
     -Dversion=1.0.0 \
     -Dpackaging=pom \

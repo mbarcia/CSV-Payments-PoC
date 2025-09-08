@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-option java_package = "com.example.poc.grpc";
+option java_package = "io.github.mbarcia.csv.grpc";
 
 import "payment_status_svc.proto";
 

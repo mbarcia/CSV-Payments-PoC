@@ -24,7 +24,7 @@
     <packaging>jar</packaging>
 
     <parent>
-        <groupId>com.example</groupId>
+        <groupId>io.github.mbarcia</groupId>
         <artifactId>csv-payments</artifactId>
         <version>1.0.0</version>
         <relativePath>../pom.xml</relativePath>
@@ -32,7 +32,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.example</groupId>
+            <groupId>io.github.mbarcia</groupId>
             <artifactId>common</artifactId>
             <version>1.0</version>
             <scope>compile</scope>

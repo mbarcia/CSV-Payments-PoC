@@ -48,7 +48,7 @@ It implements a clean architecture with repository patterns and reactive program
 The service uses a repository pattern to abstract data access:
 - **PanacheRepository<T>** - Quarkus Hibernate Panache repository for reactive persistence operations
 
-Repositories have been organized into their own package (`com.example.poc.repository`) for better code organization.
+Repositories have been organized into their own package (`io.github.mbarcia.csv.repository`) for better code organization.
 
 ## Technology Stack
 

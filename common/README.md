@@ -107,10 +107,10 @@ The common module includes shared Protocol Buffer definitions for all services:
 The common module is automatically included as a dependency in all other microservices in the project. To use its components, simply import the required classes:
 
 ```java
-import com.example.poc.common.domain.PaymentRecord;
-import com.example.poc.common.dto.PaymentRecordDto;
-import com.example.poc.common.mapper.PaymentRecordMapper;
-import com.example.poc.common.service.ReactiveStreamingService;
+import io.github.mbarcia.csv.common.domain.PaymentRecord;
+import io.github.mbarcia.csv.common.dto.PaymentRecordDto;
+import io.github.mbarcia.csv.common.mapper.PaymentRecordMapper;
+import io.github.mbarcia.csv.common.service.ReactiveStreamingService;
 ```
 
 ## Service Interface Patterns

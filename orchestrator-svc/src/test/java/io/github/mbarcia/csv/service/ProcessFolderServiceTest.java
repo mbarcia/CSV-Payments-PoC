@@ -20,13 +20,12 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
-import io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile;
 import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Map;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,27 +46,27 @@ public class ProcessFolderServiceTest {
   }
 
   @Test
-  void testProcessWithValidDirectory(@TempDir Path tempDir) throws URISyntaxException, IOException {
+  void testProcessWithValidDirectory(@TempDir Path tempDir) throws Exception {
     // Given
     String csvFolderPath = "test-csv-folder";
 
     // Create CSV files in the temporary directory
     File file1 = new File(tempDir.toFile(), "file1.csv");
     File file2 = new File(tempDir.toFile(), "file2.csv");
-    assert file1.createNewFile();
-    assert file2.createNewFile();
+    file1.createNewFile();
+    file2.createNewFile();
 
     URL mockUrl = tempDir.toFile().toURI().toURL();
 
     when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
 
     // When
-    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result =
-        processFolderService.process(csvFolderPath);
+    Stream<CsvPaymentsInputFile> result = processFolderService.process(csvFolderPath);
 
     // Then
     assertNotNull(result);
-    assertEquals(2, result.size());
+    List<CsvPaymentsInputFile> resultList = result.collect(Collectors.toList());
+    assertEquals(2, resultList.size());
   }
 
   @Test
@@ -91,12 +90,12 @@ public class ProcessFolderServiceTest {
     when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
 
     // When
-    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result =
-        processFolderService.process(csvFolderPath);
+    Stream<CsvPaymentsInputFile> result = processFolderService.process(csvFolderPath);
 
     // Then
     assertNotNull(result);
-    assertTrue(result.isEmpty());
+    List<CsvPaymentsInputFile> resultList = result.collect(Collectors.toList());
+    assertTrue(resultList.isEmpty());
   }
 
   @Test
@@ -108,20 +107,20 @@ public class ProcessFolderServiceTest {
     // Create non-CSV files in the temporary directory
     File file1 = new File(tempDir.toFile(), "file1.txt");
     File file2 = new File(tempDir.toFile(), "file2.doc");
-    assert file1.createNewFile();
-    assert file2.createNewFile();
+    file1.createNewFile();
+    file2.createNewFile();
 
     URL mockUrl = tempDir.toFile().toURI().toURL();
 
     when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
 
     // When
-    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result =
-        processFolderService.process(csvFolderPath);
+    Stream<CsvPaymentsInputFile> result = processFolderService.process(csvFolderPath);
 
     // Then
     assertNotNull(result);
-    assertTrue(result.isEmpty());
+    List<CsvPaymentsInputFile> resultList = result.collect(Collectors.toList());
+    assertTrue(resultList.isEmpty());
   }
 
   @Test
@@ -143,29 +142,5 @@ public class ProcessFolderServiceTest {
             IllegalArgumentException.class,
             () -> processFolderService.process(falseFolder.getPath()));
     assertTrue(exception.getMessage().contains("CSV path is not a valid directory"));
-  }
-
-  @Test
-  @SneakyThrows
-  void testProcessWithInvalidOutputFile(@TempDir Path tempDir) {
-    // Given
-    String csvFolderPath = "normal-temp-dir";
-
-    // Create a file instead of directory
-    File readOnlyFile = new File(tempDir.toFile(), "read-only-file.csv");
-    assert readOnlyFile.createNewFile();
-    File readOnlyOutputFile = new File(tempDir.toFile(), "read-only-file.csv.out");
-    assert readOnlyOutputFile.createNewFile();
-    assert readOnlyOutputFile.setWritable(false);
-
-    URL mockUrl = tempDir.toFile().toURI().toURL();
-    when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
-
-    // When & Then
-    RuntimeException exception =
-        assertThrows(RuntimeException.class, () -> processFolderService.process(csvFolderPath));
-    assertEquals(
-        exception.getMessage(),
-        "Failed to setup output file for %s".formatted(readOnlyFile.getAbsolutePath()));
   }
 }

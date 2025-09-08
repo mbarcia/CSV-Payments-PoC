@@ -17,7 +17,6 @@
 package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
-import io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
 import io.github.mbarcia.pipeline.service.GenericPipelineService;
@@ -29,7 +28,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.URISyntaxException;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -40,7 +38,7 @@ public class OrchestratorService {
 
   @Inject HybridResourceLoader resourceLoader;
 
-  @Inject ProcessFolderService processFolderService;
+  @Inject ProcessFolderStep processFolderStep;
   
   @Inject ProcessInputFileStep processInputFileStep;
   
@@ -56,8 +54,6 @@ public class OrchestratorService {
   @Inject ProcessPipelineConfig config;
   
   public Uni<Void> process(String csvFolderPath) throws URISyntaxException {
-    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> inputOutputFiles = processFolderService.process(csvFolderPath);
-    
     // Create a single pipeline for processing payment records
     List<PipelineStep<?, ?>> paymentProcessingSteps = List.of(
         persistAndSendPaymentStep,
@@ -72,31 +68,34 @@ public class OrchestratorService {
             paymentProcessingSteps
         );
     
-    List<Uni<CsvPaymentsOutputFile>> processingUnis =
-        inputOutputFiles.keySet().stream()
-            .map(inputFile -> {
+    // First, process the folder to get a stream of input files
+    Uni<Multi<CsvPaymentsInputFile>> inputFilesUni = processFolderStep.execute(csvFolderPath);
+    
+    // Then, for each input file, process it through the payment pipeline
+    return inputFilesUni
+        .onItem()
+        .transformToMulti(files -> files)
+        .onItem()
+        .transformToUniAndMerge(inputFile -> {
+          
+          // First, process the input file to get a stream of PaymentRecord objects
+          Uni<Multi<InputCsvFileProcessingSvc.PaymentRecord>> paymentRecordsUni =
+              processInputFileStep.execute(inputFile);
 
-                // First, process the input file to get a stream of PaymentRecord objects
-                Uni<Multi<InputCsvFileProcessingSvc.PaymentRecord>> paymentRecordsUni =
-                    processInputFileStep.execute(inputFile);
+          // Then, for each PaymentRecord, process it through the payment pipeline
+          Multi<PaymentStatusSvc.PaymentOutput> paymentOutputsMulti =
+              paymentRecordsUni
+                  .onItem()
+                  .transformToMulti(records -> records)
+                  .onItem()
+                  .transformToUniAndMerge(paymentPipeline::process);
 
-                // Then, for each PaymentRecord, process it through the payment pipeline
-                Multi<PaymentStatusSvc.PaymentOutput> paymentOutputsMulti =
-                    paymentRecordsUni
-                        .onItem()
-                        .transformToMulti(records -> records)
-                        .onItem()
-                        .transformToUniAndMerge(paymentPipeline::process);
-
-                // Finally, process the output file with all the payment outputs
-                return processOutputFileStep.execute(paymentOutputsMulti);
-            })
-            .toList();
-
-    if (!processingUnis.isEmpty()) {
-      return Uni.combine().all().unis(processingUnis).discardItems();
-    } else {
-      return Uni.createFrom().voidItem();
-    }
+          // Finally, process the output file with all the payment outputs
+          return processOutputFileStep.execute(paymentOutputsMulti);
+        })
+        .collect()
+        .asList()
+        .onItem()
+        .transformToUni(list -> Uni.createFrom().voidItem());
   }
 }

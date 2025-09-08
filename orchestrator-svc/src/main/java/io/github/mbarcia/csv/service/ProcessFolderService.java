@@ -17,17 +17,14 @@
 package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
-import io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.File;
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.MessageFormat;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +35,7 @@ public class ProcessFolderService {
 
   @Inject HybridResourceLoader resourceLoader;
 
-  public Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> process(String csvFolderPath)
+  public Stream<CsvPaymentsInputFile> process(String csvFolderPath)
       throws URISyntaxException {
     LOG.info("Reading CSV folder from path: {}", csvFolderPath);
 
@@ -59,21 +56,10 @@ public class ProcessFolderService {
     if (csvFiles == null || csvFiles.length == 0) {
       LOG.warn("No CSV files found in {}", csvFolderPath);
       resourceLoader.diagnoseResourceAccess(csvFolderPath);
-      return Collections.emptyMap();
+      return Stream.empty();
     }
 
-    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> result = new HashMap<>();
-    for (File file : csvFiles) {
-      CsvPaymentsInputFile inputFile = new CsvPaymentsInputFile(file);
-      try {
-        CsvPaymentsOutputFile outputFile = new CsvPaymentsOutputFile(inputFile.getFilepath());
-        result.put(inputFile, outputFile);
-      } catch (IOException e) {
-        LOG.warn("Failed to setup output file for: {}", file.getAbsolutePath(), e);
-        throw new RuntimeException(MessageFormat.format("Failed to setup output file for {0}", file.getAbsolutePath()), e);
-      }
-    }
-
-    return result;
+    return Stream.of(csvFiles)
+        .map(CsvPaymentsInputFile::new);
   }
 }

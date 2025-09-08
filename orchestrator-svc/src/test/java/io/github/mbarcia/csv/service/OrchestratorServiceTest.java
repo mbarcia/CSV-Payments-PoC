@@ -30,9 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -46,7 +44,7 @@ class OrchestratorServiceTest {
 
   @InjectMocks private OrchestratorService orchestratorService;
 
-  @Mock private ProcessFolderService processFolderService;
+  @Mock private ProcessFolderStep processFolderStep;
 
   @Mock private ProcessInputFileStep processInputFileStep;
 
@@ -77,11 +75,11 @@ class OrchestratorServiceTest {
     CsvPaymentsOutputFile outputFile1 = new CsvPaymentsOutputFile(inputFile1.getFilepath());
     CsvPaymentsOutputFile outputFile2 = new CsvPaymentsOutputFile(inputFile2.getFilepath());
 
-    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> inputFilesMap = new HashMap<>();
-    inputFilesMap.put(inputFile1, outputFile1);
-    inputFilesMap.put(inputFile2, outputFile2);
+    Stream<CsvPaymentsInputFile> inputFileStream = Stream.of(inputFile1, inputFile2);
+    Multi<CsvPaymentsInputFile> inputFileMulti = Multi.createFrom().items(inputFileStream);
+    Uni<Multi<CsvPaymentsInputFile>> inputFileUni = Uni.createFrom().item(inputFileMulti);
 
-    when(processFolderService.process(folderPath)).thenReturn(inputFilesMap);
+    when(processFolderStep.execute(folderPath)).thenReturn(inputFileUni);
 
     // Create mock Multi streams for payment records
     Multi<InputCsvFileProcessingSvc.PaymentRecord> emptyPaymentRecordsMulti =
@@ -106,7 +104,7 @@ class OrchestratorServiceTest {
     subscriber.awaitItem().assertCompleted();
 
     // Verify interactions
-    verify(processFolderService).process(folderPath);
+    verify(processFolderStep).execute(folderPath);
     verify(processInputFileStep, times(2)).execute(any());
     verify(processOutputFileStep, times(2)).execute(any());
   }
@@ -115,7 +113,11 @@ class OrchestratorServiceTest {
   void testProcess_EmptyFolder() throws URISyntaxException, IOException {
     // Given
     String folderPath = tempDir.toString();
-    when(processFolderService.process(folderPath)).thenReturn(Collections.emptyMap());
+    Stream<CsvPaymentsInputFile> emptyInputStream = Stream.empty();
+    Multi<CsvPaymentsInputFile> emptyInputMulti = Multi.createFrom().items(emptyInputStream);
+    Uni<Multi<CsvPaymentsInputFile>> emptyInputUni = Uni.createFrom().item(emptyInputMulti);
+
+    when(processFolderStep.execute(folderPath)).thenReturn(emptyInputUni);
 
     // When
     Uni<Void> resultUni = orchestratorService.process(folderPath);
@@ -126,18 +128,25 @@ class OrchestratorServiceTest {
     subscriber.awaitItem().assertCompleted();
 
     // Verify interactions
-    verify(processFolderService).process(folderPath);
+    verify(processFolderStep).execute(folderPath);
   }
 
   @Test
-  void testProcess_FolderServiceThrowsException() throws URISyntaxException {
+  void testProcess_FolderServiceThrowsException() throws URISyntaxException, IOException {
     // Given
     String folderPath = "error-folder";
-    when(processFolderService.process(folderPath))
-        .thenThrow(new URISyntaxException("input", "reason"));
+    when(processFolderStep.execute(folderPath))
+        .thenReturn(Uni.createFrom().failure(new RuntimeException("Processing failed")));
 
-    // When & Then
-    assertThrows(URISyntaxException.class, () -> orchestratorService.process(folderPath));
-    verify(processFolderService).process(folderPath);
+    // When
+    Uni<Void> resultUni = orchestratorService.process(folderPath);
+    UniAssertSubscriber<Void> subscriber =
+        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+
+    // Then
+    subscriber.awaitFailure().assertFailedWith(RuntimeException.class);
+
+    // Verify interactions
+    verify(processFolderStep).execute(folderPath);
   }
 }

@@ -14,10 +14,14 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.common.service;
+package io.github.mbarcia.pipeline.service;
 
-import io.smallrye.mutiny.Multi;
+/**
+ * Configuration for step execution that defines how a step should be executed.
+ * This includes whether to use virtual threads, retry logic, etc.
+ */
+public record StepExecutionConfig(boolean enableRetry) {
 
-public interface ReactiveStreamingService<T, S> {
-  Multi<S> process(T processableObj);
+    public static final StepExecutionConfig DEFAULT = new StepExecutionConfig(true);
+
 }

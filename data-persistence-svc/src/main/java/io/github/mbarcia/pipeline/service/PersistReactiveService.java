@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.pipeline.service;
 
-import io.github.mbarcia.csv.common.service.ReactiveService;
 import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;

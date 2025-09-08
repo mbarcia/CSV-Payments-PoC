@@ -20,6 +20,7 @@ import io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile;
 import io.github.mbarcia.csv.common.mapper.CsvPaymentsOutputFileMapper;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
+import io.github.mbarcia.pipeline.service.MultiToUniStep;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;

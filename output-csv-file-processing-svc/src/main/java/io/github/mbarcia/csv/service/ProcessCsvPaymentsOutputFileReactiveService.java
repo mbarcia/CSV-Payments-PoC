@@ -17,7 +17,7 @@
 package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.*;
-import io.github.mbarcia.csv.common.service.ReactiveStreamingClientService;
+import io.github.mbarcia.pipeline.service.ReactiveStreamingClientService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;

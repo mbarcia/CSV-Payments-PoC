@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.common.service;
+package io.github.mbarcia.pipeline.service;
 
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 @FunctionalInterface
-public interface ReactiveStreamingClientService<T, S> {
-  Uni<S> process(Multi<T> processableObj);
+public interface ReactiveService<T, S> {
+  Uni<S> process(T processableObj);
 }

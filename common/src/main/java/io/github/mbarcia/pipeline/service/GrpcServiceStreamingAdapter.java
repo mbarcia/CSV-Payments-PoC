@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.common.service;
+package io.github.mbarcia.pipeline.service;
 
-import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.Multi;
 
-public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
-  protected abstract ReactiveService<DomainIn, DomainOut> getService();
+  protected abstract ReactiveStreamingService<DomainIn, DomainOut> getService();
 
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
   protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
-  public Uni<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
+  public Multi<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
 
     return getService()
-        .process(fromGrpc(grpcRequest))
+        .process(fromGrpc(grpcRequest)) // Multi<DomainOut>
         .onItem()
-        .transform(this::toGrpc)
+        .transform(this::toGrpc) // Multi<GrpcOut>
         .onFailure()
         .transform(new throwStatusRuntimeExceptionFunction());
   }

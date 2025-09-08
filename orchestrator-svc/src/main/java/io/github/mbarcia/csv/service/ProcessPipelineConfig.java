@@ -16,6 +16,7 @@
 
 package io.github.mbarcia.csv.service;
 
+import io.github.mbarcia.pipeline.service.ProcessPipelineInitialConfig;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;

@@ -18,9 +18,9 @@ package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.PaymentOutput;
 import io.github.mbarcia.csv.common.mapper.PaymentOutputMapper;
-import io.github.mbarcia.csv.common.service.GrpcReactiveServiceAdapter;
 import io.github.mbarcia.csv.grpc.MutinyPersistPaymentOutputServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
+import io.github.mbarcia.pipeline.service.GrpcReactiveServiceAdapter;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;

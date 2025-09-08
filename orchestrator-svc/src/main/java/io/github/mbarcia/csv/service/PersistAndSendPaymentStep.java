@@ -20,6 +20,7 @@ import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyPersistPaymentRecordServiceGrpc;
 import io.github.mbarcia.csv.grpc.MutinySendPaymentRecordServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
+import io.github.mbarcia.pipeline.service.UniToUniStep;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;

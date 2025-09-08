@@ -19,7 +19,7 @@ package io.github.mbarcia.csv.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.mbarcia.csv.common.domain.AckPaymentSent;
 import io.github.mbarcia.csv.common.domain.PaymentStatus;
-import io.github.mbarcia.csv.common.service.ReactiveService;
+import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

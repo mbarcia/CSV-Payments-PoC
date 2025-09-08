@@ -18,9 +18,9 @@ package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
 import io.github.mbarcia.csv.common.mapper.PaymentRecordMapper;
-import io.github.mbarcia.csv.common.service.GrpcReactiveServiceAdapter;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyPersistPaymentRecordServiceGrpc;
+import io.github.mbarcia.pipeline.service.GrpcReactiveServiceAdapter;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;

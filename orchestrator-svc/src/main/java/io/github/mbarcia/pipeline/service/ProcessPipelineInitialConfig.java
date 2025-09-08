@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.pipeline.service;
 
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-/**
- * Step supplier that takes a single input and produces a single output.
- * This is the most common pattern for processing steps.
- * 
- * @param <IN> Input type
- * @param <OUT> Output type
- */
-public interface UniToUniStep<IN, OUT> extends PipelineStep<IN, OUT> {
-    // Inherits execute method from PipelineStep
+@ConfigMapping(prefix = "csv-poc.process-pipeline")
+public interface ProcessPipelineInitialConfig {
+    @WithDefault("1000")
+    Integer concurrencyLimitRecords();
+
+    @WithDefault("3")
+    Integer maxRetries();
+
+    @WithDefault("1000") // milliseconds
+    Long initialRetryDelay();
 }

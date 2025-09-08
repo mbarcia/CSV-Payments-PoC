@@ -19,7 +19,7 @@ package io.github.mbarcia.csv.service;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInput;
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
-import io.github.mbarcia.csv.common.service.ReactiveStreamingService;
+import io.github.mbarcia.pipeline.service.ReactiveStreamingService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import jakarta.enterprise.context.ApplicationScoped;

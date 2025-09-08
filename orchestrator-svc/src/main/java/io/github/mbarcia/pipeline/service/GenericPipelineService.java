@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.pipeline.service;
 
+import io.github.mbarcia.csv.service.ProcessPipelineConfig;
 import io.smallrye.mutiny.Uni;
 import java.text.MessageFormat;
 import java.util.List;

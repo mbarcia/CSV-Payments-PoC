@@ -19,7 +19,7 @@ package io.github.mbarcia.csv.service;
 import io.github.mbarcia.csv.common.domain.*;
 import io.github.mbarcia.csv.common.dto.PaymentOutputDto;
 import io.github.mbarcia.csv.common.mapper.PaymentOutputMapper;
-import io.github.mbarcia.csv.common.service.ReactiveService;
+import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

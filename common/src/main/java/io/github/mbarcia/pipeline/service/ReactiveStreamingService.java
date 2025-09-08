@@ -14,17 +14,10 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.pipeline.service;
 
 import io.smallrye.mutiny.Multi;
 
-/**
- * Step supplier that takes a stream of inputs and produces a single output.
- * This is useful for processing steps that aggregate multiple inputs into one output.
- * 
- * @param <IN> Input type for the stream
- * @param <OUT> Output type
- */
-public interface MultiToUniStep<IN, OUT> extends PipelineStep<Multi<IN>, OUT> {
-    // Inherits execute method from PipelineStep
+public interface ReactiveStreamingService<T, S> {
+  Multi<S> process(T processableObj);
 }

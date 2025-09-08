@@ -14,25 +14,16 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.pipeline.service;
 
-import io.smallrye.mutiny.Uni;
 
 /**
- * Generic pipeline that processes data through a series of steps.
- * This interface defines the contract for all pipeline implementations.
+ * Step supplier that takes a single input and produces a single output.
+ * This is the most common pattern for processing steps.
  * 
- * @param <IN> Input type for the entire pipeline
- * @param <OUT> Output type for the entire pipeline
+ * @param <IN> Input type
+ * @param <OUT> Output type
  */
-public interface Pipeline<IN, OUT> {
-    
-    /**
-     * Process the input through the pipeline.
-     * 
-     * @param input The input to process
-     * @return Uni with the final output
-     */
-    Uni<OUT> process(IN input);
-
+public interface UniToUniStep<IN, OUT> extends PipelineStep<IN, OUT> {
+    // Inherits execute method from PipelineStep
 }

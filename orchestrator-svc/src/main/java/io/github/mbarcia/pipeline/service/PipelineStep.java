@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.pipeline.service;
 
 import io.smallrye.mutiny.Uni;
 

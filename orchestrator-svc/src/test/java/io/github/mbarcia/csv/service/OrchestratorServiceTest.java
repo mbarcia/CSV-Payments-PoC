@@ -22,6 +22,7 @@ import static org.mockito.Mockito.*;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
+import io.github.mbarcia.pipeline.service.ProcessAckPaymentStep;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;

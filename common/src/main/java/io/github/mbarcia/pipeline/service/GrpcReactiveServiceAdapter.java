@@ -14,19 +14,25 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.pipeline.service;
 
-import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
+import io.smallrye.mutiny.Uni;
 
-@ConfigMapping(prefix = "csv-poc.process-pipeline")
-public interface ProcessPipelineInitialConfig {
-    @WithDefault("1000")
-    Integer concurrencyLimitRecords();
+public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
-    @WithDefault("3")
-    Integer maxRetries();
+  protected abstract ReactiveService<DomainIn, DomainOut> getService();
 
-    @WithDefault("1000") // milliseconds
-    Long initialRetryDelay();
+  protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
+
+  protected abstract GrpcOut toGrpc(DomainOut domainOut);
+
+  public Uni<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
+
+    return getService()
+        .process(fromGrpc(grpcRequest))
+        .onItem()
+        .transform(this::toGrpc)
+        .onFailure()
+        .transform(new throwStatusRuntimeExceptionFunction());
+  }
 }

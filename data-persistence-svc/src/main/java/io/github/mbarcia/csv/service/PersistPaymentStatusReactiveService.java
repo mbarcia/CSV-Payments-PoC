@@ -18,6 +18,7 @@ package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.PaymentStatus;
 import io.github.mbarcia.csv.repository.PaymentStatusRepository;
+import io.github.mbarcia.pipeline.service.PersistReactiveService;
 import io.quarkus.hibernate.reactive.panache.PanacheRepository;
 import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.smallrye.mutiny.Uni;

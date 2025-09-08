@@ -20,6 +20,9 @@ import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
+import io.github.mbarcia.pipeline.service.GenericPipelineService;
+import io.github.mbarcia.pipeline.service.PipelineStep;
+import io.github.mbarcia.pipeline.service.ProcessAckPaymentStep;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -45,7 +48,8 @@ public class OrchestratorService {
   
   @Inject PersistAndSendPaymentStep persistAndSendPaymentStep;
   
-  @Inject ProcessAckPaymentStep processAckPaymentStep;
+  @Inject
+  ProcessAckPaymentStep processAckPaymentStep;
   
   @Inject ProcessPaymentStatusStep processPaymentStatusStep;
   
@@ -61,7 +65,7 @@ public class OrchestratorService {
         processPaymentStatusStep
     );
     
-    GenericPipelineService<InputCsvFileProcessingSvc.PaymentRecord, PaymentStatusSvc.PaymentOutput> paymentPipeline = 
+    GenericPipelineService<InputCsvFileProcessingSvc.PaymentRecord, PaymentStatusSvc.PaymentOutput> paymentPipeline =
         new GenericPipelineService<>(
             VIRTUAL_EXECUTOR,
             config,

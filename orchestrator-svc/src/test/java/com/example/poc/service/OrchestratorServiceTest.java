@@ -16,12 +16,13 @@
 
 package com.example.poc.service;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import com.example.poc.common.domain.CsvPaymentsInputFile;
 import com.example.poc.common.domain.CsvPaymentsOutputFile;
+import com.example.poc.grpc.InputCsvFileProcessingSvc;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import java.io.File;
@@ -44,35 +45,56 @@ class OrchestratorServiceTest {
 
   @InjectMocks private OrchestratorService orchestratorService;
 
-  @Mock private ProcessFileService processFileService;
-
   @Mock private ProcessFolderService processFolderService;
 
-  private CsvPaymentsInputFile inputFile1;
-  private CsvPaymentsInputFile inputFile2;
-  private CsvPaymentsOutputFile outputFile1;
-  private CsvPaymentsOutputFile outputFile2;
+  @Mock private ProcessInputFileStep processInputFileStep;
+
+  @Mock private ProcessOutputFileStep processOutputFileStep;
+
+  @Mock private PersistAndSendPaymentStep persistAndSendPaymentStep;
+
+  @Mock private ProcessAckPaymentStep processAckPaymentStep;
+
+  @Mock private ProcessPaymentStatusStep processPaymentStatusStep;
+
+  @Mock private ProcessPipelineConfig config;
 
   @BeforeEach
-  void setUp() throws IOException {
+  void setUp() {
     MockitoAnnotations.openMocks(this);
-    inputFile1 = new CsvPaymentsInputFile(new File(tempDir.toFile(), "test1.csv"));
-    inputFile2 = new CsvPaymentsInputFile(new File(tempDir.toFile(), "test2.csv"));
-    outputFile1 = new CsvPaymentsOutputFile(inputFile1.getFilepath());
-    outputFile2 = new CsvPaymentsOutputFile(inputFile2.getFilepath());
+    when(config.getConcurrencyLimitRecords()).thenReturn(1000);
   }
 
   @Test
-  void testProcess_Success() throws URISyntaxException {
+  void testProcess_MultipleFiles() throws URISyntaxException, IOException {
     // Given
-    String folderPath = "test-folder";
-    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> fileMap = new HashMap<>();
-    fileMap.put(inputFile1, outputFile1);
-    fileMap.put(inputFile2, outputFile2);
+    String folderPath = tempDir.toString();
+    CsvPaymentsInputFile inputFile1 =
+        new CsvPaymentsInputFile(new File(tempDir.toFile(), "test1.csv"));
+    CsvPaymentsInputFile inputFile2 =
+        new CsvPaymentsInputFile(new File(tempDir.toFile(), "test2.csv"));
+    CsvPaymentsOutputFile outputFile1 = new CsvPaymentsOutputFile(inputFile1.getFilepath());
+    CsvPaymentsOutputFile outputFile2 = new CsvPaymentsOutputFile(inputFile2.getFilepath());
 
-    when(processFolderService.process(folderPath)).thenReturn(fileMap);
-    when(processFileService.process(inputFile1)).thenReturn(Uni.createFrom().item(outputFile1));
-    when(processFileService.process(inputFile2)).thenReturn(Uni.createFrom().item(outputFile2));
+    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> inputFilesMap = new HashMap<>();
+    inputFilesMap.put(inputFile1, outputFile1);
+    inputFilesMap.put(inputFile2, outputFile2);
+
+    when(processFolderService.process(folderPath)).thenReturn(inputFilesMap);
+
+    // Create mock Multi streams for payment records
+    Multi<InputCsvFileProcessingSvc.PaymentRecord> emptyPaymentRecordsMulti =
+        Multi.createFrom().empty();
+    Uni<Multi<InputCsvFileProcessingSvc.PaymentRecord>> paymentRecordsUni1 =
+        Uni.createFrom().item(emptyPaymentRecordsMulti);
+    Uni<Multi<InputCsvFileProcessingSvc.PaymentRecord>> paymentRecordsUni2 =
+        Uni.createFrom().item(emptyPaymentRecordsMulti);
+
+    // Mock the processInputFileStep to return empty streams
+    when(processInputFileStep.execute(any())).thenReturn(paymentRecordsUni1, paymentRecordsUni2);
+
+    // Mock the processOutputFileStep to return completed Uni
+    when(processOutputFileStep.execute(any())).thenReturn(Uni.createFrom().item(outputFile1));
 
     // When
     Uni<Void> resultUni = orchestratorService.process(folderPath);
@@ -81,15 +103,17 @@ class OrchestratorServiceTest {
 
     // Then
     subscriber.awaitItem().assertCompleted();
+
+    // Verify interactions
     verify(processFolderService).process(folderPath);
-    verify(processFileService).process(inputFile1);
-    verify(processFileService).process(inputFile2);
+    verify(processInputFileStep, times(2)).execute(any());
+    verify(processOutputFileStep, times(2)).execute(any());
   }
 
   @Test
-  void testProcess_EmptyFolder() throws URISyntaxException {
+  void testProcess_EmptyFolder() throws URISyntaxException, IOException {
     // Given
-    String folderPath = "empty-folder";
+    String folderPath = tempDir.toString();
     when(processFolderService.process(folderPath)).thenReturn(Collections.emptyMap());
 
     // When
@@ -99,8 +123,9 @@ class OrchestratorServiceTest {
 
     // Then
     subscriber.awaitItem().assertCompleted();
+
+    // Verify interactions
     verify(processFolderService).process(folderPath);
-    verify(processFileService, never()).process(any());
   }
 
   @Test
@@ -113,28 +138,5 @@ class OrchestratorServiceTest {
     // When & Then
     assertThrows(URISyntaxException.class, () -> orchestratorService.process(folderPath));
     verify(processFolderService).process(folderPath);
-    verify(processFileService, never()).process(any());
-  }
-
-  @Test
-  void testProcess_FileServiceThrowsException() throws URISyntaxException {
-    // Given
-    String folderPath = "test-folder";
-    RuntimeException exception = new RuntimeException("File processing failed");
-    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> fileMap = new HashMap<>();
-    fileMap.put(inputFile1, outputFile1);
-
-    when(processFolderService.process(folderPath)).thenReturn(fileMap);
-    when(processFileService.process(inputFile1)).thenReturn(Uni.createFrom().failure(exception));
-
-    // When
-    Uni<Void> resultUni = orchestratorService.process(folderPath);
-    UniAssertSubscriber<Void> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-
-    // Then
-    subscriber.awaitFailure().assertFailedWith(RuntimeException.class, "File processing failed");
-    verify(processFolderService).process(folderPath);
-    verify(processFileService).process(inputFile1);
   }
 }

@@ -16,17 +16,23 @@
 
 package com.example.poc.service;
 
-import io.smallrye.config.ConfigMapping;
-import io.smallrye.config.WithDefault;
+import io.smallrye.mutiny.Uni;
 
-@ConfigMapping(prefix = "csv-poc.process-file")
-public interface ProcessFileServiceInitialConfig {
-    @WithDefault("1000")
-    Integer concurrencyLimitRecords();
+/**
+ * Generic pipeline that processes data through a series of steps.
+ * This interface defines the contract for all pipeline implementations.
+ * 
+ * @param <IN> Input type for the entire pipeline
+ * @param <OUT> Output type for the entire pipeline
+ */
+public interface Pipeline<IN, OUT> {
+    
+    /**
+     * Process the input through the pipeline.
+     * 
+     * @param input The input to process
+     * @return Uni with the final output
+     */
+    Uni<OUT> process(IN input);
 
-    @WithDefault("3")
-    Integer maxRetries();
-
-    @WithDefault("1000") // milliseconds
-    Long initialRetryDelay();
 }

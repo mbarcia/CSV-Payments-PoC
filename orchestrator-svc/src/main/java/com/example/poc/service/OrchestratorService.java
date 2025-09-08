@@ -16,12 +16,17 @@
 
 package com.example.poc.service;
 
+import com.example.poc.common.domain.CsvPaymentsInputFile;
 import com.example.poc.common.domain.CsvPaymentsOutputFile;
+import com.example.poc.grpc.InputCsvFileProcessingSvc;
+import com.example.poc.grpc.PaymentStatusSvc;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -32,19 +37,56 @@ public class OrchestratorService {
 
   @Inject HybridResourceLoader resourceLoader;
 
-  @Inject ProcessFileService processFileService;
-  
   @Inject ProcessFolderService processFolderService;
   
+  @Inject ProcessInputFileStep processInputFileStep;
+  
+  @Inject ProcessOutputFileStep processOutputFileStep;
+  
+  @Inject PersistAndSendPaymentStep persistAndSendPaymentStep;
+  
+  @Inject ProcessAckPaymentStep processAckPaymentStep;
+  
+  @Inject ProcessPaymentStatusStep processPaymentStatusStep;
+  
+  @Inject ProcessPipelineConfig config;
+  
   public Uni<Void> process(String csvFolderPath) throws URISyntaxException {
+    Map<CsvPaymentsInputFile, CsvPaymentsOutputFile> inputOutputFiles = processFolderService.process(csvFolderPath);
+    
+    // Create a single pipeline for processing payment records
+    List<PipelineStep<?, ?>> paymentProcessingSteps = List.of(
+        persistAndSendPaymentStep,
+        processAckPaymentStep,
+        processPaymentStatusStep
+    );
+    
+    GenericPipelineService<InputCsvFileProcessingSvc.PaymentRecord, PaymentStatusSvc.PaymentOutput> paymentPipeline = 
+        new GenericPipelineService<>(
+            VIRTUAL_EXECUTOR,
+            config,
+            paymentProcessingSteps
+        );
+    
     List<Uni<CsvPaymentsOutputFile>> processingUnis =
-        processFolderService.process(csvFolderPath).keySet().stream()
-            .map(
-                inputFile ->
-                    Uni.createFrom()
-                        .item(inputFile)
-                        .runSubscriptionOn(VIRTUAL_EXECUTOR) // Shift execution to virtual thread
-                        .flatMap(processFileService::process))
+        inputOutputFiles.keySet().stream()
+            .map(inputFile -> {
+
+                // First, process the input file to get a stream of PaymentRecord objects
+                Uni<Multi<InputCsvFileProcessingSvc.PaymentRecord>> paymentRecordsUni =
+                    processInputFileStep.execute(inputFile);
+
+                // Then, for each PaymentRecord, process it through the payment pipeline
+                Multi<PaymentStatusSvc.PaymentOutput> paymentOutputsMulti =
+                    paymentRecordsUni
+                        .onItem()
+                        .transformToMulti(records -> records)
+                        .onItem()
+                        .transformToUniAndMerge(paymentPipeline::process);
+
+                // Finally, process the output file with all the payment outputs
+                return processOutputFileStep.execute(paymentOutputsMulti);
+            })
             .toList();
 
     if (!processingUnis.isEmpty()) {

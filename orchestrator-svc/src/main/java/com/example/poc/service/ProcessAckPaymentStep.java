@@ -16,23 +16,25 @@
 
 package com.example.poc.service;
 
+import com.example.poc.grpc.MutinyProcessAckPaymentSentServiceGrpc;
+import com.example.poc.grpc.PaymentsProcessingSvc;
+import io.quarkus.grpc.GrpcClient;
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import lombok.Getter;
-import lombok.Setter;
 
+/**
+ * Step supplier that processes an acknowledgment payment sent.
+ */
 @ApplicationScoped
-@Getter
-@Setter
-public class ProcessFileServiceConfig {
-    private volatile Long initialRetryDelay;
-    private volatile Integer concurrencyLimitRecords;
-    private volatile Integer maxRetries;
+public class ProcessAckPaymentStep implements UniToUniStep<PaymentsProcessingSvc.AckPaymentSent, PaymentsProcessingSvc.PaymentStatus> {
 
     @Inject
-    public ProcessFileServiceConfig(ProcessFileServiceInitialConfig initialConfig) {
-        this.concurrencyLimitRecords = initialConfig.concurrencyLimitRecords();
-        this.maxRetries = initialConfig.maxRetries();
-        this.initialRetryDelay = initialConfig.initialRetryDelay();
+    @GrpcClient("process-ack-payment-sent")
+    MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub processAckPaymentSentService;
+
+    @Override
+    public Uni<PaymentsProcessingSvc.PaymentStatus> execute(PaymentsProcessingSvc.AckPaymentSent ack) {
+        return processAckPaymentSentService.remoteProcess(ack);
     }
 }

@@ -16,23 +16,13 @@
 
 package io.github.mbarcia.pipeline.service;
 
-import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.Multi;
 
-/**
- * Generic pipeline that processes data through a series of steps.
- * This interface defines the contract for all pipeline implementations.
- * 
- * @param <IN> Input type for the entire pipeline
- * @param <OUT> Output type for the entire pipeline
- */
-public interface Pipeline<IN, OUT> {
-    
-    /**
-     * Process the input through the pipeline.
-     * 
-     * @param input The input to process
-     * @return Uni with the final output
-     */
-    Uni<OUT> process(IN input);
+public interface StepManyToMany extends StepBase {
+    Multi<Object> applyStreaming(Multi<Object> upstream);
 
+    default Multi<?> deadLetterMulti(Multi<Object> upstream, Throwable err) {
+        System.err.print("DLQ drop");
+        return Multi.createFrom().empty();
+    }
 }

@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.pipeline.service;
 
-public interface Sync {
-    void await() throws InterruptedException;
-    void signal();
+import io.smallrye.mutiny.Uni;
+
+/** 1 -> side-effect (async), passes original item downstream */
+@SuppressWarnings("unused")
+public interface StepSideEffect<I> extends StepBase {
+    Uni<Void> apply(I in);
 }

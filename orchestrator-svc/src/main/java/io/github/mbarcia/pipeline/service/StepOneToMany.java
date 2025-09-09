@@ -16,14 +16,14 @@
 
 package io.github.mbarcia.pipeline.service;
 
+import io.smallrye.mutiny.Multi;
 
-/**
- * Step supplier that takes a single input and produces a single output.
- * This is the most common pattern for processing steps.
- * 
- * @param <IN> Input type
- * @param <OUT> Output type
- */
-public interface UniToUniStep<IN, OUT> extends PipelineStep<IN, OUT> {
-    // Inherits execute method from PipelineStep
+/** 1 -> N */
+public interface StepOneToMany<I, O> extends StepBase {
+    Multi<O> applyMulti(I in);
+
+    @SuppressWarnings("unused")
+    default int concurrency() { return 1; }                  // max in-flight items per upstream item
+
+    default boolean runWithVirtualThreads() { return false; }
 }

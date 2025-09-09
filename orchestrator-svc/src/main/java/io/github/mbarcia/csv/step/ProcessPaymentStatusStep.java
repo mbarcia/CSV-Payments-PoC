@@ -14,29 +14,43 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.grpc.MutinyProcessPaymentStatusServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
-import io.github.mbarcia.pipeline.service.UniToUniStep;
+import io.github.mbarcia.pipeline.service.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.service.PipelineConfig;
+import io.github.mbarcia.pipeline.service.StepOneToAsync;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.NoArgsConstructor;
 
 /**
  * Step supplier that processes a payment status.
  */
 @ApplicationScoped
-public class ProcessPaymentStatusStep implements UniToUniStep<PaymentsProcessingSvc.PaymentStatus, PaymentStatusSvc.PaymentOutput> {
+@NoArgsConstructor // for CDI proxying
+public class ProcessPaymentStatusStep extends ConfigurableStepBase implements StepOneToAsync<PaymentsProcessingSvc.PaymentStatus, PaymentStatusSvc.PaymentOutput> {
 
     @Inject
     @GrpcClient("process-payment-status")
     MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub processPaymentStatusService;
 
+    @Inject
+    public ProcessPaymentStatusStep(PipelineConfig pipelineConfig) {
+        // Constructor with dependencies
+    }
+
     @Override
-    public Uni<PaymentStatusSvc.PaymentOutput> execute(PaymentsProcessingSvc.PaymentStatus status) {
+    public Uni<PaymentStatusSvc.PaymentOutput> applyAsyncUni(PaymentsProcessingSvc.PaymentStatus status) {
         return processPaymentStatusService.remoteProcess(status);
+    }
+
+    @Override
+    public boolean runWithVirtualThreads() {
+        return true;
     }
 }

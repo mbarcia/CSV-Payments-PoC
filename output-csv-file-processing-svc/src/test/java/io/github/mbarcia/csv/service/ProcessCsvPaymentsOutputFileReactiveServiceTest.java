@@ -166,6 +166,7 @@ class ProcessCsvPaymentsOutputFileReactiveServiceTest {
         resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
     subscriber
         .awaitFailure()
-        .assertFailedWith(RuntimeException.class, "Failed to write output file.");
+        .assertFailedWith(
+            RuntimeException.class, "Failed to write output file after processing 0 records.");
   }
 }

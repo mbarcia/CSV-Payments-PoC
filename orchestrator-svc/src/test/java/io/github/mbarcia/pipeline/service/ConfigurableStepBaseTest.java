@@ -16,15 +16,29 @@
 
 package io.github.mbarcia.pipeline.service;
 
-import io.smallrye.mutiny.Multi;
+import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Step supplier that takes a single input and produces a stream of outputs.
- * This is useful for processing steps that expand one input into multiple outputs.
- * 
- * @param <IN> Input type
- * @param <OUT> Output type for the stream
- */
-public interface UniToMultiStep<IN, OUT> extends PipelineStep<IN, Multi<OUT>> {
-    // Inherits execute method from PipelineStep
+import org.junit.jupiter.api.Test;
+
+class ConfigurableStepBaseTest {
+
+  static class TestStep extends ConfigurableStepBase implements StepOneToOne<String, String> {
+    TestStep() {
+      // No-args constructor
+    }
+
+    @Override
+    public String apply(String input) {
+      return "Processed: " + input;
+    }
+  }
+
+  @Test
+  void testConfigurableStepBaseCreation() {
+    // When
+    TestStep step = new TestStep();
+
+    // Then
+    assertNotNull(step);
+  }
 }

@@ -14,15 +14,11 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv.util;
 
-import jakarta.enterprise.context.ApplicationScoped;
+import java.net.URL;
 
-@ApplicationScoped
-public class SystemExiter {
-
-  public void exit(int status) {
-    // Force immediate shutdown by closing the runtime
-    Runtime.getRuntime().halt(status);
-  }
+// First, create the ResourceLoader interface
+public interface ResourceLoader {
+  URL getResource(String path);
 }

@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
-import io.github.mbarcia.pipeline.service.UniToMultiStep;
+import io.github.mbarcia.pipeline.service.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.service.PipelineConfig;
+import io.github.mbarcia.pipeline.service.StepOneToMany;
 import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +37,8 @@ import org.slf4j.LoggerFactory;
  * This converts a single input file into multiple payment records.
  */
 @ApplicationScoped
-public class ProcessInputFileStep implements UniToMultiStep<CsvPaymentsInputFile, InputCsvFileProcessingSvc.PaymentRecord> {
+@NoArgsConstructor // for CDI proxying
+public class ProcessInputFileStep extends ConfigurableStepBase implements StepOneToMany<CsvPaymentsInputFile, InputCsvFileProcessingSvc.PaymentRecord> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcessInputFileStep.class);
 
@@ -46,8 +49,13 @@ public class ProcessInputFileStep implements UniToMultiStep<CsvPaymentsInputFile
     @Inject
     CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
 
+    @Inject
+    public ProcessInputFileStep(PipelineConfig pipelineConfig) {
+        // Constructor with dependencies
+    }
+
     @Override
-    public Uni<Multi<InputCsvFileProcessingSvc.PaymentRecord>> execute(CsvPaymentsInputFile inputFile) {
+    public Multi<InputCsvFileProcessingSvc.PaymentRecord> applyMulti(CsvPaymentsInputFile inputFile) {
         LOG.debug("Attempting to call processCsvPaymentsInputFileService.remoteProcess");
         Multi<InputCsvFileProcessingSvc.PaymentRecord> inputRecords =
             processCsvPaymentsInputFileService.remoteProcess(
@@ -63,7 +71,8 @@ public class ProcessInputFileStep implements UniToMultiStep<CsvPaymentsInputFile
                     LOG.error("Non-gRPC error when calling processCsvPaymentsInputFileService", e);
                 }
             });
+
         LOG.debug("Successfully called processCsvPaymentsInputFileService.remoteProcess");
-        return Uni.createFrom().item(inputRecords);
+        return inputRecords;
     }
 }

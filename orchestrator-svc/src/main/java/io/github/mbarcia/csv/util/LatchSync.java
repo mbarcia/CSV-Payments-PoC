@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv.util;
 
 import jakarta.enterprise.context.Dependent;
 import java.util.concurrent.CountDownLatch;

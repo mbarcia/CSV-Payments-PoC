@@ -17,13 +17,13 @@
 package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
+import io.github.mbarcia.csv.util.HybridResourceLoader;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.text.MessageFormat;
-import java.util.Collections;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,7 +33,8 @@ public class ProcessFolderService {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessFolderService.class);
 
-  @Inject HybridResourceLoader resourceLoader;
+  @Inject
+  HybridResourceLoader resourceLoader;
 
   public Stream<CsvPaymentsInputFile> process(String csvFolderPath)
       throws URISyntaxException {

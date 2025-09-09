@@ -16,115 +16,12 @@
 
 package io.github.mbarcia.csv.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
-
+import io.github.mbarcia.csv.CsvPaymentsApplication;
 import io.quarkus.runtime.Quarkus;
-import io.smallrye.mutiny.Uni;
-import java.net.URISyntaxException;
-import lombok.SneakyThrows;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
-import picocli.CommandLine;
 
 class CsvPaymentsApplicationTest {
-
-  @InjectMocks CsvPaymentsApplication application;
-
-  @Mock OrchestratorService orchestratorService;
-
-  @Mock SystemExiter exiter;
-
-  @Mock Sync sync;
-
-  @Mock CommandLine.IFactory factory;
-
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-    doNothing().when(exiter).exit(anyInt());
-  }
-
-  @Test
-  void testRun_Success() throws URISyntaxException {
-    // Arrange
-    String csvFolder = "test-folder";
-    application.csvFolder = csvFolder;
-    when(orchestratorService.process(csvFolder)).thenReturn(Uni.createFrom().voidItem());
-
-    // Act
-    application.run();
-
-    // Assert
-    verify(orchestratorService).process(csvFolder);
-    verify(exiter).exit(0);
-  }
-
-  @Test
-  void testRun_ProcessingFailure() throws URISyntaxException {
-    // Arrange
-    String csvFolder = "test-folder";
-    application.csvFolder = csvFolder;
-    when(orchestratorService.process(csvFolder))
-        .thenReturn(Uni.createFrom().failure(new RuntimeException("Processing failed")));
-
-    // Act
-    application.run();
-
-    // Assert
-    verify(orchestratorService).process(csvFolder);
-    verify(exiter).exit(1);
-  }
-
-  @Test
-  @SneakyThrows
-  void testRun_InterruptedException() {
-    // Arrange
-    String csvFolder = "test-folder";
-    application.csvFolder = csvFolder;
-    when(orchestratorService.process(csvFolder)).thenReturn(Uni.createFrom().voidItem());
-    doThrow(new InterruptedException("Simulated interrupt")).when(sync).await();
-
-    // Act
-    application.run();
-
-    // Assert
-    verify(orchestratorService).process(csvFolder);
-    verify(exiter).exit(2);
-  }
-
-  @Test
-  void testRun_InvalidFolder() throws URISyntaxException {
-    // Arrange
-    String csvFolder = "invalid-folder";
-    application.csvFolder = csvFolder;
-    when(orchestratorService.process(csvFolder))
-        .thenThrow(new URISyntaxException(csvFolder, "Invalid folder"));
-
-    // Act
-    application.run();
-
-    // Assert
-    verify(orchestratorService).process(csvFolder);
-    verify(exiter).exit(1);
-  }
-
-  @Test
-  void testRun_Args() throws URISyntaxException {
-    // Arrange
-    String[] args = {"--csv-folder", "test-folder"};
-    when(orchestratorService.process("test-folder")).thenReturn(Uni.createFrom().voidItem());
-
-    // Act
-    int exitCode = application.run(args);
-
-    // Assert
-    assertEquals(0, exitCode);
-    verify(orchestratorService).process("test-folder");
-    verify(exiter).exit(0);
-  }
 
   @Test
   void testMain() {

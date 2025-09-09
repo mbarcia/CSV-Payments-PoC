@@ -249,6 +249,8 @@ services:
   orchestrator-svc:
     build:
       dockerfile: orchestrator-svc/Dockerfile
+    ports:
+      - "8443:8443"
     environment:
       - CSV_FOLDER_PATH=/app/csv
       - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_HOST=input-csv-file-processing-svc
@@ -282,6 +284,12 @@ services:
         condition: service_healthy
     volumes:
       - ./data/csv:/app/csv:rw
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://orchestrator-svc:8443/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
     # Run once and exit
     restart: "no"
     networks:

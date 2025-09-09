@@ -14,26 +14,15 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv.util;
 
-import io.github.mbarcia.pipeline.service.ProcessPipelineInitialConfig;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import lombok.Getter;
-import lombok.Setter;
 
 @ApplicationScoped
-@Getter
-@Setter
-public class ProcessPipelineConfig {
-    private volatile Long initialRetryDelay;
-    private volatile Integer concurrencyLimitRecords;
-    private volatile Integer maxRetries;
+public class SystemExiter {
 
-    @Inject
-    public ProcessPipelineConfig(ProcessPipelineInitialConfig initialConfig) {
-        this.concurrencyLimitRecords = initialConfig.concurrencyLimitRecords();
-        this.maxRetries = initialConfig.maxRetries();
-        this.initialRetryDelay = initialConfig.initialRetryDelay();
-    }
+  public void exit(int status) {
+    // Force immediate shutdown by closing the runtime
+    Runtime.getRuntime().halt(status);
+  }
 }

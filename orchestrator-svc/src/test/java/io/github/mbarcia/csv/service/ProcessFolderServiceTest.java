@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
+import io.github.mbarcia.csv.util.HybridResourceLoader;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;

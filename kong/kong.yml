@@ -211,3 +211,50 @@ services:
             - X-Auth-Token
           credentials: true
           max_age: 3600
+
+  - name: orchestrator-svc
+    url: grpcs://orchestrator-svc:8443
+    protocol: grpcs
+    routes:
+      - name: orchestrator-svc-route
+        protocols:
+          - grpcs
+        paths:
+          - /OrchestratorService/Process
+        strip_path: false
+
+  - name: orchestrator-svc-rest
+    url: https://orchestrator-svc:8443
+    protocol: https
+    routes:
+      - name: orchestrator-svc-rest-route
+        protocols:
+          - https
+        paths:
+          - /api/v1/orchestrator
+        strip_path: false
+    plugins:
+      - name: cors
+        config:
+          origins:
+            - "*"
+          methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - PATCH
+            - OPTIONS
+          headers:
+            - Accept
+            - Accept-Version
+            - Content-Length
+            - Content-MD5
+            - Content-Type
+            - Date
+            - X-Auth-Token
+            - Authorization
+          exposed_headers:
+            - X-Auth-Token
+          credentials: true
+          max_age: 3600

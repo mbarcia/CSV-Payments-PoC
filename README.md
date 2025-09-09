@@ -21,6 +21,15 @@ This application demonstrates modern microservices architecture patterns using g
 
 ## Architecture
 
+### Pipeline Framework
+
+This service is built using the pipeline framework which provides numerous benefits for distributed processing:
+
+- [How to Create a New Pipeline Step](./HOWTO_NEW_STEP.md) - Guide for implementing new steps
+- [Pipeline Benefits](./PIPELINE_BENEFITS.md) - Detailed list of advantages of using the framework
+
+
+
 ```mermaid
 graph TD
     A[Input CSV Files] --> B[Orchestrator Service]
@@ -532,6 +541,24 @@ Each service exposes a `/q/metrics` endpoint that provides Prometheus-formatted 
 - [Payment Status Service](./payment-status-svc/README.md): Processes payment statuses
 - [Output CSV File Processing Service](./output-csv-file-processing-svc/README.md): Generates output CSV files
 - [Common Module](./common/README.md): Shared domain models and utilities
+- [Pipeline Framework](./HOWTO_NEW_STEP.md): How to create new pipeline steps (client-side orchestration)
+- [Pipeline Benefits](./PIPELINE_BENEFITS.md): Detailed benefits of the pipeline framework
+
+## External Interfaces
+
+The Orchestrator Service now exposes both gRPC and REST interfaces for external consumption:
+
+### gRPC Endpoint
+- Service: `OrchestratorService`
+- Method: `Process(ProcessRequest) returns (ProcessResponse)`
+- Port: 8443 (TLS enabled)
+- Request: `ProcessRequest` with `csv_folder_path` field
+- Response: `ProcessResponse` with `success` and `message` fields
+
+### REST Endpoint
+- POST `/orchestrator/process` - Accepts CSV folder path in request body
+- POST `/orchestrator/process-query` - Accepts CSV folder path as query parameter
+- Both endpoints return JSON with `success` and `message` fields
 
 ## Observability
 

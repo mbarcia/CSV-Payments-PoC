@@ -14,16 +14,19 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
-import io.github.mbarcia.pipeline.service.UniToMultiStep;
+import io.github.mbarcia.csv.service.ProcessFolderService;
+import io.github.mbarcia.pipeline.service.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.service.PipelineConfig;
+import io.github.mbarcia.pipeline.service.StepOneToMany;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.URISyntaxException;
 import java.util.stream.Stream;
+import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,24 +35,30 @@ import org.slf4j.LoggerFactory;
  * This converts a single folder path into multiple input files.
  */
 @ApplicationScoped
-public class ProcessFolderStep implements UniToMultiStep<String, CsvPaymentsInputFile> {
+@NoArgsConstructor // for CDI proxying
+public class ProcessFolderStep extends ConfigurableStepBase implements StepOneToMany<String, CsvPaymentsInputFile> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcessFolderStep.class);
 
     @Inject
     ProcessFolderService processFolderService;
 
+    @Inject
+    public ProcessFolderStep(PipelineConfig pipelineConfig) {
+        // Constructor with dependencies
+    }
+
     @Override
-    public Uni<Multi<CsvPaymentsInputFile>> execute(String csvFolderPath) {
+    public Multi<CsvPaymentsInputFile> applyMulti(String csvFolderPath) {
         LOG.debug("Processing folder: {}", csvFolderPath);
         try {
             Stream<CsvPaymentsInputFile> inputFileStream = processFolderService.process(csvFolderPath);
             Multi<CsvPaymentsInputFile> inputFiles = Multi.createFrom().items(inputFileStream);
             LOG.debug("Successfully processed folder: {}", csvFolderPath);
-            return Uni.createFrom().item(inputFiles);
+            return inputFiles;
         } catch (URISyntaxException e) {
             LOG.error("Failed to process folder: {}", csvFolderPath, e);
-            return Uni.createFrom().failure(e);
+            return Multi.createFrom().failure(e);
         }
     }
 }

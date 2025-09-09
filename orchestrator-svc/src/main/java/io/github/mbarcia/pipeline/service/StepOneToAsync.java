@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.pipeline.service;
 
-import java.net.URL;
+import io.smallrye.mutiny.Uni;
 
-// First, create the ResourceLoader interface
-public interface ResourceLoader {
-  URL getResource(String path);
+/** 1 -> 1 (async) */
+public interface StepOneToAsync<I, O> extends StepBase {
+    Uni<O> applyAsyncUni(I in);
 }

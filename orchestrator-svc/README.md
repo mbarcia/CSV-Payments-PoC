@@ -38,6 +38,22 @@ The service processes CSV files containing payment records, coordinating with ot
 ### Entry Point
 The main entry point is `CsvPaymentsApplication.java`, which uses Picocli for command-line argument parsing. It accepts a folder path containing CSV files as input (defaulting to an internal `csv/` directory if not specified).
 
+### External Interfaces
+
+#### gRPC Endpoint
+The service exposes a gRPC endpoint for processing CSV folders:
+- Service: `OrchestratorService`
+- Method: `Process(ProcessRequest) returns (ProcessResponse)`
+- Port: 8443 (TLS enabled)
+- Request: `ProcessRequest` with `csv_folder_path` field
+- Response: `ProcessResponse` with `success` and `message` fields
+
+#### REST Endpoint
+The service also exposes a REST endpoint for processing CSV folders:
+- POST `/orchestrator/process` - Accepts CSV folder path in request body
+- POST `/orchestrator/process-query` - Accepts CSV folder path as query parameter
+- Both endpoints return JSON with `success` and `message` fields
+
 ### Core Processing Flow
 
 ```mermaid
@@ -86,6 +102,17 @@ The service communicates with other services via gRPC, using clients injected wi
 ### Error Handling
 - Implements retry mechanisms with exponential backoff for transient errors (like throttling)
 - Handles errors gracefully with detailed logging
+
+### Configuration System
+
+The orchestrator service uses a flexible configuration system that allows you to configure both pipeline-level and step-level behaviors:
+
+- **Pipeline-level configuration**: Configure defaults and profiles for the entire pipeline
+- **Step-level configuration**: Override settings for individual steps
+- **Profile management**: Switch between different configurations based on environment (dev, prod, etc.)
+- **Hot reload**: Configuration changes are applied dynamically without restarting
+
+For detailed information on how to use the configuration system, see [PIPELINE_CONFIGURATION.md](./PIPELINE_CONFIGURATION.md).
 
 ### Dependencies
 - Uses components from the `common` module for domain objects and mappers

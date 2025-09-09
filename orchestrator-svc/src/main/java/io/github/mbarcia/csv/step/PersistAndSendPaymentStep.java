@@ -14,23 +14,27 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyPersistPaymentRecordServiceGrpc;
 import io.github.mbarcia.csv.grpc.MutinySendPaymentRecordServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
-import io.github.mbarcia.pipeline.service.UniToUniStep;
+import io.github.mbarcia.pipeline.service.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.service.PipelineConfig;
+import io.github.mbarcia.pipeline.service.StepOneToAsync;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.NoArgsConstructor;
 
 /**
  * Step supplier that persists a payment record and sends the payment.
  */
 @ApplicationScoped
-public class PersistAndSendPaymentStep implements UniToUniStep<InputCsvFileProcessingSvc.PaymentRecord, PaymentsProcessingSvc.AckPaymentSent> {
+@NoArgsConstructor // for CDI proxying
+public class PersistAndSendPaymentStep extends ConfigurableStepBase implements StepOneToAsync<InputCsvFileProcessingSvc.PaymentRecord, PaymentsProcessingSvc.AckPaymentSent> {
 
     @Inject
     @GrpcClient("persist-payment-record")
@@ -40,10 +44,22 @@ public class PersistAndSendPaymentStep implements UniToUniStep<InputCsvFileProce
     @GrpcClient("send-payment-record")
     MutinySendPaymentRecordServiceGrpc.MutinySendPaymentRecordServiceStub sendPaymentRecordService;
 
+    @Inject
+    public PersistAndSendPaymentStep(PipelineConfig pipelineConfig) {
+        // Constructor with dependencies
+        // step-specific overrides if needed
+        liveConfig().overrides().recoverOnFailure(true);
+    }
+
     @Override
-    public Uni<PaymentsProcessingSvc.AckPaymentSent> execute(InputCsvFileProcessingSvc.PaymentRecord record) {
-        return Uni.createFrom().item(record)
+    public Uni<PaymentsProcessingSvc.AckPaymentSent> applyAsyncUni(InputCsvFileProcessingSvc.PaymentRecord in) {
+        return Uni.createFrom().item(in)
             .flatMap(persistPaymentRecordService::remoteProcess)
             .flatMap(sendPaymentRecordService::remoteProcess);
+    }
+
+    @Override
+    public boolean runWithVirtualThreads() {
+        return true;
     }
 }

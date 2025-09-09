@@ -14,14 +14,23 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv;
 
+import io.github.mbarcia.csv.step.PersistAndSendPaymentStep;
+import io.github.mbarcia.csv.util.Sync;
+import io.github.mbarcia.csv.util.SystemExiter;
+import io.github.mbarcia.csv.step.*;
+import io.github.mbarcia.pipeline.service.PipelineConfig;
+import io.github.mbarcia.pipeline.service.StepConfig;
+import io.github.mbarcia.pipeline.service.PipelineRunner;
+import io.smallrye.mutiny.Multi;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import jakarta.inject.Inject;
-import java.net.URISyntaxException;
 import java.text.MessageFormat;
+import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.time.StopWatch;
@@ -39,19 +48,44 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
 
   private static final Logger LOG = LoggerFactory.getLogger(CsvPaymentsApplication.class);
 
-  @Inject Sync sync;
+  @Inject PipelineConfig pipelineConfig;
 
-  @Inject OrchestratorService orchestratorService;
+  @Inject
+  Sync sync;
 
+  @Inject
+  ProcessFolderStep processFolderStep;
+  
+  @Inject
+  ProcessInputFileStep processInputFileStep;
+  
+  @Inject
+  ProcessOutputFileStep processOutputFileStep;
+  
+  @Inject
+  PersistAndSendPaymentStep persistAndSendPaymentStep;
+  
+  @Inject
+  ProcessAckPaymentStep processAckPaymentStep;
+  
+  @Inject
+  ProcessPaymentStatusStep processPaymentStatusStep;
+  
   @Inject CommandLine.IFactory factory;
 
-  @Inject SystemExiter exiter;
+  @Inject
+  SystemExiter exiter;
 
   @CommandLine.Option(
       names = {"-c", "--csv-folder"},
       description = "The folder path containing CSV payment files (defaults to csv/ internal path)",
       defaultValue = "${env:CSV_FOLDER_PATH:-csv/}")
   String csvFolder;
+
+  // Traditional main method for standard Java execution
+  public static void main(String[] args) {
+    Quarkus.run(CsvPaymentsApplication.class, args);
+  }
 
   @Override
   public int run(String... args) {
@@ -65,9 +99,23 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
     StopWatch watch = new StopWatch();
     watch.start();
 
-    try {
-      orchestratorService
-          .process(csvFolder)
+    // Configure profiles
+    pipelineConfig.defaults().retryLimit(3).debug(false);
+    pipelineConfig.profile("dev", new StepConfig().retryLimit(1).debug(true));
+    pipelineConfig.profile("prod", new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)));
+
+    try (PipelineRunner runner = new PipelineRunner()) {
+      Multi<?> result = runner.run(
+              Multi.createFrom().items(csvFolder),
+              List.of(processFolderStep,
+                      processInputFileStep,
+                      persistAndSendPaymentStep,
+                      processAckPaymentStep,
+                      processPaymentStatusStep,
+                      processOutputFileStep)
+      );
+
+      result
           .subscribe()
           .with(_ -> {
                 LOG.info("Processing completed.");
@@ -93,7 +141,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
 
       sync.await(); // block main thread here until completion
 
-    } catch (URISyntaxException e) {
+    } catch (Exception e) {
       watch.stop();
       LOG.error(
           "❌ APPLICATION ABORTED due to invalid folder {} after {} seconds",
@@ -101,17 +149,6 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
           watch.getTime(TimeUnit.SECONDS),
           e);
       exiter.exit(1);
-    } catch (InterruptedException e) {
-      LOG.error(
-          "❌ APPLICATION FAILED processing {}",
-          csvFolder,
-          e);
-      exiter.exit(2);
     }
-  }
-
-  // Traditional main method for standard Java execution
-  public static void main(String[] args) {
-    Quarkus.run(CsvPaymentsApplication.class, args);
   }
 }

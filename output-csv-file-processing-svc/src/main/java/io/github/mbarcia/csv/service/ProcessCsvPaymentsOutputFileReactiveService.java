@@ -26,6 +26,7 @@ import jakarta.inject.Named;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -76,24 +77,80 @@ public class ProcessCsvPaymentsOutputFileReactiveService
         .asList()
         .onItem()
         .transformToUni(
-            paymentOutputs ->
-                Uni.createFrom()
-                    .item(
-                        () -> {
-                          try (CsvPaymentsOutputFile file =
-                              this.getCsvPaymentsOutputFile(paymentOutputs.getFirst())) {
-                            // Use iterator-based write method for better streaming characteristics
-                            file.getSbc().write(paymentOutputs.iterator());
-                            MDC.put("serviceId", serviceId);
-                            logger.info("Executed command on stream --> {}", file.getFilepath());
-                            MDC.clear();
+            paymentOutputs -> {
+              // Track the number of records for partial write detection
+              final AtomicInteger recordCount = new AtomicInteger(0);
+              
+              return Uni.createFrom()
+                  .item(
+                      () -> {
+                        try (CsvPaymentsOutputFile file =
+                            this.getCsvPaymentsOutputFile(paymentOutputs.getFirst())) {
+                          // Use iterator-based write method for better streaming characteristics
+                          file.getSbc().write(paymentOutputs.iterator());
+                          recordCount.set(paymentOutputs.size());
+                          MDC.put("serviceId", serviceId);
+                          logger.info("Executed command on stream --> {} with {} records", 
+                              file.getFilepath(), recordCount.get());
+                          MDC.clear();
 
-                            return file;
-                          } catch (Exception e) {
-                            throw new RuntimeException("Failed to write output file.", e);
-                          }
-                        })
-                    .runSubscriptionOn(executor));
+                          return file;
+                        } catch (Exception e) {
+                          // Log the number of records processed before failure
+                          logger.error("Failed to write output file after processing {} records", 
+                              recordCount.get(), e);
+                          throw new RuntimeException("Failed to write output file after processing " + 
+                              recordCount.get() + " records.", e);
+                        }
+                      })
+                  .runSubscriptionOn(executor);
+            });
+  }
+
+  /**
+   * Process a stream of payment outputs with detailed completion information.
+   * <p>
+   * This method provides enhanced completion tracking by returning both the
+   * output file and completion metadata.
+   * 
+   * @param paymentOutputList stream of payment outputs to process
+   * @return Uni containing the generated CSV file information and completion status
+   */
+  public Uni<CsvOutputFileCompletionEvent> processWithCompletion(Multi<PaymentOutput> paymentOutputList) {
+    Logger logger = LoggerFactory.getLogger(getClass());
+    String serviceId = this.getClass().toString();
+
+    return paymentOutputList
+        .collect()
+        .asList()
+        .onItem()
+        .transformToUni(
+            paymentOutputs -> {
+              final AtomicInteger recordCount = new AtomicInteger(0);
+              
+              return Uni.createFrom()
+                  .item(
+                      () -> {
+                        try (CsvPaymentsOutputFile file =
+                            this.getCsvPaymentsOutputFile(paymentOutputs.getFirst())) {
+                          // Use iterator-based write method for better streaming characteristics
+                          file.getSbc().write(paymentOutputs.iterator());
+                          recordCount.set(paymentOutputs.size());
+                          MDC.put("serviceId", serviceId);
+                          logger.info("Executed command on stream --> {} with {} records", 
+                              file.getFilepath(), recordCount.get());
+                          MDC.clear();
+
+                          return CsvOutputFileCompletionEvent.success(file, recordCount.get());
+                        } catch (Exception e) {
+                          // Log the number of records processed before failure
+                          logger.error("Failed to write output file after processing {} records", 
+                              recordCount.get(), e);
+                          return CsvOutputFileCompletionEvent.failure(recordCount.get(), e);
+                        }
+                      })
+                  .runSubscriptionOn(executor);
+            });
   }
 
   /**

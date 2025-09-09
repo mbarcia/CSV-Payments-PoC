@@ -14,27 +14,37 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.pipeline.service;
+package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.grpc.MutinyProcessAckPaymentSentServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
+import io.github.mbarcia.pipeline.service.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.service.PipelineConfig;
+import io.github.mbarcia.pipeline.service.StepOneToAsync;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import lombok.NoArgsConstructor;
 
 /**
  * Step supplier that processes an acknowledgment payment sent.
  */
 @ApplicationScoped
-public class ProcessAckPaymentStep implements UniToUniStep<PaymentsProcessingSvc.AckPaymentSent, PaymentsProcessingSvc.PaymentStatus> {
+@NoArgsConstructor // for CDI proxying
+public class ProcessAckPaymentStep extends ConfigurableStepBase implements StepOneToAsync<PaymentsProcessingSvc.AckPaymentSent, PaymentsProcessingSvc.PaymentStatus> {
 
     @Inject
     @GrpcClient("process-ack-payment-sent")
     MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub processAckPaymentSentService;
 
+    @Inject
+    public ProcessAckPaymentStep(PipelineConfig pipelineConfig) {
+        // Constructor with dependencies
+    }
+
     @Override
-    public Uni<PaymentsProcessingSvc.PaymentStatus> execute(PaymentsProcessingSvc.AckPaymentSent ack) {
+    public Uni<PaymentsProcessingSvc.PaymentStatus> applyAsyncUni(PaymentsProcessingSvc.AckPaymentSent ack) {
         return processAckPaymentSentService.remoteProcess(ack);
     }
 }

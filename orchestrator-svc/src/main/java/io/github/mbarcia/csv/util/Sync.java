@@ -14,14 +14,9 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.pipeline.service;
+package io.github.mbarcia.csv.util;
 
-/**
- * Configuration for step execution that defines how a step should be executed.
- * This includes whether to use virtual threads, retry logic, etc.
- */
-public record StepExecutionConfig(boolean enableRetry) {
-
-    public static final StepExecutionConfig DEFAULT = new StepExecutionConfig(true);
-
+public interface Sync {
+    void await() throws InterruptedException;
+    void signal();
 }

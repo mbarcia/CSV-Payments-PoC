@@ -16,23 +16,25 @@
 
 package io.github.mbarcia.csv.service;
 
-import io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile;
 import io.github.mbarcia.csv.common.domain.PaymentOutput;
 import io.github.mbarcia.csv.common.mapper.CsvPaymentsOutputFileMapper;
 import io.github.mbarcia.csv.common.mapper.PaymentOutputMapper;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
 import io.github.mbarcia.csv.grpc.OutputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
-import io.github.mbarcia.pipeline.service.GrpcServiceClientStreamingAdapter;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @GrpcService
 public class ProcessCsvPaymentsOutputFileGrpcService
     extends MutinyProcessCsvPaymentsOutputFileServiceGrpc
         .ProcessCsvPaymentsOutputFileServiceImplBase {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ProcessCsvPaymentsOutputFileGrpcService.class);
 
   @Inject ProcessCsvPaymentsOutputFileReactiveService domainService;
 
@@ -43,27 +45,23 @@ public class ProcessCsvPaymentsOutputFileGrpcService
   @Override
   public Uni<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> remoteProcess(
       Multi<PaymentStatusSvc.PaymentOutput> grpcStream) {
-    return new GrpcServiceClientStreamingAdapter<
-        PaymentStatusSvc.PaymentOutput,
-        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile,
-        PaymentOutput,
-        CsvPaymentsOutputFile>() {
-
-      @Override
-      protected ProcessCsvPaymentsOutputFileReactiveService getService() {
-        return domainService;
-      }
-
-      @Override
-      protected PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpcIn) {
-        return paymentOutputMapper.fromGrpc(grpcIn);
-      }
-
-      @Override
-      protected OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(
-          CsvPaymentsOutputFile domainOut) {
-        return csvPaymentsOutputFileMapper.toGrpc(domainOut);
-      }
-    }.remoteProcess(grpcStream); // <-- send Multi<> input instead
+    // Transform gRPC objects to domain objects before processing
+    Multi<PaymentOutput> domainStream = grpcStream.onItem().transform(paymentOutputMapper::fromGrpc);
+    
+    // Use the enhanced processing method that provides completion information
+    return domainService.processWithCompletion(domainStream)
+        .onItem()
+        .transform(result -> {
+          if (result.isCompletedSuccessfully()) {
+            LOG.info("CSV output file processing completed successfully with {} records", 
+                result.getRecordCount());
+            return csvPaymentsOutputFileMapper.toGrpc(result.getOutputFile());
+          } else {
+            LOG.error("CSV output file processing failed after {} records", 
+                result.getRecordCount(), result.getError());
+            throw new RuntimeException("CSV output file processing failed after " + 
+                result.getRecordCount() + " records", result.getError());
+          }
+        });
   }
 }

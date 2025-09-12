@@ -25,8 +25,41 @@ This application demonstrates modern microservices architecture patterns using g
 
 This service is built using the pipeline framework which provides numerous benefits for distributed processing:
 
-- [How to Create a New Pipeline Step](./HOWTO_NEW_STEP.md) - Guide for implementing new steps
-- [Pipeline Benefits](./PIPELINE_BENEFITS.md) - Detailed list of advantages of using the framework
+- [How to Create a New Pipeline Step](./pipeline-framework/docs/HOWTO_NEW_STEP.md) - Guide for implementing new steps
+- [Pipeline Benefits](./pipeline-framework/docs/PIPELINE_BENEFITS.md) - Detailed list of advantages of using the framework
+
+### Running End-to-End Tests
+
+To run the end-to-end integration test that starts all services and processes a sample CSV file:
+
+1. Ensure you have Java 21 and Maven installed
+2. Navigate to the project root directory
+3. Run the end-to-end test script:
+   ```bash
+   ./run-e2e-test.sh
+   ```
+
+This script will:
+1. Start all required microservices
+2. Wait for all services to become healthy by checking their health endpoints
+3. Copy a sample CSV file to the test directory
+4. Run the orchestrator to process the CSV file
+5. Verify that output files are generated
+6. Stop all services
+
+The script uses the health endpoints (`/q/health`) of each service to determine when they are ready, rather than waiting a fixed amount of time.
+
+### Port Configuration
+
+The services use the following ports:
+- input-csv-file-processing-svc: 8444
+- payments-processing-svc: 8445
+- payment-status-svc: 8446
+- output-csv-file-processing-svc: 8447
+- data-persistence-svc: 8448
+- orchestrator-svc: 8443 (gRPC)
+
+All services communicate over HTTPS with self-signed certificates.
 
 
 
@@ -321,6 +354,16 @@ To run tests with code coverage:
 mvn clean test jacoco:report
 ```
 
+#### End-to-End Integration Testing
+
+To run an end-to-end integration test that starts all services and processes a real CSV file:
+
+```bash
+./run-e2e-test.sh
+```
+
+This script will start all microservices, process a sample CSV file, and verify the results. See [pipeline-framework/docs/README.md](./pipeline-framework/docs/README.md) for more details.
+
 ## SSL Certificate Handling in Development
 
 When running the services with HTTPS enabled, self-signed certificates are used for development purposes. To avoid browser security warnings, you need to add these certificates to your system's trusted certificate store.
@@ -541,8 +584,10 @@ Each service exposes a `/q/metrics` endpoint that provides Prometheus-formatted 
 - [Payment Status Service](./payment-status-svc/README.md): Processes payment statuses
 - [Output CSV File Processing Service](./output-csv-file-processing-svc/README.md): Generates output CSV files
 - [Common Module](./common/README.md): Shared domain models and utilities
-- [Pipeline Framework](./HOWTO_NEW_STEP.md): How to create new pipeline steps (client-side orchestration)
-- [Pipeline Benefits](./PIPELINE_BENEFITS.md): Detailed benefits of the pipeline framework
+- [Pipeline Framework](./pipeline-framework/docs/HOWTO_NEW_STEP.md): How to create new pipeline steps (client-side orchestration)
+- [Pipeline Benefits](./pipeline-framework/docs/PIPELINE_BENEFITS.md): Detailed benefits of the pipeline framework
+
+For more information about the pipeline framework, see [pipeline-framework/README.md](./pipeline-framework/README.md).
 
 ## External Interfaces
 

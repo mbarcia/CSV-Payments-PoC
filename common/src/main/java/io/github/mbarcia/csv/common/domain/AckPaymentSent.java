@@ -18,6 +18,7 @@ package io.github.mbarcia.csv.common.domain;
 
 import static java.text.MessageFormat.format;
 
+import domain.BaseEntity;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Transient;
 import java.io.Serializable;

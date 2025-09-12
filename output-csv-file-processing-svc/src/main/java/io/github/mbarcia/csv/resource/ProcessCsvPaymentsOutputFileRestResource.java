@@ -76,7 +76,19 @@ public class ProcessCsvPaymentsOutputFileRestResource {
         
         return domainResult
                 .emitOn(executor)  // Ensure file operations run on virtual threads
-                .onItem().transformToUni(this::createFileDownloadResponse)
+                .onItem().transformToUni(file -> {
+                    if (file != null) {
+                        return this.createFileDownloadResponse(file);
+                    } else {
+                        // Return an empty response for empty streams
+                        return Uni.createFrom().item(
+                            Response.ok()
+                                .header("Content-Disposition", "attachment; filename=\"empty.csv\"")
+                                .header("Content-Type", "text/csv")
+                                .entity("")
+                                .build());
+                    }
+                })
                 .onFailure().recoverWithUni(this::handleProcessingError);
     }
 
@@ -94,11 +106,19 @@ public class ProcessCsvPaymentsOutputFileRestResource {
         Uni<CsvPaymentsOutputFile> domainResult = domainService.process(domainInput);
         
         return domainResult
-                .onItem().transform(file -> 
-                    Response.ok(new ProcessOutputResponse(
-                        file.getFilepath().toString(),
-                        "File processed successfully"))
-                    .build())
+                .onItem().transform(file -> {
+                    if (file != null) {
+                        return Response.ok(new ProcessOutputResponse(
+                            file.getFilepath().toString(),
+                            "File processed successfully"))
+                        .build();
+                    } else {
+                        return Response.ok(new ProcessOutputResponse(
+                            null,
+                            "No payment outputs to process"))
+                        .build();
+                    }
+                })
                 .onFailure().recoverWithUni(this::handleProcessingError);
     }
 

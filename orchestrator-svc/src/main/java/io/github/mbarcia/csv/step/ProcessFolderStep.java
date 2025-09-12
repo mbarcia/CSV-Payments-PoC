@@ -18,9 +18,9 @@ package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.service.ProcessFolderService;
-import io.github.mbarcia.pipeline.service.ConfigurableStepBase;
-import io.github.mbarcia.pipeline.service.PipelineConfig;
-import io.github.mbarcia.pipeline.service.StepOneToMany;
+import io.github.mbarcia.pipeline.config.PipelineConfig;
+import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.StepOneToMany;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;

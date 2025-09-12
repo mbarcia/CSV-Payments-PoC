@@ -20,6 +20,7 @@ import static java.text.MessageFormat.format;
 
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvNumber;
+import domain.BaseEntity;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import java.io.Serializable;

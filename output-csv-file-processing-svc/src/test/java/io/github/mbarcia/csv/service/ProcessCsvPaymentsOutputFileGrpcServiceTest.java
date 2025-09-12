@@ -101,15 +101,11 @@ class ProcessCsvPaymentsOutputFileGrpcServiceTest {
 
     when(paymentOutputMapper.fromGrpc(any(PaymentStatusSvc.PaymentOutput.class)))
         .thenReturn(domainPaymentOutput);
-    when(domainService.processWithCompletion(any(Multi.class)))
+    when(domainService.process(any(Multi.class)))
         .thenAnswer(
             invocation -> {
               Multi<PaymentOutput> input = invocation.getArgument(0);
-              return input
-                  .collect()
-                  .asList()
-                  .onItem()
-                  .transform(_ -> CsvOutputFileCompletionEvent.success(domainOutputFile, 1));
+              return input.collect().asList().onItem().transform(_ -> domainOutputFile);
             });
     when(csvPaymentsOutputFileMapper.toGrpc(any(CsvPaymentsOutputFile.class)))
         .thenReturn(grpcOutputFile);
@@ -130,15 +126,11 @@ class ProcessCsvPaymentsOutputFileGrpcServiceTest {
     Multi<PaymentStatusSvc.PaymentOutput> grpcStream = Multi.createFrom().item(grpcPaymentOutput);
 
     when(paymentOutputMapper.fromGrpc(grpcPaymentOutput)).thenReturn(domainPaymentOutput);
-    when(domainService.processWithCompletion(any(Multi.class)))
+    when(domainService.process(any(Multi.class)))
         .thenAnswer(
             invocation -> {
               Multi<PaymentOutput> input = invocation.getArgument(0);
-              return input
-                  .collect()
-                  .asList()
-                  .onItem()
-                  .transform(_ -> CsvOutputFileCompletionEvent.success(domainOutputFile, 1));
+              return input.collect().asList().onItem().transform(_ -> domainOutputFile);
             });
     when(csvPaymentsOutputFileMapper.toGrpc(domainOutputFile)).thenReturn(grpcOutputFile);
 

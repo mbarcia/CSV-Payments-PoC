@@ -22,7 +22,7 @@ import io.github.mbarcia.csv.common.mapper.AckPaymentSentMapper;
 import io.github.mbarcia.csv.common.mapper.PaymentStatusMapper;
 import io.github.mbarcia.csv.grpc.MutinyProcessAckPaymentSentServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
-import io.github.mbarcia.pipeline.service.GrpcReactiveServiceAdapter;
+import io.github.mbarcia.pipeline.grpc.GrpcReactiveServiceAdapter;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;

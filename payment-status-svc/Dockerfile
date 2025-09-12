@@ -4,6 +4,9 @@ WORKDIR /app
 # Copy the parent pom
 COPY pom.xml .
 
+# Copy the pipeline-framework pom
+COPY pipeline-framework/pom.xml pipeline-framework/pom.xml
+
 # Copy the common pom
 COPY common/pom.xml common/pom.xml
 
@@ -13,6 +16,7 @@ COPY payment-status-svc/pom.xml payment-status-svc/pom.xml
 # Filter unwanted modules and overwrite the original pom.xml
 RUN sed -n '\
   1,/<modules>/p; \
+  /<module>pipeline\-framework<\/module>/p; \
   /<module>common<\/module>/p; \
   /<module>payment-status-svc<\/module>/p; \
   /<\/modules>/,$p' pom.xml > filtered-pom.xml \
@@ -28,6 +32,11 @@ RUN --mount=type=cache,target=/root/.m2 \
     -Dversion=1.0.0 \
     -Dpackaging=pom \
     -DgeneratePom=false
+
+# Copy and install pipeline-framework module
+COPY pipeline-framework/ pipeline-framework/
+RUN --mount=type=cache,target=/root/.m2 \
+    mvn -B install -f pipeline-framework/pom.xml -DskipTests
 
 # Copy and install common module
 COPY common/ common/
@@ -55,4 +64,4 @@ COPY --from=builder /app/payment-status-svc/target/quarkus-app/ .
 # Add JVM tuning options for Docker environments
 ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:+UseStringDeduplication"
 
-CMD ["sh", "-c", "java $JAVA_OPTS --enable-preview -jar quarkus-run.jar"]
+CMD ["sh", "-c", "java  --enable-preview -jar quarkus-run.jar"]

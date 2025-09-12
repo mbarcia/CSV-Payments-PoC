@@ -37,6 +37,11 @@
             <version>1.0</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>io.github.mbarcia</groupId>
+            <artifactId>pipeline-framework</artifactId>
+            <version>1.0</version>
+        </dependency>
 
         <dependency>
             <groupId>org.jboss.slf4j</groupId>

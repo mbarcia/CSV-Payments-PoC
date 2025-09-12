@@ -20,7 +20,7 @@ import io.github.mbarcia.csv.common.domain.CsvFolder;
 import io.github.mbarcia.csv.common.mapper.CsvFolderMapper;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyPersistCsvFolderServiceGrpc;
-import io.github.mbarcia.pipeline.service.GrpcReactiveServiceAdapter;
+import io.github.mbarcia.pipeline.grpc.GrpcReactiveServiceAdapter;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;

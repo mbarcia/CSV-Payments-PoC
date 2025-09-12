@@ -23,7 +23,7 @@ import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputStreamMapper;
 import io.github.mbarcia.csv.common.mapper.PaymentRecordMapper;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputStreamServiceGrpc;
-import io.github.mbarcia.pipeline.service.GrpcServiceStreamingAdapter;
+import io.github.mbarcia.pipeline.grpc.GrpcServiceStreamingAdapter;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;

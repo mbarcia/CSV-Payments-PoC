@@ -24,6 +24,7 @@
 
     <modules>
         <module>common</module>
+        <module>pipeline-framework</module>
         <module>input-csv-file-processing-svc</module>
         <module>payments-processing-svc</module>
         <module>payment-status-svc</module>

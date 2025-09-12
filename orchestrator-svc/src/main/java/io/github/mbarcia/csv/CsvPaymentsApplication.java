@@ -20,9 +20,9 @@ import io.github.mbarcia.csv.step.PersistAndSendPaymentStep;
 import io.github.mbarcia.csv.util.Sync;
 import io.github.mbarcia.csv.util.SystemExiter;
 import io.github.mbarcia.csv.step.*;
-import io.github.mbarcia.pipeline.service.PipelineConfig;
-import io.github.mbarcia.pipeline.service.StepConfig;
-import io.github.mbarcia.pipeline.service.PipelineRunner;
+import io.github.mbarcia.pipeline.config.PipelineConfig;
+import io.github.mbarcia.pipeline.config.StepConfig;
+import io.github.mbarcia.pipeline.PipelineRunner;
 import io.smallrye.mutiny.Multi;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
@@ -94,7 +94,15 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
 
   @Override
   public void run() {
-    LOG.info("APPLICATION BEGINS processing {}", csvFolder);
+    processCsvFolder(csvFolder);
+  }
+  
+  /**
+   * Process a CSV folder - exposed for testing
+   * @param folderPath the path to the folder containing CSV files
+   */
+  public void processCsvFolder(String folderPath) {
+    LOG.info("APPLICATION BEGINS processing {}", folderPath);
 
     StopWatch watch = new StopWatch();
     watch.start();
@@ -106,7 +114,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
 
     try (PipelineRunner runner = new PipelineRunner()) {
       Multi<?> result = runner.run(
-              Multi.createFrom().items(csvFolder),
+              Multi.createFrom().items(folderPath),
               List.of(processFolderStep,
                       processInputFileStep,
                       persistAndSendPaymentStep,
@@ -122,7 +130,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
                 watch.stop();
                 LOG.info(
                     "✅ APPLICATION FINISHED processing of {} in {} seconds",
-                    csvFolder,
+                    folderPath,
                     watch.getTime(TimeUnit.SECONDS));
                     sync.signal();
                 exiter.exit(0);
@@ -132,7 +140,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
                 watch.stop();
                 LOG.error(
                     "❌ APPLICATION FAILED processing {} after {} seconds",
-                    csvFolder,
+                    folderPath,
                     watch.getTime(TimeUnit.SECONDS),
                     failure);
                 sync.signal();
@@ -145,7 +153,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
       watch.stop();
       LOG.error(
           "❌ APPLICATION ABORTED due to invalid folder {} after {} seconds",
-          csvFolder,
+          folderPath,
           watch.getTime(TimeUnit.SECONDS),
           e);
       exiter.exit(1);

@@ -16,7 +16,6 @@
 
 package io.github.mbarcia.csv.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.mbarcia.csv.common.domain.AckPaymentSent;
 import io.github.mbarcia.csv.common.domain.PaymentStatus;
 import io.github.mbarcia.pipeline.service.ReactiveService;
@@ -60,20 +59,30 @@ public class PollAckPaymentSentReactiveService
     return Uni.createFrom()
         .item(detachedAckPaymentSent)
         .runSubscriptionOn(executor)
-        .map(
+        .onItem()
+        .transformToUni(
             ack -> {
-              try {
-                long time = (long) (Math.random() * config.waitMilliseconds());
-                LOG.info("Started polling...(for {}ms)", time);
-                LOG.debug("Thread: {} isVirtual? {}", Thread.currentThread(), Thread.currentThread().isVirtual());
+              long time = (long) (Math.random() * config.waitMilliseconds());
+              LOG.info("Started polling...(for {}ms)", time);
+              LOG.debug("Thread: {} isVirtual? {}", Thread.currentThread(), Thread.currentThread().isVirtual());
 
-                // Log before sleep
-                LOG.debug("About to sleep for {}ms", time);
+              // Log before sleep
+              LOG.debug("About to sleep for {}ms", time);
+              try {
                 Thread.sleep(time); // simulate delay. Blocking is not an issue inside a virtual thread.
                 LOG.info("Finished polling (--> {}ms)", time);
+              } catch (InterruptedException e) {
+                LOG.error("InterruptedException while sleeping: {}", e.getMessage(), e);
+                Thread.currentThread().interrupt(); // Restore interrupt status
+                return Uni.createFrom().failure(new RuntimeException(e));
+              }
 
+              return Uni.createFrom().item(() -> {
                 LOG.debug("Calling paymentProviderServiceMock.getPaymentStatus");
-                PaymentStatus result = paymentProviderServiceMock.getPaymentStatus(ack);
+                return paymentProviderServiceMock.getPaymentStatus(ack);
+              })
+              .onItem()
+              .invoke(result -> {
                 LOG.debug("Received PaymentStatus: id={}, reference={}, status={}",
                     result.getId(), result.getReference(), result.getStatus());
 
@@ -81,19 +90,12 @@ public class PollAckPaymentSentReactiveService
                 MDC.put("serviceId", serviceId);
                 LOG.info("Executed command on {} --> {}", detachedAckPaymentSent, result);
                 MDC.clear();
-
-                return result;
-              } catch (JsonProcessingException e) {
-                LOG.error("JsonProcessingException while processing AckPaymentSent: {}", e.getMessage(), e);
-                throw new RuntimeException(e);
-              } catch (InterruptedException e) {
-                LOG.error("InterruptedException while processing AckPaymentSent: {}", e.getMessage(), e);
-                Thread.currentThread().interrupt(); // Restore interrupt status
-                throw new RuntimeException(e);
-              } catch (Exception e) {
-                LOG.error("Unexpected exception while processing AckPaymentSent: {}", e.getMessage(), e);
-                throw new RuntimeException(e);
-              }
+              })
+              .onFailure()
+              .recoverWithUni(failure -> {
+                LOG.error("Failed to process AckPaymentSent", failure);
+                return Uni.createFrom().failure(failure);
+              });
             })
         .onFailure()
         .invoke(failure -> LOG.error("Failed to process AckPaymentSent", failure));

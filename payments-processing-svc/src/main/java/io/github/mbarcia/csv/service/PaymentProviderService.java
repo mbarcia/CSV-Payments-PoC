@@ -16,7 +16,6 @@
 
 package io.github.mbarcia.csv.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import io.github.mbarcia.csv.common.domain.AckPaymentSent;
 import io.github.mbarcia.csv.common.domain.PaymentStatus;
 import io.github.mbarcia.csv.common.mapper.SendPaymentRequestMapper;
@@ -24,5 +23,5 @@ import io.github.mbarcia.csv.common.mapper.SendPaymentRequestMapper;
 public interface PaymentProviderService {
   AckPaymentSent sendPayment(SendPaymentRequestMapper.SendPaymentRequest requestMap);
 
-  PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent) throws JsonProcessingException;
+  PaymentStatus getPaymentStatus(AckPaymentSent ackPaymentSent);
 }

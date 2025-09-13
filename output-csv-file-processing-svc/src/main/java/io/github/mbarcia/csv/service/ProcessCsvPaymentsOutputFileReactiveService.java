@@ -88,28 +88,52 @@ public class ProcessCsvPaymentsOutputFileReactiveService
               final AtomicInteger recordCount = new AtomicInteger(0);
               
               return Uni.createFrom()
-                  .item(
-                      () -> {
-                        try (CsvPaymentsOutputFile file =
-                            this.getCsvPaymentsOutputFile(paymentOutputs.getFirst())) {
-                          // Use iterator-based write method for better streaming characteristics
-                          file.getSbc().write(paymentOutputs.iterator());
-                          recordCount.set(paymentOutputs.size());
-                          MDC.put("serviceId", serviceId);
-                          logger.info("Executed command on stream --> {} with {} records", 
-                              file.getFilepath(), recordCount.get());
-                          MDC.clear();
-
-                          return file;
-                        } catch (Exception e) {
-                          // Log the number of records processed before failure
-                          logger.error("Failed to write output file after processing {} records", 
-                              recordCount.get(), e);
-                          throw new RuntimeException("Failed to write output file after processing " + 
-                              recordCount.get() + " records.", e);
-                        }
-                      })
-                  .runSubscriptionOn(executor);
+                  .deferred(() -> createOutputFile(paymentOutputs.getFirst(), logger))
+                  .onFailure()
+                  .recoverWithUni(failure -> {
+                    logger.error("Failed to create output file", failure);
+                    return Uni.createFrom().failure(new RuntimeException("Failed to create output file", failure));
+                  })
+                  .onItem()
+                  .transformToUni(file -> {
+                    try {
+                      // Use iterator-based write method for better streaming characteristics
+                      file.getSbc().write(paymentOutputs.iterator());
+                      recordCount.set(paymentOutputs.size());
+                      MDC.put("serviceId", serviceId);
+                      logger.info("Executed command on stream --> {} with {} records", 
+                          file.getFilepath(), recordCount.get());
+                      MDC.clear();
+                      return Uni.createFrom().item(file);
+                    } catch (Exception e) {
+                      // Try to close the file before propagating the error
+                      try {
+                        file.close();
+                      } catch (Exception closeException) {
+                        logger.warn("Failed to close output file", closeException);
+                      }
+                      // Propagate the error
+                      return Uni.createFrom().failure(new RuntimeException(e));
+                    }
+                  })
+                  .runSubscriptionOn(executor)
+                  .onItem()
+                  .call(file -> Uni.createFrom().item(() -> {
+                    try {
+                      file.close(); // Properly close the resource
+                    } catch (Exception e) {
+                      logger.warn("Failed to close output file", e);
+                    }
+                    return null;
+                  }))
+                  .onFailure()
+                  .recoverWithUni(failure -> {
+                    // Log the number of records processed before failure
+                    logger.error("Failed to write output file after processing {} records", 
+                        recordCount.get(), failure);
+                    return Uni.createFrom().failure(new RuntimeException("Failed to write output file after processing " + 
+                        recordCount.get() + " records.", failure));
+                  });
             });
   }
 
@@ -135,5 +159,18 @@ public class ProcessCsvPaymentsOutputFileReactiveService
     Path csvPaymentsInputFilePath = paymentRecord.getCsvPaymentsInputFilePath();
 
     return new CsvPaymentsOutputFile(csvPaymentsInputFilePath);
+  }
+  
+  /**
+   * Creates an output file and handles any IOException that might occur.
+   * This method exists to properly handle the checked exception in a reactive context.
+   */
+  private Uni<CsvPaymentsOutputFile> createOutputFile(PaymentOutput paymentOutput, Logger logger) {
+    try {
+      return Uni.createFrom().item(this.getCsvPaymentsOutputFile(paymentOutput));
+    } catch (IOException e) {
+      logger.error("Failed to create output file due to IO error", e);
+      return Uni.createFrom().failure(new RuntimeException("Failed to create output file due to IO error", e));
+    }
   }
 }

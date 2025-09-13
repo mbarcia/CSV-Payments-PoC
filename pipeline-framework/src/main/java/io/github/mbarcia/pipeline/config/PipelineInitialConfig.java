@@ -23,7 +23,7 @@ import io.smallrye.config.WithDefault;
  * Configuration interface for pipeline settings.
  * This follows the pattern of using @ConfigMapping for type-safe configuration
  * with built-in defaults and easy externalization.
- * 
+ * <p>
  * All pipeline-level configuration properties with their defaults.
  * These serve as defaults for individual steps unless overridden.
  */

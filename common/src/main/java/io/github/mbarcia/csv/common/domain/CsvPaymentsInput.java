@@ -25,7 +25,7 @@ public interface CsvPaymentsInput extends AutoCloseable {
     String getSourceName(); // useful for logging
     HeaderColumnNameMappingStrategy<PaymentRecord> veryOwnStrategy();
     @Override
-    default void close() throws IOException {
+    default void close() {
         // Default no-op. Implementations that open resources should override.
     }
 }

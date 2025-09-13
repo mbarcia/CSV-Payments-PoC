@@ -73,13 +73,11 @@ class FilePathAwareMappingStrategyTest {
     // doesn't have csvPaymentsInputFilePath field
     assertThrows(
         CsvBeanIntrospectionException.class,
-        () -> {
-          strategy.populateNewBean(new String[] {"testName"});
-        });
+        () -> strategy.populateNewBean(new String[] {"testName"}));
   }
 
   @Test
-  void populateNewBean_withValidField_setsFilePath() throws Exception {
+  void populateNewBean_withValidField_setsFilePath() {
     // Create a mapping strategy with a path
     Path testPath = Paths.get("/test/path");
     FilePathAwareMappingStrategy<TestBeanWithField> strategy =

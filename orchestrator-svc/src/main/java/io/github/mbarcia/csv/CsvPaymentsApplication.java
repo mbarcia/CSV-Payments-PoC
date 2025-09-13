@@ -16,7 +16,6 @@
 
 package io.github.mbarcia.csv;
 
-import io.github.mbarcia.csv.step.PersistAndSendPaymentStep;
 import io.github.mbarcia.csv.util.Sync;
 import io.github.mbarcia.csv.util.SystemExiter;
 import io.github.mbarcia.csv.step.*;

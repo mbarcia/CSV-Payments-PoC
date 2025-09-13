@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Dynamic configuration holder for pipeline settings.
  * Allows runtime updates of pipeline configuration.
- * 
+ * <p>
  * This follows the pattern of using atomic references for thread-safe
  * runtime configuration updates without breaking FunctionalInterface contracts.
  */

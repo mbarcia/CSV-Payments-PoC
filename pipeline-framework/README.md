@@ -148,7 +148,7 @@ try (PipelineRunner runner = new PipelineRunner()) {
 
 - [How to Create a New Pipeline Step](docs/HOWTO_NEW_STEP.md) - Complete guide for implementing new steps
 - [Pipeline Benefits](docs/PIPELINE_BENEFITS.md) - Detailed list of advantages of using the framework
-- [Configuration Guide](CONFIGURATION.md) - Pipeline configuration system documentation
+- [Configuration Guide](docs/CONFIGURATION_CONSOLIDATED.md) - Pipeline configuration system documentation
 
 ## Step Interfaces
 

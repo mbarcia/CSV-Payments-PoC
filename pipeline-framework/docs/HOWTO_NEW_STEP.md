@@ -272,7 +272,7 @@ public Uni<Void> process(String csvFolderPath) throws URISyntaxException {
 
 ## Configuration
 
-Steps can be configured using the pipeline configuration system. See [CONFIGURATION.md](CONFIGURATION.md) for detailed information on how to configure steps with profiles, defaults, and overrides.
+Steps can be configured using the pipeline configuration system. See [Configuration Guide](CONFIGURATION_CONSOLIDATED.md) for detailed information on how to configure steps with profiles, defaults, and overrides.
 
 Each step automatically benefits from:
 - Virtual thread execution
@@ -516,7 +516,7 @@ public Uni<Void> process(String csvFolderPath) throws URISyntaxException {
 
 ## Configuration
 
-Steps can be configured using the pipeline configuration system. See [CONFIGURATION.md](CONFIGURATION.md) for detailed information on how to configure steps with profiles, defaults, and overrides.
+Steps can be configured using the pipeline configuration system. See [Configuration Guide](CONFIGURATION_CONSOLIDATED.md) for detailed information on how to configure steps with profiles, defaults, and overrides.
 
 Each step automatically benefits from:
 - Virtual thread execution

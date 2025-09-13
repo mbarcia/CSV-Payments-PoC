@@ -112,7 +112,7 @@ The orchestrator service uses a flexible configuration system that allows you to
 - **Profile management**: Switch between different configurations based on environment (dev, prod, etc.)
 - **Hot reload**: Configuration changes are applied dynamically without restarting
 
-For detailed information on how to use the configuration system, see [PIPELINE_CONFIGURATION.md](./PIPELINE_CONFIGURATION.md).
+For detailed information on how to use the configuration system, see [Configuration Guide](../pipeline-framework/docs/CONFIGURATION_CONSOLIDATED.md).
 
 ### Dependencies
 - Uses components from the `common` module for domain objects and mappers

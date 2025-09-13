@@ -68,8 +68,7 @@ class ProcessOutputFileStepTest {
   @Test
   void testGetInputFilePath_shouldExtractCorrectPath() throws Exception {
     // Given
-    PaymentStatusSvc.PaymentOutput paymentOutput =
-        createPaymentOutputWithPath();
+    PaymentStatusSvc.PaymentOutput paymentOutput = createPaymentOutputWithPath();
 
     // When
     String inputFilePath = getInputFilePathUsingReflection(paymentOutput);

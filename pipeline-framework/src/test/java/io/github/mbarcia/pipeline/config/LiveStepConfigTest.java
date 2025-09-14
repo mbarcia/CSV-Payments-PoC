@@ -35,7 +35,6 @@ class LiveStepConfigTest {
         .debug(true)
         .recoverOnFailure(true)
         .runWithVirtualThreads(true)
-        .useExponentialBackoff(true)
         .maxBackoff(Duration.ofMinutes(1))
         .jitter(true);
 
@@ -49,7 +48,6 @@ class LiveStepConfigTest {
     assertTrue(liveConfig.debug());
     assertTrue(liveConfig.recoverOnFailure());
     assertTrue(liveConfig.runWithVirtualThreads());
-    assertTrue(liveConfig.useExponentialBackoff());
     assertEquals(Duration.ofMinutes(1), liveConfig.maxBackoff());
     assertTrue(liveConfig.jitter());
   }
@@ -66,7 +64,6 @@ class LiveStepConfigTest {
         .debug(false)
         .recoverOnFailure(false)
         .runWithVirtualThreads(false)
-        .useExponentialBackoff(false)
         .maxBackoff(Duration.ofSeconds(30))
         .jitter(false);
 
@@ -81,7 +78,6 @@ class LiveStepConfigTest {
         .debug(true)
         .recoverOnFailure(true)
         .runWithVirtualThreads(true)
-        .useExponentialBackoff(true)
         .maxBackoff(Duration.ofMinutes(2))
         .jitter(true);
 
@@ -92,7 +88,6 @@ class LiveStepConfigTest {
     assertTrue(liveConfig.debug());
     assertTrue(liveConfig.recoverOnFailure());
     assertTrue(liveConfig.runWithVirtualThreads());
-    assertTrue(liveConfig.useExponentialBackoff());
     assertEquals(Duration.ofMinutes(2), liveConfig.maxBackoff());
     assertTrue(liveConfig.jitter());
   }

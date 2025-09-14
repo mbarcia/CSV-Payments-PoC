@@ -17,4 +17,8 @@
 package io.github.mbarcia.pipeline.step; /** 1 -> 1 (synchronous) */
 public interface StepOneToOne<I, O> extends StepBase {
     O apply(I in);
+
+    default int concurrency() { return 1; } // max in-flight items per upstream item
+
+    default boolean runWithVirtualThreads() { return false; }
 }

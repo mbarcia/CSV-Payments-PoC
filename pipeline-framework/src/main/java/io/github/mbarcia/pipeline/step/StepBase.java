@@ -26,7 +26,6 @@ public interface StepBase {
     default boolean debug() { return effectiveConfig().debug(); }
     default boolean recoverOnFailure() { return effectiveConfig().recoverOnFailure(); }
     default boolean runWithVirtualThreads() { return effectiveConfig().runWithVirtualThreads(); }
-    default boolean useExponentialBackoff() { return effectiveConfig().useExponentialBackoff(); }
     default java.time.Duration maxBackoff() { return effectiveConfig().maxBackoff(); }
     default boolean jitter() { return effectiveConfig().jitter(); }
 

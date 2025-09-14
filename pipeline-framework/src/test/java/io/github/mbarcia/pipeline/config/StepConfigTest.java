@@ -35,7 +35,6 @@ class StepConfigTest {
     assertFalse(config.debug());
     assertFalse(config.recoverOnFailure());
     assertFalse(config.runWithVirtualThreads());
-    assertFalse(config.useExponentialBackoff());
     assertEquals(Duration.ofSeconds(30), config.maxBackoff());
     assertFalse(config.jitter());
   }
@@ -148,19 +147,6 @@ class StepConfigTest {
 
     // Then
     assertTrue(config.runWithVirtualThreads());
-    assertSame(config, result); // Fluent API
-  }
-
-  @Test
-  void testUseExponentialBackoffSetter() {
-    // Given
-    StepConfig config = new StepConfig();
-
-    // When
-    StepConfig result = config.useExponentialBackoff(true);
-
-    // Then
-    assertTrue(config.useExponentialBackoff());
     assertSame(config, result); // Fluent API
   }
 

@@ -59,9 +59,6 @@ public final class LiveStepConfig extends StepConfig {
     @Override public boolean runWithVirtualThreads() {
         return overrides().runWithVirtualThreads() != super.runWithVirtualThreads() ? overrides().runWithVirtualThreads() : currentDefaults().runWithVirtualThreads();
     }
-    @Override public boolean useExponentialBackoff() {
-        return overrides().useExponentialBackoff() != super.useExponentialBackoff() ? overrides().useExponentialBackoff() : currentDefaults().useExponentialBackoff();
-    }
     @Override public Duration maxBackoff() {
         Duration o = overrides().maxBackoff();
         return !o.equals(super.maxBackoff()) ? o : currentDefaults().maxBackoff();

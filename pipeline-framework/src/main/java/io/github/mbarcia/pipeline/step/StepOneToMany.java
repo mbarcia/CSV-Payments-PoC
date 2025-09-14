@@ -21,9 +21,4 @@ import io.smallrye.mutiny.Multi;
 /** 1 -> N */
 public interface StepOneToMany<I, O> extends StepBase {
     Multi<O> applyMulti(I in);
-
-    @SuppressWarnings("unused")
-    default int concurrency() { return 1; }                  // max in-flight items per upstream item
-
-    default boolean runWithVirtualThreads() { return false; }
 }

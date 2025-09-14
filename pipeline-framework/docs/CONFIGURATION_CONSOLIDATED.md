@@ -154,27 +154,9 @@ databaseStep.liveConfig().overrides().runWithVirtualThreads(true);
 - Using virtual threads with CPU-intensive operations
 - Enabling virtual threads in environments that don't support them
 
-### 7. useExponentialBackoff
-- **Type**: boolean
-- **Default**: false
-- **Description**: When enabled, increases the delay between retry attempts exponentially.
-- **Usage**: Works with retryWait and maxBackoff to control retry timing.
 
-**Practical Examples**:
-```java
-// For steps calling external services that might be temporarily overloaded
-externalApiStep.liveConfig().overrides()
-    .useExponentialBackoff(true)
-    .retryLimit(5)
-    .retryWait(Duration.ofSeconds(1))
-    .maxBackoff(Duration.ofMinutes(5));
-```
 
-**Things to Avoid**:
-- Using exponential backoff with very short maxBackoff values
-- Not considering the total time impact of exponential backoff on processing deadlines
-
-### 8. maxBackoff
+### 7. maxBackoff
 - **Type**: Duration
 - **Default**: 30s
 - **Description**: The maximum delay between retry attempts when using exponential backoff.
@@ -184,12 +166,10 @@ externalApiStep.liveConfig().overrides()
 ```java
 // For critical operations that should retry frequently but not too aggressively
 criticalStep.liveConfig().overrides()
-    .useExponentialBackoff(true)
     .maxBackoff(Duration.ofSeconds(10));
 
 // For less critical operations that can afford longer delays between retries
 backgroundStep.liveConfig().overrides()
-    .useExponentialBackoff(true)
     .maxBackoff(Duration.ofMinutes(10));
 ```
 
@@ -197,7 +177,7 @@ backgroundStep.liveConfig().overrides()
 - Setting maxBackoff too low, which reduces the effectiveness of exponential backoff
 - Setting maxBackoff too high, which might cause unacceptable delays
 
-### 9. jitter
+### 8. jitter
 - **Type**: boolean
 - **Default**: false
 - **Description**: When enabled, adds randomization to retry delays to prevent thundering herd problems.
@@ -207,8 +187,7 @@ backgroundStep.liveConfig().overrides()
 ```java
 // For steps calling shared services to prevent synchronized retries
 sharedServiceStep.liveConfig().overrides()
-    .jitter(true)
-    .useExponentialBackoff(true);
+    .jitter(true);
 ```
 
 **Things to Avoid**:
@@ -322,7 +301,6 @@ void init() {
         .retryWait(Duration.ofSeconds(1))
         .concurrency(20)
         .debug(false)
-        .useExponentialBackoff(true)
         .maxBackoff(Duration.ofMinutes(5))
         .jitter(true));
     
@@ -343,7 +321,6 @@ processInputFileStep.liveConfig().overrides()
 persistAndSendPaymentStep.liveConfig().overrides()
     .concurrency(10)  // Moderate concurrency for database operations
     .retryLimit(5)
-    .useExponentialBackoff(true)
     .maxBackoff(Duration.ofMinutes(2))
     .jitter(true)
     .recoverOnFailure(true);  // Important step with recovery mechanism

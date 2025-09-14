@@ -49,7 +49,6 @@ class ConfigurationIntegrationTest {
       assertFalse(defaults.debug());
       assertFalse(defaults.recoverOnFailure());
       assertFalse(defaults.runWithVirtualThreads());
-      assertFalse(defaults.useExponentialBackoff());
       assertEquals(Duration.ofSeconds(30), defaults.maxBackoff());
       assertFalse(defaults.jitter());
     }

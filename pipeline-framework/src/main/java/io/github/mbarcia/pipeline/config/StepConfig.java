@@ -34,7 +34,6 @@ public class StepConfig {
     private volatile boolean recoverOnFailure = false;
     private volatile boolean runWithVirtualThreads = false;
 
-    private volatile boolean useExponentialBackoff = false;
     private final AtomicReference<Duration> maxBackoff = new AtomicReference<>(Duration.ofSeconds(30));
     private volatile boolean jitter = false;
 
@@ -47,7 +46,6 @@ public class StepConfig {
     public boolean debug() { return debug; }
     public boolean recoverOnFailure() { return recoverOnFailure; }
     public boolean runWithVirtualThreads() { return runWithVirtualThreads; }
-    public boolean useExponentialBackoff() { return useExponentialBackoff; }
     public Duration maxBackoff() { return maxBackoff.get(); }
     public boolean jitter() { return jitter; }
 
@@ -58,7 +56,6 @@ public class StepConfig {
     public StepConfig debug(boolean v) { debug = v; return this; }
     public StepConfig recoverOnFailure(boolean v) { recoverOnFailure = v; return this; }
     public StepConfig runWithVirtualThreads(boolean v) { runWithVirtualThreads = v; return this; }
-    public StepConfig useExponentialBackoff(boolean v) { useExponentialBackoff = v; return this; }
     public StepConfig maxBackoff(Duration v) { maxBackoff.set(Objects.requireNonNull(v)); return this; }
     public StepConfig jitter(boolean v) { jitter = v; return this; }
 

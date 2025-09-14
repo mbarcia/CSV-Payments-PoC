@@ -119,10 +119,6 @@ public class PipelineDynamicConfig {
         return false; // Default value
     }
     
-    public boolean isUseExponentialBackoff() {
-        return false; // Default value
-    }
-    
     public Duration getMaxBackoff() {
         return Duration.ofSeconds(30); // Default value
     }

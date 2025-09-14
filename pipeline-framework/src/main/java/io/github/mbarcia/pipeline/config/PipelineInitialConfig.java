@@ -72,13 +72,6 @@ public interface PipelineInitialConfig {
     Boolean runWithVirtualThreads();
 
     /**
-     * Use exponential backoff for retries.
-     * @return true to use exponential backoff, false otherwise
-     */
-    @WithDefault("false")
-    Boolean useExponentialBackoff();
-
-    /**
      * Maximum backoff time in milliseconds.
      * @return maximum backoff time in milliseconds
      */

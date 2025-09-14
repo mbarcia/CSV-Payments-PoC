@@ -71,7 +71,6 @@ public final class PipelineConfig {
                 .debug(base.debug())
                 .recoverOnFailure(base.recoverOnFailure())
                 .runWithVirtualThreads(base.runWithVirtualThreads())
-                .useExponentialBackoff(base.useExponentialBackoff())
                 .maxBackoff(base.maxBackoff())
                 .jitter(base.jitter());
     }

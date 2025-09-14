@@ -22,4 +22,8 @@ import io.smallrye.mutiny.Uni;
 @SuppressWarnings("unused")
 public interface StepSideEffect<I> extends StepBase {
     Uni<Void> apply(I in);
+
+    default int concurrency() { return 1; } // max in-flight items per upstream item
+
+    default boolean runWithVirtualThreads() { return false; }
 }

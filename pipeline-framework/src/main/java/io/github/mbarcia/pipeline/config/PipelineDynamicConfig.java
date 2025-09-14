@@ -34,37 +34,13 @@ public class PipelineDynamicConfig {
         new AtomicReference<>(new PipelineConfigValues(1000, 3, 1000L));
 
     /**
-     * Get the current concurrency limit for records processing.
-     * @return concurrency limit
-     */
-    public int getConcurrencyLimitRecords() {
-        return currentConfig.get().concurrencyLimitRecords;
-    }
-
-    /**
-     * Get the current maximum number of retry attempts.
-     * @return maximum retry attempts
-     */
-    public int getMaxRetries() {
-        return currentConfig.get().maxRetries;
-    }
-
-    /**
-     * Get the current initial retry delay in milliseconds.
-     * @return initial retry delay in milliseconds
-     */
-    public long getInitialRetryDelay() {
-        return currentConfig.get().initialRetryDelay;
-    }
-
-    /**
      * Update the configuration values at runtime.
-     * @param concurrencyLimitRecords new concurrency limit
-     * @param maxRetries new maximum retry attempts
-     * @param initialRetryDelay new initial retry delay in milliseconds
+     * @param concurrency new concurrency limit
+     * @param retryLimit new maximum retry attempts
+     * @param retryWaitMs new initial retry delay in milliseconds
      */
-    public void updateConfig(int concurrencyLimitRecords, int maxRetries, long initialRetryDelay) {
-        currentConfig.set(new PipelineConfigValues(concurrencyLimitRecords, maxRetries, initialRetryDelay));
+    public void updateConfig(int concurrency, int retryLimit, long retryWaitMs) {
+        currentConfig.set(new PipelineConfigValues(concurrency, retryLimit, retryWaitMs));
     }
 
     /**
@@ -73,9 +49,9 @@ public class PipelineDynamicConfig {
      */
     public void updateConfig(PipelineInitialConfig staticConfig) {
         updateConfig(
-            staticConfig.concurrencyLimitRecords(), 
-            staticConfig.maxRetries(), 
-            staticConfig.initialRetryDelay()
+            staticConfig.concurrency(), 
+            staticConfig.retryLimit(), 
+            staticConfig.retryWaitMs()
         );
     }
 
@@ -83,28 +59,28 @@ public class PipelineDynamicConfig {
      * Immutable holder for configuration values.
      */
     private static class PipelineConfigValues {
-        final int concurrencyLimitRecords;
-        final int maxRetries;
-        final long initialRetryDelay;
+        final int concurrency;
+        final int retryLimit;
+        final long retryWaitMs;
 
-        PipelineConfigValues(int concurrencyLimitRecords, int maxRetries, long initialRetryDelay) {
-            this.concurrencyLimitRecords = concurrencyLimitRecords;
-            this.maxRetries = maxRetries;
-            this.initialRetryDelay = initialRetryDelay;
+        PipelineConfigValues(int concurrency, int retryLimit, long retryWaitMs) {
+            this.concurrency = concurrency;
+            this.retryLimit = retryLimit;
+            this.retryWaitMs = retryWaitMs;
         }
     }
     
-    // Add methods for all the other configuration properties
+    // Getter methods for all the configuration properties
     public int getRetryLimit() {
-        return 3; // Default value
+        return currentConfig.get().retryLimit;
     }
     
     public Duration getRetryWait() {
-        return Duration.ofMillis(200); // Default value
+        return Duration.ofMillis(currentConfig.get().retryWaitMs);
     }
     
     public int getConcurrency() {
-        return 4; // Default value
+        return currentConfig.get().concurrency;
     }
     
     public boolean isDebug() {

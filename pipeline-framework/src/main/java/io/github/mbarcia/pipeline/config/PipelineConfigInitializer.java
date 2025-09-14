@@ -45,9 +45,9 @@ public class PipelineConfigInitializer {
      */
     void onStart(@Observes StartupEvent event) {
         LOG.info("Initializing pipeline configuration");
-        LOG.info("Concurrency limit records: {}", staticConfig.concurrencyLimitRecords());
-        LOG.info("Max retries: {}", staticConfig.maxRetries());
-        LOG.info("Initial retry delay: {}ms", staticConfig.initialRetryDelay());
+        LOG.info("Concurrency: {}", staticConfig.concurrency());
+        LOG.info("Retry limit: {}", staticConfig.retryLimit());
+        LOG.info("Retry wait: {}ms", staticConfig.retryWaitMs());
         
         dynamicConfig.updateConfig(staticConfig);
         LOG.info("Pipeline configuration initialized successfully");

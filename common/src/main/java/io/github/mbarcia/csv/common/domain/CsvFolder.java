@@ -16,7 +16,7 @@
 
 package io.github.mbarcia.csv.common.domain;
 
-import domain.BaseEntity;
+import io.github.mbarcia.pipeline.domain.BaseEntity;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Transient;

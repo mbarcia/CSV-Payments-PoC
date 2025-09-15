@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package domain;
+package io.github.mbarcia.pipeline.domain;
 
 
 import jakarta.persistence.Column;

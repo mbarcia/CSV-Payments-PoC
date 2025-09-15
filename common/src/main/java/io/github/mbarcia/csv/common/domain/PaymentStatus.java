@@ -18,7 +18,7 @@ package io.github.mbarcia.csv.common.domain;
 
 import static java.text.MessageFormat.format;
 
-import domain.BaseEntity;
+import io.github.mbarcia.pipeline.domain.BaseEntity;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;

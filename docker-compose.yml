@@ -3,6 +3,52 @@ networks:
     driver: bridge
 
 services:
+
+  orchestrator-svc:
+    build:
+      dockerfile: orchestrator-svc/Dockerfile
+    ports:
+      - "8443:8443"
+    environment:
+      - CSV_FOLDER_PATH=/app/csv
+      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_HOST=input-csv-file-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_PORT=8444
+      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_HOST=payments-processing-svc
+      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_PORT=8445
+      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_HOST=payments-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_PORT=8445
+      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_HOST=payment-status-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_PORT=8446
+      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_HOST=output-csv-file-processing-svc
+      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_PORT=8447
+      # Increase retry configuration
+      - CSV_POC_PROCESS_FILE_INITIAL_RETRY_DELAY=500
+      - CSV_POC_PROCESS_FILE_MAX_RETRIES=10
+      - CSV_POC_PROCESS_FILE_CONCURRENCY_LIMIT_RECORDS=2000
+    depends_on:
+      input-csv-file-processing-svc:
+        condition: service_healthy
+      data-persistence-svc:
+        condition: service_healthy
+      payments-processing-svc:
+        condition: service_healthy
+      payment-status-svc:
+        condition: service_healthy
+      output-csv-file-processing-svc:
+        condition: service_healthy
+    volumes:
+      - ./data/csv:/app/csv:rw
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://orchestrator-svc:8443/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    # Run once and exit
+    restart: "no"
+    networks:
+      - csv-payments-network
+
   # API Gateway
   kong:
     image: kong:3.9.1-ubuntu

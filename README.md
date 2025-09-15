@@ -56,7 +56,6 @@ The services use the following ports:
 - payments-processing-svc: 8445
 - payment-status-svc: 8446
 - output-csv-file-processing-svc: 8447
-- data-persistence-svc: 8448
 - orchestrator-svc: 8443 (gRPC)
 
 All services communicate over HTTPS with self-signed certificates.
@@ -102,7 +101,6 @@ This project consists of Maven submodules, each containing a microservice that r
 - [**Payment Status Service**](./payment-status-svc/README.md): Processes payment statuses
 - [**Output CSV File Processing Service**](./output-csv-file-processing-svc/README.md): Generates output CSV files
 - [**Common Module**](./common/README.md): Shared domain models and utilities
-- [**Data Persistence Service**](./data-persistence-svc/README.md): Handles data persistence (optional)
 
 ## Motivation
 
@@ -265,7 +263,6 @@ To run the application in development mode with hot reloading:
 # cd payments-processing-svc && mvn quarkus:dev
 # cd payment-status-svc && mvn quarkus:dev
 # cd output-csv-file-processing-svc && mvn quarkus:dev
-# cd data-persistence-svc && ./run-data-persistence-dev.sh
 
 # Run the orchestrator-svc as a CLI application (after all services are up)
 # In a separate terminal:
@@ -287,11 +284,7 @@ mvn clean package
 # Start each service in a separate terminal
 java -jar input-csv-file-processing-svc/target/input-csv-file-processing-svc-1.0.jar
 java -jar payments-processing-svc/target/payments-processing-svc-1.0.jar
-java -jar payment-status-svc/target/payment-status-svc-1.0.jar
-java -jar output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0.jar
-java -jar data-persistence-svc/target/data-persistence-svc-1.0.jar
-
-# Run the orchestrator-svc as a CLI application (after all services are up)
+java -jar payment-status-svc/target/payment-status-svc-1.0.jar\njava -jar output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0.jar\n\n# Run the orchestrator-svc as a CLI application (after all services are up)
 java -jar orchestrator-svc/target/orchestrator-svc-1.0.jar --csv-folder=/path/to/csv/files
 
 # Note: You'll need to stop each service manually in each terminal
@@ -308,11 +301,7 @@ mvn clean package -Pnative
 # Start each service in a separate terminal
 ./input-csv-file-processing-svc/target/input-csv-file-processing-svc-1.0-runner
 ./payments-processing-svc/target/payments-processing-svc-1.0-runner
-./payment-status-svc/target/payment-status-svc-1.0-runner
-./output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0-runner
-./data-persistence-svc/target/data-persistence-svc-1.0-runner
-
-# Run the orchestrator-svc as a CLI application (after all services are up)
+./payment-status-svc/target/payment-status-svc-1.0-runner\n./output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0-runner\n\n# Run the orchestrator-svc as a CLI application (after all services are up)
 ./orchestrator-svc/target/orchestrator-svc-1.0-runner --csv-folder=/path/to/csv/files
 
 # Note: You'll need to stop each service manually in each terminal
@@ -423,7 +412,6 @@ The generated certificates include the following SANs:
 - DNS: input-csv-file-processing-svc
 - DNS: payments-processing-svc
 - DNS: payment-status-svc
-- DNS: data-persistence-svc
 - DNS: output-csv-file-processing-svc
 - DNS: orchestrator-svc
 - DNS: kong

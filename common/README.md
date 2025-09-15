@@ -91,7 +91,6 @@ The common module includes shared Protocol Buffer definitions for all services:
 - `payments_processing_svc.proto`: Payments processing service contract
 - `payment_status_svc.proto`: Payment status service contract
 - `output_csv_file_processing_svc.proto`: Output CSV file processing service contract
-- `data-persistence.proto`: Data persistence service contract
 
 ## Technology Stack
 
@@ -220,7 +219,6 @@ All microservices in the CSV Payments POC project depend on the common module:
 - [Payments Processing Service](../payments-processing-svc/README.md)
 - [Payment Status Service](../payment-status-svc/README.md)
 - [Output CSV File Processing Service](../output-csv-file-processing-svc/README.md)
-- [Data Persistence Service](../data-persistence-svc/README.md)
 - [Orchestrator Service](../orchestrator-svc/README.md)
 
 Each service uses the common components to ensure consistency in data structures and communication patterns across the entire system.

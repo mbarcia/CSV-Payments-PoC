@@ -9,5 +9,4 @@ README.md
 HELP.md
 LICENSE
 .dockerignore
-data-persistence-svc
 **/data

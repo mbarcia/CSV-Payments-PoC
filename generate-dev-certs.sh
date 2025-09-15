@@ -60,7 +60,7 @@ openssl pkcs12 -export -in "${CERT_DIR}/quarkus-cert.pem" -inkey "${CERT_DIR}/qu
 keytool -import -file "${CERT_DIR}/quarkus-cert.pem" -keystore "${CERT_DIR}/client-truststore.jks" -storepass secret -noprompt -alias server
 
 # Copy certificates to service directories
-for svc in input-csv-file-processing-svc payments-processing-svc payment-status-svc data-persistence-svc output-csv-file-processing-svc; do
+for svc in input-csv-file-processing-svc payments-processing-svc payment-status-svc output-csv-file-processing-svc; do
     cp "${CERT_DIR}/server-keystore.p12" "${svc}/src/main/resources/server-keystore.jks"
 done
 

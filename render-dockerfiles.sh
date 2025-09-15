@@ -17,7 +17,7 @@
 
 set -e
 
-for service in data-persistence-svc input-csv-file-processing-svc payments-processing-svc payment-status-svc output-csv-file-processing-svc orchestrator-svc; do
+for service in input-csv-file-processing-svc payments-processing-svc payment-status-svc output-csv-file-processing-svc orchestrator-svc; do
   export SERVICE_NAME="$service"
   export p="\$p"
   envsubst < Dockerfile.template > "$service/Dockerfile"

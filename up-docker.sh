@@ -84,10 +84,9 @@ DNS.1 = localhost
 DNS.2 = input-csv-file-processing-svc
 DNS.3 = payments-processing-svc
 DNS.4 = payment-status-svc
-DNS.5 = data-persistence-svc
-DNS.6 = output-csv-file-processing-svc
-DNS.7 = orchestrator-svc
-DNS.8 = kong
+DNS.5 = output-csv-file-processing-svc
+DNS.6 = orchestrator-svc
+DNS.7 = kong
 IP.1 = 127.0.0.1
 IP.2 = ::1
 EOF
@@ -105,8 +104,8 @@ EOF
     keytool -import -file "${CERT_DIR}/quarkus-cert.pem" -keystore "${CERT_DIR}/client-truststore.jks" -storepass secret -noprompt -alias server
     
     # Copy certificates to service directories
-    for svc in input-csv-file-processing-svc payments-processing-svc payment-status-svc data-persistence-svc output-csv-file-processing-svc; do
-        cp "${CERT_DIR}/server-keystore.p12" "${svc}/src/main/resources/server-keystore.jks"
+    for svc in input-csv-file-processing-svc payments-processing-svc payment-status-svc output-csv-file-processing-svc; do
+        cp \"${CERT_DIR}/server-keystore.p12\" \"${svc}/src/main/resources/server-keystore.jks\"
     done
     
     cp "${CERT_DIR}/client-truststore.jks" "orchestrator-svc/src/main/resources/client-truststore.jks"
@@ -120,7 +119,7 @@ EOF
 # Check if certificates need to be generated
 echo "Checking if Docker certificates need to be generated..."
 CERTS_EXIST=true
-for svc in input-csv-file-processing-svc payments-processing-svc payment-status-svc data-persistence-svc output-csv-file-processing-svc; do
+for svc in input-csv-file-processing-svc payments-processing-svc payment-status-svc output-csv-file-processing-svc; do
     if [[ ! -f "${svc}/src/main/resources/server-keystore.jks" ]]; then
         CERTS_EXIST=false
         break

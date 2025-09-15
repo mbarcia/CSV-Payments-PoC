@@ -53,8 +53,5 @@ stop_service() {
 stop_service "input-csv-file-processing-svc"
 stop_service "payments-processing-svc"
 stop_service "payment-status-svc"
-stop_service "output-csv-file-processing-svc"
-stop_service "data-persistence-svc"
-
-echo "All services stopped."
+stop_service "output-csv-file-processing-svc"\n\necho "All services stopped."
 echo "Note: orchestrator-svc is a CLI application and doesn't need to be stopped."

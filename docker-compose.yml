@@ -114,28 +114,7 @@ services:
     networks:
       - csv-payments-network
 
-  data-persistence-svc:
-    build:
-      dockerfile: data-persistence-svc/Dockerfile
-    ports:
-      - "8448:8448"
-    environment:
-      - QUARKUS_DATASOURCE_REACTIVE_URL=postgresql://postgres:5432/payments
-      - QUARKUS_DATASOURCE_USERNAME=user
-      - QUARKUS_DATASOURCE_PASSWORD=password
-      - QUARKUS_HIBERNATE_ORM_SCHEMA_MANAGEMENT_STRATEGY=drop-and-create
-      - DATA_PERSISTENCE_SVC_PORT=8448
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://data-persistence-svc:8448/q/health"]
-      interval: 5s
-      timeout: 2s
-      retries: 10
-      start_period: 3s
-    networks:
-      - csv-payments-network
+  
 
   output-csv-file-processing-svc:
     build:
@@ -246,54 +225,7 @@ services:
     networks:
       - csv-payments-network
 
-  orchestrator-svc:
-    build:
-      dockerfile: orchestrator-svc/Dockerfile
-    ports:
-      - "8443:8443"
-    environment:
-      - CSV_FOLDER_PATH=/app/csv
-      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_HOST=input-csv-file-processing-svc
-      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_PORT=8444
-      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_HOST=payments-processing-svc
-      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_PORT=8445
-      - QUARKUS_GRPC_CLIENTS_PERSIST_ACK_PAYMENT_SENT_HOST=payments-processing-svc
-      - QUARKUS_GRPC_CLIENTS_PERSIST_ACK_PAYMENT_SENT_PORT=8445
-      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_HOST=payments-processing-svc
-      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_PORT=8445
-      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_HOST=payment-status-svc
-      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_PORT=8446
-      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_HOST=output-csv-file-processing-svc
-      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_PORT=8447
-      - QUARKUS_GRPC_CLIENTS_PERSIST_PAYMENT_RECORD_HOST=data-persistence-svc
-      - QUARKUS_GRPC_CLIENTS_PERSIST_PAYMENT_RECORD_PORT=8448
-      # Increase retry configuration
-      - CSV_POC_PROCESS_FILE_INITIAL_RETRY_DELAY=500
-      - CSV_POC_PROCESS_FILE_MAX_RETRIES=10
-      - CSV_POC_PROCESS_FILE_CONCURRENCY_LIMIT_RECORDS=2000
-    depends_on:
-      input-csv-file-processing-svc:
-        condition: service_healthy
-      data-persistence-svc:
-        condition: service_healthy
-      payments-processing-svc:
-        condition: service_healthy
-      payment-status-svc:
-        condition: service_healthy
-      output-csv-file-processing-svc:
-        condition: service_healthy
-    volumes:
-      - ./data/csv:/app/csv:rw
-    healthcheck:
-      test: ["CMD", "curl", "-k", "-f", "https://orchestrator-svc:8443/q/health"]
-      interval: 5s
-      timeout: 2s
-      retries: 10
-      start_period: 3s
-    # Run once and exit
-    restart: "no"
-    networks:
-      - csv-payments-network
+  orchestrator-svc:\n    build:\n      dockerfile: orchestrator-svc/Dockerfile\n    ports:\n      - \"8443:8443\"\n    environment:\n      - CSV_FOLDER_PATH=/app/csv\n      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_HOST=input-csv-file-processing-svc\n      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_PORT=8444\n      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_HOST=payments-processing-svc\n      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_PORT=8445\n      - QUARKUS_GRPC_CLIENTS_PERSIST_ACK_PAYMENT_SENT_HOST=payments-processing-svc\n      - QUARKUS_GRPC_CLIENTS_PERSIST_ACK_PAYMENT_SENT_PORT=8445\n      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_HOST=payments-processing-svc\n      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_PORT=8445\n      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_HOST=payment-status-svc\n      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_PORT=8446\n      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_HOST=output-csv-file-processing-svc\n      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_PORT=8447\n      # Increase retry configuration\n      - CSV_POC_PROCESS_FILE_INITIAL_RETRY_DELAY=500\n      - CSV_POC_PROCESS_FILE_MAX_RETRIES=10\n      - CSV_POC_PROCESS_FILE_CONCURRENCY_LIMIT_RECORDS=2000\n    depends_on:\n      input-csv-file-processing-svc:\n        condition: service_healthy\n      payments-processing-svc:\n        condition: service_healthy\n      payment-status-svc:\n        condition: service_healthy\n      output-csv-file-processing-svc:\n        condition: service_healthy\n    volumes:\n      - ./data/csv:/app/csv:rw\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-k\", \"-f\", \"https://orchestrator-svc:8443/q/health\"]\n      interval: 5s\n      timeout: 2s\n      retries: 10\n      start_period: 3s\n    # Run once and exit\n    restart: \"no\"\n    networks:\n      - csv-payments-network
 
 volumes:
   postgres_data:

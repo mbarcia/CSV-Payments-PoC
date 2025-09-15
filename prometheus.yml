@@ -39,10 +39,4 @@ scrape_configs:
     static_configs:
       - targets: ['output-csv-file-processing-svc:8447']
   
-  - job_name: 'data-persistence-svc'
-    scheme: https
-    tls_config:
-      insecure_skip_verify: true
-    metrics_path: /q/metrics
-    static_configs:
-      - targets: ['data-persistence-svc:8448']
+  

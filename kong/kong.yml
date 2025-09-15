@@ -148,22 +148,7 @@ services:
           credentials: true
           max_age: 3600
 
-  - name: data-persistence-svc
-    url: grpcs://data-persistence-svc:8448
-    protocol: grpcs
-    routes:
-      - name: data-persistence-svc-route
-        protocols:
-          - grpcs
-        paths:
-          - /PersistPaymentRecordService/remoteProcess
-          - /PersistAckPaymentSentService/remoteProcess
-          - /PersistCsvPaymentsInputFileService/remoteProcess
-          - /PersistCsvPaymentsOutputFileService/remoteProcess
-          - /PersistPaymentOutputService/remoteProcess
-          - /PersistPaymentStatusService/remoteProcess
-          - /PersistCsvFolderService/remoteProcess
-        strip_path: false
+  
 
   - name: output-csv-file-processing-svc
     url: grpcs://output-csv-file-processing-svc:8447

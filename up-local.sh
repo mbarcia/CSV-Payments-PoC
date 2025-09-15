@@ -52,7 +52,6 @@ start_service "input-csv-file-processing-svc" "input-csv-file-processing-svc"
 start_service "payments-processing-svc" "payments-processing-svc"
 start_service "payment-status-svc" "payment-status-svc"
 start_service "output-csv-file-processing-svc" "output-csv-file-processing-svc"
-start_service "data-persistence-svc" "data-persistence-svc"
 
 sleep 10
 

@@ -41,6 +41,12 @@
             <groupId>io.github.mbarcia</groupId>
             <artifactId>pipeline-framework</artifactId>
             <version>1.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-reactive-pg-client</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

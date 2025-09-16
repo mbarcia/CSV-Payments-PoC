@@ -77,6 +77,8 @@ detect_docker() {
 }
 
 start_service() {
+    export JAVA_TOOL_OPTIONS="--enable-preview"
+
     local service_dir=$1
     local service_name=$2
     
@@ -86,19 +88,19 @@ start_service() {
     cd "$PROJECT_ROOT"
     case "$service_name" in
         "input-csv-file-processing-svc")
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Ddebug=5005 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5005 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
             ;;
         "payments-processing-svc")
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Ddebug=5006 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5006 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
             ;;
         "payment-status-svc")
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Ddebug=5007 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5007 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
             ;;
         "output-csv-file-processing-svc")
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Ddebug=5008 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5008 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
             ;;
         *)
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
             ;;
     esac
     
@@ -451,7 +453,7 @@ verify_database_persistence() {
     echo "Running orchestrator..."
     cd "$PROJECT_ROOT/orchestrator-svc"
     # Run the orchestrator in the background so we can monitor it
-    mvn quarkus:dev -Dquarkus.profile=dev -Dquarkus.args="--csv-folder=$TEST_OUTPUT_DIR" > "$PROJECT_ROOT/orchestrator.log" 2>&1 &
+    mvn quarkus:dev -Dquarkus.log.console.level=DEBUG -Dquarkus.args="--csv-folder=$TEST_OUTPUT_DIR" > "$PROJECT_ROOT/orchestrator.log" 2>&1 &
     orchestrator_pid=$!
     
     # Wait for the orchestrator to complete or timeout after 60 seconds

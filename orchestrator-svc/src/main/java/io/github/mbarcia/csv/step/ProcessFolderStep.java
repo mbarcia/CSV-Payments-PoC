@@ -46,6 +46,10 @@ public class ProcessFolderStep extends ConfigurableStep implements StepOneToMany
     @Inject
     public ProcessFolderStep(PipelineConfig pipelineConfig) {
         // Constructor with dependencies
+        liveConfig().overrides()
+                .recoverOnFailure(true)
+                .debug(true)
+                .autoPersist(true); // Enable auto-persistence
     }
 
     @Override

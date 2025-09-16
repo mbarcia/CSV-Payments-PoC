@@ -42,6 +42,10 @@ public class ProcessPaymentStatusStep extends ConfigurableStep implements StepOn
     @Inject
     public ProcessPaymentStatusStep(PipelineConfig pipelineConfig) {
         // Constructor with dependencies
+        liveConfig().overrides()
+                .recoverOnFailure(true)
+                .debug(true)
+                .autoPersist(true); // Enable auto-persistence
     }
 
     @Override

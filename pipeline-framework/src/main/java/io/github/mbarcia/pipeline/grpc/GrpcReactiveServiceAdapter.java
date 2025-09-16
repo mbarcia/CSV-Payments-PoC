@@ -22,8 +22,12 @@ import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(GrpcReactiveServiceAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;
@@ -56,13 +60,19 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
   }
 
   public Uni<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
-    DomainIn entity = fromGrpc(grpcRequest);
+      DomainIn entity = fromGrpc(grpcRequest);
     
-    Uni<DomainIn> persistenceUni = isAutoPersistenceEnabled() 
-        ? persistenceManager.persist(entity)
-        : Uni.createFrom().item(entity);
-    
-    return persistenceUni
+      Uni<DomainIn> persistenceUni;
+      if (isAutoPersistenceEnabled()) {
+        LOG.debug("Auto-persistance is enabled");
+        persistenceUni = persistenceManager.persist(entity);
+      }
+      else {
+        LOG.debug("Auto-persistance is disabled");
+        persistenceUni = Uni.createFrom().item(entity);
+      }
+
+      return persistenceUni
         .onItem().transformToUni(persistedEntity -> 
             getService()
                 .process(persistedEntity)

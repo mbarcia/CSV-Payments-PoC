@@ -52,6 +52,10 @@ public class ProcessInputFileStep extends ConfigurableStep implements StepOneToM
     @Inject
     public ProcessInputFileStep(PipelineConfig pipelineConfig) {
         // Constructor with dependencies
+        liveConfig().overrides()
+                .recoverOnFailure(true)
+                .debug(true)
+                .autoPersist(true); // Enable auto-persistence
     }
 
     @Override

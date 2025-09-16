@@ -20,6 +20,10 @@ import io.github.mbarcia.pipeline.persistence.PersistenceProvider;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.text.MessageFormat;
 
 /**
  * Reactive persistence provider using Hibernate Reactive Panache.
@@ -27,17 +31,24 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class ReactivePanachePersistenceProvider implements PersistenceProvider<Object> {
 
+    private static final Logger LOG = LoggerFactory.getLogger(ReactivePanachePersistenceProvider.class);
+
     @Override
     public Uni<Object> persist(Object entity) {
         if (entity instanceof PanacheEntityBase panacheEntity) {
+            LOG.debug(MessageFormat.format("About to persist entity: {0}", entity));
+
             return panacheEntity.persistAndFlush()
-                .onItem().transform(v -> entity)
+                .onItem().transform(_ -> entity)
                 .onFailure().recoverWithUni(t -> {
                     // Log the error but don't fail the operation
-                    System.err.println("Failed to persist entity with Hibernate Reactive: " + t.getMessage());
+                    LOG.error(MessageFormat.format("Failed to persist entity with Hibernate Reactive: {0}", t.getMessage()));
                     return Uni.createFrom().item(entity);
                 });
+        } else {
+            LOG.debug(MessageFormat.format("Skipped entity: {0}", entity));
         }
+
         return Uni.createFrom().item(entity);
     }
 

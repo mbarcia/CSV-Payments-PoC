@@ -56,6 +56,10 @@ public class ProcessOutputFileStep extends ConfigurableStep implements StepManyT
     @Inject
     public ProcessOutputFileStep(PipelineConfig pipelineConfig) {
         // Constructor with dependencies
+        liveConfig().overrides()
+                .recoverOnFailure(true)
+                .debug(true)
+                .autoPersist(true); // Enable auto-persistence
     }
 
     @Override

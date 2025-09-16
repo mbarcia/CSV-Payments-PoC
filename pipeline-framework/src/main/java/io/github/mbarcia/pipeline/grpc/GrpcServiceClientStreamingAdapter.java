@@ -23,8 +23,12 @@ import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceClientStreamingAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;
@@ -59,11 +63,18 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
   public Uni<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
     Multi<DomainIn> domainStream = requestStream.onItem().transform(this::fromGrpc);
     
-    Multi<DomainIn> persistedStream = isAutoPersistenceEnabled() 
-        ? domainStream.onItem().transformToUniAndMerge(persistenceManager::persist)
-        : domainStream;
+    Multi<DomainIn> persistedStream;
+      if (isAutoPersistenceEnabled())
+      {
+        LOG.debug("Auto-persistance is enabled");
+        persistedStream = domainStream.onItem().transformToUniAndMerge(persistenceManager::persist);
+      }
+      else {
+        LOG.debug("Auto-persistance is disabled");
+        persistedStream = domainStream;
+      }
 
-    return getService()
+      return getService()
         .process(persistedStream) // Multi<DomainIn> → Uni<DomainOut>
         .onItem()
         .transform(this::toGrpc) // Uni<GrpcOut>

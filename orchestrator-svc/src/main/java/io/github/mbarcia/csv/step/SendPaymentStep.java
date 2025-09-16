@@ -45,6 +45,7 @@ public class SendPaymentStep extends ConfigurableStep implements StepOneToOne<In
         // step-specific overrides if needed
         liveConfig().overrides()
             .recoverOnFailure(true)
+            .debug(true)
             .autoPersist(true); // Enable auto-persistence
     }
 

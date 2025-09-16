@@ -33,7 +33,7 @@ public class StepConfig {
     private volatile boolean debug = false;
     private volatile boolean recoverOnFailure = false;
     private volatile boolean runWithVirtualThreads = false;
-    private volatile boolean autoPersist = false; // New configuration option
+    private volatile boolean autoPersist = false;
 
     private final AtomicReference<Duration> maxBackoff = new AtomicReference<>(Duration.ofSeconds(30));
     private volatile boolean jitter = false;

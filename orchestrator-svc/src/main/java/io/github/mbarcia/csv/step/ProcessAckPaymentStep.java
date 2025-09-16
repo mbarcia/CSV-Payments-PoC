@@ -41,6 +41,10 @@ public class ProcessAckPaymentStep extends ConfigurableStep implements StepOneTo
     @Inject
     public ProcessAckPaymentStep(PipelineConfig pipelineConfig) {
         // Constructor with dependencies
+        liveConfig().overrides()
+                .recoverOnFailure(true)
+                .debug(true)
+                .autoPersist(true); // Enable auto-persistence
     }
 
     @Override

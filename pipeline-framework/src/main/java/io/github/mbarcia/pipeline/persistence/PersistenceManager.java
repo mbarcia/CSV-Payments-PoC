@@ -21,6 +21,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manager for persistence operations that delegates to registered PersistenceProvider implementations.
@@ -31,6 +33,8 @@ public class PersistenceManager {
     @Inject
     Instance<PersistenceProvider<?>> providers;
 
+    private static final Logger LOG = LoggerFactory.getLogger(PersistenceManager.class);
+
     /**
      * Persist an entity using the appropriate provider.
      * 
@@ -39,14 +43,17 @@ public class PersistenceManager {
      */
     public <T> Uni<T> persist(T entity) {
         if (entity == null) {
-            return Uni.createFrom().item(entity);
+            return Uni.createFrom().item((T) null);
         }
 
         // Find a provider that supports this entity
         PersistenceProvider<T> provider = findProvider(entity);
         
         if (provider != null) {
+            LOG.debug("Found a persistence provider");
             return provider.persist(entity);
+        } else {
+            LOG.debug("Did NOT find a persistence provider");
         }
         
         // No provider found, return the entity as-is

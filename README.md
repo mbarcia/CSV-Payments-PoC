@@ -322,7 +322,6 @@ See [application.properties](./orchestrator-svc/src/main/resources/application.p
 
 For development with Dev Services, the following environment variables can be used:
 
-- `ENABLE_DEV_SERVICES`: Enable or disable Dev Services for data-persistence-svc (default: true)
 - `QUARKUS_DATASOURCE_DEVSERVICES_PORT`: Port to map the Dev Services database container to (default: randomly assigned)
 - `QUARKUS_DATASOURCE_DEVSERVICES_IMAGE_NAME`: Docker image to use for the database (default: postgres:16)
 - `QUARKUS_DATASOURCE_DEVSERVICES_DB_NAME`: Name of the database to create (default: quarkus)
@@ -468,34 +467,6 @@ This command starts all microservices (except the orchestrator-svc) along with t
 - **Tempo**: http://localhost:3200
 - **Loki**: http://localhost:3100
 
-### Running with Dev Services for Local Development
-
-For local development, you can use Quarkus Dev Services to automatically start a PostgreSQL container for the `data-persistence-svc`. This is especially useful when you want to work on the `data-persistence-svc` independently.
-
-To enable Dev Services for local development:
-
-1. Make sure you have Docker installed and running.
-2. Run the following command to start the services with Dev Services enabled for the `data-persistence-svc`:
-
-```bash
-# Start the services (excluding orchestrator-svc which is a CLI application)
-./up-docker.sh
-
-# Run the orchestrator-svc as a CLI application (after all services are up)
-# Using Maven (in a separate terminal):
-# cd orchestrator-svc && mvn quarkus:dev
-# 
-# Or build and run the JAR:
-# mvn package && java -jar target/orchestrator-svc-1.0.jar --csv-folder=/path/to/csv/files
-#
-# Or using Docker:
-# ./run-orchestrator-docker.sh
-
-# Stop the services
-./down-docker.sh
-```
-
-This will use the `docker-compose.override.local.yml` file to override the environment variables for the `data-persistence-svc` and enable Dev Services.
 
 ### Using the Convenience Scripts
 

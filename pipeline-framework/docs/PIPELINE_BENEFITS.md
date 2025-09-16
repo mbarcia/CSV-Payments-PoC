@@ -36,17 +36,16 @@ The pipeline framework in `io.github.mbarcia.pipeline*` provides a comprehensive
 - **Metrics Collection**: Micrometer integration for performance monitoring
 - **Structured Logging**: Consistent, contextual logging across all steps
 - **Health Checks**: Built-in health monitoring capabilities
+- **Automatic Audit Trail**: Built-in persistence creates audit logs of all processed entities
 
 ### 5. Developer Productivity
-- **Simplified Development**: Focus on business logic, not infrastructure concerns
-- **Consistent Patterns**: Standardized interfaces and patterns across all steps
-- **Rapid Prototyping**: Quick to implement new processing steps
-- **Easy Testing**: Well-defined interfaces make unit testing straightforward
-- **Flexible Implementation Options**: Simple business logic can use `Uni.createFrom().item(result)` while complex operations can leverage full Mutiny capabilities like:
-  - Chaining asynchronous operations with `flatMap()` and `chain()`
-  - Handling errors with `onFailure().invoke()` or `onFailure().recoverWithItem()`
-  - Transforming data with `onItem().transform()`
-  - Making gRPC calls and handling their responses reactively
+- **Simplified Configuration**: No need to manually configure persistence steps or services
+- **Generic Persistence**: Works with any type of entities without modification
+- **Zero Setup**: Auto-persistence works out of the box with no additional configuration
+- **Reduced Boilerplate**: Framework handles common patterns automatically
+- **Easy Customization**: Simple to override default behavior with custom implementations
+- **Type Safety**: Strong typing with clear input/output contracts between steps
+- **Flexible Testing**: Built-in testing utilities and mock support
 
 ### 6. Operational Excellence
 - **Configuration Management**: Externalized configuration through Quarkus

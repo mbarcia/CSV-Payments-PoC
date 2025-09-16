@@ -5,16 +5,4 @@ version: '3.8'
 # To customize for your local environment, copy this file to `docker-compose.local.yml`
 # and modify that file. The `docker-compose.local.yml` file is ignored by Git.
 
-services:
-  data-persistence-svc:
-    environment:
-      # Enable Dev Services for local development
-      - ENABLE_DEV_SERVICES=true
-      # Customize Dev Services configuration (optional)
-      # - QUARKUS_DATASOURCE_DEVSERVICES_IMAGE_NAME=postgres:16
-      # - QUARKUS_DATASOURCE_DEVSERVICES_PORT=54322
-      # - QUARKUS_DATASOURCE_DEVSERVICES_DB_NAME=quarkus
-      # - QUARKUS_DATASOURCE_DEVSERVICES_USERNAME=quarkus
-      # - QUARKUS_DATASOURCE_DEVSERVICES_PASSWORD=quarkus
-      # Remove the explicit database configuration to allow Dev Services to take over
-      # Dev Services will automatically start a PostgreSQL container and configure the datasource
+services: []

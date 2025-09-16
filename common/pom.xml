@@ -139,6 +139,16 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- JPA dependencies for entity classes -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+        </dependency>
+
         <!-- Observability dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>

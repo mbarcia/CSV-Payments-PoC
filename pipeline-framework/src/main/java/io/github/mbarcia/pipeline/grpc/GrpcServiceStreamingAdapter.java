@@ -16,11 +16,18 @@
 
 package io.github.mbarcia.pipeline.grpc;
 
+import io.github.mbarcia.pipeline.config.StepConfig;
+import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingService;
 import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
 
 public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+
+  @Inject
+  PersistenceManager persistenceManager;
 
   protected abstract ReactiveStreamingService<DomainIn, DomainOut> getService();
 
@@ -28,13 +35,42 @@ public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, Dom
 
   protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
-  public Multi<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
+  /**
+   * Get the step configuration for this service adapter.
+   * Override this method to provide specific configuration.
+   * 
+   * @return the step configuration, or null if not configured
+   */
+  protected StepConfig getStepConfig() {
+    return null;
+  }
 
-    return getService()
-        .process(fromGrpc(grpcRequest)) // Multi<DomainOut>
-        .onItem()
-        .transform(this::toGrpc) // Multi<GrpcOut>
-        .onFailure()
-        .transform(new throwStatusRuntimeExceptionFunction());
+  /**
+   * Determines whether entities should be automatically persisted before processing.
+   * Override this method to enable auto-persistence.
+   * 
+   * @return true if entities should be auto-persisted, false otherwise
+   */
+  protected boolean isAutoPersistenceEnabled() {
+    StepConfig config = getStepConfig();
+    return config != null && config.autoPersist();
+  }
+
+  public Multi<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
+    DomainIn entity = fromGrpc(grpcRequest);
+    
+    Uni<DomainIn> persistenceUni = isAutoPersistenceEnabled() 
+        ? persistenceManager.persist(entity)
+        : Uni.createFrom().item(entity);
+    
+    return persistenceUni
+        .onItem().transformToMulti(persistedEntity -> 
+            getService()
+                .process(persistedEntity) // Multi<DomainOut>
+                .onItem()
+                .transform(this::toGrpc) // Multi<GrpcOut>
+                .onFailure()
+                .transform(new throwStatusRuntimeExceptionFunction())
+        );
   }
 }

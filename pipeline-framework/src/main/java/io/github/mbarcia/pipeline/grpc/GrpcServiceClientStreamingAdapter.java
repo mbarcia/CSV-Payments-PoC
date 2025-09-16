@@ -16,12 +16,18 @@
 
 package io.github.mbarcia.pipeline.grpc;
 
+import io.github.mbarcia.pipeline.config.StepConfig;
+import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingClientService;
 import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import jakarta.inject.Inject;
 
 public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+
+  @Inject
+  PersistenceManager persistenceManager;
 
   protected abstract ReactiveStreamingClientService<DomainIn, DomainOut> getService();
 
@@ -29,11 +35,36 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
 
   protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
+  /**
+   * Get the step configuration for this service adapter.
+   * Override this method to provide specific configuration.
+   * 
+   * @return the step configuration, or null if not configured
+   */
+  protected StepConfig getStepConfig() {
+    return null;
+  }
+
+  /**
+   * Determines whether entities should be automatically persisted before processing.
+   * Override this method to enable auto-persistence.
+   * 
+   * @return true if entities should be auto-persisted, false otherwise
+   */
+  protected boolean isAutoPersistenceEnabled() {
+    StepConfig config = getStepConfig();
+    return config != null && config.autoPersist();
+  }
+
   public Uni<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
+    Multi<DomainIn> domainStream = requestStream.onItem().transform(this::fromGrpc);
+    
+    Multi<DomainIn> persistedStream = isAutoPersistenceEnabled() 
+        ? domainStream.onItem().transformToUniAndMerge(persistenceManager::persist)
+        : domainStream;
 
     return getService()
-        .process(
-            requestStream.onItem().transform(this::fromGrpc)) // Multi<DomainIn> → Uni<DomainOut>
+        .process(persistedStream) // Multi<DomainIn> → Uni<DomainOut>
         .onItem()
         .transform(this::toGrpc) // Uni<GrpcOut>
         .onFailure()

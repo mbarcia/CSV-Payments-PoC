@@ -18,29 +18,33 @@ package io.github.mbarcia.pipeline.step;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
+import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Test;
 
-class ConfigurableStepBaseTest {
+class StepOneToOneTest {
 
-  static class TestStepBlocking extends ConfigurableStepBase
-      implements StepOneToOneBlocking<String, String> {
-    TestStepBlocking() {
-      // No-args constructor
+  static class TestStep implements StepOneToOne<String, String> {
+    @Override
+    public Uni<String> applyAsyncUni(String input) {
+      return Uni.createFrom().item("Processed: " + input);
     }
 
     @Override
-    public String apply(String input) {
-      return "Processed: " + input;
+    public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
+      return new io.github.mbarcia.pipeline.config.StepConfig();
     }
   }
 
   @Test
-  void testConfigurableStepBaseCreation() {
+  void testApplyAsyncUniMethod() {
+    // Given
+    TestStep step = new TestStep();
+
     // When
-    TestStepBlocking step = new TestStepBlocking();
+    Uni<String> result = step.applyAsyncUni("test");
 
     // Then
-    assertNotNull(step);
+    String value = result.await().indefinitely();
+    assertEquals("Processed: test", value);
   }
 }

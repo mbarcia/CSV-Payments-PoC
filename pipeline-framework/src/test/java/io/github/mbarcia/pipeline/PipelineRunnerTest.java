@@ -47,7 +47,7 @@ class PipelineRunnerTest {
   void testRunWithStepOneToOne() {
     try (PipelineRunner runner = new PipelineRunner()) {
       Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
-      List<StepBase> steps = List.of(new TestSteps.TestStepOneToOne());
+      List<StepBase> steps = List.of(new TestSteps.TestStepOneToOneBlocking());
 
       Multi<Object> result = runner.run(input, steps);
 
@@ -110,7 +110,7 @@ class PipelineRunnerTest {
   void testRunWithStepOneToAsync() {
     try (PipelineRunner runner = new PipelineRunner()) {
       Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
-      List<StepBase> steps = List.of(new TestSteps.TestStepOneToAsync());
+      List<StepBase> steps = List.of(new TestSteps.TestStepOneToOne());
 
       Multi<Object> result = runner.run(input, steps);
 
@@ -126,7 +126,7 @@ class PipelineRunnerTest {
     try (PipelineRunner runner = new PipelineRunner()) {
       Multi<String> input = Multi.createFrom().items("item1", "item2");
       List<StepBase> steps =
-          List.of(new TestSteps.TestStepOneToOne(), new TestSteps.TestStepOneToMany());
+          List.of(new TestSteps.TestStepOneToOneBlocking(), new TestSteps.TestStepOneToMany());
 
       Multi<Object> result = runner.run(input, steps);
 
@@ -156,7 +156,7 @@ class PipelineRunnerTest {
   void testRunWithFailingStepAndRecovery() {
     try (PipelineRunner runner = new PipelineRunner()) {
       Multi<String> input = Multi.createFrom().items("item1", "item2");
-      List<StepBase> steps = List.of(new TestSteps.FailingStep(true));
+      List<StepBase> steps = List.of(new TestSteps.FailingStepBlocking(true));
 
       Multi<Object> result = runner.run(input, steps);
 
@@ -180,7 +180,7 @@ class PipelineRunnerTest {
   void testRunWithFailingStepWithoutRecovery() {
     try (PipelineRunner runner = new PipelineRunner()) {
       Multi<String> input = Multi.createFrom().items("item1", "item2");
-      List<StepBase> steps = List.of(new TestSteps.FailingStep());
+      List<StepBase> steps = List.of(new TestSteps.FailingStepBlocking());
 
       Multi<Object> result = runner.run(input, steps);
 
@@ -281,12 +281,41 @@ class PipelineRunnerTest {
       Multi.createFrom().items("item1");
 
       // Create a step with specific configuration
-      TestSteps.TestStepOneToOne step = new TestSteps.TestStepOneToOne();
+      TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
       step.liveConfig().overrides().retryLimit(5).retryWait(Duration.ofMillis(100)).debug(true);
 
       assertEquals(5, step.retryLimit());
       assertEquals(Duration.ofMillis(100), step.retryWait());
       assertTrue(step.debug());
+    }
+  }
+
+  @Test
+  void testRunWithAutoPersistEnabled() {
+    try (PipelineRunner runner = new PipelineRunner()) {
+      Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
+
+      // Create a step with auto-persist enabled
+      TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
+      step.liveConfig().overrides().autoPersist(true);
+
+      List<StepBase> steps = List.of(step);
+
+      Multi<Object> result = runner.run(input, steps);
+
+      AssertSubscriber<Object> subscriber =
+          result.subscribe().withSubscriber(AssertSubscriber.create(3));
+      subscriber.awaitItems(3, Duration.ofSeconds(5)).assertCompleted();
+
+      // Grab all items
+      List<Object> actualItems = subscriber.getItems();
+
+      // Expected items (same as without persistence, as persistence is a side effect)
+      Set<String> expectedItems =
+          Set.of("Processed: item1", "Processed: item2", "Processed: item3");
+
+      // Assert ignoring order
+      assertEquals(expectedItems, new HashSet<>(actualItems));
     }
   }
 }

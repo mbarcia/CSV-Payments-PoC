@@ -19,7 +19,6 @@ package io.github.mbarcia.pipeline.grpc;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 
-import domain.BaseEntity;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingClientService;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Multi;
@@ -41,9 +40,9 @@ class GrpcServiceClientStreamingAdapterTest {
 
   private static class GrpcOut {}
 
-  private static class DomainIn extends BaseEntity {}
+  private static class DomainIn {}
 
-  private static class DomainOut extends BaseEntity {}
+  private static class DomainOut {}
 
   @BeforeEach
   void setUp() {

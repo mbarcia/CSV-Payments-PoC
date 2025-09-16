@@ -76,7 +76,8 @@ class VirtualThreadExecutorTest {
     // This test verifies that the PipelineRunner can be closed without issues
     try (PipelineRunner runner = new PipelineRunner()) {
       Multi<String> input = Multi.createFrom().items("test");
-      List<TestSteps.TestStepOneToOne> steps = List.of(new TestSteps.TestStepOneToOne());
+      List<TestSteps.TestStepOneToOneBlocking> steps =
+          List.of(new TestSteps.TestStepOneToOneBlocking());
 
       Multi<Object> result = runner.run(input, steps);
 

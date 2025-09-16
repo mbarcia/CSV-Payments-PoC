@@ -16,11 +16,8 @@
 
 package io.github.mbarcia.pipeline;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
-import io.github.mbarcia.pipeline.step.StepManyToMany;
-import io.github.mbarcia.pipeline.step.StepOneToAsync;
-import io.github.mbarcia.pipeline.step.StepOneToMany;
-import io.github.mbarcia.pipeline.step.StepOneToOne;
+import io.github.mbarcia.pipeline.step.*;
+import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -28,8 +25,8 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class TestSteps {
 
-  public static class TestStepOneToOne extends ConfigurableStepBase
-      implements StepOneToOne<String, String> {
+  public static class TestStepOneToOneBlocking extends ConfigurableStepBase
+      implements StepOneToOneBlocking<String, String> {
     @Override
     public String apply(String input) {
       return "Processed: " + input;
@@ -51,23 +48,23 @@ public class TestSteps {
     }
   }
 
-  public static class TestStepOneToAsync extends ConfigurableStepBase
-      implements StepOneToAsync<String, String> {
+  public static class TestStepOneToOne extends ConfigurableStepBase
+      implements StepOneToOne<String, String> {
     @Override
     public Uni<String> applyAsyncUni(String input) {
       return Uni.createFrom().item("Async: " + input);
     }
   }
 
-  public static class FailingStep extends ConfigurableStepBase
-      implements StepOneToOne<String, String> {
+  public static class FailingStepBlocking extends ConfigurableStepBase
+      implements StepOneToOneBlocking<String, String> {
     private final boolean shouldRecover;
 
-    public FailingStep() {
+    public FailingStepBlocking() {
       this(false);
     }
 
-    public FailingStep(boolean shouldRecover) {
+    public FailingStepBlocking(boolean shouldRecover) {
       this.shouldRecover = shouldRecover;
       if (shouldRecover) {
         liveConfig().overrides().recoverOnFailure(true);

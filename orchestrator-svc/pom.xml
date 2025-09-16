@@ -122,15 +122,6 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-sender-grpc-managed-channel</artifactId>
         </dependency>
-        <!-- Database dependencies for auto-persistence -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-reactive-panache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-pg-client</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>

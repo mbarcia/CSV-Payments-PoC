@@ -16,9 +16,6 @@
 
 package io.github.mbarcia.pipeline;
 
-import io.github.mbarcia.pipeline.persistence.AutoPersistStepSideEffect;
-import io.github.mbarcia.pipeline.persistence.DefaultPersistenceService;
-import io.github.mbarcia.pipeline.persistence.PersistenceService;
 import io.github.mbarcia.pipeline.step.*;
 import io.github.mbarcia.pipeline.step.blocking.StepManyToManyBlocking;
 import io.github.mbarcia.pipeline.step.blocking.StepManyToOneBlocking;
@@ -28,7 +25,6 @@ import io.github.mbarcia.pipeline.step.future.StepOneToOneCompletableFuture;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.spi.CDI;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
@@ -45,65 +41,6 @@ public class PipelineRunner implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(PipelineRunner.class);
 
     private final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-    private final PersistenceService persistenceService;
-
-    public PipelineRunner() {
-        this(createDefaultPersistenceService());
-    }
-
-    public PipelineRunner(PersistenceService persistenceService) {
-        this.persistenceService = persistenceService;
-    }
-
-    private static PersistenceService createDefaultPersistenceService() {
-        // In a pure JUnit environment, use a no-op implementation
-        // In a Quarkus environment, try to get the CDI-injected persistence service
-        try {
-            // CDI.current()
-            Class<?> cdiClass = Class.forName("jakarta.enterprise.inject.spi.CDI");
-            Object cdi = cdiClass.getMethod("current").invoke(null);
-
-            // Look up select(Class, Annotation...) on the Instance interface
-            Class<?> instanceClass = Class.forName("jakarta.enterprise.inject.Instance");
-            java.lang.reflect.Method selectMethod = instanceClass.getMethod(
-                    "select",
-                    Class.class,
-                    java.lang.annotation.Annotation[].class
-            );
-
-            // Invoke select on the CDI instance
-            Object instanceHandle = selectMethod.invoke(cdi, PersistenceService.class, new java.lang.annotation.Annotation[0]);
-
-            // get() the actual bean
-            Object persistenceService = instanceHandle.getClass().getMethod("get").invoke(instanceHandle);
-
-            if (persistenceService != null) {
-                LOG.debug("Using CDI-injected persistence service: {}", persistenceService.getClass().getName());
-                return (PersistenceService) persistenceService;
-            }
-        } catch (Exception e) {
-            LOG.debug("Could not get CDI-injected persistence service, using no-op implementation", e);
-        }
-        
-        // Fall back to no-op implementation
-        return new DefaultPersistenceService() {
-            @Override
-            public <T> Uni<Void> persist(T entity) {
-                // No-op persistence - just log the attempt
-                if (entity != null) {
-                    LOG.debug("No persistence service configured, skipping persistence of entity: {}",
-                             entity.getClass().getSimpleName());
-                }
-                return Uni.createFrom().voidItem();
-            }
-
-            @Override
-            public <T> boolean supports(Class<T> entityType) {
-                // No persistence service supports any entity types by default
-                return false;
-            }
-        };
-    }
 
     /**
      * Run a pipeline: input Multi through the list of steps.
@@ -113,11 +50,6 @@ public class PipelineRunner implements AutoCloseable {
         Multi<Object> current = (Multi<Object>) input;
 
         for (StepBase step : steps) {
-            // Apply auto-persistence if enabled for this step
-            if (step.effectiveConfig().autoPersist()) {
-                current = applyAutoPersist(current);
-            }
-            
             current = applyStep(current, step);
         }
 
@@ -229,7 +161,7 @@ public class PipelineRunner implements AutoCloseable {
                                     }
                                     return Uni.createFrom().item((Object) null);
                                 } else {
-                                    return Uni.createFrom().failure(new RuntimeException("Step failed: " + err.toString()));
+                                    return Uni.createFrom().failure(new RuntimeException(MessageFormat.format("Step failed: {0}", err.toString())));
                                 }
                             });
 
@@ -314,11 +246,6 @@ public class PipelineRunner implements AutoCloseable {
                     try {
                         // Convert CompletableFuture to Uni
                         CompletableFuture future = s.applyAsync(item);
-                        Uni uni = Uni.createFrom().completionStage(future);
-
-                        if (s.effectiveConfig().runWithVirtualThreads()) {
-                            uni = uni.runSubscriptionOn(vThreadExecutor);
-                        }
 
                         // Extract values needed for the lambda to avoid non-final variable issue
                         boolean runWithVirtualThreads = s.effectiveConfig().runWithVirtualThreads();
@@ -384,28 +311,6 @@ public class PipelineRunner implements AutoCloseable {
     }
 
     /**
-     * Apply auto-persistence side effect before a step if enabled.
-     */
-    private Multi<Object> applyAutoPersist(Multi<Object> input) {
-        return input.onItem().transformToUniAndMerge(item -> {
-            if (item == null) {
-                return Uni.createFrom().item((Object) null);
-            }
-
-            // Create a persistence side effect for this item
-            AutoPersistStepSideEffect<Object> persistStep = new AutoPersistStepSideEffect<>(
-                    persistenceService::persist,
-                item.getClass().getSimpleName()
-            );
-
-            // Apply the persistence side effect
-            return persistStep.apply(item)
-                .onItem().transform(_ -> item) // Return the original item
-                .onFailure().recoverWithItem(item); // Continue even if persistence fails
-        });
-    }
-
-    /**
      * Apply retries using Mutiny built-in backoff + jitter.
      */
     private Uni<Object> applyWithRetries(Supplier<Uni<Object>> uniSupplier, Object item, StepBase step) {
@@ -464,10 +369,6 @@ public class PipelineRunner implements AutoCloseable {
     @Override
     public void close() {
         if (vThreadExecutor instanceof AutoCloseable ac) {
-            try { ac.close(); } catch (Exception ignored) {}
-        }
-
-        if (persistenceService instanceof AutoCloseable ac) {
             try { ac.close(); } catch (Exception ignored) {}
         }
     }

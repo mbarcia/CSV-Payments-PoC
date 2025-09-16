@@ -23,6 +23,9 @@
 
 set -e  # Exit on any error
 
+# Global variable to track if services are running
+SERVICES_STARTED=false
+
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
@@ -73,25 +76,36 @@ detect_docker() {
   return 1
 }
 
-# Function to start a service
 start_service() {
-    detect_docker || { echo "No Docker provider found"; return 1; }
-    echo "DOCKER_HOST inside function: $DOCKER_HOST"
-    env | grep DOCKER_HOST   # verify export
-
     local service_dir=$1
     local service_name=$2
     
     echo "Starting $service_name..."
     
-    # Start the service in the background
+    # Start the service in the background with a unique debug port
     cd "$PROJECT_ROOT"
-    mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev > "$SCRIPT_DIR/${service_name}.log" 2>&1 &
+    case "$service_name" in
+        "input-csv-file-processing-svc")
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Ddebug=5005 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            ;;
+        "payments-processing-svc")
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Ddebug=5006 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            ;;
+        "payment-status-svc")
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Ddebug=5007 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            ;;
+        "output-csv-file-processing-svc")
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Ddebug=5008 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            ;;
+        *)
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            ;;
+    esac
     
     # Store the process ID
-    echo $! > "$SCRIPT_DIR/${service_name}.pid"
+    echo $! > "$PROJECT_ROOT/${service_name}.pid"
     
-    echo "$service_name started with PID $!"
+    echo "$service_name started with PID $(cat "$PROJECT_ROOT/${service_name}.pid")"
 }
 
 # Function to stop a service
@@ -127,6 +141,20 @@ stop_service() {
     fi
 }
 
+# Cleanup function to stop all services
+cleanup() {
+    echo ""
+    echo "Stopping all services..."
+    stop_service "input-csv-file-processing-svc"
+    stop_service "payments-processing-svc"
+    stop_service "payment-status-svc"
+    stop_service "output-csv-file-processing-svc"
+    SERVICES_STARTED=false
+}
+
+# Trap termination signals to ensure cleanup
+trap cleanup SIGINT SIGTERM EXIT
+
 # Function to check if a service is healthy
 check_service_health() {
     local service_name=$1
@@ -147,7 +175,6 @@ wait_for_services() {
         "payments-processing-svc:8445"
         "payment-status-svc:8446"
         "output-csv-file-processing-svc:8447"
-        "data-persistence-svc:8448"
     )
     
     local max_wait=120  # Maximum wait time in seconds
@@ -277,6 +304,121 @@ verify_output_files() {
     fi
 }
 
+# Function to verify data persistence in the database
+verify_database_persistence() {
+    echo "Verifying database persistence..."
+    
+    # Wait a bit longer for all data to be persisted
+    echo "Waiting 10 seconds for data to be fully persisted..."
+    sleep 10
+    
+    # Check if Docker is running
+    if ! detect_docker; then
+        echo "✗ Docker not available, cannot verify database persistence"
+        return 1  # Fail the test if Docker isn't available for persistence verification
+    fi
+    
+    # Find the PostgreSQL container created by Testcontainers for the orchestrator service
+    # The orchestrator service runs last and should have the most recent PostgreSQL container
+    local postgres_container
+    postgres_container=$(docker ps --format "table {{.ID}}\t{{.Image}}\t{{.CreatedAt}}" | grep "postgres" | head -1 | awk '{print $1}')
+    
+    if [[ -z "$postgres_container" ]]; then
+        echo "✗ PostgreSQL container not found, cannot verify database persistence"
+        return 1  # Fail the test if we can't find the container
+    fi
+    
+    echo "✓ Found PostgreSQL container: $postgres_container"
+    
+    # List all tables in the database to see what's available
+    echo "Checking available tables in the database:"
+    docker exec "$postgres_container" psql -U quarkus -d quarkus -c "\dt" 2>/dev/null || {
+        echo "✗ Could not list tables"
+        return 1
+    }
+    
+    # Check if paymentrecord table exists
+    local table_exists
+    table_exists=$(docker exec "$postgres_container" psql -U quarkus -d quarkus -t -c "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'paymentrecord');" 2>/dev/null | tr -d ' ')
+    
+    if [[ "$table_exists" != "t" ]]; then
+        echo "✗ paymentrecord table does not exist in the database"
+        return 1
+    fi
+    
+    echo "✓ paymentrecord table exists"
+    
+    # Try to connect to the database and count records in paymentrecord table
+    local db_check_result
+    db_check_result=$(docker exec "$postgres_container" psql -U quarkus -d quarkus -t -c "SELECT COUNT(*) FROM paymentrecord;" 2>/dev/null | tr -d ' ')
+    
+    if [[ $? -eq 0 ]] && [[ -n "$db_check_result" ]]; then
+        echo "✓ Database connection successful"
+        echo "Found $db_check_result records in the paymentrecord table"
+        
+        # Expected: 5 records total (3 from first file + 2 from second file)
+        if [[ $db_check_result -eq 5 ]]; then
+            echo "✓ Correct number of records found in database"
+            
+            # Show sample records from the database
+            echo "Sample records from database:"
+            docker exec "$postgres_container" psql -U quarkus -d quarkus -c "SELECT id, recipient, amount, currency FROM paymentrecord ORDER BY id;"
+            
+            # Verify specific records exist
+            echo "Verifying specific records exist..."
+            
+            # Check for records from first file
+            local record1_exists
+            record1_exists=$(docker exec "$postgres_container" psql -U quarkus -d quarkus -t -c "SELECT EXISTS (SELECT 1 FROM paymentrecord WHERE recipient = 'John Doe' AND amount = 100.00);" 2>/dev/null | tr -d ' ')
+            
+            local record2_exists
+            record2_exists=$(docker exec "$postgres_container" psql -U quarkus -d quarkus -t -c "SELECT EXISTS (SELECT 1 FROM paymentrecord WHERE recipient = 'Jane Smith' AND amount = 200.00);" 2>/dev/null | tr -d ' ')
+            
+            local record3_exists
+            record3_exists=$(docker exec "$postgres_container" psql -U quarkus -d quarkus -t -c "SELECT EXISTS (SELECT 1 FROM paymentrecord WHERE recipient = 'Bob Johnson' AND amount = 300.00);" 2>/dev/null | tr -d ' ')
+            
+            # Check for records from second file
+            local record4_exists
+            record4_exists=$(docker exec "$postgres_container" psql -U quarkus -d quarkus -t -c "SELECT EXISTS (SELECT 1 FROM paymentrecord WHERE recipient = 'Alice Brown' AND amount = 150.00);" 2>/dev/null | tr -d ' ')
+            
+            local record5_exists
+            record5_exists=$(docker exec "$postgres_container" psql -U quarkus -d quarkus -t -c "SELECT EXISTS (SELECT 1 FROM paymentrecord WHERE recipient = 'Charlie Wilson' AND amount = 250.00);" 2>/dev/null | tr -d ' ')
+            
+            if [[ "$record1_exists" == "t" ]] && [[ "$record2_exists" == "t" ]] && [[ "$record3_exists" == "t" ]] && [[ "$record4_exists" == "t" ]] && [[ "$record5_exists" == "t" ]]; then
+                echo "✓ All expected records found in database"
+                return 0
+            else
+                echo "✗ Some expected records missing from database"
+                echo "John Doe record exists: $record1_exists"
+                echo "Jane Smith record exists: $record2_exists"
+                echo "Bob Johnson record exists: $record3_exists"
+                echo "Alice Brown record exists: $record4_exists"
+                echo "Charlie Wilson record exists: $record5_exists"
+                
+                echo "Actual database content:"
+                docker exec "$postgres_container" psql -U quarkus -d quarkus -c "SELECT id, recipient, amount, currency FROM paymentrecord ORDER BY id;"
+                return 1
+            fi
+        else
+            echo "✗ Unexpected number of records in database. Expected: 5, Got: $db_check_result"
+            echo "Actual database content:"
+            docker exec "$postgres_container" psql -U quarkus -d quarkus -c "SELECT id, recipient, amount, currency FROM paymentrecord ORDER BY id;"
+            
+            # Let's also check if there are any records at all in any table
+            echo "Checking all tables for any data:"
+            for table in ackpaymentsent csvfolder csvpaymentsinputfile csvpaymentsoutputfile paymentoutput paymentrecord paymentstatus; do
+                local count=$(docker exec "$postgres_container" psql -U quarkus -d quarkus -t -c "SELECT COUNT(*) FROM $table;" 2>/dev/null | tr -d ' ')
+                echo "Table $table has $count records"
+            done
+            
+            return 1
+        fi
+    else
+        echo "✗ Unable to query paymentrecord table"
+        return 1
+    fi
+}
+
 # Main execution flow
 {
     # Create test CSV files
@@ -288,14 +430,16 @@ verify_output_files() {
     start_service "payments-processing-svc" "payments-processing-svc"
     start_service "payment-status-svc" "payment-status-svc"
     start_service "output-csv-file-processing-svc" "output-csv-file-processing-svc"
-    start_service "data-persistence-svc" "data-persistence-svc"
+    
+    # Mark services as started
+    SERVICES_STARTED=true
     
     # Wait for services to become healthy
     if wait_for_services; then
         echo "All services are ready!"
     else
         echo "Some services failed to start properly. Check the log files for details:"
-        for service in input-csv-file-processing-svc payments-processing-svc payment-status-svc output-csv-file-processing-svc data-persistence-svc; do
+        for service in input-csv-file-processing-svc payments-processing-svc payment-status-svc output-csv-file-processing-svc; do
             if [[ -f "$SCRIPT_DIR/${service}.log" ]]; then
                 echo "  - $SCRIPT_DIR/${service}.log"
             fi
@@ -306,33 +450,63 @@ verify_output_files() {
     # Run the orchestrator
     echo "Running orchestrator..."
     cd "$PROJECT_ROOT/orchestrator-svc"
-    mvn quarkus:dev -Dquarkus.args="--csv-folder=$TEST_OUTPUT_DIR"
+    # Run the orchestrator in the background so we can monitor it
+    mvn quarkus:dev -Dquarkus.profile=dev -Dquarkus.args="--csv-folder=$TEST_OUTPUT_DIR" > "$PROJECT_ROOT/orchestrator.log" 2>&1 &
+    orchestrator_pid=$!
+    
+    # Wait for the orchestrator to complete or timeout after 60 seconds
+    count=0
+    max_wait=60
+    while kill -0 $orchestrator_pid 2>/dev/null && [ $count -lt $max_wait ]; do
+        sleep 1
+        count=$((count + 1))
+    done
+    
+    # If the process is still running, terminate it
+    if kill -0 $orchestrator_pid 2>/dev/null; then
+        echo "Orchestrator timed out, terminating..."
+        kill $orchestrator_pid
+        sleep 2
+        if kill -0 $orchestrator_pid 2>/dev/null; then
+            kill -9 $orchestrator_pid
+        fi
+    fi
+    
+    # Show orchestrator output
+    echo "Orchestrator output:"
+    cat "$PROJECT_ROOT/orchestrator.log"
     
     # Verify the output
     if verify_output_files; then
-        echo "✓ Multi-file end-to-end test completed successfully!"
+        echo "✓ Multi-file processing completed successfully!"
     else
-        echo "✗ Multi-file end-to-end test failed!"
+        echo "✗ Multi-file processing failed!"
         exit 1
     fi
+    
+    # Verify database persistence
+    if verify_database_persistence; then
+        echo "✓ Database persistence verification completed successfully!"
+    else
+        echo "✗ Database persistence verification failed!"
+        exit 1
+    fi
+    
+    echo "✓ Multi-file end-to-end test completed successfully!"
     
 } || {
     # Error handling - make sure we stop services
     echo "Error occurred during test execution. Stopping services..."
-    stop_service "input-csv-file-processing-svc"
-    stop_service "payments-processing-svc"
-    stop_service "payment-status-svc"
-    stop_service "output-csv-file-processing-svc"
-    stop_service "data-persistence-svc"
+    if [[ "$SERVICES_STARTED" == true ]]; then
+        cleanup
+    fi
     exit 1
 }
 
-# Stop all services
-echo "Stopping all services..."
-stop_service "input-csv-file-processing-svc"
-stop_service "payments-processing-svc"
-stop_service "payment-status-svc"
-stop_service "output-csv-file-processing-svc"
-stop_service "data-persistence-svc"
+# Stop all services if they're still running
+if [[ "$SERVICES_STARTED" == true ]]; then
+    echo "Stopping all services..."
+    cleanup
+fi
 
 echo "Multi-file end-to-end integration test completed."

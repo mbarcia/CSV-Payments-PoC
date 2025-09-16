@@ -16,7 +16,7 @@
 
 package io.github.mbarcia.pipeline.step.manytoone;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepManyToOneBlocking;
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Example of a blocking many-to-one step that aggregates multiple payment entities into a summary.
  */
-public class PaymentAggregationStepBlocking extends ConfigurableStepBase
+public class PaymentAggregationStepBlocking extends ConfigurableStep
     implements StepManyToOneBlocking<TestPaymentEntity, PaymentSummary> {
 
   @Override

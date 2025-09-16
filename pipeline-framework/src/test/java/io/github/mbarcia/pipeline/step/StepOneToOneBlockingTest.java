@@ -19,6 +19,12 @@ package io.github.mbarcia.pipeline.step;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.helpers.test.AssertSubscriber;
+import java.time.Duration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 class StepOneToOneBlockingTest {
@@ -71,8 +77,33 @@ class StepOneToOneBlockingTest {
     // The default value should be false, but in some test environments it might be true
     // We're not asserting a specific value here because it depends on the test environment
     // The important thing is that the method works
+    //noinspection DuplicateCondition,ConstantValue
     assertTrue(
         runWithVirtualThreads
             || !runWithVirtualThreads); // Always true, just testing the method works
+  }
+
+  @Test
+  void testApplyMethodInStep() {
+    // Given
+    TestStepBlocking step = new TestStepBlocking();
+    Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3");
+
+    // When
+    Multi<Object> result = step.apply(input);
+
+    // Then
+    AssertSubscriber<Object> subscriber =
+        result.subscribe().withSubscriber(AssertSubscriber.create(3));
+    subscriber.awaitItems(3, Duration.ofSeconds(5));
+
+    // Grab all items
+    List<Object> actualItems = subscriber.getItems();
+
+    // Expected items
+    Set<String> expectedItems = Set.of("Processed: item1", "Processed: item2", "Processed: item3");
+
+    // Assert ignoring order
+    assertEquals(expectedItems, new HashSet<>(actualItems));
   }
 }

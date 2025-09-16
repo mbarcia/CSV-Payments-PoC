@@ -21,7 +21,7 @@ import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
 import io.github.mbarcia.csv.grpc.OutputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepManyToMany;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
@@ -42,7 +42,7 @@ import org.slf4j.LoggerFactory;
  */
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
-public class ProcessOutputFileStep extends ConfigurableStepBase implements StepManyToMany {
+public class ProcessOutputFileStep extends ConfigurableStep implements StepManyToMany {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcessOutputFileStep.class);
 

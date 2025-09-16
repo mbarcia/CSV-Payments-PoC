@@ -17,7 +17,6 @@
 package io.github.mbarcia.pipeline.persistence.provider;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import io.github.mbarcia.pipeline.domain.TestEntity;
 import io.smallrye.mutiny.Uni;

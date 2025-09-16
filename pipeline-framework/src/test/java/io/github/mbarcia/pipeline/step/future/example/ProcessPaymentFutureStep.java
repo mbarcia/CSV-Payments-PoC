@@ -16,7 +16,7 @@
 
 package io.github.mbarcia.pipeline.step.future.example;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.future.StepOneToOneCompletableFuture;
 import java.util.concurrent.CompletableFuture;
 
@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
  * <p>This step demonstrates how to use the StepOneToOneCompletableFuture interface for operations
  * that need to process inputs asynchronously using standard Java CompletableFuture.
  */
-public class ProcessPaymentFutureStep extends ConfigurableStepBase
+public class ProcessPaymentFutureStep extends ConfigurableStep
     implements StepOneToOneCompletableFuture<String, String> {
 
   @Override

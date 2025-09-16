@@ -26,14 +26,14 @@ import java.util.Objects;
  * Base class for configurable pipeline steps that use LiveStepConfig
  * to dynamically access pipeline configuration.
  */
-public abstract class ConfigurableStepBase implements StepBase {
+public abstract class ConfigurableStep implements Step {
     
     @Inject
     PipelineConfig pipelineConfig;
     
     private LiveStepConfig config;
 
-    protected ConfigurableStepBase() {
+    protected ConfigurableStep() {
         // Config will be set by CDI injection
     }
 

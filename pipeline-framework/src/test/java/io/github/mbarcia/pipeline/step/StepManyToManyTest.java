@@ -16,10 +16,10 @@
 
 package io.github.mbarcia.pipeline.step;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import io.github.mbarcia.pipeline.config.StepConfig;
 import io.smallrye.mutiny.Multi;
-import java.util.List;
+import io.smallrye.mutiny.helpers.test.AssertSubscriber;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class StepManyToManyTest {
@@ -27,12 +27,12 @@ class StepManyToManyTest {
   static class TestStep implements StepManyToMany {
     @Override
     public Multi<Object> applyStreaming(Multi<Object> upstream) {
-      return upstream.onItem().transform(item -> "Processed: " + item.toString());
+      return upstream.onItem().transform(item -> "Streamed: " + item);
     }
 
     @Override
-    public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
-      return new io.github.mbarcia.pipeline.config.StepConfig();
+    public StepConfig effectiveConfig() {
+      return new StepConfig();
     }
   }
 
@@ -40,31 +40,31 @@ class StepManyToManyTest {
   void testApplyStreamingMethod() {
     // Given
     TestStep step = new TestStep();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3");
+    Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
     // When
     Multi<Object> result = step.applyStreaming(input);
 
     // Then
-    List<Object> items = result.collect().asList().await().indefinitely();
-
-    assertEquals(3, items.size());
-    assertEquals("Processed: item1", items.get(0));
-    assertEquals("Processed: item2", items.get(1));
-    assertEquals("Processed: item3", items.get(2));
+    AssertSubscriber<Object> subscriber =
+        result.subscribe().withSubscriber(AssertSubscriber.create(2));
+    subscriber.awaitItems(2, Duration.ofSeconds(5));
+    subscriber.assertItems("Streamed: item1", "Streamed: item2");
   }
 
   @Test
-  void testDeadLetterMultiDefaultImplementation() {
+  void testApplyMethod() {
     // Given
     TestStep step = new TestStep();
-    Multi<Object> upstream = Multi.createFrom().items("item1", "item2");
+    Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
     // When
-    Multi<?> result = step.deadLetterMulti(upstream, new RuntimeException("test error"));
+    Multi<Object> result = step.apply(input);
 
     // Then
-    List<?> items = result.collect().asList().await().indefinitely();
-    assertEquals(0, items.size());
+    AssertSubscriber<Object> subscriber =
+        result.subscribe().withSubscriber(AssertSubscriber.create(2));
+    subscriber.awaitItems(2, Duration.ofSeconds(5));
+    subscriber.assertItems("Streamed: item1", "Streamed: item2");
   }
 }

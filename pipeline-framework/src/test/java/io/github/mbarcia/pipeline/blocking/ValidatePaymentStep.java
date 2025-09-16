@@ -16,7 +16,7 @@
 
 package io.github.mbarcia.pipeline.blocking;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import java.math.BigDecimal;
 
@@ -25,7 +25,7 @@ import java.math.BigDecimal;
  * StepOneToOneBlocking for blocking operations while still benefiting from the reactive pipeline
  * framework.
  */
-public class ValidatePaymentStep extends ConfigurableStepBase
+public class ValidatePaymentStep extends ConfigurableStep
     implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
 
   @Override

@@ -18,7 +18,10 @@ package io.github.mbarcia.pipeline.step;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.helpers.test.AssertSubscriber;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class StepOneToOneTest {
@@ -46,5 +49,21 @@ class StepOneToOneTest {
     // Then
     String value = result.await().indefinitely();
     assertEquals("Processed: test", value);
+  }
+
+  @Test
+  void testApplyMethod() {
+    // Given
+    TestStep step = new TestStep();
+    Multi<Object> input = Multi.createFrom().items("item1", "item2");
+
+    // When
+    Multi<Object> result = step.apply(input);
+
+    // Then
+    AssertSubscriber<Object> subscriber =
+        result.subscribe().withSubscriber(AssertSubscriber.create(2));
+    subscriber.awaitItems(2, Duration.ofSeconds(5));
+    subscriber.assertItems("Processed: item1", "Processed: item2");
   }
 }

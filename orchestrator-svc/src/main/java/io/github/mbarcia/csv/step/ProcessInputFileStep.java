@@ -21,7 +21,7 @@ import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
 import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcClient;
@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  */
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
-public class ProcessInputFileStep extends ConfigurableStepBase implements StepOneToMany<CsvPaymentsInputFile, InputCsvFileProcessingSvc.PaymentRecord> {
+public class ProcessInputFileStep extends ConfigurableStep implements StepOneToMany<CsvPaymentsInputFile, InputCsvFileProcessingSvc.PaymentRecord> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcessInputFileStep.class);
 

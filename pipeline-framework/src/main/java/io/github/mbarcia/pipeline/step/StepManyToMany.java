@@ -17,12 +17,56 @@
 package io.github.mbarcia.pipeline.step;
 
 import io.smallrye.mutiny.Multi;
+import java.util.concurrent.Executors;
 
-public interface StepManyToMany extends StepBase {
+public interface StepManyToMany extends Step {
     Multi<Object> applyStreaming(Multi<Object> upstream);
 
     default Multi<?> deadLetterMulti(Multi<Object> upstream, Throwable err) {
         System.err.print("DLQ drop");
         return Multi.createFrom().empty();
+    }
+    
+    @Override
+    default Multi<Object> apply(Multi<Object> input) {
+        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
+
+        return Multi.createFrom().deferred(() -> {
+            Multi<Object> baseUpstream = (executor != null)
+                    ? input.runSubscriptionOn(executor)
+                    : input;
+
+            Multi<Object> out = applyStreaming(baseUpstream);
+
+            return out
+                .onFailure().retry()
+                .withBackOff(retryWait(), maxBackoff())
+                .withJitter(jitter() ? 0.5 : 0.0)
+                .atMost(retryLimit())
+                .onFailure().recoverWithMulti(err -> {
+                    if (recoverOnFailure()) {
+                        if (debug()) {
+                            System.err.printf("Step %s failed streaming: %s%n",
+                                    this.getClass().getSimpleName(), err);
+                        }
+                        return deadLetterMulti(baseUpstream, err); // custom DLQ handling
+                    } else {
+                        return Multi.createFrom().failure(err);
+                    }
+                })
+                .onItem().invoke(o -> {
+                    if (debug()) {
+                        System.out.printf("Step %s streamed item: %s%n",
+                                this.getClass().getSimpleName(), o);
+                    }
+                })
+                .onCompletion().invoke(() -> {
+                    if (debug()) {
+                        System.out.printf("Step %s completed streaming%n",
+                                this.getClass().getSimpleName());
+                    }
+                });
+        });
     }
 }

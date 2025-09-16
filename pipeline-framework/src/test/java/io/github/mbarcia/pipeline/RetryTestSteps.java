@@ -16,7 +16,7 @@
 
 package io.github.mbarcia.pipeline;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.smallrye.mutiny.Uni;
@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RetryTestSteps {
 
-  public static class FailBlockingNTimesStep extends ConfigurableStepBase
+  public static class FailBlockingNTimesStep extends ConfigurableStep
       implements StepOneToOneBlocking<String, String> {
     private final int failCount;
     private final AtomicInteger callCount = new AtomicInteger(0);
@@ -62,7 +62,7 @@ public class RetryTestSteps {
     }
   }
 
-  public static class AsyncFailNTimesStep extends ConfigurableStepBase
+  public static class AsyncFailNTimesStep extends ConfigurableStep
       implements StepOneToOne<String, String> {
     private final int failCount;
     private final AtomicInteger callCount = new AtomicInteger(0);

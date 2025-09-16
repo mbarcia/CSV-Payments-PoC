@@ -19,7 +19,7 @@ package io.github.mbarcia.pipeline.step.future;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.PipelineRunner;
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
@@ -68,7 +68,7 @@ public class FutureStepsTest {
   }
 
   // Helper step for validating payments
-  public static class ValidatePaymentStepBlocking extends ConfigurableStepBase
+  public static class ValidatePaymentStepBlocking extends ConfigurableStep
       implements StepOneToOneBlocking<String, String> {
 
     @Override

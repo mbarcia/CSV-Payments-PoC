@@ -19,7 +19,7 @@ package io.github.mbarcia.pipeline.step.comprehensive;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.PipelineRunner;
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.github.mbarcia.pipeline.step.collection.example.ExpandPaymentCollectionStep;
 import io.github.mbarcia.pipeline.step.future.example.ProcessPaymentFutureStep;
@@ -73,7 +73,7 @@ public class ComprehensiveStepTypesTest {
   }
 
   // Standard StepOneToOneBlocking with blocking operations
-  public static class ValidatePaymentStepBlocking extends ConfigurableStepBase
+  public static class ValidatePaymentStepBlocking extends ConfigurableStep
       implements StepOneToOneBlocking<String, String> {
 
     @Override

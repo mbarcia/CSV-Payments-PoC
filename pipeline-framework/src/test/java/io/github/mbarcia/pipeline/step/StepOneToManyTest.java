@@ -16,10 +16,10 @@
 
 package io.github.mbarcia.pipeline.step;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import io.github.mbarcia.pipeline.config.StepConfig;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
+import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class StepOneToManyTest {
@@ -27,12 +27,12 @@ class StepOneToManyTest {
   static class TestStep implements StepOneToMany<String, String> {
     @Override
     public Multi<String> applyMulti(String input) {
-      return Multi.createFrom().items(input + "1", input + "2", input + "3");
+      return Multi.createFrom().items(input + "-1", input + "-2", input + "-3");
     }
 
     @Override
-    public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
-      return new io.github.mbarcia.pipeline.config.StepConfig();
+    public StepConfig effectiveConfig() {
+      return new StepConfig();
     }
   }
 
@@ -45,13 +45,25 @@ class StepOneToManyTest {
     Multi<String> result = step.applyMulti("test");
 
     // Then
-    AssertSubscriber<String> subscriber = AssertSubscriber.create(3);
-    result.subscribe().withSubscriber(subscriber);
-    subscriber.awaitItems(3);
+    AssertSubscriber<String> subscriber =
+        result.subscribe().withSubscriber(AssertSubscriber.create(3));
+    subscriber.awaitItems(3, Duration.ofSeconds(5));
+    subscriber.assertItems("test-1", "test-2", "test-3");
+  }
 
-    assertEquals(3, subscriber.getItems().size());
-    assertEquals("test1", subscriber.getItems().get(0));
-    assertEquals("test2", subscriber.getItems().get(1));
-    assertEquals("test3", subscriber.getItems().get(2));
+  @Test
+  void testApplyMethod() {
+    // Given
+    TestStep step = new TestStep();
+    Multi<Object> input = Multi.createFrom().items("item1", "item2");
+
+    // When
+    Multi<Object> result = step.apply(input);
+
+    // Then
+    AssertSubscriber<Object> subscriber =
+        result.subscribe().withSubscriber(AssertSubscriber.create(6));
+    subscriber.awaitItems(6, Duration.ofSeconds(5));
+    subscriber.assertItems("item1-1", "item1-2", "item1-3", "item2-1", "item2-2", "item2-3");
   }
 }

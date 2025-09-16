@@ -16,7 +16,7 @@
 
 package io.github.mbarcia.pipeline.step.manytoone;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepManyToOne;
 import io.smallrye.mutiny.Uni;
 import java.math.BigDecimal;
@@ -25,7 +25,7 @@ import java.util.List;
 /**
  * Example of a reactive many-to-one step that aggregates multiple payment entities into a summary.
  */
-public class PaymentAggregationStep extends ConfigurableStepBase
+public class PaymentAggregationStep extends ConfigurableStep
     implements StepManyToOne<TestPaymentEntity, PaymentSummary> {
 
   @Override

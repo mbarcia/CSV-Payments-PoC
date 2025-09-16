@@ -21,9 +21,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import org.junit.jupiter.api.Test;
 
-class ConfigurableStepBaseTest {
+class ConfigurableStepTest {
 
-  static class TestStepBlocking extends ConfigurableStepBase
+  static class TestStepBlocking extends ConfigurableStep
       implements StepOneToOneBlocking<String, String> {
     TestStepBlocking() {
       // No-args constructor
@@ -36,7 +36,7 @@ class ConfigurableStepBaseTest {
   }
 
   @Test
-  void testConfigurableStepBaseCreation() {
+  void testConfigurableStepCreation() {
     // When
     TestStepBlocking step = new TestStepBlocking();
 

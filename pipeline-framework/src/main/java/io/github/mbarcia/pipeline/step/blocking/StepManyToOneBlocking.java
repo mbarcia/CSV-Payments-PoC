@@ -16,11 +16,17 @@
 
 package io.github.mbarcia.pipeline.step.blocking;
 
-import io.github.mbarcia.pipeline.step.StepBase;
+import io.github.mbarcia.pipeline.step.Step;
+import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** N -> 1 (imperative) */
-public interface StepManyToOneBlocking<I, O> extends StepBase {
+public interface StepManyToOneBlocking<I, O> extends Step {
     /**
      * Apply the step to a batch of inputs, producing a single output.
      * 
@@ -58,5 +64,50 @@ public interface StepManyToOneBlocking<I, O> extends StepBase {
     default O deadLetterBatchList(List<I> inputs, Throwable error) {
         System.err.printf("DLQ drop for batch of %d items: %s%n", inputs.size(), error.getMessage());
         return null;
+    }
+    
+    @Override
+    default Multi<Object> apply(Multi<Object> input) {
+        final Logger LOG = LoggerFactory.getLogger(this.getClass());
+        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
+        int batchSize = this.batchSize();
+        long batchTimeoutMs = this.batchTimeoutMs();
+
+        return Multi.createFrom().deferred(() -> {
+            Multi<Object> baseUpstream = (executor != null)
+                    ? input.runSubscriptionOn(executor)
+                    : input;
+
+            return baseUpstream
+                .group().intoLists().of(batchSize, java.time.Duration.ofMillis(batchTimeoutMs))
+                .onItem().transformToUniAndMerge(list -> {
+                    try {
+                        O result = applyBatchList((List<I>) list);
+                        
+                        if (debug()) {
+                            LOG.debug(
+                                "Blocking Step {} processed batch of {} items into single output: {}",
+                                this.getClass().getSimpleName(), list.size(), result
+                            );
+                        }
+
+                        return Uni.createFrom().item((Object) result);
+                    } catch (Exception e) {
+                        if (recoverOnFailure()) {
+                            if (debug()) {
+                                LOG.debug(
+                                    "Blocking Step {}: failed batch of {} items: {}",
+                                    this.getClass().getSimpleName(), list.size(), e.getMessage()
+                                );
+                            }
+                            return Uni.createFrom().item((Object) null);
+                        } else {
+                            return Uni.createFrom().failure(e);
+                        }
+                    }
+                })
+                .filter(Objects::nonNull); // Filter out null results from failed batches
+        });
     }
 }

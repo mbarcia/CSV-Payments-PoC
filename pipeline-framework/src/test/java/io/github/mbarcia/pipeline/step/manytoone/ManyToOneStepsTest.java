@@ -19,7 +19,7 @@ package io.github.mbarcia.pipeline.step.manytoone;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.PipelineRunner;
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
@@ -69,7 +69,7 @@ public class ManyToOneStepsTest {
     assertEquals(2, results.size());
 
     // Verify first batch
-    PaymentSummary summary1 = results.get(0);
+    PaymentSummary summary1 = results.getFirst();
     assertEquals(3, summary1.getTotalPayments()); // First batch of 3
     assertEquals(new BigDecimal("375.75"), summary1.getTotalAmount()); // 100.00 + 200.50 + 75.25
 
@@ -114,7 +114,7 @@ public class ManyToOneStepsTest {
     assertEquals(2, results.size());
 
     // Verify first batch
-    PaymentSummary summary1 = results.get(0);
+    PaymentSummary summary1 = results.getFirst();
     assertEquals(3, summary1.getTotalPayments()); // First batch of 3
     assertEquals(new BigDecimal("225.75"), summary1.getTotalAmount()); // 50.00 + 150.25 + 25.50
 
@@ -125,7 +125,7 @@ public class ManyToOneStepsTest {
   }
 
   // Helper step for validating payments
-  public static class ValidatePaymentStepBlocking extends ConfigurableStepBase
+  public static class ValidatePaymentStepBlocking extends ConfigurableStep
       implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
 
     @Override

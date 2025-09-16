@@ -19,7 +19,7 @@ package io.github.mbarcia.csv.step;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.service.ProcessFolderService;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  */
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
-public class ProcessFolderStep extends ConfigurableStepBase implements StepOneToMany<String, CsvPaymentsInputFile> {
+public class ProcessFolderStep extends ConfigurableStep implements StepOneToMany<String, CsvPaymentsInputFile> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcessFolderStep.class);
 

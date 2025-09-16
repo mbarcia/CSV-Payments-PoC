@@ -20,66 +20,57 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
-class StepSideEffectTest {
+class StepTest {
 
-  static class TestStep implements StepSideEffect<String> {
-    @Override
-    public Uni<Void> apply(String input) {
-      // Simulate some side effect
-      System.out.println("Side effect for: " + input);
-      return Uni.createFrom().voidItem();
-    }
+  static class TestStep implements Step {
+    private final StepConfig config = new StepConfig();
 
     @Override
     public StepConfig effectiveConfig() {
-      return new StepConfig();
+      return config;
     }
+
+    @Override
+    public Multi<Object> apply(Multi<Object> input) {
+      return input; // Pass through
+    }
+  }
+
+  @Test
+  void testDefaultMethods() {
+    // Given
+    TestStep step = new TestStep();
+
+    // When & Then
+    assertEquals(3, step.retryLimit());
+    assertEquals(Duration.ofMillis(200), step.retryWait());
+    assertFalse(step.debug());
+    assertFalse(step.recoverOnFailure());
+    assertFalse(step.runWithVirtualThreads());
+    assertEquals(Duration.ofSeconds(30), step.maxBackoff());
+    assertFalse(step.jitter());
+  }
+
+  @Test
+  void testDeadLetterMethod() {
+    // Given
+    TestStep step = new TestStep();
+
+    // When
+    var result = step.deadLetter("testItem", new RuntimeException("test error"));
+
+    // Then
+    assertNotNull(result);
+    // The deadLetter method should complete successfully
+    result.await().indefinitely();
   }
 
   @Test
   void testApplyMethod() {
-    // Given
-    TestStep step = new TestStep();
-
-    // When
-    Uni<Void> result = step.apply("test");
-
-    // Then
-    Void value = result.await().indefinitely();
-    assertNull(value);
-  }
-
-  @Test
-  void testDefaultConcurrency() {
-    // Given
-    TestStep step = new TestStep();
-
-    // When
-    int concurrency = step.concurrency();
-
-    // Then
-    assertEquals(1, concurrency);
-  }
-
-  @Test
-  void testDefaultRunWithVirtualThreads() {
-    // Given
-    TestStep step = new TestStep();
-
-    // When
-    boolean runWithVirtualThreads = step.runWithVirtualThreads();
-
-    // Then
-    assertFalse(runWithVirtualThreads);
-  }
-
-  @Test
-  void testApplyMethodInStep() {
     // Given
     TestStep step = new TestStep();
     Multi<Object> input = Multi.createFrom().items("item1", "item2");
@@ -91,6 +82,6 @@ class StepSideEffectTest {
     AssertSubscriber<Object> subscriber =
         result.subscribe().withSubscriber(AssertSubscriber.create(2));
     subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("item1", "item2"); // Items should pass through unchanged
+    subscriber.assertItems("item1", "item2");
   }
 }

@@ -16,11 +16,17 @@
 
 package io.github.mbarcia.pipeline.step;
 
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import java.text.MessageFormat;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** N -> 1 */
-public interface StepManyToOne<I, O> extends StepBase {
+public interface StepManyToOne<I, O> extends Step {
     /**
      * Apply the step to a batch of inputs, producing a single output.
      * 
@@ -58,5 +64,50 @@ public interface StepManyToOne<I, O> extends StepBase {
     default Uni<O> deadLetterBatch(List<I> inputs, Throwable error) {
         System.err.printf("DLQ drop for batch of %d items: %s%n", inputs.size(), error.getMessage());
         return Uni.createFrom().nullItem();
+    }
+    
+    @Override
+    default Multi<Object> apply(Multi<Object> input) {
+        final Logger LOG = LoggerFactory.getLogger(this.getClass());
+        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
+        int batchSize = this.batchSize();
+        long batchTimeoutMs = this.batchTimeoutMs();
+
+        return input
+            .group().intoLists().of(batchSize, java.time.Duration.ofMillis(batchTimeoutMs))
+            .onItem().transformToUniAndMerge(list -> {
+                Uni<O> batchUni = applyBatch((List<I>) list)
+                    .onItem().invoke(o -> {
+                        if (debug()) {
+                            LOG.debug(
+                                "Step {} processed batch of {} items into single output: {}",
+                                this.getClass().getSimpleName(), list.size(), o
+                            );
+                        }
+                    })
+                    .onFailure().recoverWithUni(err -> {
+                        if (recoverOnFailure()) {
+                            if (debug()) {
+                                LOG.debug(
+                                    "Step {}: failed batch of {} items after {} retries: {}",
+                                    this.getClass().getSimpleName(), list.size(), retryLimit(), err
+                                );
+                            }
+                            return Uni.createFrom().item((O) null);
+                        } else {
+                            return Uni.createFrom().failure(new RuntimeException(MessageFormat.format("Step failed: {0}", err.toString())));
+                        }
+                    });
+
+                Uni<Object> uni = batchUni.onItem().transform(o -> (Object) o);
+                
+                if (executor != null) {
+                    uni = uni.runSubscriptionOn(executor);
+                }
+
+                return uni;
+            })
+            .filter(Objects::nonNull); // Filter out null results from failed batches
     }
 }

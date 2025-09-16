@@ -25,7 +25,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class TestSteps {
 
-  public static class TestStepOneToOneBlocking extends ConfigurableStepBase
+  public static class TestStepOneToOneBlocking extends ConfigurableStep
       implements StepOneToOneBlocking<String, String> {
     @Override
     public String apply(String input) {
@@ -33,7 +33,7 @@ public class TestSteps {
     }
   }
 
-  public static class TestStepOneToMany extends ConfigurableStepBase
+  public static class TestStepOneToMany extends ConfigurableStep
       implements StepOneToMany<String, String> {
     @Override
     public Multi<String> applyMulti(String input) {
@@ -41,14 +41,14 @@ public class TestSteps {
     }
   }
 
-  public static class TestStepManyToMany extends ConfigurableStepBase implements StepManyToMany {
+  public static class TestStepManyToMany extends ConfigurableStep implements StepManyToMany {
     @Override
     public Multi<Object> applyStreaming(Multi<Object> upstream) {
       return upstream.onItem().transform(item -> "Streamed: " + item);
     }
   }
 
-  public static class TestStepOneToOne extends ConfigurableStepBase
+  public static class TestStepOneToOne extends ConfigurableStep
       implements StepOneToOne<String, String> {
     @Override
     public Uni<String> applyAsyncUni(String input) {
@@ -56,7 +56,7 @@ public class TestSteps {
     }
   }
 
-  public static class FailingStepBlocking extends ConfigurableStepBase
+  public static class FailingStepBlocking extends ConfigurableStep
       implements StepOneToOneBlocking<String, String> {
     private final boolean shouldRecover;
 

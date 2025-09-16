@@ -16,14 +16,14 @@
 
 package io.github.mbarcia.pipeline.blocking;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 
 /**
  * Another example of a blocking step that processes payment entities. This step demonstrates how to
  * enrich entities with additional data.
  */
-public class EnrichPaymentStep extends ConfigurableStepBase
+public class EnrichPaymentStep extends ConfigurableStep
     implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
 
   @Override

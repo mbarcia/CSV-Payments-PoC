@@ -16,7 +16,7 @@
 
 package io.github.mbarcia.pipeline.step.collection;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToManyBlocking;
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +25,7 @@ import java.util.List;
  * Example of an imperative one-to-many step that expands a single payment request into multiple
  * transactions.
  */
-public class ExpandPaymentCollectionStep extends ConfigurableStepBase
+public class ExpandPaymentCollectionStep extends ConfigurableStep
     implements StepOneToManyBlocking<String, String> {
 
   @Override

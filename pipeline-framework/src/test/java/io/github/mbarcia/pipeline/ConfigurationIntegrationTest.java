@@ -22,14 +22,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.config.StepConfig;
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class ConfigurationIntegrationTest {
 
-  static class ConfigTestStepBlocking extends ConfigurableStepBase
+  static class ConfigTestStepBlocking extends ConfigurableStep
       implements StepOneToOneBlocking<String, String> {
     @Override
     public String apply(String input) {

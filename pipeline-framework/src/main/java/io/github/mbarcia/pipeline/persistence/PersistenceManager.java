@@ -21,7 +21,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Manager for persistence operations that delegates to registered PersistenceProvider implementations.
@@ -66,7 +65,7 @@ public class PersistenceManager {
             return null;
         }
 
-        List<PersistenceProvider<?>> providerList = providers.stream().collect(Collectors.toList());
+        List<PersistenceProvider<?>> providerList = providers.stream().toList();
         
         for (PersistenceProvider<?> provider : providerList) {
             if (provider.supports(entity)) {

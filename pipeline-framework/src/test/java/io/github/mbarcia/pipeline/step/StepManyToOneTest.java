@@ -23,66 +23,47 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class StepSideEffectTest {
+class StepManyToOneTest {
 
-  static class TestStep implements StepSideEffect<String> {
+  static class TestStep implements StepManyToOne<String, String> {
     @Override
-    public Uni<Void> apply(String input) {
-      // Simulate some side effect
-      System.out.println("Side effect for: " + input);
-      return Uni.createFrom().voidItem();
+    public Uni<String> applyBatch(List<String> inputs) {
+      return Uni.createFrom().item("Batch processed: " + String.join(", ", inputs));
     }
 
     @Override
     public StepConfig effectiveConfig() {
       return new StepConfig();
     }
+
+    @Override
+    public int batchSize() {
+      return 2; // Small batch size for testing
+    }
+  }
+
+  @Test
+  void testApplyBatchMethod() {
+    // Given
+    TestStep step = new TestStep();
+    List<String> inputs = List.of("item1", "item2", "item3");
+
+    // When
+    Uni<String> result = step.applyBatch(inputs);
+
+    // Then
+    String value = result.await().indefinitely();
+    assertEquals("Batch processed: item1, item2, item3", value);
   }
 
   @Test
   void testApplyMethod() {
     // Given
     TestStep step = new TestStep();
-
-    // When
-    Uni<Void> result = step.apply("test");
-
-    // Then
-    Void value = result.await().indefinitely();
-    assertNull(value);
-  }
-
-  @Test
-  void testDefaultConcurrency() {
-    // Given
-    TestStep step = new TestStep();
-
-    // When
-    int concurrency = step.concurrency();
-
-    // Then
-    assertEquals(1, concurrency);
-  }
-
-  @Test
-  void testDefaultRunWithVirtualThreads() {
-    // Given
-    TestStep step = new TestStep();
-
-    // When
-    boolean runWithVirtualThreads = step.runWithVirtualThreads();
-
-    // Then
-    assertFalse(runWithVirtualThreads);
-  }
-
-  @Test
-  void testApplyMethodInStep() {
-    // Given
-    TestStep step = new TestStep();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
+    Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3", "item4");
 
     // When
     Multi<Object> result = step.apply(input);
@@ -91,6 +72,6 @@ class StepSideEffectTest {
     AssertSubscriber<Object> subscriber =
         result.subscribe().withSubscriber(AssertSubscriber.create(2));
     subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("item1", "item2"); // Items should pass through unchanged
+    subscriber.assertItems("Batch processed: item1, item2", "Batch processed: item3, item4");
   }
 }

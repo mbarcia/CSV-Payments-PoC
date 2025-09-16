@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.pipeline.step;
+package io.github.mbarcia.pipeline.step.future;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.Test;
 
-class StepSideEffectTest {
+class StepOneToOneCompletableFutureTest {
 
-  static class TestStep implements StepSideEffect<String> {
+  static class TestStepFuture implements StepOneToOneCompletableFuture<String, String> {
     @Override
-    public Uni<Void> apply(String input) {
-      // Simulate some side effect
-      System.out.println("Side effect for: " + input);
-      return Uni.createFrom().voidItem();
+    public CompletableFuture<String> applyAsync(String input) {
+      return CompletableFuture.completedFuture("Future processed: " + input);
     }
 
     @Override
@@ -42,22 +40,34 @@ class StepSideEffectTest {
   }
 
   @Test
-  void testApplyMethod() {
+  void testApplyAsyncMethod() {
     // Given
-    TestStep step = new TestStep();
+    TestStepFuture step = new TestStepFuture();
 
     // When
-    Uni<Void> result = step.apply("test");
+    CompletableFuture<String> result = step.applyAsync("test");
 
     // Then
-    Void value = result.await().indefinitely();
-    assertNull(value);
+    String value = result.join();
+    assertEquals("Future processed: test", value);
+  }
+
+  @Test
+  void testDefaultExecutor() {
+    // Given
+    TestStepFuture step = new TestStepFuture();
+
+    // When
+    var executor = step.getExecutor();
+
+    // Then
+    assertNotNull(executor);
   }
 
   @Test
   void testDefaultConcurrency() {
     // Given
-    TestStep step = new TestStep();
+    TestStepFuture step = new TestStepFuture();
 
     // When
     int concurrency = step.concurrency();
@@ -69,7 +79,7 @@ class StepSideEffectTest {
   @Test
   void testDefaultRunWithVirtualThreads() {
     // Given
-    TestStep step = new TestStep();
+    TestStepFuture step = new TestStepFuture();
 
     // When
     boolean runWithVirtualThreads = step.runWithVirtualThreads();
@@ -81,7 +91,7 @@ class StepSideEffectTest {
   @Test
   void testApplyMethodInStep() {
     // Given
-    TestStep step = new TestStep();
+    TestStepFuture step = new TestStepFuture();
     Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
     // When
@@ -91,6 +101,6 @@ class StepSideEffectTest {
     AssertSubscriber<Object> subscriber =
         result.subscribe().withSubscriber(AssertSubscriber.create(2));
     subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("item1", "item2"); // Items should pass through unchanged
+    subscriber.assertItems("Future processed: item1", "Future processed: item2");
   }
 }

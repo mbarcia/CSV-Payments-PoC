@@ -18,7 +18,7 @@ package io.github.mbarcia.pipeline;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 class VirtualThreadExecutorTest {
 
-  static class VirtualThreadTestStep extends ConfigurableStepBase
+  static class VirtualThreadTestStep extends ConfigurableStep
       implements StepOneToMany<String, String> {
     private final AtomicBoolean usedVirtualThreads = new AtomicBoolean(false);
 

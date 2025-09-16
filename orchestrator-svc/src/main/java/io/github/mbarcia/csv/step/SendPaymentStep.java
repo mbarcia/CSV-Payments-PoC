@@ -20,7 +20,7 @@ import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinySendPaymentRecordServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
@@ -33,7 +33,7 @@ import lombok.NoArgsConstructor;
  */
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
-public class SendPaymentStep extends ConfigurableStepBase implements StepOneToOne<InputCsvFileProcessingSvc.PaymentRecord, PaymentsProcessingSvc.AckPaymentSent> {
+public class SendPaymentStep extends ConfigurableStep implements StepOneToOne<InputCsvFileProcessingSvc.PaymentRecord, PaymentsProcessingSvc.AckPaymentSent> {
 
     @Inject
     @GrpcClient("send-payment-record")

@@ -16,11 +16,11 @@
 
 package io.github.mbarcia.pipeline.step.future;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import java.util.concurrent.CompletableFuture;
 
 /** Example of a Future-based step that processes a payment asynchronously. */
-public class ProcessPaymentFutureStep extends ConfigurableStepBase
+public class ProcessPaymentFutureStep extends ConfigurableStep
     implements StepOneToOneCompletableFuture<String, String> {
 
   @Override

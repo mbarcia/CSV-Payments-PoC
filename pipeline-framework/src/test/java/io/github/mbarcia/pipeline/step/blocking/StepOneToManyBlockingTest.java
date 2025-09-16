@@ -14,25 +14,23 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.pipeline.step;
+package io.github.mbarcia.pipeline.step.blocking;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class StepSideEffectTest {
+class StepOneToManyBlockingTest {
 
-  static class TestStep implements StepSideEffect<String> {
+  static class TestStepBlocking implements StepOneToManyBlocking<String, String> {
     @Override
-    public Uni<Void> apply(String input) {
-      // Simulate some side effect
-      System.out.println("Side effect for: " + input);
-      return Uni.createFrom().voidItem();
+    public List<String> applyList(String input) {
+      return List.of(input + "-1", input + "-2", input + "-3");
     }
 
     @Override
@@ -42,22 +40,21 @@ class StepSideEffectTest {
   }
 
   @Test
-  void testApplyMethod() {
+  void testApplyListMethod() {
     // Given
-    TestStep step = new TestStep();
+    TestStepBlocking step = new TestStepBlocking();
 
     // When
-    Uni<Void> result = step.apply("test");
+    List<String> result = step.applyList("test");
 
     // Then
-    Void value = result.await().indefinitely();
-    assertNull(value);
+    assertEquals(List.of("test-1", "test-2", "test-3"), result);
   }
 
   @Test
   void testDefaultConcurrency() {
     // Given
-    TestStep step = new TestStep();
+    TestStepBlocking step = new TestStepBlocking();
 
     // When
     int concurrency = step.concurrency();
@@ -69,7 +66,7 @@ class StepSideEffectTest {
   @Test
   void testDefaultRunWithVirtualThreads() {
     // Given
-    TestStep step = new TestStep();
+    TestStepBlocking step = new TestStepBlocking();
 
     // When
     boolean runWithVirtualThreads = step.runWithVirtualThreads();
@@ -81,7 +78,7 @@ class StepSideEffectTest {
   @Test
   void testApplyMethodInStep() {
     // Given
-    TestStep step = new TestStep();
+    TestStepBlocking step = new TestStepBlocking();
     Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
     // When
@@ -89,8 +86,8 @@ class StepSideEffectTest {
 
     // Then
     AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(2));
-    subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("item1", "item2"); // Items should pass through unchanged
+        result.subscribe().withSubscriber(AssertSubscriber.create(6));
+    subscriber.awaitItems(6, Duration.ofSeconds(5));
+    subscriber.assertItems("item1-1", "item1-2", "item1-3", "item2-1", "item2-2", "item2-3");
   }
 }

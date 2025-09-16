@@ -16,7 +16,7 @@
 
 package io.github.mbarcia.pipeline.step.collection.example;
 
-import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToManyBlocking;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +28,7 @@ import java.util.List;
  * <p>This step demonstrates how to use the StepOneToManyBlocking interface for operations that need
  * to expand a single input into multiple outputs using standard Java collections.
  */
-public class ExpandPaymentCollectionStep extends ConfigurableStepBase
+public class ExpandPaymentCollectionStep extends ConfigurableStep
     implements StepOneToManyBlocking<String, String> {
 
   @Override

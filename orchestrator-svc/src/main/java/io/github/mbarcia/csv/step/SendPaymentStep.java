@@ -17,12 +17,11 @@
 package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
-import io.github.mbarcia.csv.grpc.MutinyPersistPaymentRecordServiceGrpc;
 import io.github.mbarcia.csv.grpc.MutinySendPaymentRecordServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
-import io.github.mbarcia.pipeline.step.StepOneToAsync;
+import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,32 +29,30 @@ import jakarta.inject.Inject;
 import lombok.NoArgsConstructor;
 
 /**
- * Step supplier that persists a payment record and sends the payment.
+ * Step supplier that sends the payment to a third party service (mocked).
  */
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
-public class PersistAndSendPaymentStep extends ConfigurableStepBase implements StepOneToAsync<InputCsvFileProcessingSvc.PaymentRecord, PaymentsProcessingSvc.AckPaymentSent> {
-
-    @Inject
-    @GrpcClient("persist-payment-record")
-    MutinyPersistPaymentRecordServiceGrpc.MutinyPersistPaymentRecordServiceStub persistPaymentRecordService;
+public class SendPaymentStep extends ConfigurableStepBase implements StepOneToOne<InputCsvFileProcessingSvc.PaymentRecord, PaymentsProcessingSvc.AckPaymentSent> {
 
     @Inject
     @GrpcClient("send-payment-record")
     MutinySendPaymentRecordServiceGrpc.MutinySendPaymentRecordServiceStub sendPaymentRecordService;
 
     @Inject
-    public PersistAndSendPaymentStep(PipelineConfig pipelineConfig) {
+    public SendPaymentStep(PipelineConfig pipelineConfig) {
         // Constructor with dependencies
         // step-specific overrides if needed
-        liveConfig().overrides().recoverOnFailure(true);
+        liveConfig().overrides()
+            .recoverOnFailure(true)
+            .autoPersist(true); // Enable auto-persistence
     }
 
     @Override
     public Uni<PaymentsProcessingSvc.AckPaymentSent> applyAsyncUni(InputCsvFileProcessingSvc.PaymentRecord in) {
-        return Uni.createFrom().item(in)
-            .flatMap(persistPaymentRecordService::remoteProcess)
-            .flatMap(sendPaymentRecordService::remoteProcess);
+        // The payment record will be automatically persisted by the pipeline framework
+        // We only need to send the payment
+        return sendPaymentRecordService.remoteProcess(in);
     }
 
     @Override

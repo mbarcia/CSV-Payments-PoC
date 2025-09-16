@@ -20,7 +20,7 @@ import io.github.mbarcia.csv.grpc.MutinyProcessAckPaymentSentServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStepBase;
-import io.github.mbarcia.pipeline.step.StepOneToAsync;
+import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -32,7 +32,7 @@ import lombok.NoArgsConstructor;
  */
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
-public class ProcessAckPaymentStep extends ConfigurableStepBase implements StepOneToAsync<PaymentsProcessingSvc.AckPaymentSent, PaymentsProcessingSvc.PaymentStatus> {
+public class ProcessAckPaymentStep extends ConfigurableStepBase implements StepOneToOne<PaymentsProcessingSvc.AckPaymentSent, PaymentsProcessingSvc.PaymentStatus> {
 
     @Inject
     @GrpcClient("process-ack-payment-sent")

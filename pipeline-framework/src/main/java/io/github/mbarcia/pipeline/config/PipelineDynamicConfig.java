@@ -102,4 +102,8 @@ public class PipelineDynamicConfig {
     public boolean isJitter() {
         return false; // Default value
     }
+    
+    public boolean isAutoPersist() {
+        return true; // Default value - auto-persistence enabled by default
+    }
 }

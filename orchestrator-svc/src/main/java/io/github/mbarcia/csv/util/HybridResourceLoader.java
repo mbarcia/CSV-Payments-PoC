@@ -16,11 +16,12 @@
 
 package io.github.mbarcia.csv.util;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.resource.spi.ConfigProperty;
 import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +30,38 @@ public class HybridResourceLoader implements ResourceLoader {
 
   private static final Logger LOG = LoggerFactory.getLogger(HybridResourceLoader.class);
 
-  // Configurable external directory - defaults to "./csv" relative to working directory
+  // Configurable external directory - defaults to \"./csv\" relative to working directory
   @ConfigProperty(defaultValue = "./csv")
   String externalCsvDir;
+
+  // Resolved external directory
+  private String resolvedExternalCsvDir;
+
+  @PostConstruct
+  void init() {
+    // Resolve the external CSV directory relative to the project root
+    File projectRoot = new File(".").getAbsoluteFile();
+    while (projectRoot != null && !new File(projectRoot, "pom.xml").exists()) {
+      projectRoot = projectRoot.getParentFile();
+    }
+    
+    if (projectRoot != null) {
+      // Look for the csv directory in the project root
+      File csvDir = new File(projectRoot, "csv");
+      if (csvDir.exists() && csvDir.isDirectory()) {
+        resolvedExternalCsvDir = csvDir.getPath();
+        LOG.debug("Found CSV directory: {}", resolvedExternalCsvDir);
+      } else {
+        // If csv directory doesn't exist, create the resolved path anyway
+        resolvedExternalCsvDir = csvDir.getPath();
+        LOG.debug("CSV directory not found, using path: {}", resolvedExternalCsvDir);
+      }
+    } else {
+      // Fallback to the configured value
+      resolvedExternalCsvDir = externalCsvDir;
+      LOG.warn("Could not find project root, using configured CSV dir: {}", resolvedExternalCsvDir);
+    }
+  }
 
   /**
    * Gets a resource, prioritizing external files over JAR resources.
@@ -84,8 +114,14 @@ public class HybridResourceLoader implements ResourceLoader {
       return file;
     }
 
+    // Special case: if the path is exactly the same as the externalCsvDir, 
+    // return the resolvedExternalCsvDir directly
+    if (path.equals(externalCsvDir)) {
+      return new File(resolvedExternalCsvDir);
+    }
+
     // For relative paths, resolve against configured external directory
-    return new File(externalCsvDir, path);
+    return new File(resolvedExternalCsvDir, path);
   }
 
   /** Diagnostic method to check resource availability */
@@ -94,6 +130,7 @@ public class HybridResourceLoader implements ResourceLoader {
     LOG.info("Looking for resource: {}", path);
     LOG.info("Working directory: {}", new File(".").getAbsolutePath());
     LOG.info("Configured external CSV dir: {}", externalCsvDir);
+    LOG.info("Resolved external CSV dir: {}", resolvedExternalCsvDir);
 
     // Check external file
     File externalFile = resolveExternalPath(path);

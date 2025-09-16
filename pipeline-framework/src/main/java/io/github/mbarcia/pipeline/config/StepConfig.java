@@ -33,6 +33,7 @@ public class StepConfig {
     private volatile boolean debug = false;
     private volatile boolean recoverOnFailure = false;
     private volatile boolean runWithVirtualThreads = false;
+    private volatile boolean autoPersist = false; // New configuration option
 
     private final AtomicReference<Duration> maxBackoff = new AtomicReference<>(Duration.ofSeconds(30));
     private volatile boolean jitter = false;
@@ -40,6 +41,7 @@ public class StepConfig {
     public StepConfig() {}
 
     // --- getters ---
+    public boolean autoPersist() { return autoPersist; } // New getter
     public int retryLimit() { return retryLimit.get(); }
     public Duration retryWait() { return retryWait.get(); }
     public int concurrency() { return concurrency.get(); }
@@ -50,6 +52,7 @@ public class StepConfig {
     public boolean jitter() { return jitter; }
 
     // --- setters (runtime mutable) ---
+    public StepConfig autoPersist(boolean v) { autoPersist = v; return this; } // New setter
     public StepConfig retryLimit(int v) { retryLimit.set(v); return this; }
     public StepConfig retryWait(Duration v) { retryWait.set(Objects.requireNonNull(v)); return this; }
     public StepConfig concurrency(int v) { concurrency.set(v); return this; }
@@ -61,6 +64,15 @@ public class StepConfig {
 
     @Override
     public String toString() {
-        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, concurrency={2}, debug={3}, recoverOnFailure={4}, runWithVirtualThreads={5}, useExponentialBackoff={6}, maxBackoff={7}, jitter={8}'}'", retryLimit(), retryWait(), concurrency(), debug, recoverOnFailure, runWithVirtualThreads, useExponentialBackoff, maxBackoff(), jitter);
+        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, concurrency={2}, debug={3}, recoverOnFailure={4}, runWithVirtualThreads={5}, maxBackoff={6}, jitter={7}, autoPersist={8}'}'",
+                retryLimit(),
+                retryWait(),
+                concurrency(),
+                debug,
+                recoverOnFailure,
+                runWithVirtualThreads,
+                maxBackoff(),
+                jitter,
+                autoPersist);
     }
 }

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.pipeline.step; /** 1 -> 1 (synchronous) */
+package io.github.mbarcia.pipeline.step;
+
+import io.smallrye.mutiny.Uni;
+
+/** 1 -> 1 (async) */
 public interface StepOneToOne<I, O> extends StepBase {
-    O apply(I in);
-
-    default int concurrency() { return 1; } // max in-flight items per upstream item
-
-    default boolean runWithVirtualThreads() { return false; }
+    Uni<O> applyAsyncUni(I in);
 }

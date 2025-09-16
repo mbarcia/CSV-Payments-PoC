@@ -66,4 +66,8 @@ public final class LiveStepConfig extends StepConfig {
     @Override public boolean jitter() {
         return overrides().jitter() != super.jitter() ? overrides().jitter() : currentDefaults().jitter();
     }
+    @Override public boolean autoPersist() {
+        return overrides().autoPersist() != super.autoPersist() ? overrides().autoPersist() : currentDefaults().autoPersist();
+    }
+
 }

@@ -62,7 +62,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
   ProcessOutputFileStep processOutputFileStep;
   
   @Inject
-  PersistAndSendPaymentStep persistAndSendPaymentStep;
+  SendPaymentStep sendPaymentStep;
   
   @Inject
   ProcessAckPaymentStep processAckPaymentStep;
@@ -116,7 +116,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
               Multi.createFrom().items(folderPath),
               List.of(processFolderStep,
                       processInputFileStep,
-                      persistAndSendPaymentStep,
+                      sendPaymentStep,
                       processAckPaymentStep,
                       processPaymentStatusStep,
                       processOutputFileStep)

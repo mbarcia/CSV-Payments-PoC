@@ -29,7 +29,9 @@ public final class PipelineConfig {
 
     public PipelineConfig() {
         // initialize with a default profile
-        profiles.put("default", new StepConfig());
+        StepConfig defaultConfig = new StepConfig();
+        defaultConfig.autoPersist(true); // Enable auto-persistence by default
+        profiles.put("default", defaultConfig);
 
         // sync with Quarkus profile
         String quarkusProfile = LaunchMode.current().getProfileKey();
@@ -65,6 +67,7 @@ public final class PipelineConfig {
     public StepConfig newStepConfig() {
         StepConfig base = defaults();
         return new StepConfig()
+                .autoPersist(base.autoPersist())
                 .retryLimit(base.retryLimit())
                 .retryWait(base.retryWait())
                 .concurrency(base.concurrency())

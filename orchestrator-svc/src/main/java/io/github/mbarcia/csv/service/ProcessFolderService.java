@@ -42,6 +42,8 @@ public class ProcessFolderService {
 
     URL resource = resourceLoader.getResource(csvFolderPath);
     if (resource == null) {
+      LOG.warn("CSV folder not found: {}", csvFolderPath);
+      resourceLoader.diagnoseResourceAccess(csvFolderPath);
       throw new IllegalArgumentException(
           MessageFormat.format("CSV folder not found: {0}", csvFolderPath));
     }

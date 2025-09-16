@@ -86,23 +86,9 @@ public interface PipelineInitialConfig {
     Boolean jitter();
 
     /**
-     * Maximum number of concurrent records to process.
-     * @return concurrency limit for records processing
+     * Enable automatic persistence of step inputs.
+     * @return true to enable auto-persistence, false otherwise
      */
-    @WithDefault("1000")
-    Integer concurrencyLimitRecords();
-
-    /**
-     * Maximum number of retry attempts for failed operations.
-     * @return maximum retry attempts
-     */
-    @WithDefault("3")
-    Integer maxRetries();
-
-    /**
-     * Initial delay in milliseconds before the first retry.
-     * @return initial retry delay in milliseconds
-     */
-    @WithDefault("1000")
-    Long initialRetryDelay();
+    @WithDefault("true")
+    Boolean autoPersist();
 }

@@ -18,6 +18,7 @@ package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.grpc.MutinyProcessAckPaymentSentServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
@@ -30,6 +31,14 @@ import lombok.NoArgsConstructor;
 /**
  * Step supplier that processes an acknowledgment payment sent.
  */
+@PipelineStep(
+    order = 4,
+    autoPersist = true,
+    debug = true,
+    recoverOnFailure = true,
+    inputType = PaymentsProcessingSvc.AckPaymentSent.class,
+    outputType = PaymentsProcessingSvc.PaymentStatus.class
+)
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
 public class ProcessAckPaymentStep extends ConfigurableStep implements StepOneToOne<PaymentsProcessingSvc.AckPaymentSent, PaymentsProcessingSvc.PaymentStatus> {
@@ -41,10 +50,7 @@ public class ProcessAckPaymentStep extends ConfigurableStep implements StepOneTo
     @Inject
     public ProcessAckPaymentStep(PipelineConfig pipelineConfig) {
         // Constructor with dependencies
-        liveConfig().overrides()
-                .recoverOnFailure(true)
-                .debug(true)
-                .autoPersist(true); // Enable auto-persistence
+        // Configuration is now handled by the @PipelineStep annotation
     }
 
     @Override

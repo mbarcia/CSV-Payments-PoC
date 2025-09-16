@@ -25,7 +25,9 @@ import io.github.mbarcia.csv.common.dto.PaymentRecordDto;
 import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper;
 import io.github.mbarcia.csv.common.mapper.PaymentRecordMapper;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
+import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.Currency;
@@ -43,18 +45,21 @@ class ProcessCsvPaymentsInputFileGrpcServiceTest {
   private ProcessCsvPaymentsInputReactiveService domainService;
   private CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
   private PaymentRecordMapper paymentRecordMapper;
+  private PersistenceManager persistenceManager;
 
   @BeforeEach
   void setUp() {
     domainService = Mockito.mock(ProcessCsvPaymentsInputReactiveService.class);
     csvPaymentsInputFileMapper = mock(CsvPaymentsInputFileMapper.class);
     paymentRecordMapper = mock(PaymentRecordMapper.class);
+    persistenceManager = mock(PersistenceManager.class);
 
     service = new ProcessCsvPaymentsInputFileGrpcService();
     // manual "injection"
     service.domainService = domainService;
     service.csvPaymentsInputFileMapper = csvPaymentsInputFileMapper;
     service.paymentRecordMapper = paymentRecordMapper;
+    service.persistenceManager = persistenceManager;
   }
 
   @Test
@@ -94,6 +99,8 @@ class ProcessCsvPaymentsInputFileGrpcServiceTest {
             .build();
 
     when(csvPaymentsInputFileMapper.fromGrpc(grpcRequest)).thenReturn(domainIn);
+    // Stub the persistence manager to return the same entity (persisted)
+    when(persistenceManager.persist(domainIn)).thenReturn(Uni.createFrom().item(domainIn));
     when(domainService.process(domainIn))
         .thenReturn(Multi.createFrom().items(domainOut1, domainOut2));
     when(paymentRecordMapper.toDto(domainOut1)).thenReturn(dto1);
@@ -109,6 +116,7 @@ class ProcessCsvPaymentsInputFileGrpcServiceTest {
 
     // verify mapping calls
     verify(csvPaymentsInputFileMapper).fromGrpc(grpcRequest);
+    verify(persistenceManager).persist(domainIn);
 
     ArgumentCaptor<io.github.mbarcia.csv.common.dto.PaymentRecordDto> dtoCaptor =
         ArgumentCaptor.forClass(io.github.mbarcia.csv.common.dto.PaymentRecordDto.class);

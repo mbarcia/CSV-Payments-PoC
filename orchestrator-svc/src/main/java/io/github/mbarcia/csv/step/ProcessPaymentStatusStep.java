@@ -19,6 +19,7 @@ package io.github.mbarcia.csv.step;
 import io.github.mbarcia.csv.grpc.MutinyProcessPaymentStatusServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
@@ -31,6 +32,14 @@ import lombok.NoArgsConstructor;
 /**
  * Step supplier that processes a payment status.
  */
+@PipelineStep(
+    order = 5,
+    autoPersist = true,
+    debug = true,
+    recoverOnFailure = true,
+    inputType = PaymentsProcessingSvc.PaymentStatus.class,
+    outputType = PaymentStatusSvc.PaymentOutput.class
+)
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
 public class ProcessPaymentStatusStep extends ConfigurableStep implements StepOneToOne<PaymentsProcessingSvc.PaymentStatus, PaymentStatusSvc.PaymentOutput> {

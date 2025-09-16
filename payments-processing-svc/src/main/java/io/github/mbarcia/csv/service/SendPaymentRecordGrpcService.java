@@ -38,17 +38,19 @@ public class SendPaymentRecordGrpcService
   @Inject PaymentRecordMapper paymentRecordMapper;
 
   @Inject AckPaymentSentMapper ackPaymentSentMapper;
+  
+  @Inject io.github.mbarcia.pipeline.persistence.PersistenceManager persistenceManager;
 
   @Override
   public Uni<PaymentsProcessingSvc.AckPaymentSent> remoteProcess(
       InputCsvFileProcessingSvc.PaymentRecord request) {
 
-    return new GrpcReactiveServiceAdapter<
+    GrpcReactiveServiceAdapter<
         InputCsvFileProcessingSvc.PaymentRecord, // GrpcIn
         PaymentsProcessingSvc.AckPaymentSent, // GrpcOut
         PaymentRecord, // DomainIn
-        AckPaymentSent>() // DomainOut
-    {
+        AckPaymentSent> // DomainOut
+        adapter = new GrpcReactiveServiceAdapter<>() {
       @Override
       protected ReactiveService<PaymentRecord, AckPaymentSent> getService() {
         return domainService;
@@ -63,6 +65,16 @@ public class SendPaymentRecordGrpcService
       protected PaymentsProcessingSvc.AckPaymentSent toGrpc(AckPaymentSent domainOut) {
         return ackPaymentSentMapper.toGrpc(domainOut);
       }
-    }.remoteProcess(request);
+      
+      @Override
+      protected io.github.mbarcia.pipeline.config.StepConfig getStepConfig() {
+        return new io.github.mbarcia.pipeline.config.StepConfig().autoPersist(true);
+      }
+    };
+    
+    // Manually inject the persistence manager since this anonymous class is not managed by CDI
+    adapter.setPersistenceManager(persistenceManager);
+
+    return adapter.remoteProcess(request);
   }
 }

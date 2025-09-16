@@ -27,6 +27,7 @@ import io.github.mbarcia.csv.common.mapper.CsvPaymentsOutputFileMapper;
 import io.github.mbarcia.csv.common.mapper.PaymentOutputMapper;
 import io.github.mbarcia.csv.grpc.OutputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
+import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
@@ -51,6 +52,8 @@ class ProcessCsvPaymentsOutputFileGrpcServiceTest {
   @Mock CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
 
   @Mock PaymentOutputMapper paymentOutputMapper;
+
+  @Mock PersistenceManager persistenceManager;
 
   private PaymentStatusSvc.PaymentOutput grpcPaymentOutput;
   private PaymentOutput domainPaymentOutput;
@@ -101,6 +104,9 @@ class ProcessCsvPaymentsOutputFileGrpcServiceTest {
 
     when(paymentOutputMapper.fromGrpc(any(PaymentStatusSvc.PaymentOutput.class)))
         .thenReturn(domainPaymentOutput);
+    // Stub the persistence manager to return the same entity (persisted)
+    when(persistenceManager.persist(domainPaymentOutput))
+        .thenReturn(Uni.createFrom().item(domainPaymentOutput));
     when(domainService.process(any(Multi.class)))
         .thenAnswer(
             invocation -> {
@@ -126,6 +132,9 @@ class ProcessCsvPaymentsOutputFileGrpcServiceTest {
     Multi<PaymentStatusSvc.PaymentOutput> grpcStream = Multi.createFrom().item(grpcPaymentOutput);
 
     when(paymentOutputMapper.fromGrpc(grpcPaymentOutput)).thenReturn(domainPaymentOutput);
+    // Stub the persistence manager to return the same entity (persisted)
+    when(persistenceManager.persist(domainPaymentOutput))
+        .thenReturn(Uni.createFrom().item(domainPaymentOutput));
     when(domainService.process(any(Multi.class)))
         .thenAnswer(
             invocation -> {

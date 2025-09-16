@@ -37,7 +37,7 @@ class ProcessAckPaymentSentResourceTest {
     RestAssured.config =
         RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
     // Update the port to match the HTTPS port
-    RestAssured.port = 8446;
+    RestAssured.port = 8444;
   }
 
   @Test
@@ -92,14 +92,16 @@ class ProcessAckPaymentSentResourceTest {
 
   @Test
   void testProcessAckPaymentEndpointWithMissingRequiredFields() {
-    // Create a test DTO with missing required fields
+    // Create a test DTO with missing required fields but with valid conversationId
     String requestBody =
         """
                 {
+                  "conversationId": "%s",
                   "message": "Payment sent successfully",
                   "status": 200
                 }
-                """;
+                """
+            .formatted(UUID.randomUUID());
 
     given()
         .contentType(ContentType.JSON)
@@ -107,6 +109,6 @@ class ProcessAckPaymentSentResourceTest {
         .when()
         .post("/api/v1/payments-processing/process-ack-payment")
         .then()
-        .statusCode(500); // Missing required fields results in 500 due to NPE in mapper
+        .statusCode(500); // Missing required fields in the response object results in 500
   }
 }

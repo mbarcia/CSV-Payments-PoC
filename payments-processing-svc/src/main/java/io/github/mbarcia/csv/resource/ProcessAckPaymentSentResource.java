@@ -17,12 +17,10 @@
 package io.github.mbarcia.csv.resource;
 
 import io.github.mbarcia.csv.common.domain.AckPaymentSent;
-import io.github.mbarcia.csv.common.domain.PaymentStatus;
 import io.github.mbarcia.csv.common.dto.AckPaymentSentDto;
 import io.github.mbarcia.csv.common.dto.PaymentStatusDto;
 import io.github.mbarcia.csv.common.mapper.AckPaymentSentMapper;
 import io.github.mbarcia.csv.common.mapper.PaymentStatusMapper;
-import io.github.mbarcia.csv.service.ProcessAckPaymentSentReactiveService;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -37,7 +35,7 @@ import jakarta.ws.rs.core.MediaType;
 public class ProcessAckPaymentSentResource {
 
     @Inject
-    ProcessAckPaymentSentReactiveService service;
+    io.github.mbarcia.csv.service.ProcessAckPaymentSentReactiveService service;
 
     @Inject
     AckPaymentSentMapper ackPaymentSentMapper;
@@ -49,7 +47,7 @@ public class ProcessAckPaymentSentResource {
     @Path("/process-ack-payment")
     public Uni<PaymentStatusDto> process(AckPaymentSentDto ackPaymentSentDto) {
         AckPaymentSent ackPaymentSent = ackPaymentSentMapper.fromDto(ackPaymentSentDto);
-        Uni<PaymentStatus> paymentStatus = service.process(ackPaymentSent);
-        return paymentStatus.onItem().transform(paymentStatusMapper::toDto);
+        return service.process(ackPaymentSent, false) // Don't use virtual threads for REST calls
+            .onItem().transform(paymentStatusMapper::toDto);
     }
 }

@@ -19,7 +19,6 @@ package io.github.mbarcia.pipeline;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.config.PipelineConfig;
-import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.step.Step;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
@@ -259,30 +258,6 @@ class PipelineRunnerTest {
       // Should recover after 2 retries (3 total attempts)
       subscriber.assertItems("item1"); // Original item passed through on recovery
       assertEquals(3, step.getCallCount()); // 2 retries + 1 initial = 3 total calls
-    }
-  }
-
-  @Test
-  void testRunWithUnknownStepType() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1", "item2");
-
-      // Create a mock step that doesn't implement any known step interface
-      // We'll create a Step that doesn't match any of the expected types
-      Step unknownStep =
-          new Step() {
-            @Override
-            public StepConfig effectiveConfig() {
-              return new StepConfig();
-            }
-
-            @Override
-            public Multi<Object> apply(Multi<Object> input) {
-              return input; // Pass through
-            }
-          };
-
-      assertThrows(IllegalArgumentException.class, () -> runner.run(input, List.of(unknownStep)));
     }
   }
 

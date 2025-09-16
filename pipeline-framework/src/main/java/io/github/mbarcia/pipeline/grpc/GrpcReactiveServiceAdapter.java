@@ -16,10 +16,12 @@
 
 package io.github.mbarcia.pipeline.grpc;
 
+import io.github.mbarcia.pipeline.adapter.StepConfigProvider;
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import org.slf4j.Logger;
@@ -31,6 +33,28 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
 
   @Inject
   PersistenceManager persistenceManager;
+  
+  // The step class this adapter is for
+  private Class<? extends ConfigurableStep> stepClass;
+  
+  /**
+   * Sets the persistence manager for this adapter.
+   * This method is useful when the adapter is not managed by CDI (e.g., anonymous inner classes).
+   * 
+   * @param persistenceManager the persistence manager to use
+   */
+  public void setPersistenceManager(PersistenceManager persistenceManager) {
+    this.persistenceManager = persistenceManager;
+  }
+  
+  /**
+   * Sets the step class this adapter is for.
+   * 
+   * @param stepClass the step class
+   */
+  public void setStepClass(Class<? extends ConfigurableStep> stepClass) {
+    this.stepClass = stepClass;
+  }
 
   protected abstract ReactiveService<DomainIn, DomainOut> getService();
 
@@ -45,6 +69,9 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
    * @return the step configuration, or null if not configured
    */
   protected StepConfig getStepConfig() {
+    if (stepClass != null) {
+      return StepConfigProvider.getStepConfig(stepClass);
+    }
     return null;
   }
 
@@ -55,6 +82,10 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
    * @return true if entities should be auto-persisted, false otherwise
    */
   protected boolean isAutoPersistenceEnabled() {
+    if (stepClass != null) {
+      return StepConfigProvider.isAutoPersistenceEnabled(stepClass);
+    }
+    
     StepConfig config = getStepConfig();
     return config != null && config.autoPersist();
   }

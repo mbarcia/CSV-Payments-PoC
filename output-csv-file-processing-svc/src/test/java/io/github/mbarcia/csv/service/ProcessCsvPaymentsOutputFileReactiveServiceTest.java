@@ -54,7 +54,7 @@ class ProcessCsvPaymentsOutputFileReactiveServiceTest {
 
   @BeforeEach
   void setUp() throws IOException {
-    service = new ProcessCsvPaymentsOutputFileReactiveService(Runnable::run);
+    service = new ProcessCsvPaymentsOutputFileReactiveService();
     tempFile = Files.createFile(tempDir.resolve("test.csv"));
   }
 

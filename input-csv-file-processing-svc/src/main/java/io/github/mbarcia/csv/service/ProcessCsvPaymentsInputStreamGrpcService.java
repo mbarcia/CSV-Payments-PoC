@@ -40,17 +40,19 @@ public class ProcessCsvPaymentsInputStreamGrpcService
   CsvPaymentsInputStreamMapper csvPaymentsInputStreamMapper;
 
   @Inject PaymentRecordMapper paymentRecordMapper;
+  
+  @Inject io.github.mbarcia.pipeline.persistence.PersistenceManager persistenceManager;
 
   @Override
   public Multi<InputCsvFileProcessingSvc.PaymentRecord> remoteProcess(
       InputCsvFileProcessingSvc.CsvPaymentsInputStream request) {
 
-    return new GrpcServiceStreamingAdapter<
+    GrpcServiceStreamingAdapter<
         InputCsvFileProcessingSvc.CsvPaymentsInputStream, // GrpcIn
         InputCsvFileProcessingSvc.PaymentRecord, // GrpcOut
         CsvPaymentsInput, // DomainIn
-        PaymentRecord>() // DomainOut
-    {
+        PaymentRecord> // DomainOut
+        adapter = new GrpcServiceStreamingAdapter<>() {
       @Override
       protected ProcessCsvPaymentsInputReactiveService getService() {
         return domainService;
@@ -66,6 +68,16 @@ public class ProcessCsvPaymentsInputStreamGrpcService
       protected InputCsvFileProcessingSvc.PaymentRecord toGrpc(PaymentRecord domainOut) {
         return paymentRecordMapper.toGrpc(paymentRecordMapper.toDto(domainOut));
       }
-    }.remoteProcess(request);
+      
+      @Override
+      protected io.github.mbarcia.pipeline.config.StepConfig getStepConfig() {
+        return new io.github.mbarcia.pipeline.config.StepConfig().autoPersist(true);
+      }
+    };
+    
+    // Manually inject the persistence manager since this anonymous class is not managed by CDI
+    adapter.setPersistenceManager(persistenceManager);
+
+    return adapter.remoteProcess(request);
   }
 }

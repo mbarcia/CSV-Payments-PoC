@@ -20,6 +20,7 @@ import io.github.mbarcia.csv.common.mapper.CsvPaymentsOutputFileMapper;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
 import io.github.mbarcia.csv.grpc.OutputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepManyToMany;
@@ -40,6 +41,14 @@ import org.slf4j.LoggerFactory;
  * This implementation handles completion signals and partial writes by using a custom
  * gRPC adapter that provides detailed completion information.
  */
+@PipelineStep(
+    order = 6,
+    autoPersist = true,
+    debug = true,
+    recoverOnFailure = true,
+    inputType = PaymentStatusSvc.PaymentOutput.class,
+    outputType = OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.class
+)
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
 public class ProcessOutputFileStep extends ConfigurableStep implements StepManyToMany {

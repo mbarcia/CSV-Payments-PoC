@@ -16,6 +16,7 @@
 
 package io.github.mbarcia.pipeline;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
@@ -23,7 +24,9 @@ import io.github.mbarcia.pipeline.step.StepOneToMany;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.jupiter.api.Test;
 
@@ -65,9 +68,15 @@ class VirtualThreadExecutorTest {
       AssertSubscriber<Object> subscriber =
           result.subscribe().withSubscriber(AssertSubscriber.create(4));
       subscriber.awaitItems(4, Duration.ofSeconds(5));
-      subscriber.assertItems("item1-vt1", "item1-vt2", "item2-vt1", "item2-vt2");
 
-      // If we reach this point, the virtual thread executor worked correctly
+      // With virtual threads, the order is not guaranteed, so we need to check that all expected
+      // items are present regardless of order
+      List<Object> items = subscriber.getItems();
+      Set<Object> expectedItems = Set.of("item1-vt1", "item1-vt2", "item2-vt1", "item2-vt2");
+      Set<Object> actualItems = new HashSet<>(items);
+
+      assertEquals(expectedItems, actualItems, "All expected items should be present");
+      assertEquals(4, items.size(), "Should have exactly 4 items");
     }
   }
 

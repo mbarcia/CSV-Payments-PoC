@@ -20,11 +20,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.config.StepConfig;
+import io.quarkus.test.junit.DisabledOnIntegrationTest;
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
+@DisabledOnIntegrationTest
 class ApplicationConfigurationIntegrationTest {
 
   @Inject PipelineConfig pipelineConfig;

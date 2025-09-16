@@ -38,6 +38,8 @@ public class ReactivePanachePersistenceProvider implements PersistenceProvider<O
         if (entity instanceof PanacheEntityBase panacheEntity) {
             LOG.debug(MessageFormat.format("About to persist entity: {0}", entity));
 
+            // Directly persist the entity without wrapping in Panache.withSession()
+            // since we're already in a transactional context
             return panacheEntity.persistAndFlush()
                 .onItem().transform(_ -> entity)
                 .onFailure().recoverWithUni(t -> {

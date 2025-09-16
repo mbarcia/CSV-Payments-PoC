@@ -62,6 +62,13 @@ public class ProcessAckPaymentSentGrpcService
             protected PaymentsProcessingSvc.PaymentStatus toGrpc(PaymentStatus domainOut) {
               return paymentStatusMapper.toGrpc(domainOut);
             }
+            
+            @Override
+            protected io.github.mbarcia.pipeline.config.StepConfig getStepConfig() {
+              // For now, we'll enable auto-persistence by default for this service
+              // In a real implementation, this would be configurable
+              return new io.github.mbarcia.pipeline.config.StepConfig().autoPersist(true);
+            }
           };
 
   @Override

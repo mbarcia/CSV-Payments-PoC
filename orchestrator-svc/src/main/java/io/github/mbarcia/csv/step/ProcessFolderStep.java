@@ -18,6 +18,7 @@ package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.service.ProcessFolderService;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
@@ -34,6 +35,14 @@ import org.slf4j.LoggerFactory;
  * Step supplier that processes a folder path and produces a stream of input files.
  * This converts a single folder path into multiple input files.
  */
+@PipelineStep(
+    order = 1,
+    autoPersist = true,
+    debug = true,
+    recoverOnFailure = true,
+    inputType = String.class,
+    outputType = CsvPaymentsInputFile.class
+)
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
 public class ProcessFolderStep extends ConfigurableStep implements StepOneToMany<String, CsvPaymentsInputFile> {

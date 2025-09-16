@@ -32,6 +32,16 @@ public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, Dom
 
   @Inject
   PersistenceManager persistenceManager;
+  
+  /**
+   * Sets the persistence manager for this adapter.
+   * This method is useful when the adapter is not managed by CDI (e.g., anonymous inner classes).
+   * 
+   * @param persistenceManager the persistence manager to use
+   */
+  public void setPersistenceManager(PersistenceManager persistenceManager) {
+    this.persistenceManager = persistenceManager;
+  }
 
   protected abstract ReactiveStreamingService<DomainIn, DomainOut> getService();
 

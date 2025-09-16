@@ -24,6 +24,7 @@ import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
 import io.github.mbarcia.csv.grpc.OutputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
 import io.github.mbarcia.pipeline.grpc.GrpcServiceClientStreamingAdapter;
+import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -43,41 +44,52 @@ public class ProcessCsvPaymentsOutputFileGrpcService
   @Inject CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
 
   @Inject PaymentOutputMapper paymentOutputMapper;
-
-  private final GrpcServiceClientStreamingAdapter<
-          PaymentStatusSvc.PaymentOutput,
-          OutputCsvFileProcessingSvc.CsvPaymentsOutputFile,
-          PaymentOutput,
-          CsvPaymentsOutputFile>
-      adapter =
-          new GrpcServiceClientStreamingAdapter<>() {
-
-            @Override
-            protected ProcessCsvPaymentsOutputFileReactiveService getService() {
-              return domainService;
-            }
-
-            @Override
-            protected PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpcIn) {
-              return paymentOutputMapper.fromGrpc(grpcIn);
-            }
-
-            @Override
-            protected OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(CsvPaymentsOutputFile domainOut) {
-              if (domainOut != null) {
-                LOG.info("CSV output file processing completed successfully");
-                return csvPaymentsOutputFileMapper.toGrpc(domainOut);
-              } else {
-                LOG.info("CSV output file processing completed with no output file (empty stream)");
-                // Return an empty response for empty streams
-                return OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder().build();
-              }
-            }
-          };
+  
+  @Inject PersistenceManager persistenceManager;
 
   @Override
   public Uni<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> remoteProcess(
       Multi<PaymentStatusSvc.PaymentOutput> grpcStream) {
+      
+    GrpcServiceClientStreamingAdapter<
+            PaymentStatusSvc.PaymentOutput,
+            OutputCsvFileProcessingSvc.CsvPaymentsOutputFile,
+            PaymentOutput,
+            CsvPaymentsOutputFile>
+        adapter =
+            new GrpcServiceClientStreamingAdapter<>() {
+
+              @Override
+              protected ProcessCsvPaymentsOutputFileReactiveService getService() {
+                return domainService;
+              }
+
+              @Override
+              protected PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpcIn) {
+                return paymentOutputMapper.fromGrpc(grpcIn);
+              }
+
+              @Override
+              protected OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(CsvPaymentsOutputFile domainOut) {
+                if (domainOut != null) {
+                  LOG.info("CSV output file processing completed successfully");
+                  return csvPaymentsOutputFileMapper.toGrpc(domainOut);
+                } else {
+                  LOG.info("CSV output file processing completed with no output file (empty stream)");
+                  // Return an empty response for empty streams
+                  return OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder().build();
+                }
+              }
+              
+              @Override
+              protected io.github.mbarcia.pipeline.config.StepConfig getStepConfig() {
+                return new io.github.mbarcia.pipeline.config.StepConfig().autoPersist(true);
+              }
+            };
+            
+    // Manually inject the persistence manager since this anonymous class is not managed by CDI
+    adapter.setPersistenceManager(persistenceManager);
+
     return adapter.remoteProcess(grpcStream);
   }
 }

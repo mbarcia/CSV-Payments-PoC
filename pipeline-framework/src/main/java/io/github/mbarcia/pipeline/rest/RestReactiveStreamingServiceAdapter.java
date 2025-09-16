@@ -16,9 +16,11 @@
 
 package io.github.mbarcia.pipeline.rest;
 
+import io.github.mbarcia.pipeline.adapter.StepConfigProvider;
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingService;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
@@ -34,10 +36,22 @@ public abstract class RestReactiveStreamingServiceAdapter<DomainIn, DomainOut, D
 
     @Inject
     PersistenceManager persistenceManager;
+    
+    // The step class this adapter is for
+    private Class<? extends ConfigurableStep> stepClass;
 
     protected abstract ReactiveStreamingService<DomainIn, DomainOut> getService();
 
     protected abstract DtoOut toDto(DomainOut domainOut);
+    
+    /**
+     * Sets the step class this adapter is for.
+     * 
+     * @param stepClass the step class
+     */
+    public void setStepClass(Class<? extends ConfigurableStep> stepClass) {
+        this.stepClass = stepClass;
+    }
 
     /**
      * Get the step configuration for this service adapter.
@@ -46,6 +60,9 @@ public abstract class RestReactiveStreamingServiceAdapter<DomainIn, DomainOut, D
      * @return the step configuration, or null if not configured
      */
     protected StepConfig getStepConfig() {
+        if (stepClass != null) {
+            return StepConfigProvider.getStepConfig(stepClass);
+        }
         return null;
     }
 
@@ -56,6 +73,10 @@ public abstract class RestReactiveStreamingServiceAdapter<DomainIn, DomainOut, D
      * @return true if entities should be auto-persisted, false otherwise
      */
     protected boolean isAutoPersistenceEnabled() {
+        if (stepClass != null) {
+            return StepConfigProvider.isAutoPersistenceEnabled(stepClass);
+        }
+        
         StepConfig config = getStepConfig();
         return config != null && config.autoPersist();
     }

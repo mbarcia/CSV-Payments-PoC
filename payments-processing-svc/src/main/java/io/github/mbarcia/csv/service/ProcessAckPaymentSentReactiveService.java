@@ -44,11 +44,21 @@ public class ProcessAckPaymentSentReactiveService
 
   @Override
   public Uni<PaymentStatus> process(AckPaymentSent ackPaymentSent) {
+    return process(ackPaymentSent, true); // Default to using virtual threads
+  }
+
+  /**
+   * Process with optional virtual thread execution
+   * @param ackPaymentSent the payment to process
+   * @param useVirtualThreads whether to use virtual threads (false for REST calls)
+   * @return Uni with the payment status
+   */
+  public Uni<PaymentStatus> process(AckPaymentSent ackPaymentSent, boolean useVirtualThreads) {
     LOG.debug("Processing AckPaymentSent in ProcessAckPaymentSentReactiveService: id={}, conversationId={}, paymentRecordId={}", 
         ackPaymentSent.getId(), ackPaymentSent.getConversationId(), ackPaymentSent.getPaymentRecordId());
     
-    // Directly call the service without threading
-    Uni<PaymentStatus> result = pollAckPaymentSentService.process(ackPaymentSent);
+    // Call the service with the appropriate threading option
+    Uni<PaymentStatus> result = pollAckPaymentSentService.process(ackPaymentSent, useVirtualThreads);
     
     LOG.debug("Returning Uni from ProcessAckPaymentSentReactiveService");
     return result

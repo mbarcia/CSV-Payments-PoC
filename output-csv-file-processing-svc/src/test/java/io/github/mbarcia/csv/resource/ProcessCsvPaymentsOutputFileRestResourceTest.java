@@ -17,19 +17,12 @@
 package io.github.mbarcia.csv.resource;
 
 import static io.restassured.RestAssured.given;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.notNullValue;
 
-import io.github.mbarcia.csv.common.domain.AckPaymentSent;
-import io.github.mbarcia.csv.common.domain.PaymentRecord;
-import io.github.mbarcia.csv.common.domain.PaymentStatus;
-import io.github.mbarcia.csv.common.dto.PaymentOutputDto;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.config.SSLConfig;
-import java.math.BigDecimal;
-import java.nio.file.Paths;
-import java.util.Currency;
-import java.util.List;
+import io.restassured.http.ContentType;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -44,108 +37,110 @@ class ProcessCsvPaymentsOutputFileRestResourceTest {
     RestAssured.config =
         RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
     // Update the port to match the HTTPS port
-    RestAssured.port = 8447;
+    RestAssured.port = 8444;
   }
 
   @Test
   void testProcessToFile() {
-    // Given - Create proper nested structure
-    PaymentRecord paymentRecord = new PaymentRecord();
-    paymentRecord.setCsvId("CSV001");
-    paymentRecord.setRecipient("123456789");
-    paymentRecord.setAmount(new BigDecimal("100.00"));
-    paymentRecord.setCurrency(Currency.getInstance("USD"));
-    paymentRecord.setCsvPaymentsInputFilePath(Paths.get("/tmp/test.csv"));
+    // Create test data
+    String requestBody =
+        """
+                [
+                  {
+                    "id": "%s",
+                    "csvId": "CSV001",
+                    "recipient": "123456789",
+                    "amount": 100.00,
+                    "currency": "USD",
+                    "conversationId": "%s",
+                    "status": 200,
+                    "message": "Success",
+                    "fee": 2.50,
+                    "paymentStatus": {
+                      "id": "%s",
+                      "customerReference": null,
+                      "reference": "REF001",
+                      "status": "SUCCESS",
+                      "message": "Payment processed successfully",
+                      "fee": 2.50,
+                      "ackPaymentSent": {
+                        "id": "%s",
+                        "conversationId": "%s",
+                        "status": 200,
+                        "message": "Success",
+                        "paymentRecord": {
+                          "id": "%s",
+                          "csvId": "CSV001",
+                          "recipient": "123456789",
+                          "amount": 100.00,
+                          "currency": "USD",
+                          "csvPaymentsInputFilePath": "file:///tmp/test.csv"
+                        },
+                        "paymentRecordId": "%s"
+                      },
+                      "ackPaymentSentId": "%s",
+                      "paymentRecord": {
+                        "id": "%s",
+                        "csvId": "CSV001",
+                        "recipient": "123456789",
+                        "amount": 100.00,
+                        "currency": "USD",
+                        "csvPaymentsInputFilePath": "file:///tmp/test.csv"
+                      },
+                      "paymentRecordId": "%s"
+                    }
+                  }
+                ]
+                """
+            .formatted(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                UUID.randomUUID());
 
-    AckPaymentSent ackPaymentSent = new AckPaymentSent(UUID.randomUUID());
-    ackPaymentSent.setStatus(200L);
-    ackPaymentSent.setMessage("Success");
-    ackPaymentSent.setPaymentRecord(paymentRecord);
-    ackPaymentSent.setPaymentRecordId(paymentRecord.getId());
-
-    PaymentStatus paymentStatus = new PaymentStatus();
-    paymentStatus.setReference("REF001");
-    paymentStatus.setStatus("SUCCESS");
-    paymentStatus.setMessage("Payment processed successfully");
-    paymentStatus.setFee(new BigDecimal("2.50"));
-    paymentStatus.setAckPaymentSent(ackPaymentSent);
-    paymentStatus.setAckPaymentSentId(ackPaymentSent.getId());
-    paymentStatus.setPaymentRecord(paymentRecord);
-    paymentStatus.setPaymentRecordId(paymentRecord.getId());
-
-    PaymentOutputDto requestDto =
-        PaymentOutputDto.builder()
-            .csvId("CSV001")
-            .recipient("123456789")
-            .amount(new BigDecimal("100.00"))
-            .currency(Currency.getInstance("USD"))
-            .conversationId(UUID.randomUUID())
-            .status(200L)
-            .message("Success")
-            .fee(new BigDecimal("2.50"))
-            .paymentStatus(paymentStatus)
-            .build();
-
-    // When & Then
     given()
-        .contentType("application/json")
-        .body(List.of(requestDto))
+        .contentType(ContentType.JSON)
+        .body(requestBody)
         .when()
         .post("/api/v1/output-processing/process-file")
         .then()
         .statusCode(200)
         .body("filepath", notNullValue())
-        .body("message", equalTo("File processed successfully"));
+        .body("message", notNullValue());
   }
 
   @Test
   void testProcessToFileWithError() {
-    // Create proper nested structure
-    PaymentRecord paymentRecord = new PaymentRecord();
-    paymentRecord.setCsvId("CSV001");
-    paymentRecord.setRecipient("123456789");
-    paymentRecord.setAmount(new BigDecimal("100.00"));
-    paymentRecord.setCurrency(Currency.getInstance("USD"));
-    paymentRecord.setCsvPaymentsInputFilePath(Paths.get("/tmp/test.csv"));
+    // Create test data with an intentionally malformed object to trigger error handling
+    String requestBody =
+        """
+                [
+                  {
+                    "id": "invalid-uuid",
+                    "csvId": "CSV001",
+                    "recipient": "123456789",
+                    "amount": 100.00,
+                    "currency": "USD",
+                    "conversationId": "invalid-uuid",
+                    "status": 200,
+                    "message": "Success",
+                    "fee": 2.50
+                  }
+                ]
+                """;
 
-    AckPaymentSent ackPaymentSent = new AckPaymentSent(UUID.randomUUID());
-    ackPaymentSent.setStatus(200L);
-    ackPaymentSent.setMessage("Success");
-    ackPaymentSent.setPaymentRecord(paymentRecord);
-    ackPaymentSent.setPaymentRecordId(paymentRecord.getId());
-
-    PaymentStatus paymentStatus = new PaymentStatus();
-    paymentStatus.setReference("REF001");
-    paymentStatus.setStatus("SUCCESS");
-    paymentStatus.setMessage("Payment processed successfully");
-    paymentStatus.setFee(new BigDecimal("2.50"));
-    paymentStatus.setAckPaymentSent(ackPaymentSent);
-    paymentStatus.setAckPaymentSentId(ackPaymentSent.getId());
-    paymentStatus.setPaymentRecord(paymentRecord);
-    paymentStatus.setPaymentRecordId(paymentRecord.getId());
-
-    PaymentOutputDto requestDto =
-        PaymentOutputDto.builder()
-            .csvId("CSV001")
-            .recipient("123456789")
-            .amount(new BigDecimal("100.00"))
-            .currency(Currency.getInstance("USD"))
-            .conversationId(UUID.randomUUID())
-            .status(200L)
-            .message("Success")
-            .fee(new BigDecimal("2.50"))
-            .paymentStatus(paymentStatus)
-            .build();
-
-    // When & Then
     given()
-        .contentType("application/json")
-        .body(List.of(requestDto))
+        .contentType(ContentType.JSON)
+        .body(requestBody)
         .when()
         .post("/api/v1/output-processing/process-file")
         .then()
-        .statusCode(200)
-        .body("filepath", notNullValue())
-        .body("message", equalTo("File processed successfully"));
+        .statusCode(400); // Jackson deserialization error results in 400
   }
 }

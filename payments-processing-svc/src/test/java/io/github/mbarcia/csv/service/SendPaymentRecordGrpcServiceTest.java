@@ -28,6 +28,7 @@ import io.github.mbarcia.csv.common.mapper.AckPaymentSentMapper;
 import io.github.mbarcia.csv.common.mapper.PaymentRecordMapper;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
+import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.smallrye.mutiny.Uni;
@@ -48,6 +49,8 @@ class SendPaymentRecordGrpcServiceTest {
   @Mock private PaymentRecordMapper paymentRecordMapper;
 
   @Mock private AckPaymentSentMapper ackPaymentSentMapper;
+
+  @Mock private PersistenceManager persistenceManager;
 
   @InjectMocks private SendPaymentRecordGrpcService sendPaymentRecordGrpcService;
 
@@ -96,6 +99,8 @@ class SendPaymentRecordGrpcServiceTest {
             .build();
 
     doReturn(domainIn).when(paymentRecordMapper).fromGrpc(grpcRequest);
+    // Stub the persistence manager to return the same entity (persisted)
+    when(persistenceManager.persist(domainIn)).thenReturn(Uni.createFrom().item(domainIn));
     doReturn(Uni.createFrom().item(domainOut)).when(domainService).process(domainIn);
     when(ackPaymentSentMapper.toGrpc(domainOut)).thenReturn(grpcResponse);
 
@@ -133,6 +138,8 @@ class SendPaymentRecordGrpcServiceTest {
     RuntimeException domainException = new RuntimeException("Domain service failed");
 
     doReturn(domainIn).when(paymentRecordMapper).fromGrpc(grpcRequest);
+    // Stub the persistence manager to return the same entity (persisted)
+    when(persistenceManager.persist(domainIn)).thenReturn(Uni.createFrom().item(domainIn));
     doReturn(Uni.createFrom().failure(domainException)).when(domainService).process(domainIn);
 
     // When & Then
@@ -199,6 +206,8 @@ class SendPaymentRecordGrpcServiceTest {
     RuntimeException mapperException = new RuntimeException("Mapper failed");
 
     doReturn(domainIn).when(paymentRecordMapper).fromGrpc(grpcRequest);
+    // Stub the persistence manager to return the same entity (persisted)
+    when(persistenceManager.persist(domainIn)).thenReturn(Uni.createFrom().item(domainIn));
     doReturn(Uni.createFrom().item(domainOut)).when(domainService).process(domainIn);
     when(ackPaymentSentMapper.toGrpc(domainOut)).thenThrow(mapperException);
 

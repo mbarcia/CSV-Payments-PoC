@@ -19,10 +19,17 @@ package io.github.mbarcia.csv.common.mapper;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.common.dto.CsvPaymentsInputFileDto;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
+import io.github.mbarcia.pipeline.annotation.MapperForStep;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 
+@MapperForStep(
+    order = 2,
+    grpc = InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
+    dto = CsvPaymentsInputFileDto.class,
+    domain = CsvPaymentsInputFile.class
+)
 @Mapper(componentModel = "cdi", uses = {CommonConverters.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface CsvPaymentsInputFileMapper {
 

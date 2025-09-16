@@ -83,8 +83,11 @@ class PollAckPaymentSentGrpcServiceTest {
 
   @Test
   void testRemoteProcess_UnhappyPath() {
-    RuntimeException exception = new RuntimeException("Adapter error");
-    when(service.remoteProcess(request)).thenReturn(Uni.createFrom().failure(exception));
+    RuntimeException exception = new RuntimeException("Domain service error");
+    when(domainService.process(any(AckPaymentSent.class)))
+        .thenReturn(Uni.createFrom().failure(exception));
+    when(ackPaymentSentMapper.fromGrpc(any(PaymentsProcessingSvc.AckPaymentSent.class)))
+        .thenReturn(new AckPaymentSent(UUID.randomUUID()));
 
     Uni<PaymentsProcessingSvc.PaymentStatus> result = service.remoteProcess(request);
 
@@ -92,6 +95,6 @@ class PollAckPaymentSentGrpcServiceTest {
         .subscribe()
         .with(
             item -> fail("Should have failed"),
-            failure -> assertEquals(exception.getMessage(), failure.getCause().getMessage()));
+            failure -> assertEquals("INTERNAL: Domain service error", failure.getMessage()));
   }
 }

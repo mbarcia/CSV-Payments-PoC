@@ -16,6 +16,7 @@
 
 package io.github.mbarcia.pipeline.step;
 
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.LiveStepConfig;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.config.StepConfig;
@@ -35,6 +36,7 @@ public abstract class ConfigurableStep implements Step {
 
     protected ConfigurableStep() {
         // Config will be set by CDI injection
+        initializeConfigFromAnnotation();
     }
 
     @Override
@@ -53,5 +55,21 @@ public abstract class ConfigurableStep implements Step {
      */
     public LiveStepConfig liveConfig() {
         return (LiveStepConfig) effectiveConfig();
+    }
+    
+    /**
+     * Initialize configuration from @PipelineStep annotation if present
+     */
+    private void initializeConfigFromAnnotation() {
+        Class<?> stepClass = this.getClass();
+        PipelineStep annotation = stepClass.getAnnotation(PipelineStep.class);
+        
+        if (annotation != null) {
+            // Apply configuration from annotation
+            liveConfig().overrides()
+                .autoPersist(annotation.autoPersist())
+                .debug(annotation.debug())
+                .recoverOnFailure(annotation.recoverOnFailure());
+        }
     }
 }

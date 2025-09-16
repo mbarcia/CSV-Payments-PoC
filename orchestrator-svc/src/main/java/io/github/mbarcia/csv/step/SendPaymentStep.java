@@ -19,6 +19,7 @@ package io.github.mbarcia.csv.step;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinySendPaymentRecordServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
@@ -31,6 +32,14 @@ import lombok.NoArgsConstructor;
 /**
  * Step supplier that sends the payment to a third party service (mocked).
  */
+@PipelineStep(
+    order = 3,
+    autoPersist = true,
+    debug = true,
+    recoverOnFailure = true,
+    inputType = InputCsvFileProcessingSvc.PaymentRecord.class,
+    outputType = PaymentsProcessingSvc.AckPaymentSent.class
+)
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
 public class SendPaymentStep extends ConfigurableStep implements StepOneToOne<InputCsvFileProcessingSvc.PaymentRecord, PaymentsProcessingSvc.AckPaymentSent> {

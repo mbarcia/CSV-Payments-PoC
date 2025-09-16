@@ -20,6 +20,7 @@ import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
@@ -36,6 +37,14 @@ import org.slf4j.LoggerFactory;
  * Step supplier that processes the input CSV file and produces a stream of payment records.
  * This converts a single input file into multiple payment records.
  */
+@PipelineStep(
+    order = 2,
+    autoPersist = true,
+    debug = true,
+    recoverOnFailure = true,
+    inputType = CsvPaymentsInputFile.class,
+    outputType = InputCsvFileProcessingSvc.PaymentRecord.class
+)
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
 public class ProcessInputFileStep extends ConfigurableStep implements StepOneToMany<CsvPaymentsInputFile, InputCsvFileProcessingSvc.PaymentRecord> {

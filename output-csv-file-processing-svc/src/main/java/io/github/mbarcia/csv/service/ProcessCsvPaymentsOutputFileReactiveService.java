@@ -21,11 +21,8 @@ import io.github.mbarcia.pipeline.service.ReactiveStreamingClientService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +34,7 @@ import org.slf4j.MDC;
  * This service implements a reactive streaming pattern using Mutiny, but with a pragmatic
  * approach to file writing:
  * 1. It collects the stream into a list to work with OpenCSV's iterator-based write method
- * 2. The blocking file I/O is executed on a virtual thread to minimize resource impact
+ * 2. File I/O operations run on the event loop thread since they're not a bottleneck
  * 3. As the terminal operation in the pipeline, it doesn't create backpressure issues
  * <p>
  * The service uses the iterator-based write method from OpenCSV which provides better
@@ -48,19 +45,12 @@ import org.slf4j.MDC;
 public class ProcessCsvPaymentsOutputFileReactiveService
     implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
 
-  Executor executor;
-
-  @Inject
-  public ProcessCsvPaymentsOutputFileReactiveService(@Named("virtualExecutor") Executor executor) {
-    this.executor = executor;
-  }
-
   /**
    * Process a stream of payment outputs and write them to a CSV file.
    * <p>
    * Implementation notes:
    * - Collects the stream to a list to work with OpenCSV's iterator-based write method
-   * - Uses virtual threads for the blocking file I/O operation
+   * - File I/O operations run on the event loop thread since they're not a bottleneck
    * - As the terminal operation in the service pipeline, it doesn't create backpressure
    * - Uses try-with-resources to ensure proper file cleanup
    * 
@@ -116,7 +106,6 @@ public class ProcessCsvPaymentsOutputFileReactiveService
                       return Uni.createFrom().failure(new RuntimeException(e));
                     }
                   })
-                  .runSubscriptionOn(executor)
                   .onItem()
                   .call(file -> Uni.createFrom().item(() -> {
                     try {

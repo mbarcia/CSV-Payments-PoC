@@ -24,6 +24,7 @@ import io.github.mbarcia.csv.common.domain.PaymentStatus;
 import io.github.mbarcia.csv.common.mapper.PaymentOutputMapper;
 import io.github.mbarcia.csv.common.mapper.PaymentStatusMapper;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
+import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,6 +40,8 @@ class ProcessPaymentStatusGrpcServiceTest {
   @Mock PaymentStatusMapper paymentStatusMapper;
 
   @Mock PaymentOutputMapper paymentOutputMapper;
+
+  @Mock PersistenceManager persistenceManager;
 
   @InjectMocks ProcessPaymentStatusGrpcService processPaymentStatusGrpcService;
 
@@ -60,6 +63,9 @@ class ProcessPaymentStatusGrpcServiceTest {
 
     when(paymentStatusMapper.fromGrpc(any(PaymentsProcessingSvc.PaymentStatus.class)))
         .thenReturn(domainPaymentStatus);
+    // Stub the persistence manager to return the same entity (persisted)
+    when(persistenceManager.persist(domainPaymentStatus))
+        .thenReturn(Uni.createFrom().item(domainPaymentStatus));
     when(domainService.process(any(PaymentStatus.class)))
         .thenReturn(Uni.createFrom().item(domainPaymentOutput));
     when(paymentOutputMapper.toGrpc(any(PaymentOutput.class))).thenReturn(grpcOutput);

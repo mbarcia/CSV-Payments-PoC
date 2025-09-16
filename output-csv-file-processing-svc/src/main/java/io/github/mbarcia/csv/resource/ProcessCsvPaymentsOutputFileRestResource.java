@@ -21,11 +21,9 @@ import io.github.mbarcia.csv.common.domain.PaymentOutput;
 import io.github.mbarcia.csv.common.dto.PaymentOutputDto;
 import io.github.mbarcia.csv.common.mapper.PaymentOutputMapper;
 import io.github.mbarcia.csv.service.ProcessCsvPaymentsOutputFileReactiveService;
-import io.smallrye.common.annotation.Blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -36,7 +34,6 @@ import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.List;
-import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,18 +50,10 @@ public class ProcessCsvPaymentsOutputFileRestResource {
 
     @Inject
     PaymentOutputMapper paymentOutputMapper;
-    
-    Executor executor;
-
-    @Inject
-    public ProcessCsvPaymentsOutputFileRestResource(@Named("virtualExecutor") Executor executor) {
-        this.executor = executor;
-    }
 
     @POST
     @Path("/process")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    @Blocking
     public Uni<Response> processAndDownload(List<PaymentOutputDto> request) {
         LOG.info("Processing {} payment outputs and preparing file download via REST API", request.size());
         
@@ -75,7 +64,6 @@ public class ProcessCsvPaymentsOutputFileRestResource {
         Uni<CsvPaymentsOutputFile> domainResult = domainService.process(domainInput);
         
         return domainResult
-                .emitOn(executor)  // Ensure file operations run on virtual threads
                 .onItem().transformToUni(file -> {
                     if (file != null) {
                         return this.createFileDownloadResponse(file);
@@ -95,7 +83,6 @@ public class ProcessCsvPaymentsOutputFileRestResource {
     @POST
     @Path("/process-file")
     @Produces(MediaType.APPLICATION_JSON)
-    @Blocking
     public Uni<Response> processToFile(List<PaymentOutputDto> request) {
         LOG.info("Processing {} payment outputs to file via REST API", request.size());
         

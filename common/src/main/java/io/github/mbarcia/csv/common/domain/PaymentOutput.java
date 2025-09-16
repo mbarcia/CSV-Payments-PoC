@@ -19,7 +19,6 @@ package io.github.mbarcia.csv.common.domain;
 import com.opencsv.bean.CsvBindByName;
 import com.opencsv.bean.CsvIgnore;
 import com.opencsv.bean.CsvNumber;
-import io.github.mbarcia.pipeline.domain.BaseEntity;
 import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;

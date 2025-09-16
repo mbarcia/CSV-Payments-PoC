@@ -18,7 +18,6 @@ package io.github.mbarcia.csv.common.domain;
 
 import static java.text.MessageFormat.format;
 
-import io.github.mbarcia.pipeline.domain.BaseEntity;
 import jakarta.persistence.Convert;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.Transient;

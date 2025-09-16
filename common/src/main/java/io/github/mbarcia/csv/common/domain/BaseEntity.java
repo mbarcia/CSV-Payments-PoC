@@ -14,11 +14,27 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.pipeline.step;
+package io.github.mbarcia.csv.common.domain;
 
-import io.smallrye.mutiny.Uni;
 
-/** 1 -> 1 (async) */
-public interface StepOneToAsync<I, O> extends StepBase {
-    Uni<O> applyAsyncUni(I in);
+import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
+import jakarta.persistence.Column;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
+@MappedSuperclass
+public abstract class BaseEntity extends PanacheEntityBase {
+
+  @Id
+  @Column(name = "id", updatable = false, nullable = false)
+  public UUID id;
+
+  public BaseEntity() {
+    id = UUID.randomUUID();
+  }
 }

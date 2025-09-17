@@ -37,18 +37,6 @@ Works with `CompletableFuture<O>` instead of `Uni<O>` for developers who prefer 
 3. The result is merged back into the reactive stream
 4. Auto-persistence works as a side effect without blocking the main flow
 
-## Auto-Persistence with Imperative Steps
-
-Auto-persistence works seamlessly with imperative steps:
-
-```java
-// Enable auto-persistence for your step
-ValidatePaymentStep validateStep = new ValidatePaymentStep();
-validateStep.liveConfig().overrides().autoPersist(true);
-```
-
-The framework will automatically persist any `@Entity` annotated objects that flow through your pipeline.
-
 ## MySQL Configuration
 
 To use MySQL instead of PostgreSQL:

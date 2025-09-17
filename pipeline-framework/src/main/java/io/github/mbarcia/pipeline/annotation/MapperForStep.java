@@ -53,18 +53,4 @@ public @interface MapperForStep {
      * @return the domain class
      */
     Class<?> domain() default Void.class;
-    
-    /**
-     * The domain input type for this mapper.
-     * Used for automatic adapter generation to map from gRPC to domain.
-     * @return the domain input type class
-     */
-    Class<?> domainInputType() default Void.class;
-    
-    /**
-     * The domain output type for this mapper.
-     * Used for automatic adapter generation to map from domain to gRPC.
-     * @return the domain output type class
-     */
-    Class<?> domainOutputType() default Void.class;
 }

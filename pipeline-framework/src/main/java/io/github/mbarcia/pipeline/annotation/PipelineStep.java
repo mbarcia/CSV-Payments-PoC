@@ -75,11 +75,4 @@ public @interface PipelineStep {
      * @return the output type class
      */
     Class<?> outputType() default Object.class;
-    
-    /**
-     * The gRPC stub class for this pipeline step.
-     * Used for automatic gRPC adapter generation.
-     * @return the gRPC stub class
-     */
-    Class<?> stub() default Void.class;
 }

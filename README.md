@@ -28,6 +28,13 @@ This service is built using the pipeline framework which provides numerous benef
 - [How to Create a New Pipeline Step](./pipeline-framework/docs/HOWTO_NEW_STEP.md) - Guide for implementing new steps
 - [Pipeline Benefits](./pipeline-framework/docs/PIPELINE_BENEFITS.md) - Detailed list of advantages of using the framework
 
+### Annotation-Based Adapter Generation
+
+The pipeline framework now supports automatic generation of gRPC and REST adapters through annotations:
+
+- [Annotation-Based Adapters](./ANNOTATION_BASED_ADAPTERS.md) - Documentation for the new annotation-based adapter generation feature
+- [Pipeline Framework Deployment](./pipeline-framework-deployment/README.md) - Technical details about the deployment module
+
 ### Running End-to-End Tests
 
 To run the end-to-end integration test that starts all services and processes a sample CSV file:

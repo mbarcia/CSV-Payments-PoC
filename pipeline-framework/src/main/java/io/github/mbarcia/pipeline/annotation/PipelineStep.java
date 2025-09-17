@@ -53,6 +53,18 @@ public @interface PipelineStep {
     boolean recoverOnFailure() default false;
     
     /**
+     * Whether to enable gRPC adapter generation for this step.
+     * @return true if gRPC adapter should be generated, false otherwise
+     */
+    boolean grpcEnabled() default true;
+    
+    /**
+     * Whether to enable REST adapter generation for this step.
+     * @return true if REST adapter should be generated, false otherwise
+     */
+    boolean restEnabled() default true;
+    
+    /**
      * The input type for this pipeline step.
      * @return the input type class
      */

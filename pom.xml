@@ -42,6 +42,7 @@
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.63.0</grpc.version>
+        <pipeline.version>1.0.beta</pipeline.version>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
     </properties>
@@ -64,6 +65,48 @@
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.14.0</version>
+                    <configuration>
+                        <source>21</source>
+                        <target>21</target>
+                        <annotationProcessorPaths>
+                            <!-- lombok must come first -->
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>1.18.36</version>
+                            </path>
+                            <path>
+                                <groupId>org.mapstruct</groupId>
+                                <artifactId>mapstruct-processor</artifactId>
+                                <version>1.5.5.Final</version>
+                            </path>
+                        </annotationProcessorPaths>
+                        <compilerArgs>
+                            <arg>--enable-preview</arg>
+                        </compilerArgs>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>${quarkus.platform.version}</version>
+                    <configuration>
+                        <jvmArgs>--enable-preview</jvmArgs>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>build</goal>
+                                <goal>generate-code</goal>
+                                <goal>generate-code-tests</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.5.1</version>
                     <dependencies>
@@ -82,20 +125,6 @@
                         </systemPropertyVariables>
                         <argLine>--enable-preview -XX:+EnableDynamicAgentLoading</argLine>
                     </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${quarkus.platform.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>build</goal>
-                                <goal>generate-code</goal>
-                                <goal>generate-code-tests</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>com.diffplug.spotless</groupId>
@@ -128,8 +157,42 @@
                         </execution>
                     </executions>
                 </plugin>
+                <plugin>
+                    <groupId>org.jacoco</groupId>
+                    <artifactId>jacoco-maven-plugin</artifactId>
+                    <version>0.8.12</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>prepare-agent</goal>
+                            </goals>
+                        </execution>
+                        <execution>
+                            <id>report</id>
+                            <phase>test</phase>
+                            <goals>
+                                <goal>report</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.jboss.jandex</groupId>
+                    <artifactId>jandex-maven-plugin</artifactId>
+                    <version>1.2.3</version>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>native</id>
+            <properties>
+                <quarkus.native.enabled>true</quarkus.native.enabled>
+                <skipITs>false</skipITs>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

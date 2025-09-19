@@ -16,6 +16,8 @@
 
 package io.github.mbarcia.csv.common.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import io.github.mbarcia.csv.common.domain.PaymentStatus;
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -26,6 +28,7 @@ import lombok.Value;
 
 @Value
 @Builder
+@JsonDeserialize(builder = PaymentOutputDto.PaymentOutputDtoBuilder.class)
 public class PaymentOutputDto implements Serializable {
 
   UUID id;
@@ -39,4 +42,8 @@ public class PaymentOutputDto implements Serializable {
   String message;
   BigDecimal fee;
   PaymentStatus paymentStatus;
+
+  // Lombok will generate the builder, but Jackson needs to know how to interpret it
+  @JsonPOJOBuilder(withPrefix = "")
+  public static class PaymentOutputDtoBuilder {}
 }

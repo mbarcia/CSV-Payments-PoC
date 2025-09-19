@@ -23,6 +23,7 @@ import io.github.mbarcia.pipeline.annotation.MapperForStep;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+import org.mapstruct.factory.Mappers;
 
 @MapperForStep(
     order = 3,
@@ -32,6 +33,8 @@ import org.mapstruct.ReportingPolicy;
 )
 @Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface CsvPaymentsInputStreamMapper {
+
+  CsvPaymentsInputStreamMapper INSTANCE = Mappers.getMapper( CsvPaymentsInputStreamMapper.class );
 
   @Mapping(target = "source")
   CsvPaymentsInputStreamDto toDto(CsvPaymentsInputStream entity);

@@ -32,9 +32,6 @@ import lombok.*;
 @NoArgsConstructor
 public class PaymentOutput extends BaseEntity implements Serializable {
 
-  @Setter(AccessLevel.NONE) // Avoids override by MapStruct
-  private UUID id;
-
   @CsvIgnore @Transient private PaymentStatus paymentStatus;
 
   // en-UK locale to match the format of the (mock) payment service

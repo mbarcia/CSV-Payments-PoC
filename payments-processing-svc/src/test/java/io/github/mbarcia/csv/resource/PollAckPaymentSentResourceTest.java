@@ -19,18 +19,28 @@ package io.github.mbarcia.csv.resource;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.mbarcia.csv.common.dto.PaymentRecordDto;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.config.SSLConfig;
 import io.restassured.http.ContentType;
+import java.math.BigDecimal;
+import java.util.Currency;
 import java.util.UUID;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 @QuarkusTest
 class PollAckPaymentSentResourceTest {
 
+  private static String json;
+  private static String jsonUuid = "01d544c8-be28-4293-a5e0-1634addf0e42";
+
   @BeforeAll
+  @SneakyThrows
   static void setUp() {
     // Configure RestAssured to use HTTPS and trust all certificates for testing
     RestAssured.useRelaxedHTTPSValidation();
@@ -38,9 +48,27 @@ class PollAckPaymentSentResourceTest {
         RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
     // Update the port to match the HTTPS port
     RestAssured.port = 8446;
+
+    PaymentRecordDto paymentRecordDto = createTestPaymentRecordDto();
+    ObjectMapper mapper = new ObjectMapper();
+    json = getJson(mapper, paymentRecordDto);
+  }
+
+  private static PaymentRecordDto createTestPaymentRecordDto() {
+    PaymentRecordDto.PaymentRecordDtoBuilder paymentRecordDto = PaymentRecordDto.builder();
+
+    paymentRecordDto.id(UUID.fromString(jsonUuid));
+    paymentRecordDto.amount(new BigDecimal("100.50"));
+    paymentRecordDto.currency(Currency.getInstance("EUR"));
+    paymentRecordDto.csvId("test-record");
+    //    paymentRecordDto.csvPaymentsInputFilePath(Path.of("file.csv"));
+    paymentRecordDto.recipient("Test Recipient");
+
+    return paymentRecordDto.build();
   }
 
   @Test
+  @SneakyThrows
   void testPollAckPaymentEndpointWithValidData() {
     // Create a test DTO with valid structure
     String requestBody =
@@ -50,10 +78,11 @@ class PollAckPaymentSentResourceTest {
                   "conversationId": "%s",
                   "paymentRecordId": "%s",
                   "message": "Payment sent successfully",
-                  "status": 200
+                  "status": 200,
+                  "paymentRecord": %s
                 }
                 """
-            .formatted(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+            .formatted(UUID.randomUUID(), UUID.randomUUID(), jsonUuid, json);
 
     given()
         .contentType(ContentType.JSON)
@@ -65,6 +94,11 @@ class PollAckPaymentSentResourceTest {
         .body("id", notNullValue())
         .body("reference", notNullValue())
         .body("status", notNullValue());
+  }
+
+  private static String getJson(ObjectMapper mapper, PaymentRecordDto paymentRecordDto)
+      throws JsonProcessingException {
+    return mapper.writeValueAsString(paymentRecordDto);
   }
 
   @Test

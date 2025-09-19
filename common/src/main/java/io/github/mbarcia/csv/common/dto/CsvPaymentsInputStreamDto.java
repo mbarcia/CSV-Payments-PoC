@@ -16,11 +16,18 @@
 
 package io.github.mbarcia.csv.common.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.Builder;
 import lombok.Value;
 
 @Value
 @Builder
+@JsonDeserialize(builder = CsvPaymentsInputStreamDto.CsvPaymentsInputStreamDtoBuilder.class)
 public class CsvPaymentsInputStreamDto {
   public String source;
+
+  // Lombok will generate the builder, but Jackson needs to know how to interpret it
+  @JsonPOJOBuilder(withPrefix = "")
+  public static class CsvPaymentsInputStreamDtoBuilder {}
 }

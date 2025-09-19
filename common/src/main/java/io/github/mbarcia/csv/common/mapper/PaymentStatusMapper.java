@@ -23,6 +23,7 @@ import io.github.mbarcia.pipeline.annotation.MapperForStep;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+import org.mapstruct.factory.Mappers;
 
 @MapperForStep(
     order = 7,
@@ -35,6 +36,8 @@ import org.mapstruct.ReportingPolicy;
     uses = {CommonConverters.class, AckPaymentSentMapper.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface PaymentStatusMapper {
+
+  PaymentStatusMapper INSTANCE = Mappers.getMapper( PaymentStatusMapper.class );
 
   // Domain ↔ DTO
   @Mapping(target = "id")

@@ -16,18 +16,24 @@
 
 package io.github.mbarcia.csv.common.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
 import java.util.UUID;
-import lombok.Builder;
-import lombok.Value;
+import lombok.*;
 
 @Value
 @Builder
+@JsonDeserialize(builder = AckPaymentSentDto.AckPaymentSentDtoBuilder.class)
 public class AckPaymentSentDto {
-  public UUID id;
-  public UUID conversationId;
-  public UUID paymentRecordId;
-  public PaymentRecord paymentRecord;
-  public String message;
-  public Long status;
+  UUID id;
+  UUID conversationId;
+  UUID paymentRecordId;
+  PaymentRecord paymentRecord;
+  String message;
+  Long status;
+
+  // Lombok will generate the builder, but Jackson needs to know how to interpret it
+  @JsonPOJOBuilder(withPrefix = "")
+  public static class AckPaymentSentDtoBuilder {}
 }

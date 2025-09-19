@@ -22,6 +22,7 @@ import io.github.mbarcia.pipeline.annotation.MapperForStep;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+import org.mapstruct.factory.Mappers;
 
 @MapperForStep(
     order = 4,
@@ -33,6 +34,8 @@ import org.mapstruct.ReportingPolicy;
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface CsvPaymentsOutputFileMapper {
+
+  CsvPaymentsOutputFileMapper INSTANCE = Mappers.getMapper( CsvPaymentsOutputFileMapper.class );
 
   @Mapping(target = "id", qualifiedByName = "uuidToString")
   @Mapping(target = "filepath", qualifiedByName = "pathToString")

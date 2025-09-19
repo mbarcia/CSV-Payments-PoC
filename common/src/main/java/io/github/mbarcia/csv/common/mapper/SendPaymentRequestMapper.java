@@ -28,6 +28,7 @@ import lombok.experimental.Accessors;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
+import org.mapstruct.factory.Mappers;
 
 @MapperForStep(
     order = 8,
@@ -38,6 +39,8 @@ import org.mapstruct.ReportingPolicy;
     uses = {CommonConverters.class, PaymentRecordMapper.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface SendPaymentRequestMapper {
+
+  SendPaymentRequestMapper INSTANCE = Mappers.getMapper( SendPaymentRequestMapper.class );
 
   @Mapping(source = "amount", target = "amount", qualifiedByName = "stringToBigDecimal")
   @Mapping(source = "currency", target = "currency", qualifiedByName = "stringToCurrency")

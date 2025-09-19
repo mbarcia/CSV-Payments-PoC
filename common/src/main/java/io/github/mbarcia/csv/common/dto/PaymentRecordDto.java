@@ -16,15 +16,17 @@
 
 package io.github.mbarcia.csv.common.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.Currency;
 import java.util.UUID;
-import lombok.Builder;
-import lombok.Value;
+import lombok.*;
 
 @Value
 @Builder
+@JsonDeserialize(builder = PaymentRecordDto.PaymentRecordDtoBuilder.class)
 public class PaymentRecordDto {
   public UUID id;
   public String csvId;
@@ -32,4 +34,8 @@ public class PaymentRecordDto {
   public BigDecimal amount;
   public Currency currency;
   public Path csvPaymentsInputFilePath;
+
+  // Lombok will generate the builder, but Jackson needs to know how to interpret it
+  @JsonPOJOBuilder(withPrefix = "")
+  public static class PaymentRecordDtoBuilder {}
 }

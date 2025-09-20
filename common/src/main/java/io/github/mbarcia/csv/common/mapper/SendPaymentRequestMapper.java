@@ -18,7 +18,6 @@ package io.github.mbarcia.csv.common.mapper;
 
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
-import io.github.mbarcia.pipeline.annotation.MapperForStep;
 import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.UUID;
@@ -30,10 +29,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
-@MapperForStep(
-    order = 8,
-    grpc = PaymentStatusSvc.SendPaymentRequest.class
-)
 @Mapper(
     componentModel = "cdi",
     uses = {CommonConverters.class, PaymentRecordMapper.class},

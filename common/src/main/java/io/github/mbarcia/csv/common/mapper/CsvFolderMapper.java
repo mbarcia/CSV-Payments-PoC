@@ -18,17 +18,11 @@ package io.github.mbarcia.csv.common.mapper;
 
 import io.github.mbarcia.csv.common.domain.CsvFolder;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
-import io.github.mbarcia.pipeline.annotation.MapperForStep;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
-@MapperForStep(
-    order = 1,
-    grpc = InputCsvFileProcessingSvc.CsvFolder.class,
-    domain = CsvFolder.class
-)
 @Mapper(componentModel = "cdi", uses = {CommonConverters.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface CsvFolderMapper {
 

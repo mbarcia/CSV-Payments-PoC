@@ -19,18 +19,11 @@ package io.github.mbarcia.csv.common.mapper;
 import io.github.mbarcia.csv.common.domain.AckPaymentSent;
 import io.github.mbarcia.csv.common.dto.AckPaymentSentDto;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
-import io.github.mbarcia.pipeline.annotation.MapperForStep;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
-@MapperForStep(
-    order = 6,
-    grpc = PaymentsProcessingSvc.AckPaymentSent.class,
-    dto = AckPaymentSentDto.class,
-    domain = AckPaymentSent.class
-)
 @Mapper(
     componentModel = "cdi",
     uses = {CommonConverters.class, PaymentRecordMapper.class},

@@ -18,6 +18,7 @@ package io.github.mbarcia.pipeline.persistence.provider;
 
 import io.github.mbarcia.pipeline.persistence.PersistenceProvider;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
+import io.quarkus.hibernate.reactive.panache.common.WithSession;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
@@ -34,6 +35,7 @@ public class ReactivePanachePersistenceProvider implements PersistenceProvider<O
     private static final Logger LOG = LoggerFactory.getLogger(ReactivePanachePersistenceProvider.class);
 
     @Override
+    @WithSession
     public Uni<Object> persist(Object entity) {
         if (entity instanceof PanacheEntityBase panacheEntity) {
             LOG.debug(MessageFormat.format("About to persist entity: {0}", entity));

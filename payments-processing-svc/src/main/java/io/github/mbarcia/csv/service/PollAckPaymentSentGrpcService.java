@@ -25,6 +25,7 @@ import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
 import io.github.mbarcia.pipeline.grpc.GrpcReactiveServiceAdapter;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Uni;
+import jakarta.annotation.PostConstruct;
 import jakarta.inject.Inject;
 
 @GrpcService
@@ -36,6 +37,8 @@ public class PollAckPaymentSentGrpcService
   @Inject AckPaymentSentMapper ackPaymentSentMapper;
 
   @Inject PaymentStatusMapper paymentStatusMapper;
+  
+  @Inject io.github.mbarcia.pipeline.persistence.PersistenceManager persistenceManager;
 
   private final GrpcReactiveServiceAdapter<
           PaymentsProcessingSvc.AckPaymentSent,
@@ -60,6 +63,13 @@ public class PollAckPaymentSentGrpcService
               return paymentStatusMapper.toGrpc(domainOut);
             }
           };
+
+  @PostConstruct
+  public void init() {
+    // Manually inject the persistence manager since this anonymous class is not managed by CDI
+    // This method is called after CDI has injected all dependencies
+    adapter.setPersistenceManager(persistenceManager);
+  }
 
   @Override
   public Uni<PaymentsProcessingSvc.PaymentStatus> remoteProcess(

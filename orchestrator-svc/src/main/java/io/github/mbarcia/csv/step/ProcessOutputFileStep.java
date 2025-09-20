@@ -73,8 +73,22 @@ public class ProcessOutputFileStep extends ConfigurableStep implements StepManyT
 
     @Override
     public Multi<Object> applyStreaming(Multi<Object> upstream) {
-        // Convert Multi<Object> to Multi<PaymentStatusSvc.PaymentOutput>
-        Multi<PaymentStatusSvc.PaymentOutput> paymentStream = upstream.onItem().transform(item -> (PaymentStatusSvc.PaymentOutput) item);
+        LOG.debug("Processing payment output stream in ProcessOutputFileStep");
+        
+        // Filter the stream to only include items of the expected type
+        Multi<PaymentStatusSvc.PaymentOutput> paymentStream = upstream
+            .select().where(item -> {
+                if (item instanceof PaymentStatusSvc.PaymentOutput) {
+                    return true;
+                } else {
+                    LOG.warn("Skipping item of unexpected type in ProcessOutputFileStep: {}", 
+                        item != null ? item.getClass().getName() : "null");
+                    return false;
+                }
+            })
+            .onItem().transform(item -> (PaymentStatusSvc.PaymentOutput) item);
+        
+        LOG.debug("Filtered stream to only include PaymentStatusSvc.PaymentOutput items");
         
         // Group payment outputs by their source input file path
         // This ensures that payment outputs from different input files are processed separately
@@ -83,17 +97,26 @@ public class ProcessOutputFileStep extends ConfigurableStep implements StepManyT
             .onItem().transformToMultiAndMerge(groupedStream -> {
                 // For each group (representing one input file), process the payment outputs
                 // and generate a corresponding output file
+                LOG.debug("Processing group of payment outputs for input file path");
+                
                 Uni<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> result = 
                     processCsvPaymentsOutputFileService.remoteProcess(groupedStream);
                 
                 // Convert Uni to Multi with a single item
                 return Multi.createFrom().emitter(emitter -> result.subscribe().with(
                     file -> {
+                        LOG.debug("Successfully processed payment output group");
                         emitter.emit(file);
                         emitter.complete();
                     },
-                    emitter::fail
+                    error -> {
+                        LOG.error("Error processing payment output group", error);
+                        emitter.fail(error);
+                    }
                 ));
+            })
+            .onFailure().invoke(failure -> {
+                LOG.error("Failure in ProcessOutputFileStep streaming", failure);
             });
     }
 

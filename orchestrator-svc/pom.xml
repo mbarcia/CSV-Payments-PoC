@@ -35,12 +35,6 @@
             <groupId>io.github.mbarcia</groupId>
             <artifactId>common</artifactId>
             <version>1.0</version>
-<!--            <exclusions>-->
-<!--                <exclusion>-->
-<!--                    <groupId>io.quarkus</groupId>-->
-<!--                    <artifactId>quarkus-hibernate-reactive-panache</artifactId>-->
-<!--                </exclusion>-->
-<!--            </exclusions>-->
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

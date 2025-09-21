@@ -23,18 +23,30 @@
 
     <parent>
         <groupId>io.github.mbarcia</groupId>
-        <artifactId>pipeline-framework</artifactId>
-        <version>1.0.beta</version>
+        <artifactId>pipeline-framework-parent</artifactId>
+        <version>0.9.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>pipeline-framework-deployment</artifactId>
-    <version>1.0.beta</version>
+    <artifactId>pipeline-framework-processor</artifactId>
+    <version>0.9.0</version>
     <packaging>jar</packaging>
-    <name>The Pipeline Framework - deployment</name>
-    <description>Deployment module for the pipeline framework with annotation processing</description>
+    <name>The Pipeline Framework (processor)</name>
+    <description>Deployment/processor module for The Pipeline Framework</description>
 
     <dependencies>
+        <!-- Add dependency on the main pipeline-framework module -->
+        <dependency>
+            <groupId>io.github.mbarcia</groupId>
+            <artifactId>pipeline-framework</artifactId>
+            <version>${pipeline.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
@@ -49,18 +61,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-grpc-deployment</artifactId>
             <version>${quarkus.platform.version}</version>
-        </dependency>
-        <!-- Add dependency on the main pipeline-framework module -->
-        <dependency>
-            <groupId>io.github.mbarcia</groupId>
-            <artifactId>pipeline-framework-runtime</artifactId>
-            <version>${pipeline.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-hibernate-reactive-panache</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 

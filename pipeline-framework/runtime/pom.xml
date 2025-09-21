@@ -23,16 +23,16 @@
 
     <parent>
         <groupId>io.github.mbarcia</groupId>
-        <artifactId>pipeline-framework</artifactId>
-        <version>1.0.beta</version>
+        <artifactId>pipeline-framework-parent</artifactId>
+        <version>0.9.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>pipeline-framework-runtime</artifactId>
-    <version>1.0.beta</version>
+    <artifactId>pipeline-framework</artifactId>
+    <version>0.9.0</version>
     <packaging>jar</packaging>
-    <name>The Pipeline Framework - runtime</name>
-    <description>Runtime module for the pipeline framework with annotations and mapper interfaces</description>
+    <name>The Pipeline Framework</name>
+    <description>Runtime module for The Pipeline Framework</description>
 
     <dependencies>
         <dependency>
@@ -130,12 +130,14 @@
                 <artifactId>spotless-maven-plugin</artifactId>
             </plugin>
             <plugin>
-                <groupId>org.jboss.jandex</groupId>
+                <groupId>io.smallrye</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
-                <version>1.2.3</version>
                 <executions>
                     <execution>
-                        <goals><goal>jandex</goal></goals>
+                        <id>make-index</id>
+                        <goals>
+                            <goal>jandex</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>

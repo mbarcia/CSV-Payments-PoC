@@ -93,4 +93,22 @@ public @interface PipelineStep {
      * @return the outbound mapper class
      */
     Class<?> outboundMapper() default Void.class;
+    
+    /**
+     * The step type class for this pipeline step.
+     * @return the step type class
+     */
+    Class<?> stepType() default Void.class;
+    
+    /**
+     * The backend adapter type class for this pipeline step.
+     * @return the backend adapter type class
+     */
+    Class<?> backendType() default Void.class;
+    
+    /**
+     * The gRPC client name for this pipeline step.
+     * @return the gRPC client name
+     */
+    String grpcClient() default "";
 }

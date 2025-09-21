@@ -14,18 +14,23 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.pipeline.step;
+package io.github.mbarcia.pipeline.step.functional;
 
 import io.smallrye.mutiny.Multi;
 
-/** N -> 1 */
-public interface StepManyToOne<I, O> extends Step {
-    Multi<O> applyReduce(Multi<I> input);
-    
-    @Override
-    default Multi<Object> apply(Multi<Object> input) {
-        // Temporary implementation that just returns empty Multi
-        // TODO: Implement proper N->1 transformation
-        return Multi.createFrom().empty();
-    }
+/**
+ * Functional interface for 1:N (one-to-many) step transformations.
+ * 
+ * @param <I> Input type
+ * @param <O> Output type
+ */
+@FunctionalInterface
+public interface OneToMany<I, O> {
+    /**
+     * Transform a single input item into a stream of output items.
+     * 
+     * @param input The input item
+     * @return A Multi that emits the transformed output items
+     */
+    Multi<O> apply(I input);
 }

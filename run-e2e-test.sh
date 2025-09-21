@@ -456,9 +456,9 @@ verify_database_persistence() {
     mvn quarkus:dev -Dquarkus.log.console.level=DEBUG -Dquarkus.args="--csv-folder=$TEST_OUTPUT_DIR" > "$PROJECT_ROOT/orchestrator.log" 2>&1 &
     orchestrator_pid=$!
     
-    # Wait for the orchestrator to complete or timeout after 60 seconds
+    # Wait for the orchestrator to complete or timeout after 30 seconds
     count=0
-    max_wait=60
+    max_wait=30
     while kill -0 $orchestrator_pid 2>/dev/null && [ $count -lt $max_wait ]; do
         sleep 1
         count=$((count + 1))

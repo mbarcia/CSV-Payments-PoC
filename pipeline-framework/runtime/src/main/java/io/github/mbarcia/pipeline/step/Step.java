@@ -19,9 +19,26 @@ package io.github.mbarcia.pipeline.step;
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.smallrye.mutiny.Multi;
 
+/**
+ * Base interface for all pipeline steps.
+ */
 public interface Step {
+    /**
+     * Get the effective configuration for this step.
+     * 
+     * @return the step configuration
+     */
     StepConfig effectiveConfig();
 
+    /**
+     * Apply this step to the input stream and return the output stream.
+     * 
+     * @param input The input stream to process
+     * @return The output stream after applying this step
+     */
+    Multi<Object> apply(Multi<Object> input);
+
+    // Default configuration accessors
     default int retryLimit() { return effectiveConfig().retryLimit(); }
     default java.time.Duration retryWait() { return effectiveConfig().retryWait(); }
     default boolean debug() { return effectiveConfig().debug(); }
@@ -34,12 +51,4 @@ public interface Step {
         System.err.printf("DLQ drop: item=%s cause=%s%n", failedItem, cause);
         return io.smallrye.mutiny.Uni.createFrom().voidItem();
     }
-
-    /**
-     * Apply this step to the input stream and return the output stream.
-     * 
-     * @param input The input stream to process
-     * @return The output stream after applying this step
-     */
-    Multi<Object> apply(Multi<Object> input);
 }

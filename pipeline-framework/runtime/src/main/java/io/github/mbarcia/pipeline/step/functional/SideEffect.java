@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.pipeline.step;
+package io.github.mbarcia.pipeline.step.functional;
 
-import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
-/** N -> 1 */
-public interface StepManyToOne<I, O> extends Step {
-    Multi<O> applyReduce(Multi<I> input);
-    
-    @Override
-    default Multi<Object> apply(Multi<Object> input) {
-        // Temporary implementation that just returns empty Multi
-        // TODO: Implement proper N->1 transformation
-        return Multi.createFrom().empty();
-    }
+/**
+ * Functional interface for side-effect step transformations.
+ * 
+ * @param <I> Input type
+ */
+@FunctionalInterface
+public interface SideEffect<I> {
+    /**
+     * Apply a side effect to a single input item.
+     * 
+     * @param input The input item
+     * @return A Uni that completes when the side effect is done
+     */
+    Uni<Void> apply(I input);
 }

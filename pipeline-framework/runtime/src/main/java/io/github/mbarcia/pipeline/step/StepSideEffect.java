@@ -16,6 +16,7 @@
 
 package io.github.mbarcia.pipeline.step;
 
+import io.github.mbarcia.pipeline.step.functional.SideEffect;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.util.concurrent.Executors;
@@ -25,8 +26,8 @@ import org.slf4j.LoggerFactory;
 
 /** 1 -> side-effect (async), passes original item downstream */
 @SuppressWarnings("unused")
-public interface StepSideEffect<I> extends Step {
-    Uni<Void> apply(I in);
+public interface StepSideEffect<I> extends Step, SideEffect<I> {
+    // Inherits the functional method: Uni<Void> apply(I in);
 
     default int concurrency() { return 1; } // max in-flight items per upstream item
 

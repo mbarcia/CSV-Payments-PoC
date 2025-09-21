@@ -18,7 +18,6 @@ package io.github.mbarcia.csv;
 
 import io.github.mbarcia.csv.util.Sync;
 import io.github.mbarcia.csv.util.SystemExiter;
-import io.github.mbarcia.csv.step.*;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.PipelineRunner;
@@ -52,6 +51,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
   @Inject
   Sync sync;
 
+  // Inject the actual step classes
   @Inject
   ProcessFolderStep processFolderStep;
   
@@ -98,6 +98,7 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
   
   /**
    * Process a CSV folder - exposed for testing
+   *
    * @param folderPath the path to the folder containing CSV files
    */
   public void processCsvFolder(String folderPath) {

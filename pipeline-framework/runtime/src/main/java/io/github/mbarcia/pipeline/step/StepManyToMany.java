@@ -18,55 +18,42 @@ package io.github.mbarcia.pipeline.step;
 
 import io.smallrye.mutiny.Multi;
 import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public interface StepManyToMany extends Step {
-    Multi<Object> applyStreaming(Multi<Object> upstream);
-
-    default Multi<?> deadLetterMulti(Multi<Object> upstream, Throwable err) {
-        System.err.print("DLQ drop");
-        return Multi.createFrom().empty();
-    }
+/** N -> N */
+public interface StepManyToMany<I, O> extends Step {
+    Multi<O> applyTransform(Multi<I> input);
     
     @Override
     default Multi<Object> apply(Multi<Object> input) {
+        final Logger LOG = LoggerFactory.getLogger(this.getClass());
         final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
+        int concurrency = Math.max(1, effectiveConfig().concurrency());
 
-        return Multi.createFrom().deferred(() -> {
-            Multi<Object> baseUpstream = (executor != null)
-                    ? input.runSubscriptionOn(executor)
-                    : input;
+        // Cast to the correct types
+        Multi<I> typedInput = input.onItem().transform(item -> (I) item);
 
-            Multi<Object> out = applyStreaming(baseUpstream);
+        // Apply the transformation
+        Multi<O> typedOutput = applyTransform(typedInput);
+        
+        // Convert back to Object type
+        Multi<Object> objectOutput = typedOutput.onItem().transform(item -> (Object) item);
 
-            return out
-                .onFailure().retry()
-                .withBackOff(retryWait(), maxBackoff())
-                .withJitter(jitter() ? 0.5 : 0.0)
-                .atMost(retryLimit())
-                .onFailure().recoverWithMulti(err -> {
-                    if (recoverOnFailure()) {
-                        if (debug()) {
-                            System.err.printf("Step %s failed streaming: %s%n",
-                                    this.getClass().getSimpleName(), err);
-                        }
-                        return deadLetterMulti(baseUpstream, err); // custom DLQ handling
-                    } else {
-                        return Multi.createFrom().failure(err);
-                    }
-                })
-                .onItem().invoke(o -> {
-                    if (debug()) {
-                        System.out.printf("Step %s streamed item: %s%n",
-                                this.getClass().getSimpleName(), o);
-                    }
-                })
-                .onCompletion().invoke(() -> {
-                    if (debug()) {
-                        System.out.printf("Step %s completed streaming%n",
-                                this.getClass().getSimpleName());
-                    }
-                });
+        if (executor != null) {
+            // shift blocking subscription work to virtual threads
+            objectOutput = objectOutput.runSubscriptionOn(executor);
+        }
+
+        return objectOutput.onItem().transform(item -> {
+            if (debug()) {
+                LOG.debug(
+                    "Step {0} emitted item: {}",
+                    this.getClass().getSimpleName(), item
+                );
+            }
+            return item;
         });
     }
 }

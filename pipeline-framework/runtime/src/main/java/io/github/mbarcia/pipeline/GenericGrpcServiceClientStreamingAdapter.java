@@ -20,9 +20,10 @@ import io.github.mbarcia.pipeline.annotation.StepConfigProvider;
 import io.github.mbarcia.pipeline.mapper.InboundMapper;
 import io.github.mbarcia.pipeline.mapper.OutboundMapper;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
-import io.github.mbarcia.pipeline.service.ReactiveService;
+import io.github.mbarcia.pipeline.service.ReactiveStreamingClientService;
 import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,18 +36,18 @@ import org.slf4j.LoggerFactory;
  * @param <DomainOut> the domain output type
  * @param <GRpcOut>   the gRPC output type
  */
-public class GenericGrpcReactiveServiceAdapter<GRpcIn, DomainIn, DomainOut, GRpcOut> {
+public class GenericGrpcServiceClientStreamingAdapter<GRpcIn, DomainIn, DomainOut, GRpcOut> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(GenericGrpcReactiveServiceAdapter.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GenericGrpcServiceClientStreamingAdapter.class);
 
     private final InboundMapper<GRpcIn, DomainIn> inboundMapper;
     private final OutboundMapper<DomainOut, GRpcOut> outboundMapper;
-    private final ReactiveService<DomainIn, DomainOut> service;
+    private final ReactiveStreamingClientService<DomainIn, DomainOut> service;
     private final PersistenceManager persistenceManager;
     private final Class<? extends ConfigurableStep> stepClass; // The step class this adapter is for
 
     /**
-     * Constructs a GenericGrpcReactiveServiceAdapter with the specified mappers and services.
+     * Constructs a GenericGrpcServiceClientStreamingAdapter with the specified mappers and services.
      *
      * @param inboundMapper  the inbound mapper
      * @param outboundMapper the outbound mapper
@@ -54,16 +55,29 @@ public class GenericGrpcReactiveServiceAdapter<GRpcIn, DomainIn, DomainOut, GRpc
      * @param persistenceManager the persistence manager
      * @param stepClass corresponding Step subclass
      */
-    public GenericGrpcReactiveServiceAdapter(InboundMapper<GRpcIn, DomainIn> inboundMapper,
-                                             OutboundMapper<DomainOut, GRpcOut> outboundMapper,
-                                             ReactiveService<DomainIn, DomainOut> service,
-                                             PersistenceManager persistenceManager, 
-                                             Class<? extends ConfigurableStep> stepClass) {
+    public GenericGrpcServiceClientStreamingAdapter(InboundMapper<GRpcIn, DomainIn> inboundMapper,
+                                                    OutboundMapper<DomainOut, GRpcOut> outboundMapper,
+                                                    ReactiveStreamingClientService<DomainIn, DomainOut> service,
+                                                    PersistenceManager persistenceManager,
+                                                    Class<? extends ConfigurableStep> stepClass) {
         this.inboundMapper = inboundMapper;
         this.outboundMapper = outboundMapper;
         this.service = service;
         this.persistenceManager = persistenceManager;
         this.stepClass = stepClass;
+    }
+
+    public Uni<GRpcOut> remoteProcess(Multi<GRpcIn> requestStream) {
+        Multi<DomainIn> domainStream = requestStream.onItem().transform(inboundMapper::toDomain);
+
+        Multi<DomainIn> persistentStream = getPersistedStream(domainStream);
+
+        return service
+            .process(persistentStream) // Multi<DomainIn> → Uni<DomainOut>
+            .onItem()
+            .transform(outboundMapper::toGrpc) // Uni<GrpcOut>
+            .onFailure()
+            .transform(new throwStatusRuntimeExceptionFunction());
     }
 
     /**
@@ -76,29 +90,14 @@ public class GenericGrpcReactiveServiceAdapter<GRpcIn, DomainIn, DomainOut, GRpc
         return StepConfigProvider.isAutoPersistenceEnabled(stepClass);
     }
 
-    public Uni<GRpcOut> remoteProcess(GRpcIn grpcRequest) {
-        DomainIn entity = inboundMapper.toDomain(grpcRequest);
-
-        Uni<DomainIn> persistenceUni = getPersistedUni(entity);
-
-        return persistenceUni
-            .onItem().transformToUni(persistedEntity -> service
-                .process(persistedEntity)
-                .onItem()
-                .transform(outboundMapper::toGrpc)
-                .onFailure()
-                .transform(new throwStatusRuntimeExceptionFunction())
-            );
-    }
-
-    private Uni<DomainIn> getPersistedUni(DomainIn entity) {
+    private Multi<DomainIn> getPersistedStream(Multi<DomainIn> domainStream) {
         if (isAutoPersistenceEnabled()) {
-            LOG.debug("Auto-persistence is enabled");
-            return persistenceManager.persist(entity);
+            LOG.debug("Auto-persistance is enabled");
+            return domainStream.onItem().transformToUniAndMerge(persistenceManager::persist);
+        } else {
+            LOG.debug("Auto-persistance is disabled");
         }
-        else {
-            LOG.debug("Auto-persistence is disabled");
-            return Uni.createFrom().item(entity);
-        }
+
+        return domainStream;
     }
 }

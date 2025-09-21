@@ -28,26 +28,27 @@ import java.util.List;
  * that need to expand a single input into multiple outputs.
  */
 public class ExpandPaymentStep extends ConfigurableStep
-    implements StepOneToManyBlocking<String, String> {
+        implements StepOneToManyBlocking<String, String> {
 
-  @Override
-  public List<String> applyList(String paymentRequest) {
-    // This is a blocking operation that simulates expanding one payment into multiple transactions
-    // In a real application, this might call external services or perform complex calculations
+    @Override
+    public List<String> applyList(String paymentRequest) {
+        // This is a blocking operation that simulates expanding one payment into multiple
+        // transactions
+        // In a real application, this might call external services or perform complex calculations
 
-    // Simulate some processing time (blocking operation)
-    try {
-      Thread.sleep(100); // Blocking sleep to simulate work
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+        // Simulate some processing time (blocking operation)
+        try {
+            Thread.sleep(100); // Blocking sleep to simulate work
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Expand the single payment request into multiple transactions
+        List<String> transactions = new ArrayList<>();
+        transactions.add("TXN-001-" + paymentRequest);
+        transactions.add("TXN-002-" + paymentRequest);
+        transactions.add("TXN-003-" + paymentRequest);
+
+        return transactions;
     }
-
-    // Expand the single payment request into multiple transactions
-    List<String> transactions = new ArrayList<>();
-    transactions.add("TXN-001-" + paymentRequest);
-    transactions.add("TXN-002-" + paymentRequest);
-    transactions.add("TXN-003-" + paymentRequest);
-
-    return transactions;
-  }
 }

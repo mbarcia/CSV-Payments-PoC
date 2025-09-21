@@ -38,326 +38,332 @@ import org.mapstruct.factory.Mappers;
 
 class PaymentProviderServiceMockTest {
 
-  PaymentProviderServiceMock paymentProviderServiceMock;
-  private AckPaymentSentMapper ackPaymentSentMapper;
-  private PaymentStatusMapper paymentStatusMapper;
+    PaymentProviderServiceMock paymentProviderServiceMock;
+    private AckPaymentSentMapper ackPaymentSentMapper;
+    private PaymentStatusMapper paymentStatusMapper;
 
-  @BeforeEach
-  void setUp() {
-    ackPaymentSentMapper = mock(AckPaymentSentMapper.class);
-    paymentStatusMapper = mock(PaymentStatusMapper.class);
-  }
-
-  @Test
-  @DisplayName("Should successfully send payment and return AckPaymentSent")
-  void sendPayment_happyPath_shouldReturnAckPaymentSent() {
-    // Given
-    PaymentRecordDto dtoIn =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("John Doe")
-            .amount(BigDecimal.valueOf(100.00))
-            .currency(java.util.Currency.getInstance("USD"))
-            .build();
-    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
-    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
-
-    SendPaymentRequestMapper.SendPaymentRequest request =
-        new SendPaymentRequestMapper.SendPaymentRequest()
-            .setAmount(paymentRecord.getAmount())
-            .setReference(paymentRecord.getRecipient())
-            .setCurrency(paymentRecord.getCurrency())
-            .setPaymentRecord(paymentRecord)
-            .setPaymentRecordId(paymentRecord.getId());
-
-    PaymentProviderConfig config = new FakePaymentProviderConfig();
-    PaymentProviderServiceMock paymentProviderServiceMock =
-        new PaymentProviderServiceMock(this.ackPaymentSentMapper, this.paymentStatusMapper, config);
-
-    // When
-    AckPaymentSent testAckPaymentSent =
-        new AckPaymentSent(UUID.randomUUID())
-            .setStatus(1000L)
-            .setMessage("OK but this is only a test")
-            .setPaymentRecordId(paymentRecord.getId())
-            .setPaymentRecord(paymentRecord);
-    when(ackPaymentSentMapper.fromDto(any())).thenReturn(testAckPaymentSent);
-
-    AckPaymentSent ackPaymentSent = paymentProviderServiceMock.sendPayment(request);
-
-    // Then
-    assertThat(ackPaymentSent).isNotNull();
-    assertThat(ackPaymentSent.getStatus()).isEqualTo(1000L);
-    assertThat(ackPaymentSent.getMessage()).isEqualTo("OK but this is only a test");
-    assertThat(ackPaymentSent.getPaymentRecord()).isEqualTo(paymentRecord);
-    assertThat(ackPaymentSent.getPaymentRecordId()).isEqualTo(paymentRecord.getId());
-  }
-
-  @Test
-  @DisplayName("Should throw StatusRuntimeException when sendPayment is throttled")
-  void sendPayment_throttled_shouldThrowException() throws InterruptedException {
-    // Given a service with a very low permit rate and no timeout
-    PaymentProviderConfig config = new ThrottledPaymentProviderConfig();
-    PaymentProviderServiceMock paymentProviderServiceMock =
-        new PaymentProviderServiceMock(ackPaymentSentMapper, paymentStatusMapper, config);
-
-    // Acquire a permit to ensure the rate limiter is exhausted for subsequent calls
-    // RateLimiter.create(rate) allows the first acquire to pass even if rate is very low.
-    // So, we need to acquire it once to exhaust it for subsequent calls.
-    paymentProviderServiceMock.sendPayment(
-        new SendPaymentRequestMapper.SendPaymentRequest()
-            .setAmount(new BigDecimal("1.00"))
-            .setReference("dummy")
-            .setCurrency(java.util.Currency.getInstance("USD"))
-            .setPaymentRecordId(UUID.randomUUID()));
-
-    // Ensure enough time passes for the rate limiter to be truly exhausted if it's not already
-    Thread.sleep(10); // Small delay to ensure rate limiter state settles
-
-    PaymentRecordDto dtoIn =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("John Doe")
-            .amount(BigDecimal.valueOf(100.00))
-            .currency(java.util.Currency.getInstance("USD"))
-            .build();
-    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
-    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
-
-    SendPaymentRequestMapper.SendPaymentRequest request =
-        new SendPaymentRequestMapper.SendPaymentRequest()
-            .setAmount(paymentRecord.getAmount())
-            .setReference(paymentRecord.getRecipient())
-            .setCurrency(paymentRecord.getCurrency())
-            .setPaymentRecord(paymentRecord)
-            .setPaymentRecordId(paymentRecord.getId());
-
-    // When & Then
-    StatusRuntimeException thrown =
-        assertThrows(
-            StatusRuntimeException.class, () -> paymentProviderServiceMock.sendPayment(request));
-    assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.RESOURCE_EXHAUSTED);
-    assertThat(thrown.getStatus().getDescription())
-        .isEqualTo("Payment service is currently throttled. Please try again later.");
-  }
-
-  @Test
-  @DisplayName("Should throw StatusRuntimeException when sendPayment timeoutMillis is -1L")
-  void sendPayment_timeoutMinusOne_shouldThrowException() {
-    // Given a service with timeoutMillis set to -1L
-    AckPaymentSentMapper ackPaymentSentMapper = new AckPaymentSentMapperImpl();
-    PaymentStatusMapper paymentStatusMapper = new PaymentStatusMapperImpl();
-    PaymentProviderConfig config = new NegativeTimeoutPaymentProviderConfig();
-
-    this.paymentProviderServiceMock =
-        new PaymentProviderServiceMock(ackPaymentSentMapper, paymentStatusMapper, config);
-
-    PaymentRecordDto dtoIn =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("John Doe")
-            .amount(BigDecimal.valueOf(100.00))
-            .currency(java.util.Currency.getInstance("USD"))
-            .build();
-    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
-    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
-
-    SendPaymentRequestMapper.SendPaymentRequest request =
-        new SendPaymentRequestMapper.SendPaymentRequest()
-            .setAmount(paymentRecord.getAmount())
-            .setReference(paymentRecord.getRecipient())
-            .setCurrency(paymentRecord.getCurrency())
-            .setPaymentRecord(paymentRecord)
-            .setPaymentRecordId(paymentRecord.getId());
-
-    // When & Then
-    StatusRuntimeException thrown =
-        assertThrows(
-            StatusRuntimeException.class, () -> paymentProviderServiceMock.sendPayment(request));
-    assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.RESOURCE_EXHAUSTED);
-    assertThat(thrown.getStatus().getDescription())
-        .isEqualTo("Payment service is currently throttled. Please try again later.");
-  }
-
-  @Test
-  @DisplayName("Should successfully get payment status and return PaymentStatus")
-  void getPaymentStatus_happyPath_shouldReturnPaymentStatus() {
-    // Given
-    PaymentProviderConfig config = new FakePaymentProviderConfig();
-    PaymentProviderServiceMock paymentProviderServiceMock =
-        new PaymentProviderServiceMock(this.ackPaymentSentMapper, this.paymentStatusMapper, config);
-
-    // When
-    PaymentRecordDto dtoIn =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("John Doe")
-            .amount(BigDecimal.valueOf(100.00))
-            .currency(java.util.Currency.getInstance("USD"))
-            .build();
-    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
-    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
-
-    AckPaymentSent testAckPaymentSent =
-        new AckPaymentSent(UUID.randomUUID())
-            .setStatus(1000L)
-            .setMessage("OK but this is only a test")
-            .setPaymentRecordId(paymentRecord.getId())
-            .setPaymentRecord(paymentRecord);
-
-    PaymentStatus testPaymentStatus =
-        new PaymentStatus()
-            .setReference("101")
-            .setStatus("nada")
-            .setFee(new BigDecimal("1.01"))
-            .setMessage("This is a test")
-            .setAckPaymentSent(testAckPaymentSent)
-            .setAckPaymentSentId(testAckPaymentSent.getId());
-
-    // When
-    when(paymentStatusMapper.fromDto(any())).thenReturn(testPaymentStatus);
-
-    PaymentStatus paymentStatus = paymentProviderServiceMock.getPaymentStatus(testAckPaymentSent);
-
-    // Then
-    assertThat(paymentStatus).isNotNull();
-    assertThat(paymentStatus.getReference()).isEqualTo("101");
-    assertThat(paymentStatus.getStatus()).isEqualTo("nada");
-    assertThat(paymentStatus.getFee()).isEqualTo(new BigDecimal("1.01"));
-    assertThat(paymentStatus.getMessage()).isEqualTo("This is a test");
-    assertThat(paymentStatus.getAckPaymentSent()).isEqualTo(testAckPaymentSent);
-    assertThat(paymentStatus.getAckPaymentSentId()).isEqualTo(testAckPaymentSent.getId());
-  }
-
-  @Test
-  @DisplayName("Should throw StatusRuntimeException when getPaymentStatus is throttled")
-  void getPaymentStatus_throttled_shouldThrowException() throws InterruptedException {
-    // Given a service with a very low permit rate and no timeout
-    PaymentProviderConfig config = new LowRatePaymentProviderConfig();
-    PaymentProviderServiceMock paymentProviderServiceMock =
-        new PaymentProviderServiceMock(this.ackPaymentSentMapper, this.paymentStatusMapper, config);
-
-    // When
-    PaymentRecordDto dtoIn =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("John Doe")
-            .amount(BigDecimal.valueOf(100.00))
-            .currency(java.util.Currency.getInstance("USD"))
-            .build();
-    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
-    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
-
-    AckPaymentSent testAckPaymentSent =
-        new AckPaymentSent(UUID.randomUUID())
-            .setStatus(1000L)
-            .setMessage("OK but this is only a test")
-            .setPaymentRecordId(paymentRecord.getId())
-            .setPaymentRecord(paymentRecord);
-
-    PaymentStatus testPaymentStatus =
-        new PaymentStatus()
-            .setReference("101")
-            .setStatus("nada")
-            .setFee(new BigDecimal("1.01"))
-            .setMessage("This is a test")
-            .setAckPaymentSent(testAckPaymentSent)
-            .setAckPaymentSentId(testAckPaymentSent.getId());
-
-    // When
-    when(paymentStatusMapper.fromDto(any())).thenReturn(testPaymentStatus);
-
-    // Acquire a permit to ensure the rate limiter is exhausted for subsequent calls
-    try {
-      paymentProviderServiceMock.getPaymentStatus(new AckPaymentSent());
-    } catch (StatusRuntimeException e) {
-      // Expected for the first call if timeoutMillis is 0L and permitsPerSecond is 0.0
+    @BeforeEach
+    void setUp() {
+        ackPaymentSentMapper = mock(AckPaymentSentMapper.class);
+        paymentStatusMapper = mock(PaymentStatusMapper.class);
     }
 
-    // Ensure enough time passes for the rate limiter to be truly exhausted if it's not already
-    Thread.sleep(10); // Small delay to ensure rate limiter state settles
+    @Test
+    @DisplayName("Should successfully send payment and return AckPaymentSent")
+    void sendPayment_happyPath_shouldReturnAckPaymentSent() {
+        // Given
+        PaymentRecordDto dtoIn =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("John Doe")
+                        .amount(BigDecimal.valueOf(100.00))
+                        .currency(java.util.Currency.getInstance("USD"))
+                        .build();
+        PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+        PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
 
-    // When & Then
-    StatusRuntimeException thrown =
-        assertThrows(
-            StatusRuntimeException.class,
-            () -> paymentProviderServiceMock.getPaymentStatus(testAckPaymentSent));
-    assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.RESOURCE_EXHAUSTED);
-    assertThat(thrown.getStatus().getDescription())
-        .isEqualTo(
-            "Failed to acquire permit within timeout period. The payment status service is currently throttled.");
-  }
+        SendPaymentRequestMapper.SendPaymentRequest request =
+                new SendPaymentRequestMapper.SendPaymentRequest()
+                        .setAmount(paymentRecord.getAmount())
+                        .setReference(paymentRecord.getRecipient())
+                        .setCurrency(paymentRecord.getCurrency())
+                        .setPaymentRecord(paymentRecord)
+                        .setPaymentRecordId(paymentRecord.getId());
 
-  static class FakePaymentProviderConfig implements PaymentProviderConfig {
-    @Override
-    public double permitsPerSecond() {
-      return 1000.0;
+        PaymentProviderConfig config = new FakePaymentProviderConfig();
+        PaymentProviderServiceMock paymentProviderServiceMock =
+                new PaymentProviderServiceMock(
+                        this.ackPaymentSentMapper, this.paymentStatusMapper, config);
+
+        // When
+        AckPaymentSent testAckPaymentSent =
+                new AckPaymentSent(UUID.randomUUID())
+                        .setStatus(1000L)
+                        .setMessage("OK but this is only a test")
+                        .setPaymentRecordId(paymentRecord.getId())
+                        .setPaymentRecord(paymentRecord);
+        when(ackPaymentSentMapper.fromDto(any())).thenReturn(testAckPaymentSent);
+
+        AckPaymentSent ackPaymentSent = paymentProviderServiceMock.sendPayment(request);
+
+        // Then
+        assertThat(ackPaymentSent).isNotNull();
+        assertThat(ackPaymentSent.getStatus()).isEqualTo(1000L);
+        assertThat(ackPaymentSent.getMessage()).isEqualTo("OK but this is only a test");
+        assertThat(ackPaymentSent.getPaymentRecord()).isEqualTo(paymentRecord);
+        assertThat(ackPaymentSent.getPaymentRecordId()).isEqualTo(paymentRecord.getId());
     }
 
-    @Override
-    public long timeoutMillis() {
-      return 5000;
+    @Test
+    @DisplayName("Should throw StatusRuntimeException when sendPayment is throttled")
+    void sendPayment_throttled_shouldThrowException() throws InterruptedException {
+        // Given a service with a very low permit rate and no timeout
+        PaymentProviderConfig config = new ThrottledPaymentProviderConfig();
+        PaymentProviderServiceMock paymentProviderServiceMock =
+                new PaymentProviderServiceMock(ackPaymentSentMapper, paymentStatusMapper, config);
+
+        // Acquire a permit to ensure the rate limiter is exhausted for subsequent calls
+        // RateLimiter.create(rate) allows the first acquire to pass even if rate is very low.
+        // So, we need to acquire it once to exhaust it for subsequent calls.
+        paymentProviderServiceMock.sendPayment(
+                new SendPaymentRequestMapper.SendPaymentRequest()
+                        .setAmount(new BigDecimal("1.00"))
+                        .setReference("dummy")
+                        .setCurrency(java.util.Currency.getInstance("USD"))
+                        .setPaymentRecordId(UUID.randomUUID()));
+
+        // Ensure enough time passes for the rate limiter to be truly exhausted if it's not already
+        Thread.sleep(10); // Small delay to ensure rate limiter state settles
+
+        PaymentRecordDto dtoIn =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("John Doe")
+                        .amount(BigDecimal.valueOf(100.00))
+                        .currency(java.util.Currency.getInstance("USD"))
+                        .build();
+        PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+        PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
+
+        SendPaymentRequestMapper.SendPaymentRequest request =
+                new SendPaymentRequestMapper.SendPaymentRequest()
+                        .setAmount(paymentRecord.getAmount())
+                        .setReference(paymentRecord.getRecipient())
+                        .setCurrency(paymentRecord.getCurrency())
+                        .setPaymentRecord(paymentRecord)
+                        .setPaymentRecordId(paymentRecord.getId());
+
+        // When & Then
+        StatusRuntimeException thrown =
+                assertThrows(
+                        StatusRuntimeException.class,
+                        () -> paymentProviderServiceMock.sendPayment(request));
+        assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.RESOURCE_EXHAUSTED);
+        assertThat(thrown.getStatus().getDescription())
+                .isEqualTo("Payment service is currently throttled. Please try again later.");
     }
 
-    @Override
-    public double waitMilliseconds() {
-      return 50.0;
-    }
-  }
+    @Test
+    @DisplayName("Should throw StatusRuntimeException when sendPayment timeoutMillis is -1L")
+    void sendPayment_timeoutMinusOne_shouldThrowException() {
+        // Given a service with timeoutMillis set to -1L
+        AckPaymentSentMapper ackPaymentSentMapper = new AckPaymentSentMapperImpl();
+        PaymentStatusMapper paymentStatusMapper = new PaymentStatusMapperImpl();
+        PaymentProviderConfig config = new NegativeTimeoutPaymentProviderConfig();
 
-  private static class ThrottledPaymentProviderConfig implements PaymentProviderConfig {
-    @Override
-    public double permitsPerSecond() {
-      return 0.001;
-    }
+        this.paymentProviderServiceMock =
+                new PaymentProviderServiceMock(ackPaymentSentMapper, paymentStatusMapper, config);
 
-    @Override
-    public long timeoutMillis() {
-      return 5000;
-    }
+        PaymentRecordDto dtoIn =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("John Doe")
+                        .amount(BigDecimal.valueOf(100.00))
+                        .currency(java.util.Currency.getInstance("USD"))
+                        .build();
+        PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+        PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
 
-    @Override
-    public double waitMilliseconds() {
-      return 50.0;
-    }
-  }
+        SendPaymentRequestMapper.SendPaymentRequest request =
+                new SendPaymentRequestMapper.SendPaymentRequest()
+                        .setAmount(paymentRecord.getAmount())
+                        .setReference(paymentRecord.getRecipient())
+                        .setCurrency(paymentRecord.getCurrency())
+                        .setPaymentRecord(paymentRecord)
+                        .setPaymentRecordId(paymentRecord.getId());
 
-  private static class NegativeTimeoutPaymentProviderConfig implements PaymentProviderConfig {
-    @Override
-    public double permitsPerSecond() {
-      return 100.0;
-    }
-
-    @Override
-    public long timeoutMillis() {
-      return -1L;
-    }
-
-    @Override
-    public double waitMilliseconds() {
-      return 50.0;
-    }
-  }
-
-  private static class LowRatePaymentProviderConfig implements PaymentProviderConfig {
-    @Override
-    public double permitsPerSecond() {
-      return 0.001;
+        // When & Then
+        StatusRuntimeException thrown =
+                assertThrows(
+                        StatusRuntimeException.class,
+                        () -> paymentProviderServiceMock.sendPayment(request));
+        assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.RESOURCE_EXHAUSTED);
+        assertThat(thrown.getStatus().getDescription())
+                .isEqualTo("Payment service is currently throttled. Please try again later.");
     }
 
-    @Override
-    public long timeoutMillis() {
-      return 0;
+    @Test
+    @DisplayName("Should successfully get payment status and return PaymentStatus")
+    void getPaymentStatus_happyPath_shouldReturnPaymentStatus() {
+        // Given
+        PaymentProviderConfig config = new FakePaymentProviderConfig();
+        PaymentProviderServiceMock paymentProviderServiceMock =
+                new PaymentProviderServiceMock(
+                        this.ackPaymentSentMapper, this.paymentStatusMapper, config);
+
+        // When
+        PaymentRecordDto dtoIn =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("John Doe")
+                        .amount(BigDecimal.valueOf(100.00))
+                        .currency(java.util.Currency.getInstance("USD"))
+                        .build();
+        PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+        PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
+
+        AckPaymentSent testAckPaymentSent =
+                new AckPaymentSent(UUID.randomUUID())
+                        .setStatus(1000L)
+                        .setMessage("OK but this is only a test")
+                        .setPaymentRecordId(paymentRecord.getId())
+                        .setPaymentRecord(paymentRecord);
+
+        PaymentStatus testPaymentStatus =
+                new PaymentStatus()
+                        .setReference("101")
+                        .setStatus("nada")
+                        .setFee(new BigDecimal("1.01"))
+                        .setMessage("This is a test")
+                        .setAckPaymentSent(testAckPaymentSent)
+                        .setAckPaymentSentId(testAckPaymentSent.getId());
+
+        // When
+        when(paymentStatusMapper.fromDto(any())).thenReturn(testPaymentStatus);
+
+        PaymentStatus paymentStatus =
+                paymentProviderServiceMock.getPaymentStatus(testAckPaymentSent);
+
+        // Then
+        assertThat(paymentStatus).isNotNull();
+        assertThat(paymentStatus.getReference()).isEqualTo("101");
+        assertThat(paymentStatus.getStatus()).isEqualTo("nada");
+        assertThat(paymentStatus.getFee()).isEqualTo(new BigDecimal("1.01"));
+        assertThat(paymentStatus.getMessage()).isEqualTo("This is a test");
+        assertThat(paymentStatus.getAckPaymentSent()).isEqualTo(testAckPaymentSent);
+        assertThat(paymentStatus.getAckPaymentSentId()).isEqualTo(testAckPaymentSent.getId());
     }
 
-    @Override
-    public double waitMilliseconds() {
-      return 50.0;
+    @Test
+    @DisplayName("Should throw StatusRuntimeException when getPaymentStatus is throttled")
+    void getPaymentStatus_throttled_shouldThrowException() throws InterruptedException {
+        // Given a service with a very low permit rate and no timeout
+        PaymentProviderConfig config = new LowRatePaymentProviderConfig();
+        PaymentProviderServiceMock paymentProviderServiceMock =
+                new PaymentProviderServiceMock(
+                        this.ackPaymentSentMapper, this.paymentStatusMapper, config);
+
+        // When
+        PaymentRecordDto dtoIn =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("John Doe")
+                        .amount(BigDecimal.valueOf(100.00))
+                        .currency(java.util.Currency.getInstance("USD"))
+                        .build();
+        PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+        PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
+
+        AckPaymentSent testAckPaymentSent =
+                new AckPaymentSent(UUID.randomUUID())
+                        .setStatus(1000L)
+                        .setMessage("OK but this is only a test")
+                        .setPaymentRecordId(paymentRecord.getId())
+                        .setPaymentRecord(paymentRecord);
+
+        PaymentStatus testPaymentStatus =
+                new PaymentStatus()
+                        .setReference("101")
+                        .setStatus("nada")
+                        .setFee(new BigDecimal("1.01"))
+                        .setMessage("This is a test")
+                        .setAckPaymentSent(testAckPaymentSent)
+                        .setAckPaymentSentId(testAckPaymentSent.getId());
+
+        // When
+        when(paymentStatusMapper.fromDto(any())).thenReturn(testPaymentStatus);
+
+        // Acquire a permit to ensure the rate limiter is exhausted for subsequent calls
+        try {
+            paymentProviderServiceMock.getPaymentStatus(new AckPaymentSent());
+        } catch (StatusRuntimeException e) {
+            // Expected for the first call if timeoutMillis is 0L and permitsPerSecond is 0.0
+        }
+
+        // Ensure enough time passes for the rate limiter to be truly exhausted if it's not already
+        Thread.sleep(10); // Small delay to ensure rate limiter state settles
+
+        // When & Then
+        StatusRuntimeException thrown =
+                assertThrows(
+                        StatusRuntimeException.class,
+                        () -> paymentProviderServiceMock.getPaymentStatus(testAckPaymentSent));
+        assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.RESOURCE_EXHAUSTED);
+        assertThat(thrown.getStatus().getDescription())
+                .isEqualTo(
+                        "Failed to acquire permit within timeout period. The payment status service is currently throttled.");
     }
-  }
+
+    static class FakePaymentProviderConfig implements PaymentProviderConfig {
+        @Override
+        public double permitsPerSecond() {
+            return 1000.0;
+        }
+
+        @Override
+        public long timeoutMillis() {
+            return 5000;
+        }
+
+        @Override
+        public double waitMilliseconds() {
+            return 50.0;
+        }
+    }
+
+    private static class ThrottledPaymentProviderConfig implements PaymentProviderConfig {
+        @Override
+        public double permitsPerSecond() {
+            return 0.001;
+        }
+
+        @Override
+        public long timeoutMillis() {
+            return 5000;
+        }
+
+        @Override
+        public double waitMilliseconds() {
+            return 50.0;
+        }
+    }
+
+    private static class NegativeTimeoutPaymentProviderConfig implements PaymentProviderConfig {
+        @Override
+        public double permitsPerSecond() {
+            return 100.0;
+        }
+
+        @Override
+        public long timeoutMillis() {
+            return -1L;
+        }
+
+        @Override
+        public double waitMilliseconds() {
+            return 50.0;
+        }
+    }
+
+    private static class LowRatePaymentProviderConfig implements PaymentProviderConfig {
+        @Override
+        public double permitsPerSecond() {
+            return 0.001;
+        }
+
+        @Override
+        public long timeoutMillis() {
+            return 0;
+        }
+
+        @Override
+        public double waitMilliseconds() {
+            return 50.0;
+        }
+    }
 }

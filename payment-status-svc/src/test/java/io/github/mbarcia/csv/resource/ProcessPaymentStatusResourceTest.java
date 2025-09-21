@@ -36,36 +36,36 @@ import org.mockito.MockitoAnnotations;
 
 class ProcessPaymentStatusResourceTest {
 
-  @InjectMocks ProcessPaymentStatusResource resource;
+    @InjectMocks ProcessPaymentStatusResource resource;
 
-  @Mock ProcessPaymentStatusReactiveService service;
+    @Mock ProcessPaymentStatusReactiveService service;
 
-  @Mock PaymentStatusMapper paymentStatusMapper;
+    @Mock PaymentStatusMapper paymentStatusMapper;
 
-  @Mock PaymentOutputMapper paymentOutputMapper;
+    @Mock PaymentOutputMapper paymentOutputMapper;
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-  }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-  @Test
-  void testProcessEndpoint() {
-    PaymentStatusDto requestDto = PaymentStatusDto.builder().build();
-    PaymentStatus mappedStatus = new PaymentStatus();
-    PaymentOutput serviceOutput = new PaymentOutput();
-    PaymentOutputDto finalOutputDto = PaymentOutputDto.builder().message("Processed").build();
+    @Test
+    void testProcessEndpoint() {
+        PaymentStatusDto requestDto = PaymentStatusDto.builder().build();
+        PaymentStatus mappedStatus = new PaymentStatus();
+        PaymentOutput serviceOutput = new PaymentOutput();
+        PaymentOutputDto finalOutputDto = PaymentOutputDto.builder().message("Processed").build();
 
-    when(paymentStatusMapper.fromDto(requestDto)).thenReturn(mappedStatus);
-    when(service.process(mappedStatus)).thenReturn(Uni.createFrom().item(serviceOutput));
-    when(paymentOutputMapper.toDto(serviceOutput)).thenReturn(finalOutputDto);
+        when(paymentStatusMapper.fromDto(requestDto)).thenReturn(mappedStatus);
+        when(service.process(mappedStatus)).thenReturn(Uni.createFrom().item(serviceOutput));
+        when(paymentOutputMapper.toDto(serviceOutput)).thenReturn(finalOutputDto);
 
-    Uni<PaymentOutputDto> resultUni = resource.process(requestDto);
+        Uni<PaymentOutputDto> resultUni = resource.process(requestDto);
 
-    UniAssertSubscriber<PaymentOutputDto> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    PaymentOutputDto resultDto = subscriber.awaitItem().getItem();
+        UniAssertSubscriber<PaymentOutputDto> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        PaymentOutputDto resultDto = subscriber.awaitItem().getItem();
 
-    assertEquals("Processed", resultDto.getMessage());
-  }
+        assertEquals("Processed", resultDto.getMessage());
+    }
 }

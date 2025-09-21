@@ -30,60 +30,60 @@ import org.junit.jupiter.api.Test;
 
 class ConfigurationIntegrationTest {
 
-  static class ConfigTestStepBlocking extends ConfigurableStep
-      implements StepOneToOneBlocking<String, String> {
-    @Override
-    public String apply(String input) {
-      return "ConfigTest: " + input;
+    static class ConfigTestStepBlocking extends ConfigurableStep
+            implements StepOneToOneBlocking<String, String> {
+        @Override
+        public String apply(String input) {
+            return "ConfigTest: " + input;
+        }
     }
-  }
 
-  @Test
-  void testPipelineConfigDefaults() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      PipelineConfig pipelineConfig = new PipelineConfig();
+    @Test
+    void testPipelineConfigDefaults() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            PipelineConfig pipelineConfig = new PipelineConfig();
 
-      // Check default values
-      StepConfig defaults = pipelineConfig.defaults();
-      assertEquals(3, defaults.retryLimit());
-      assertEquals(Duration.ofMillis(200), defaults.retryWait());
-      assertEquals(4, defaults.concurrency());
-      assertFalse(defaults.debug());
-      assertFalse(defaults.recoverOnFailure());
-      assertFalse(defaults.runWithVirtualThreads());
-      assertEquals(Duration.ofSeconds(30), defaults.maxBackoff());
-      assertFalse(defaults.jitter());
+            // Check default values
+            StepConfig defaults = pipelineConfig.defaults();
+            assertEquals(3, defaults.retryLimit());
+            assertEquals(Duration.ofMillis(200), defaults.retryWait());
+            assertEquals(4, defaults.concurrency());
+            assertFalse(defaults.debug());
+            assertFalse(defaults.recoverOnFailure());
+            assertFalse(defaults.runWithVirtualThreads());
+            assertEquals(Duration.ofSeconds(30), defaults.maxBackoff());
+            assertFalse(defaults.jitter());
+        }
     }
-  }
 
-  @Test
-  void testPipelineConfigProfileManagement() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      PipelineConfig pipelineConfig = new PipelineConfig();
+    @Test
+    void testPipelineConfigProfileManagement() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            PipelineConfig pipelineConfig = new PipelineConfig();
 
-      // Set up profiles
-      pipelineConfig.profile("test", new StepConfig().retryLimit(5).debug(true));
-      pipelineConfig.activate("test");
+            // Set up profiles
+            pipelineConfig.profile("test", new StepConfig().retryLimit(5).debug(true));
+            pipelineConfig.activate("test");
 
-      // Verify active profile
-      assertEquals("test", pipelineConfig.activeProfile());
+            // Verify active profile
+            assertEquals("test", pipelineConfig.activeProfile());
 
-      StepConfig activeConfig = pipelineConfig.defaults();
-      assertEquals(5, activeConfig.retryLimit());
-      assertTrue(activeConfig.debug());
+            StepConfig activeConfig = pipelineConfig.defaults();
+            assertEquals(5, activeConfig.retryLimit());
+            assertTrue(activeConfig.debug());
+        }
     }
-  }
 
-  @Test
-  void testNewStepConfigInheritsDefaults() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      PipelineConfig pipelineConfig = new PipelineConfig();
-      pipelineConfig.defaults().retryLimit(8).debug(true);
+    @Test
+    void testNewStepConfigInheritsDefaults() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            PipelineConfig pipelineConfig = new PipelineConfig();
+            pipelineConfig.defaults().retryLimit(8).debug(true);
 
-      StepConfig stepConfig = pipelineConfig.newStepConfig();
+            StepConfig stepConfig = pipelineConfig.newStepConfig();
 
-      assertEquals(8, stepConfig.retryLimit());
-      assertTrue(stepConfig.debug());
+            assertEquals(8, stepConfig.retryLimit());
+            assertTrue(stepConfig.debug());
+        }
     }
-  }
 }

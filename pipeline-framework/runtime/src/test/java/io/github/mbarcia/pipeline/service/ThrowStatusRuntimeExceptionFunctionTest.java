@@ -25,29 +25,30 @@ import org.junit.jupiter.api.Test;
 
 class ThrowStatusRuntimeExceptionFunctionTest {
 
-  @Test
-  void apply_ShouldWrapThrowableInStatusRuntimeException() {
-    // Given
-    throwStatusRuntimeExceptionFunction function = new throwStatusRuntimeExceptionFunction();
-    Throwable originalThrowable = new RuntimeException("Original error message");
+    @Test
+    void apply_ShouldWrapThrowableInStatusRuntimeException() {
+        // Given
+        throwStatusRuntimeExceptionFunction function = new throwStatusRuntimeExceptionFunction();
+        Throwable originalThrowable = new RuntimeException("Original error message");
 
-    // When
-    Throwable result = function.apply(originalThrowable);
+        // When
+        Throwable result = function.apply(originalThrowable);
 
-    // Then
-    assertNotNull(result);
-    assertInstanceOf(StatusRuntimeException.class, result);
+        // Then
+        assertNotNull(result);
+        assertInstanceOf(StatusRuntimeException.class, result);
 
-    StatusRuntimeException statusRuntimeException = (StatusRuntimeException) result;
-    assertEquals(Status.INTERNAL.getCode(), statusRuntimeException.getStatus().getCode());
-    assertEquals(
-        originalThrowable.getMessage(), statusRuntimeException.getStatus().getDescription());
-    assertSame(originalThrowable, statusRuntimeException.getStatus().getCause());
+        StatusRuntimeException statusRuntimeException = (StatusRuntimeException) result;
+        assertEquals(Status.INTERNAL.getCode(), statusRuntimeException.getStatus().getCode());
+        assertEquals(
+                originalThrowable.getMessage(),
+                statusRuntimeException.getStatus().getDescription());
+        assertSame(originalThrowable, statusRuntimeException.getStatus().getCause());
 
-    Metadata metadata = statusRuntimeException.getTrailers();
-    assertNotNull(metadata);
-    assertEquals(
-        originalThrowable.getMessage(),
-        metadata.get(Metadata.Key.of("error-details", Metadata.ASCII_STRING_MARSHALLER)));
-  }
+        Metadata metadata = statusRuntimeException.getTrailers();
+        assertNotNull(metadata);
+        assertEquals(
+                originalThrowable.getMessage(),
+                metadata.get(Metadata.Key.of("error-details", Metadata.ASCII_STRING_MARSHALLER)));
+    }
 }

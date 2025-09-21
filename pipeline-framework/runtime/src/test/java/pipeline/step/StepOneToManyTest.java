@@ -25,46 +25,46 @@ import org.junit.jupiter.api.Test;
 
 class StepOneToManyTest {
 
-  static class TestStep implements StepOneToMany<String, String> {
-    @Override
-    public Multi<String> applyMulti(String input) {
-      return Multi.createFrom().items(input + "-1", input + "-2", input + "-3");
+    static class TestStep implements StepOneToMany<String, String> {
+        @Override
+        public Multi<String> applyMulti(String input) {
+            return Multi.createFrom().items(input + "-1", input + "-2", input + "-3");
+        }
+
+        @Override
+        public StepConfig effectiveConfig() {
+            return new StepConfig();
+        }
     }
 
-    @Override
-    public StepConfig effectiveConfig() {
-      return new StepConfig();
+    @Test
+    void testApplyMultiMethod() {
+        // Given
+        TestStep step = new TestStep();
+
+        // When
+        Multi<String> result = step.applyMulti("test");
+
+        // Then
+        AssertSubscriber<String> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(3));
+        subscriber.awaitItems(3, Duration.ofSeconds(5));
+        subscriber.assertItems("test-1", "test-2", "test-3");
     }
-  }
 
-  @Test
-  void testApplyMultiMethod() {
-    // Given
-    TestStep step = new TestStep();
+    @Test
+    void testApplyMethod() {
+        // Given
+        TestStep step = new TestStep();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
-    // When
-    Multi<String> result = step.applyMulti("test");
+        // When
+        Multi<Object> result = step.apply(input);
 
-    // Then
-    AssertSubscriber<String> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(3));
-    subscriber.awaitItems(3, Duration.ofSeconds(5));
-    subscriber.assertItems("test-1", "test-2", "test-3");
-  }
-
-  @Test
-  void testApplyMethod() {
-    // Given
-    TestStep step = new TestStep();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
-
-    // When
-    Multi<Object> result = step.apply(input);
-
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(6));
-    subscriber.awaitItems(6, Duration.ofSeconds(5));
-    subscriber.assertItems("item1-1", "item1-2", "item1-3", "item2-1", "item2-2", "item2-3");
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(6));
+        subscriber.awaitItems(6, Duration.ofSeconds(5));
+        subscriber.assertItems("item1-1", "item1-2", "item1-3", "item2-1", "item2-2", "item2-3");
+    }
 }

@@ -32,277 +32,284 @@ import org.junit.jupiter.api.Test;
 
 class PipelineRunnerTest {
 
-  @Inject PipelineConfig pipelineConfig;
+    @Inject PipelineConfig pipelineConfig;
 
-  @Test
-  void testPipelineRunnerCreation() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      assertNotNull(runner);
-    } catch (Exception e) {
-      fail("PipelineRunner should be AutoCloseable");
+    @Test
+    void testPipelineRunnerCreation() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            assertNotNull(runner);
+        } catch (Exception e) {
+            fail("PipelineRunner should be AutoCloseable");
+        }
     }
-  }
 
-  @Test
-  void testRunWithStepOneToOne() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
-      List<Step> steps = List.of(new TestSteps.TestStepOneToOneBlocking());
+    @Test
+    void testRunWithStepOneToOne() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
+            List<Step> steps = List.of(new TestSteps.TestStepOneToOneBlocking());
 
-      Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = runner.run(input, steps);
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(3));
-      subscriber.awaitItems(3, Duration.ofSeconds(5)).assertCompleted();
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(3));
+            subscriber.awaitItems(3, Duration.ofSeconds(5)).assertCompleted();
 
-      // Grab all items
-      List<Object> actualItems = subscriber.getItems();
+            // Grab all items
+            List<Object> actualItems = subscriber.getItems();
 
-      // Expected items
-      Set<String> expectedItems =
-          Set.of("Processed: item1", "Processed: item2", "Processed: item3");
+            // Expected items
+            Set<String> expectedItems =
+                    Set.of("Processed: item1", "Processed: item2", "Processed: item3");
 
-      // Assert ignoring order
-      assertEquals(expectedItems, new HashSet<>(actualItems));
+            // Assert ignoring order
+            assertEquals(expectedItems, new HashSet<>(actualItems));
 
-      // If duplicates matter, use sorted list instead:
-      // List<String> expectedList = List.of(
-      //    "Processed: item1",
-      //    "Processed: item2",
-      //    "Processed: item3"
-      // );
-      // assertEquals(expectedList.stream().sorted().toList(),
-      //              actualItems.stream().map(Object::toString).sorted().toList());
+            // If duplicates matter, use sorted list instead:
+            // List<String> expectedList = List.of(
+            //    "Processed: item1",
+            //    "Processed: item2",
+            //    "Processed: item3"
+            // );
+            // assertEquals(expectedList.stream().sorted().toList(),
+            //              actualItems.stream().map(Object::toString).sorted().toList());
+        }
     }
-  }
 
-  @Test
-  void testRunWithStepOneToMany() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1", "item2");
-      List<Step> steps = List.of(new TestSteps.TestStepOneToMany());
+    @Test
+    void testRunWithStepOneToMany() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1", "item2");
+            List<Step> steps = List.of(new TestSteps.TestStepOneToMany());
 
-      Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = runner.run(input, steps);
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(6));
-      subscriber.awaitItems(6, Duration.ofSeconds(5));
-      subscriber.assertItems("item1-1", "item1-2", "item1-3", "item2-1", "item2-2", "item2-3");
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(6));
+            subscriber.awaitItems(6, Duration.ofSeconds(5));
+            subscriber.assertItems(
+                    "item1-1", "item1-2", "item1-3", "item2-1", "item2-2", "item2-3");
+        }
     }
-  }
 
-  @Test
-  void testRunWithStepManyToMany() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3");
-      List<Step> steps = List.of(new TestSteps.TestStepManyToMany());
+    @Test
+    void testRunWithStepManyToMany() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3");
+            List<Step> steps = List.of(new TestSteps.TestStepManyToMany());
 
-      Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = runner.run(input, steps);
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(3));
-      subscriber.awaitItems(3, Duration.ofSeconds(5));
-      subscriber.assertItems("Streamed: item1", "Streamed: item2", "Streamed: item3");
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(3));
+            subscriber.awaitItems(3, Duration.ofSeconds(5));
+            subscriber.assertItems("Streamed: item1", "Streamed: item2", "Streamed: item3");
+        }
     }
-  }
 
-  @Test
-  void testRunWithStepOneToAsync() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
-      List<Step> steps = List.of(new TestSteps.TestStepOneToOne());
+    @Test
+    void testRunWithStepOneToAsync() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
+            List<Step> steps = List.of(new TestSteps.TestStepOneToOne());
 
-      Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = runner.run(input, steps);
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(3));
-      subscriber.awaitItems(3, Duration.ofSeconds(5));
-      subscriber.assertItems("Async: item1", "Async: item2", "Async: item3");
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(3));
+            subscriber.awaitItems(3, Duration.ofSeconds(5));
+            subscriber.assertItems("Async: item1", "Async: item2", "Async: item3");
+        }
     }
-  }
 
-  @Test
-  void testRunWithMultipleSteps() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1", "item2");
-      List<Step> steps =
-          List.of(new TestSteps.TestStepOneToOneBlocking(), new TestSteps.TestStepOneToMany());
+    @Test
+    void testRunWithMultipleSteps() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1", "item2");
+            List<Step> steps =
+                    List.of(
+                            new TestSteps.TestStepOneToOneBlocking(),
+                            new TestSteps.TestStepOneToMany());
 
-      Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = runner.run(input, steps);
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(6));
-      subscriber.awaitItems(6, Duration.ofSeconds(5)).assertCompleted();
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(6));
+            subscriber.awaitItems(6, Duration.ofSeconds(5)).assertCompleted();
 
-      // Grab all items
-      List<Object> actualItems = subscriber.getItems();
+            // Grab all items
+            List<Object> actualItems = subscriber.getItems();
 
-      // Expected items
-      Set<String> expectedItems =
-          Set.of(
-              "Processed: item1-1",
-              "Processed: item1-2",
-              "Processed: item1-3",
-              "Processed: item2-1",
-              "Processed: item2-2",
-              "Processed: item2-3");
+            // Expected items
+            Set<String> expectedItems =
+                    Set.of(
+                            "Processed: item1-1",
+                            "Processed: item1-2",
+                            "Processed: item1-3",
+                            "Processed: item2-1",
+                            "Processed: item2-2",
+                            "Processed: item2-3");
 
-      // Assert ignoring order
-      assertEquals(expectedItems, new HashSet<>(actualItems));
+            // Assert ignoring order
+            assertEquals(expectedItems, new HashSet<>(actualItems));
+        }
     }
-  }
 
-  @Test
-  void testRunWithFailingStepAndRecovery() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1", "item2");
-      List<Step> steps = List.of(new TestSteps.FailingStepBlocking(true));
+    @Test
+    void testRunWithFailingStepAndRecovery() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1", "item2");
+            List<Step> steps = List.of(new TestSteps.FailingStepBlocking(true));
 
-      Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = runner.run(input, steps);
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(2));
-      subscriber.awaitItems(2, Duration.ofSeconds(5)).assertCompleted();
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(2));
+            subscriber.awaitItems(2, Duration.ofSeconds(5)).assertCompleted();
 
-      // With recovery enabled, items should pass through unchanged
-      // Order may vary due to asynchronous processing
-      List<Object> actualItems = subscriber.getItems();
+            // With recovery enabled, items should pass through unchanged
+            // Order may vary due to asynchronous processing
+            List<Object> actualItems = subscriber.getItems();
 
-      // compare ignoring order
-      assertEquals(
-          Set.of("item1", "item2"), // expected as a set
-          new HashSet<>(actualItems) // actual as a set
-          );
+            // compare ignoring order
+            assertEquals(
+                    Set.of("item1", "item2"), // expected as a set
+                    new HashSet<>(actualItems) // actual as a set
+                    );
+        }
     }
-  }
 
-  @Test
-  void testRunWithFailingStepWithoutRecovery() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1", "item2");
-      List<Step> steps = List.of(new TestSteps.FailingStepBlocking());
+    @Test
+    void testRunWithFailingStepWithoutRecovery() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1", "item2");
+            List<Step> steps = List.of(new TestSteps.FailingStepBlocking());
 
-      Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = runner.run(input, steps);
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(1));
-      subscriber.awaitFailure(Duration.ofSeconds(5));
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(1));
+            subscriber.awaitFailure(Duration.ofSeconds(5));
 
-      // Without recovery, should fail
-      assertInstanceOf(RuntimeException.class, subscriber.getFailure());
-      assertEquals("Intentional failure for testing", subscriber.getFailure().getMessage());
+            // Without recovery, should fail
+            assertInstanceOf(RuntimeException.class, subscriber.getFailure());
+            assertEquals("Intentional failure for testing", subscriber.getFailure().getMessage());
+        }
     }
-  }
 
-  @Test
-  void testRetryMechanismWithSuccess() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1");
-      RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(2);
+    @Test
+    void testRetryMechanismWithSuccess() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1");
+            RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(2);
 
-      // Configure retry settings
-      step.liveConfig().overrides().retryLimit(3).retryWait(Duration.ofMillis(10));
+            // Configure retry settings
+            step.liveConfig().overrides().retryLimit(3).retryWait(Duration.ofMillis(10));
 
-      Multi<Object> result = runner.run(input, List.of((Step) step));
+            Multi<Object> result = runner.run(input, List.of((Step) step));
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(1));
-      subscriber.awaitItems(1, Duration.ofSeconds(5));
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(1));
+            subscriber.awaitItems(1, Duration.ofSeconds(5));
 
-      // Should succeed after 2 failures and 1 success
-      subscriber.assertItems("Async Success: item1");
-      assertEquals(3, step.getCallCount()); // 2 failures + 1 success
+            // Should succeed after 2 failures and 1 success
+            subscriber.assertItems("Async Success: item1");
+            assertEquals(3, step.getCallCount()); // 2 failures + 1 success
+        }
     }
-  }
 
-  @Test
-  void testRetryMechanismWithFailure() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1");
-      RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(3);
+    @Test
+    void testRetryMechanismWithFailure() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1");
+            RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(3);
 
-      // Configure retry settings - only 2 retries, but need 3 failures to pass
-      step.liveConfig().overrides().retryLimit(2).retryWait(Duration.ofMillis(10));
+            // Configure retry settings - only 2 retries, but need 3 failures to pass
+            step.liveConfig().overrides().retryLimit(2).retryWait(Duration.ofMillis(10));
 
-      Multi<Object> result = runner.run(input, List.of((Step) step));
+            Multi<Object> result = runner.run(input, List.of((Step) step));
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(1));
-      subscriber.awaitFailure(Duration.ofSeconds(5));
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(1));
+            subscriber.awaitFailure(Duration.ofSeconds(5));
 
-      // Should fail after 2 retries (3 total attempts)
-      assertInstanceOf(RuntimeException.class, subscriber.getFailure());
-      assertEquals("Intentional async failure #3", subscriber.getFailure().getMessage());
-      assertEquals(3, step.getCallCount()); // 2 retries + 1 initial = 3 total calls
+            // Should fail after 2 retries (3 total attempts)
+            assertInstanceOf(RuntimeException.class, subscriber.getFailure());
+            assertEquals("Intentional async failure #3", subscriber.getFailure().getMessage());
+            assertEquals(3, step.getCallCount()); // 2 retries + 1 initial = 3 total calls
+        }
     }
-  }
 
-  @Test
-  void testRetryWithRecovery() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1");
-      RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(3);
+    @Test
+    void testRetryWithRecovery() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1");
+            RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(3);
 
-      // Configure recovery and retry settings
-      step.liveConfig()
-          .overrides()
-          .recoverOnFailure(true)
-          .retryLimit(2)
-          .retryWait(Duration.ofMillis(10));
+            // Configure recovery and retry settings
+            step.liveConfig()
+                    .overrides()
+                    .recoverOnFailure(true)
+                    .retryLimit(2)
+                    .retryWait(Duration.ofMillis(10));
 
-      Multi<Object> result = runner.run(input, List.of((Step) step));
+            Multi<Object> result = runner.run(input, List.of((Step) step));
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(1));
-      subscriber.awaitItems(1, Duration.ofSeconds(5));
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(1));
+            subscriber.awaitItems(1, Duration.ofSeconds(5));
 
-      // Should recover after 2 retries (3 total attempts)
-      subscriber.assertItems("item1"); // Original item passed through on recovery
-      assertEquals(3, step.getCallCount()); // 2 retries + 1 initial = 3 total calls
+            // Should recover after 2 retries (3 total attempts)
+            subscriber.assertItems("item1"); // Original item passed through on recovery
+            assertEquals(3, step.getCallCount()); // 2 retries + 1 initial = 3 total calls
+        }
     }
-  }
 
-  @Test
-  void testConfigurationIntegration() {
-    try (PipelineRunner _ = new PipelineRunner()) {
-      Multi.createFrom().items("item1");
+    @Test
+    void testConfigurationIntegration() {
+        try (PipelineRunner _ = new PipelineRunner()) {
+            Multi.createFrom().items("item1");
 
-      // Create a step with specific configuration
-      TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
-      step.liveConfig().overrides().retryLimit(5).retryWait(Duration.ofMillis(100)).debug(true);
+            // Create a step with specific configuration
+            TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
+            step.liveConfig()
+                    .overrides()
+                    .retryLimit(5)
+                    .retryWait(Duration.ofMillis(100))
+                    .debug(true);
 
-      assertEquals(5, step.retryLimit());
-      assertEquals(Duration.ofMillis(100), step.retryWait());
-      assertTrue(step.debug());
+            assertEquals(5, step.retryLimit());
+            assertEquals(Duration.ofMillis(100), step.retryWait());
+            assertTrue(step.debug());
+        }
     }
-  }
 
-  @Test
-  void testRunWithAutoPersistEnabled() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
+    @Test
+    void testRunWithAutoPersistEnabled() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
 
-      // Create a step with auto-persist enabled
-      TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
-      step.liveConfig().overrides().autoPersist(true);
+            // Create a step with auto-persist enabled
+            TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
+            step.liveConfig().overrides().autoPersist(true);
 
-      List<Step> steps = List.of(step);
+            List<Step> steps = List.of(step);
 
-      Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = runner.run(input, steps);
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(3));
-      subscriber.awaitItems(3, Duration.ofSeconds(5)).assertCompleted();
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(3));
+            subscriber.awaitItems(3, Duration.ofSeconds(5)).assertCompleted();
 
-      // Grab all items
-      List<Object> actualItems = subscriber.getItems();
+            // Grab all items
+            List<Object> actualItems = subscriber.getItems();
 
-      // Expected items (same as without persistence, as persistence is a side effect)
-      Set<String> expectedItems =
-          Set.of("Processed: item1", "Processed: item2", "Processed: item3");
+            // Expected items (same as without persistence, as persistence is a side effect)
+            Set<String> expectedItems =
+                    Set.of("Processed: item1", "Processed: item2", "Processed: item3");
 
-      // Assert ignoring order
-      assertEquals(expectedItems, new HashSet<>(actualItems));
+            // Assert ignoring order
+            assertEquals(expectedItems, new HashSet<>(actualItems));
+        }
     }
-  }
 }

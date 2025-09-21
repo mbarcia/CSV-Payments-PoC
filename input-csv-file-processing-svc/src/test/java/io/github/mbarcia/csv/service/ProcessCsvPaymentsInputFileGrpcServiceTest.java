@@ -40,89 +40,91 @@ import org.mockito.Mockito;
 
 class ProcessCsvPaymentsInputFileGrpcServiceTest {
 
-  private ProcessCsvPaymentsInputFileGrpcService service;
+    private ProcessCsvPaymentsInputFileGrpcService service;
 
-  private ProcessCsvPaymentsInputReactiveService domainService;
-  private CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
-  private PaymentRecordMapper paymentRecordMapper;
-  private PersistenceManager persistenceManager;
+    private ProcessCsvPaymentsInputReactiveService domainService;
+    private CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
+    private PaymentRecordMapper paymentRecordMapper;
+    private PersistenceManager persistenceManager;
 
-  @BeforeEach
-  void setUp() {
-    domainService = Mockito.mock(ProcessCsvPaymentsInputReactiveService.class);
-    csvPaymentsInputFileMapper = mock(CsvPaymentsInputFileMapper.class);
-    paymentRecordMapper = mock(PaymentRecordMapper.class);
-    persistenceManager = mock(PersistenceManager.class);
+    @BeforeEach
+    void setUp() {
+        domainService = Mockito.mock(ProcessCsvPaymentsInputReactiveService.class);
+        csvPaymentsInputFileMapper = mock(CsvPaymentsInputFileMapper.class);
+        paymentRecordMapper = mock(PaymentRecordMapper.class);
+        persistenceManager = mock(PersistenceManager.class);
 
-    service = new ProcessCsvPaymentsInputFileGrpcService();
-    // manual "injection"
-    service.domainService = domainService;
-    service.csvPaymentsInputFileMapper = csvPaymentsInputFileMapper;
-    service.paymentRecordMapper = paymentRecordMapper;
-    service.persistenceManager = persistenceManager;
-  }
+        service = new ProcessCsvPaymentsInputFileGrpcService();
+        // manual "injection"
+        service.domainService = domainService;
+        service.csvPaymentsInputFileMapper = csvPaymentsInputFileMapper;
+        service.paymentRecordMapper = paymentRecordMapper;
+        service.persistenceManager = persistenceManager;
+    }
 
-  @Test
-  void remoteProcess_shouldMapAndDelegateToDomainService() {
-    // given
-    InputCsvFileProcessingSvc.CsvPaymentsInputFile grpcRequest =
-        InputCsvFileProcessingSvc.CsvPaymentsInputFile.newBuilder().setFilepath("test.csv").build();
+    @Test
+    void remoteProcess_shouldMapAndDelegateToDomainService() {
+        // given
+        InputCsvFileProcessingSvc.CsvPaymentsInputFile grpcRequest =
+                InputCsvFileProcessingSvc.CsvPaymentsInputFile.newBuilder()
+                        .setFilepath("test.csv")
+                        .build();
 
-    CsvPaymentsInputFile domainIn = new CsvPaymentsInputFile();
-    PaymentRecord domainOut1 = new PaymentRecord();
-    PaymentRecord domainOut2 = new PaymentRecord();
+        CsvPaymentsInputFile domainIn = new CsvPaymentsInputFile();
+        PaymentRecord domainOut1 = new PaymentRecord();
+        PaymentRecord domainOut2 = new PaymentRecord();
 
-    InputCsvFileProcessingSvc.PaymentRecord grpcOut1 =
-        InputCsvFileProcessingSvc.PaymentRecord.newBuilder().setId("1").build();
-    InputCsvFileProcessingSvc.PaymentRecord grpcOut2 =
-        InputCsvFileProcessingSvc.PaymentRecord.newBuilder().setId("2").build();
+        InputCsvFileProcessingSvc.PaymentRecord grpcOut1 =
+                InputCsvFileProcessingSvc.PaymentRecord.newBuilder().setId("1").build();
+        InputCsvFileProcessingSvc.PaymentRecord grpcOut2 =
+                InputCsvFileProcessingSvc.PaymentRecord.newBuilder().setId("2").build();
 
-    // stubbing mappers
-    PaymentRecordDto dto1 =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("Alice")
-            .amount(BigDecimal.TEN)
-            .currency(Currency.getInstance("USD"))
-            .csvPaymentsInputFilePath(Path.of("file1.csv"))
-            .build();
+        // stubbing mappers
+        PaymentRecordDto dto1 =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("Alice")
+                        .amount(BigDecimal.TEN)
+                        .currency(Currency.getInstance("USD"))
+                        .csvPaymentsInputFilePath(Path.of("file1.csv"))
+                        .build();
 
-    PaymentRecordDto dto2 =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("Bob")
-            .amount(BigDecimal.ONE)
-            .currency(Currency.getInstance("EUR"))
-            .csvPaymentsInputFilePath(Path.of("file2.csv"))
-            .build();
+        PaymentRecordDto dto2 =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("Bob")
+                        .amount(BigDecimal.ONE)
+                        .currency(Currency.getInstance("EUR"))
+                        .csvPaymentsInputFilePath(Path.of("file2.csv"))
+                        .build();
 
-    when(csvPaymentsInputFileMapper.fromGrpc(grpcRequest)).thenReturn(domainIn);
-    // Stub the persistence manager to return the same entity (persisted)
-    when(persistenceManager.persist(domainIn)).thenReturn(Uni.createFrom().item(domainIn));
-    when(domainService.process(domainIn))
-        .thenReturn(Multi.createFrom().items(domainOut1, domainOut2));
-    when(paymentRecordMapper.toDto(domainOut1)).thenReturn(dto1);
-    when(paymentRecordMapper.toDto(domainOut2)).thenReturn(dto2);
-    when(paymentRecordMapper.toGrpc((PaymentRecordDto) any())).thenReturn(grpcOut1, grpcOut2);
+        when(csvPaymentsInputFileMapper.fromGrpc(grpcRequest)).thenReturn(domainIn);
+        // Stub the persistence manager to return the same entity (persisted)
+        when(persistenceManager.persist(domainIn)).thenReturn(Uni.createFrom().item(domainIn));
+        when(domainService.process(domainIn))
+                .thenReturn(Multi.createFrom().items(domainOut1, domainOut2));
+        when(paymentRecordMapper.toDto(domainOut1)).thenReturn(dto1);
+        when(paymentRecordMapper.toDto(domainOut2)).thenReturn(dto2);
+        when(paymentRecordMapper.toGrpc((PaymentRecordDto) any())).thenReturn(grpcOut1, grpcOut2);
 
-    // when
-    List<InputCsvFileProcessingSvc.PaymentRecord> result =
-        service.remoteProcess(grpcRequest).collect().asList().await().indefinitely();
+        // when
+        List<InputCsvFileProcessingSvc.PaymentRecord> result =
+                service.remoteProcess(grpcRequest).collect().asList().await().indefinitely();
 
-    // then
-    assertThat(result).containsExactly(grpcOut1, grpcOut2);
+        // then
+        assertThat(result).containsExactly(grpcOut1, grpcOut2);
 
-    // verify mapping calls
-    verify(csvPaymentsInputFileMapper).fromGrpc(grpcRequest);
-    verify(persistenceManager).persist(domainIn);
+        // verify mapping calls
+        verify(csvPaymentsInputFileMapper).fromGrpc(grpcRequest);
+        verify(persistenceManager).persist(domainIn);
 
-    ArgumentCaptor<io.github.mbarcia.csv.common.dto.PaymentRecordDto> dtoCaptor =
-        ArgumentCaptor.forClass(io.github.mbarcia.csv.common.dto.PaymentRecordDto.class);
-    verify(paymentRecordMapper, times(2)).toGrpc(dtoCaptor.capture());
+        ArgumentCaptor<io.github.mbarcia.csv.common.dto.PaymentRecordDto> dtoCaptor =
+                ArgumentCaptor.forClass(io.github.mbarcia.csv.common.dto.PaymentRecordDto.class);
+        verify(paymentRecordMapper, times(2)).toGrpc(dtoCaptor.capture());
 
-    // ensure domain service was called with the mapped input
-    verify(domainService).process(domainIn);
-  }
+        // ensure domain service was called with the mapped input
+        verify(domainService).process(domainIn);
+    }
 }

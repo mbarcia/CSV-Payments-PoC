@@ -27,48 +27,52 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class ProcessCsvPaymentsInputStreamRestResourceTest {
 
-  @Test
-  void process_validCsv() {
-    String csv =
-        """
+    @Test
+    void process_validCsv() {
+        String csv =
+                """
         ID,Recipient,Amount,Currency
         1,John Doe,100,USD
         2,Jane Smith,200,EUR
         """;
 
-    RestAssured.given()
-        .relaxedHTTPSValidation() // <- ignores PKIX errors
-        .multiPart(
-            "file", "payments.csv", new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)))
-        .multiPart("filename", "payments.csv")
-        .when()
-        .post("/api/v1/input-processing/process")
-        .then()
-        .statusCode(200)
-        .contentType("text/event-stream") // SSE streaming response
-        .body(containsString("John Doe"))
-        .body(containsString("Jane Smith"));
-  }
+        RestAssured.given()
+                .relaxedHTTPSValidation() // <- ignores PKIX errors
+                .multiPart(
+                        "file",
+                        "payments.csv",
+                        new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)))
+                .multiPart("filename", "payments.csv")
+                .when()
+                .post("/api/v1/input-processing/process")
+                .then()
+                .statusCode(200)
+                .contentType("text/event-stream") // SSE streaming response
+                .body(containsString("John Doe"))
+                .body(containsString("Jane Smith"));
+    }
 
-  @Test
-  void process_invalidCsv_shouldFail() {
-    String csv =
-        """
+    @Test
+    void process_invalidCsv_shouldFail() {
+        String csv =
+                """
             ID,Recipient,Amount,Currency
             1,John Doe,INVALID,USD
             """;
 
-    RestAssured.given()
-        .relaxedHTTPSValidation() // <- ignores PKIX errors
-        .multiPart(
-            "file", "bad.csv", new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)))
-        .multiPart("filename", "bad.csv")
-        .when()
-        .post("/api/v1/input-processing/process")
-        .then()
-        .statusCode(200) // Streaming response starts with 200
-        .contentType("text/event-stream");
-    // Note: With streaming, invalid data might result in partial results or error events
-    // depending on how the service handles errors during streaming
-  }
+        RestAssured.given()
+                .relaxedHTTPSValidation() // <- ignores PKIX errors
+                .multiPart(
+                        "file",
+                        "bad.csv",
+                        new ByteArrayInputStream(csv.getBytes(StandardCharsets.UTF_8)))
+                .multiPart("filename", "bad.csv")
+                .when()
+                .post("/api/v1/input-processing/process")
+                .then()
+                .statusCode(200) // Streaming response starts with 200
+                .contentType("text/event-stream");
+        // Note: With streaming, invalid data might result in partial results or error events
+        // depending on how the service handles errors during streaming
+    }
 }

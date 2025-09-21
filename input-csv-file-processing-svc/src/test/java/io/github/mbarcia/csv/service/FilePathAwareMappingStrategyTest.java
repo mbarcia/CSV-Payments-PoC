@@ -26,67 +26,67 @@ import org.junit.jupiter.api.Test;
 
 class FilePathAwareMappingStrategyTest {
 
-  // Test class that doesn't have the csvPaymentsInputFilePath field
-  static class TestBeanWithoutField {
-    private String name;
+    // Test class that doesn't have the csvPaymentsInputFilePath field
+    static class TestBeanWithoutField {
+        private String name;
 
-    public String getName() {
-      return name;
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
     }
 
-    public void setName(String name) {
-      this.name = name;
+    // Test class that has the csvPaymentsInputFilePath field
+    static class TestBeanWithField {
+        private java.nio.file.Path csvPaymentsInputFilePath;
+        private String name;
+
+        public java.nio.file.Path getCsvPaymentsInputFilePath() {
+            return csvPaymentsInputFilePath;
+        }
+
+        public void setCsvPaymentsInputFilePath(java.nio.file.Path csvPaymentsInputFilePath) {
+            this.csvPaymentsInputFilePath = csvPaymentsInputFilePath;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
     }
-  }
 
-  // Test class that has the csvPaymentsInputFilePath field
-  static class TestBeanWithField {
-    private java.nio.file.Path csvPaymentsInputFilePath;
-    private String name;
+    @Test
+    void populateNewBean_withNonExistentField_throwsCsvBeanIntrospectionException() {
+        // Create a mapping strategy with a path
+        Path testPath = Paths.get("/test/path");
+        FilePathAwareMappingStrategy<TestBeanWithoutField> strategy =
+                new FilePathAwareMappingStrategy<>(testPath);
+        strategy.setType(TestBeanWithoutField.class);
 
-    public java.nio.file.Path getCsvPaymentsInputFilePath() {
-      return csvPaymentsInputFilePath;
+        // This should throw CsvBeanIntrospectionException because TestBeanWithoutField
+        // doesn't have csvPaymentsInputFilePath field
+        assertThrows(
+                CsvBeanIntrospectionException.class,
+                () -> strategy.populateNewBean(new String[] {"testName"}));
     }
 
-    public void setCsvPaymentsInputFilePath(java.nio.file.Path csvPaymentsInputFilePath) {
-      this.csvPaymentsInputFilePath = csvPaymentsInputFilePath;
+    @Test
+    void populateNewBean_withValidField_setsFilePath() {
+        // Create a mapping strategy with a path
+        Path testPath = Paths.get("/test/path");
+        FilePathAwareMappingStrategy<TestBeanWithField> strategy =
+                new FilePathAwareMappingStrategy<>(testPath);
+        strategy.setType(TestBeanWithField.class);
+
+        // We can't easily test this because OpenCSV requires the class to be
+        // properly annotated and have a default constructor, which our test class doesn't have
+        // For now, we'll just verify that the strategy can be created
+        assertNotNull(strategy);
     }
-
-    public String getName() {
-      return name;
-    }
-
-    public void setName(String name) {
-      this.name = name;
-    }
-  }
-
-  @Test
-  void populateNewBean_withNonExistentField_throwsCsvBeanIntrospectionException() {
-    // Create a mapping strategy with a path
-    Path testPath = Paths.get("/test/path");
-    FilePathAwareMappingStrategy<TestBeanWithoutField> strategy =
-        new FilePathAwareMappingStrategy<>(testPath);
-    strategy.setType(TestBeanWithoutField.class);
-
-    // This should throw CsvBeanIntrospectionException because TestBeanWithoutField
-    // doesn't have csvPaymentsInputFilePath field
-    assertThrows(
-        CsvBeanIntrospectionException.class,
-        () -> strategy.populateNewBean(new String[] {"testName"}));
-  }
-
-  @Test
-  void populateNewBean_withValidField_setsFilePath() {
-    // Create a mapping strategy with a path
-    Path testPath = Paths.get("/test/path");
-    FilePathAwareMappingStrategy<TestBeanWithField> strategy =
-        new FilePathAwareMappingStrategy<>(testPath);
-    strategy.setType(TestBeanWithField.class);
-
-    // We can't easily test this because OpenCSV requires the class to be
-    // properly annotated and have a default constructor, which our test class doesn't have
-    // For now, we'll just verify that the strategy can be created
-    assertNotNull(strategy);
-  }
 }

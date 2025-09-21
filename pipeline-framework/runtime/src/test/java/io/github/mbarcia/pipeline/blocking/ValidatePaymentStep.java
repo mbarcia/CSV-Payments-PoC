@@ -26,27 +26,27 @@ import java.math.BigDecimal;
  * framework.
  */
 public class ValidatePaymentStep extends ConfigurableStep
-    implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
+        implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
 
-  @Override
-  public TestPaymentEntity apply(TestPaymentEntity payment) {
-    // This is a blocking operation that simulates validation logic
-    // In a real application, this might call external services or perform complex calculations
+    @Override
+    public TestPaymentEntity apply(TestPaymentEntity payment) {
+        // This is a blocking operation that simulates validation logic
+        // In a real application, this might call external services or perform complex calculations
 
-    // Simulate some processing time (blocking operation)
-    try {
-      Thread.sleep(100); // Blocking sleep to simulate work
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+        // Simulate some processing time (blocking operation)
+        try {
+            Thread.sleep(100); // Blocking sleep to simulate work
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Perform validation
+        if (payment.getAmount() != null && payment.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+            payment.setStatus("VALIDATED");
+        } else {
+            payment.setStatus("REJECTED");
+        }
+
+        return payment;
     }
-
-    // Perform validation
-    if (payment.getAmount() != null && payment.getAmount().compareTo(BigDecimal.ZERO) > 0) {
-      payment.setStatus("VALIDATED");
-    } else {
-      payment.setStatus("REJECTED");
-    }
-
-    return payment;
-  }
 }

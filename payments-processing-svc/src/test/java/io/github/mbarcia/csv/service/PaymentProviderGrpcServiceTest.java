@@ -46,187 +46,195 @@ import org.mockito.MockitoAnnotations;
 
 class PaymentProviderGrpcServiceTest {
 
-  @Mock private PaymentProviderService domainService;
+    @Mock private PaymentProviderService domainService;
 
-  @Mock private SendPaymentRequestMapper sendPaymentRequestMapper;
+    @Mock private SendPaymentRequestMapper sendPaymentRequestMapper;
 
-  @Mock private AckPaymentSentMapper ackPaymentSentMapper;
+    @Mock private AckPaymentSentMapper ackPaymentSentMapper;
 
-  @Mock private PaymentStatusMapper paymentStatusMapper;
+    @Mock private PaymentStatusMapper paymentStatusMapper;
 
-  @InjectMocks private PaymentProviderGrpcService paymentProviderGrpcService;
+    @InjectMocks private PaymentProviderGrpcService paymentProviderGrpcService;
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-  }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-  @Test
-  @DisplayName("sendPayment: Should successfully process request and return AckPaymentSent")
-  void sendPayment_happyPath() {
-    // Given
-    io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest grpcRequest =
-        io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest.newBuilder()
-            .setAmount("100.00")
-            .setCurrency("USD")
-            .setReference("John Doe")
-            .setPaymentRecordId(UUID.randomUUID().toString())
-            .build();
+    @Test
+    @DisplayName("sendPayment: Should successfully process request and return AckPaymentSent")
+    void sendPayment_happyPath() {
+        // Given
+        io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest grpcRequest =
+                io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest.newBuilder()
+                        .setAmount("100.00")
+                        .setCurrency("USD")
+                        .setReference("John Doe")
+                        .setPaymentRecordId(UUID.randomUUID().toString())
+                        .build();
 
-    PaymentRecordDto dtoIn =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("John Doe")
-            .amount(BigDecimal.valueOf(100.00))
-            .currency(java.util.Currency.getInstance("USD"))
-            .build();
-    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
-    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
+        PaymentRecordDto dtoIn =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("John Doe")
+                        .amount(BigDecimal.valueOf(100.00))
+                        .currency(java.util.Currency.getInstance("USD"))
+                        .build();
+        PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+        PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
 
-    SendPaymentRequestMapper.SendPaymentRequest request =
-        new SendPaymentRequestMapper.SendPaymentRequest()
-            .setAmount(paymentRecord.getAmount())
-            .setReference(paymentRecord.getRecipient())
-            .setCurrency(paymentRecord.getCurrency())
-            .setPaymentRecord(paymentRecord)
-            .setPaymentRecordId(paymentRecord.getId());
+        SendPaymentRequestMapper.SendPaymentRequest request =
+                new SendPaymentRequestMapper.SendPaymentRequest()
+                        .setAmount(paymentRecord.getAmount())
+                        .setReference(paymentRecord.getRecipient())
+                        .setCurrency(paymentRecord.getCurrency())
+                        .setPaymentRecord(paymentRecord)
+                        .setPaymentRecordId(paymentRecord.getId());
 
-    AckPaymentSent domainOut = new AckPaymentSent();
-    domainOut.setPaymentRecordId(paymentRecord.getId());
-    domainOut.setStatus(1000L);
-    domainOut.setMessage("OK");
+        AckPaymentSent domainOut = new AckPaymentSent();
+        domainOut.setPaymentRecordId(paymentRecord.getId());
+        domainOut.setStatus(1000L);
+        domainOut.setMessage("OK");
 
-    PaymentsProcessingSvc.AckPaymentSent grpcResponse =
-        PaymentsProcessingSvc.AckPaymentSent.newBuilder()
-            .setConversationId("convId")
-            .setPaymentRecordId(paymentRecord.getId().toString())
-            .setStatus(1000L)
-            .setMessage("OK")
-            .build();
+        PaymentsProcessingSvc.AckPaymentSent grpcResponse =
+                PaymentsProcessingSvc.AckPaymentSent.newBuilder()
+                        .setConversationId("convId")
+                        .setPaymentRecordId(paymentRecord.getId().toString())
+                        .setStatus(1000L)
+                        .setMessage("OK")
+                        .build();
 
-    when(sendPaymentRequestMapper.fromGrpc(
-            any(io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest.class)))
-        .thenReturn(request);
-    when(domainService.sendPayment(request)).thenReturn(domainOut);
-    when(ackPaymentSentMapper.toGrpc(domainOut)).thenReturn(grpcResponse);
+        when(sendPaymentRequestMapper.fromGrpc(
+                        any(io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest.class)))
+                .thenReturn(request);
+        when(domainService.sendPayment(request)).thenReturn(domainOut);
+        when(ackPaymentSentMapper.toGrpc(domainOut)).thenReturn(grpcResponse);
 
-    // When
-    Uni<PaymentsProcessingSvc.AckPaymentSent> resultUni =
-        paymentProviderGrpcService.sendPayment(grpcRequest);
+        // When
+        Uni<PaymentsProcessingSvc.AckPaymentSent> resultUni =
+                paymentProviderGrpcService.sendPayment(grpcRequest);
 
-    // Then
-    PaymentsProcessingSvc.AckPaymentSent actualResponse = resultUni.await().indefinitely();
-    assertThat(actualResponse).isEqualTo(grpcResponse);
-  }
+        // Then
+        PaymentsProcessingSvc.AckPaymentSent actualResponse = resultUni.await().indefinitely();
+        assertThat(actualResponse).isEqualTo(grpcResponse);
+    }
 
-  @Test
-  @DisplayName("sendPayment: Should throw StatusRuntimeException on domain service error")
-  void sendPayment_domainServiceError_shouldThrowStatusRuntimeException() {
-    // Given
-    io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest grpcRequest =
-        io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest.newBuilder()
-            .setAmount("100.00")
-            .setCurrency("USD")
-            .setReference("John Doe")
-            .setPaymentRecordId(UUID.randomUUID().toString())
-            .build();
+    @Test
+    @DisplayName("sendPayment: Should throw StatusRuntimeException on domain service error")
+    void sendPayment_domainServiceError_shouldThrowStatusRuntimeException() {
+        // Given
+        io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest grpcRequest =
+                io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest.newBuilder()
+                        .setAmount("100.00")
+                        .setCurrency("USD")
+                        .setReference("John Doe")
+                        .setPaymentRecordId(UUID.randomUUID().toString())
+                        .build();
 
-    PaymentRecordDto dtoIn =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("John Doe")
-            .amount(BigDecimal.valueOf(100.00))
-            .currency(java.util.Currency.getInstance("USD"))
-            .build();
-    PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
-    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
+        PaymentRecordDto dtoIn =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("John Doe")
+                        .amount(BigDecimal.valueOf(100.00))
+                        .currency(java.util.Currency.getInstance("USD"))
+                        .build();
+        PaymentRecordMapper paymentRecordMapper = Mappers.getMapper(PaymentRecordMapper.class);
+        PaymentRecord paymentRecord = paymentRecordMapper.fromDto(dtoIn);
 
-    SendPaymentRequestMapper.SendPaymentRequest request =
-        new SendPaymentRequestMapper.SendPaymentRequest()
-            .setAmount(paymentRecord.getAmount())
-            .setReference(paymentRecord.getRecipient())
-            .setCurrency(paymentRecord.getCurrency())
-            .setPaymentRecord(paymentRecord)
-            .setPaymentRecordId(paymentRecord.getId());
+        SendPaymentRequestMapper.SendPaymentRequest request =
+                new SendPaymentRequestMapper.SendPaymentRequest()
+                        .setAmount(paymentRecord.getAmount())
+                        .setReference(paymentRecord.getRecipient())
+                        .setCurrency(paymentRecord.getCurrency())
+                        .setPaymentRecord(paymentRecord)
+                        .setPaymentRecordId(paymentRecord.getId());
 
-    RuntimeException domainException = new RuntimeException("Domain service failed");
+        RuntimeException domainException = new RuntimeException("Domain service failed");
 
-    when(sendPaymentRequestMapper.fromGrpc(
-            any(io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest.class)))
-        .thenThrow(domainException);
-    when(domainService.sendPayment(request)).thenThrow(domainException);
+        when(sendPaymentRequestMapper.fromGrpc(
+                        any(io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest.class)))
+                .thenThrow(domainException);
+        when(domainService.sendPayment(request)).thenThrow(domainException);
 
-    // When & Then
-    StatusRuntimeException thrown =
-        assertThrows(
-            StatusRuntimeException.class,
-            () -> paymentProviderGrpcService.sendPayment(grpcRequest).await().indefinitely());
-    assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.INTERNAL);
-    assertThat(thrown.getStatus().getDescription()).contains("Domain service failed");
-    assertThat(thrown.getCause()).isEqualTo(domainException);
-  }
+        // When & Then
+        StatusRuntimeException thrown =
+                assertThrows(
+                        StatusRuntimeException.class,
+                        () ->
+                                paymentProviderGrpcService
+                                        .sendPayment(grpcRequest)
+                                        .await()
+                                        .indefinitely());
+        assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.INTERNAL);
+        assertThat(thrown.getStatus().getDescription()).contains("Domain service failed");
+        assertThat(thrown.getCause()).isEqualTo(domainException);
+    }
 
-  @Test
-  @DisplayName("getPaymentStatus: Should successfully process request and return PaymentStatus")
-  @SneakyThrows
-  void getPaymentStatus_happyPath() {
-    // Given
-    PaymentsProcessingSvc.AckPaymentSent grpcRequest =
-        PaymentsProcessingSvc.AckPaymentSent.newBuilder()
-            .setConversationId("convId")
-            .setPaymentRecordId(UUID.randomUUID().toString())
-            .build();
+    @Test
+    @DisplayName("getPaymentStatus: Should successfully process request and return PaymentStatus")
+    @SneakyThrows
+    void getPaymentStatus_happyPath() {
+        // Given
+        PaymentsProcessingSvc.AckPaymentSent grpcRequest =
+                PaymentsProcessingSvc.AckPaymentSent.newBuilder()
+                        .setConversationId("convId")
+                        .setPaymentRecordId(UUID.randomUUID().toString())
+                        .build();
 
-    AckPaymentSent ackPaymentSent = new AckPaymentSent();
-    ackPaymentSent.setPaymentRecordId(UUID.randomUUID());
+        AckPaymentSent ackPaymentSent = new AckPaymentSent();
+        ackPaymentSent.setPaymentRecordId(UUID.randomUUID());
 
-    PaymentStatus domainOut = new PaymentStatus();
-    domainOut.setAckPaymentSentId(ackPaymentSent.getId());
+        PaymentStatus domainOut = new PaymentStatus();
+        domainOut.setAckPaymentSentId(ackPaymentSent.getId());
 
-    PaymentsProcessingSvc.PaymentStatus grpcResponse =
-        PaymentsProcessingSvc.PaymentStatus.newBuilder().setReference("ref").build();
+        PaymentsProcessingSvc.PaymentStatus grpcResponse =
+                PaymentsProcessingSvc.PaymentStatus.newBuilder().setReference("ref").build();
 
-    when(ackPaymentSentMapper.fromGrpc(grpcRequest)).thenReturn(ackPaymentSent);
-    when(domainService.getPaymentStatus(ackPaymentSent)).thenReturn(domainOut);
-    when(paymentStatusMapper.toGrpc(domainOut)).thenReturn(grpcResponse);
+        when(ackPaymentSentMapper.fromGrpc(grpcRequest)).thenReturn(ackPaymentSent);
+        when(domainService.getPaymentStatus(ackPaymentSent)).thenReturn(domainOut);
+        when(paymentStatusMapper.toGrpc(domainOut)).thenReturn(grpcResponse);
 
-    // When
-    Uni<PaymentsProcessingSvc.PaymentStatus> resultUni =
-        paymentProviderGrpcService.getPaymentStatus(grpcRequest);
+        // When
+        Uni<PaymentsProcessingSvc.PaymentStatus> resultUni =
+                paymentProviderGrpcService.getPaymentStatus(grpcRequest);
 
-    // Then
-    PaymentsProcessingSvc.PaymentStatus actualResponse = resultUni.await().indefinitely();
-    assertThat(actualResponse).isEqualTo(grpcResponse);
-  }
+        // Then
+        PaymentsProcessingSvc.PaymentStatus actualResponse = resultUni.await().indefinitely();
+        assertThat(actualResponse).isEqualTo(grpcResponse);
+    }
 
-  @Test
-  @DisplayName("getPaymentStatus: Should throw StatusRuntimeException on domain service error")
-  @SneakyThrows
-  void getPaymentStatus_domainServiceError_shouldThrowStatusRuntimeException() {
-    // Given
-    PaymentsProcessingSvc.AckPaymentSent grpcRequest =
-        PaymentsProcessingSvc.AckPaymentSent.newBuilder()
-            .setConversationId("convId")
-            .setPaymentRecordId(UUID.randomUUID().toString())
-            .build();
+    @Test
+    @DisplayName("getPaymentStatus: Should throw StatusRuntimeException on domain service error")
+    @SneakyThrows
+    void getPaymentStatus_domainServiceError_shouldThrowStatusRuntimeException() {
+        // Given
+        PaymentsProcessingSvc.AckPaymentSent grpcRequest =
+                PaymentsProcessingSvc.AckPaymentSent.newBuilder()
+                        .setConversationId("convId")
+                        .setPaymentRecordId(UUID.randomUUID().toString())
+                        .build();
 
-    AckPaymentSent domainIn = new AckPaymentSent();
-    domainIn.setPaymentRecordId(UUID.randomUUID());
+        AckPaymentSent domainIn = new AckPaymentSent();
+        domainIn.setPaymentRecordId(UUID.randomUUID());
 
-    RuntimeException domainException = new RuntimeException("Domain service failed");
+        RuntimeException domainException = new RuntimeException("Domain service failed");
 
-    when(ackPaymentSentMapper.fromGrpc(grpcRequest)).thenReturn(domainIn);
-    when(domainService.getPaymentStatus(domainIn)).thenThrow(domainException);
+        when(ackPaymentSentMapper.fromGrpc(grpcRequest)).thenReturn(domainIn);
+        when(domainService.getPaymentStatus(domainIn)).thenThrow(domainException);
 
-    // When & Then
-    StatusRuntimeException thrown =
-        assertThrows(
-            StatusRuntimeException.class,
-            () -> paymentProviderGrpcService.getPaymentStatus(grpcRequest).await().indefinitely());
-    assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.INTERNAL);
-    assertThat(thrown.getStatus().getDescription()).contains("Processing failed");
-    assertThat(thrown.getCause()).isEqualTo(domainException);
-  }
+        // When & Then
+        StatusRuntimeException thrown =
+                assertThrows(
+                        StatusRuntimeException.class,
+                        () ->
+                                paymentProviderGrpcService
+                                        .getPaymentStatus(grpcRequest)
+                                        .await()
+                                        .indefinitely());
+        assertThat(thrown.getStatus().getCode()).isEqualTo(Status.Code.INTERNAL);
+        assertThat(thrown.getStatus().getDescription()).contains("Processing failed");
+        assertThat(thrown.getCause()).isEqualTo(domainException);
+    }
 }

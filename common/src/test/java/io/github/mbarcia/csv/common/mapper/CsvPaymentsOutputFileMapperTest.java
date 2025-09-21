@@ -27,89 +27,89 @@ import org.junit.jupiter.api.Test;
 
 class CsvPaymentsOutputFileMapperTest {
 
-  private CsvPaymentsOutputFileMapper mapper;
-  private CommonConverters commonConverters;
+    private CsvPaymentsOutputFileMapper mapper;
+    private CommonConverters commonConverters;
 
-  @BeforeEach
-  void setUp() {
-    commonConverters = new CommonConverters();
+    @BeforeEach
+    void setUp() {
+        commonConverters = new CommonConverters();
 
-    // Create CsvPaymentsOutputFileMapperImpl and set its dependencies
-    CsvPaymentsOutputFileMapperImpl csvPaymentsOutputFileMapperImpl =
-        new CsvPaymentsOutputFileMapperImpl();
-    try {
-      java.lang.reflect.Field commonConvertersField =
-          CsvPaymentsOutputFileMapperImpl.class.getDeclaredField("commonConverters");
-      commonConvertersField.setAccessible(true);
-      commonConvertersField.set(csvPaymentsOutputFileMapperImpl, commonConverters);
+        // Create CsvPaymentsOutputFileMapperImpl and set its dependencies
+        CsvPaymentsOutputFileMapperImpl csvPaymentsOutputFileMapperImpl =
+                new CsvPaymentsOutputFileMapperImpl();
+        try {
+            java.lang.reflect.Field commonConvertersField =
+                    CsvPaymentsOutputFileMapperImpl.class.getDeclaredField("commonConverters");
+            commonConvertersField.setAccessible(true);
+            commonConvertersField.set(csvPaymentsOutputFileMapperImpl, commonConverters);
 
-      mapper = csvPaymentsOutputFileMapperImpl;
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to set CsvPaymentsOutputFileMapper dependencies", e);
+            mapper = csvPaymentsOutputFileMapperImpl;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set CsvPaymentsOutputFileMapper dependencies", e);
+        }
     }
-  }
 
-  @Test
-  void testDomainToGrpc() {
-    // Given
-    CsvPaymentsOutputFile domain = new CsvPaymentsOutputFile();
-    domain.setId(UUID.randomUUID());
-    domain.setFilepath(Path.of("/test/output/file.csv"));
-    domain.setCsvFolderPath(Path.of("/test/output"));
+    @Test
+    void testDomainToGrpc() {
+        // Given
+        CsvPaymentsOutputFile domain = new CsvPaymentsOutputFile();
+        domain.setId(UUID.randomUUID());
+        domain.setFilepath(Path.of("/test/output/file.csv"));
+        domain.setCsvFolderPath(Path.of("/test/output"));
 
-    // When
-    OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpc = mapper.toGrpc(domain);
+        // When
+        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpc = mapper.toGrpc(domain);
 
-    // Then
-    assertNotNull(grpc);
-    assertEquals(domain.getId().toString(), grpc.getId());
-    assertEquals(domain.getFilepath().toString(), grpc.getFilepath());
-    assertEquals(domain.getCsvFolderPath().toString(), grpc.getCsvFolderPath());
-  }
+        // Then
+        assertNotNull(grpc);
+        assertEquals(domain.getId().toString(), grpc.getId());
+        assertEquals(domain.getFilepath().toString(), grpc.getFilepath());
+        assertEquals(domain.getCsvFolderPath().toString(), grpc.getCsvFolderPath());
+    }
 
-  @Test
-  void testGrpcToDomain() {
-    // Given
-    UUID id = UUID.randomUUID();
+    @Test
+    void testGrpcToDomain() {
+        // Given
+        UUID id = UUID.randomUUID();
 
-    OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpc =
-        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder()
-            .setId(id.toString())
-            .setFilepath("/test/output/file.csv")
-            .setCsvFolderPath("/test/output")
-            .build();
+        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpc =
+                OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder()
+                        .setId(id.toString())
+                        .setFilepath("/test/output/file.csv")
+                        .setCsvFolderPath("/test/output")
+                        .build();
 
-    // When
-    CsvPaymentsOutputFile domain = mapper.fromGrpc(grpc);
+        // When
+        CsvPaymentsOutputFile domain = mapper.fromGrpc(grpc);
 
-    // Then
-    assertNotNull(domain);
-    assertEquals(id, domain.getId());
-    assertEquals(Path.of("/test/output/file.csv"), domain.getFilepath());
-    assertEquals(Path.of("/test/output"), domain.getCsvFolderPath());
-  }
+        // Then
+        assertNotNull(domain);
+        assertEquals(id, domain.getId());
+        assertEquals(Path.of("/test/output/file.csv"), domain.getFilepath());
+        assertEquals(Path.of("/test/output"), domain.getCsvFolderPath());
+    }
 
-  // @Test
-  // void testSerializeDeserialize() throws Exception {
-  //   // Build a simple DTO-like object for testing
-  //   OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.Builder builder =
-  //       OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder()
-  //           .setId(UUID.randomUUID().toString())
-  //           .setFilepath("/test/output/file.csv")
-  //           .setCsvFolderPath("/test/output");
-  //
-  //   OutputCsvFileProcessingSvc.CsvPaymentsOutputFile file = builder.build();
+    // @Test
+    // void testSerializeDeserialize() throws Exception {
+    //   // Build a simple DTO-like object for testing
+    //   OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.Builder builder =
+    //       OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.newBuilder()
+    //           .setId(UUID.randomUUID().toString())
+    //           .setFilepath("/test/output/file.csv")
+    //           .setCsvFolderPath("/test/output");
+    //
+    //   OutputCsvFileProcessingSvc.CsvPaymentsOutputFile file = builder.build();
 
-  //   ObjectMapper mapper = new ObjectMapper();
-  //
-  //   // Serialize to JSON
-  //   String json = mapper.writeValueAsString(file);
+    //   ObjectMapper mapper = new ObjectMapper();
+    //
+    //   // Serialize to JSON
+    //   String json = mapper.writeValueAsString(file);
 
-  //   // Deserialize back
-  //   OutputCsvFileProcessingSvc.CsvPaymentsOutputFile deserialized = mapper.readValue(json,
-  // OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.class);
+    //   // Deserialize back
+    //   OutputCsvFileProcessingSvc.CsvPaymentsOutputFile deserialized = mapper.readValue(json,
+    // OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.class);
 
-  //   // Assert equality
-  //   assertEquals(file, deserialized);
-  // }
+    //   // Assert equality
+    //   assertEquals(file, deserialized);
+    // }
 }

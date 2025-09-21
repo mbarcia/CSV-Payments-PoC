@@ -25,71 +25,72 @@ import org.junit.jupiter.api.Test;
 
 class ConfigurationIntegrationTest {
 
-  @Test
-  void testPipelineConfigDefaults() {
-    // Given
-    PipelineConfig pipelineConfig = new PipelineConfig();
-    StepConfig defaults = pipelineConfig.defaults();
+    @Test
+    void testPipelineConfigDefaults() {
+        // Given
+        PipelineConfig pipelineConfig = new PipelineConfig();
+        StepConfig defaults = pipelineConfig.defaults();
 
-    // Then
-    assertNotNull(defaults);
-    assertEquals(3, defaults.retryLimit());
-    assertEquals(Duration.ofMillis(200), defaults.retryWait());
-    assertEquals(4, defaults.concurrency());
-    assertFalse(defaults.debug());
-    assertFalse(defaults.recoverOnFailure());
-    assertFalse(defaults.runWithVirtualThreads());
-    assertEquals(Duration.ofSeconds(30), defaults.maxBackoff());
-    assertFalse(defaults.jitter());
-  }
+        // Then
+        assertNotNull(defaults);
+        assertEquals(3, defaults.retryLimit());
+        assertEquals(Duration.ofMillis(200), defaults.retryWait());
+        assertEquals(4, defaults.concurrency());
+        assertFalse(defaults.debug());
+        assertFalse(defaults.recoverOnFailure());
+        assertFalse(defaults.runWithVirtualThreads());
+        assertEquals(Duration.ofSeconds(30), defaults.maxBackoff());
+        assertFalse(defaults.jitter());
+    }
 
-  @Test
-  void testStepSpecificConfiguration() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testStepSpecificConfiguration() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When
-    config.retryLimit(10).concurrency(20).debug(true);
+        // When
+        config.retryLimit(10).concurrency(20).debug(true);
 
-    // Then
-    assertEquals(10, config.retryLimit());
-    assertEquals(20, config.concurrency());
-    assertTrue(config.debug());
-    // Other properties should still use defaults
-    assertEquals(Duration.ofMillis(200), config.retryWait());
-    assertFalse(config.recoverOnFailure());
-  }
+        // Then
+        assertEquals(10, config.retryLimit());
+        assertEquals(20, config.concurrency());
+        assertTrue(config.debug());
+        // Other properties should still use defaults
+        assertEquals(Duration.ofMillis(200), config.retryWait());
+        assertFalse(config.recoverOnFailure());
+    }
 
-  @Test
-  void testProfileBasedConfiguration() {
-    // Given
-    PipelineConfig pipelineConfig = new PipelineConfig();
-    pipelineConfig.profile(
-        "test", new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)).debug(true));
+    @Test
+    void testProfileBasedConfiguration() {
+        // Given
+        PipelineConfig pipelineConfig = new PipelineConfig();
+        pipelineConfig.profile(
+                "test",
+                new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)).debug(true));
 
-    // When
-    pipelineConfig.activate("test");
-    StepConfig activeConfig = pipelineConfig.defaults();
+        // When
+        pipelineConfig.activate("test");
+        StepConfig activeConfig = pipelineConfig.defaults();
 
-    // Then
-    assertEquals(5, activeConfig.retryLimit());
-    assertEquals(Duration.ofSeconds(1), activeConfig.retryWait());
-    assertTrue(activeConfig.debug());
-  }
+        // Then
+        assertEquals(5, activeConfig.retryLimit());
+        assertEquals(Duration.ofSeconds(1), activeConfig.retryWait());
+        assertTrue(activeConfig.debug());
+    }
 
-  @Test
-  void testProfileConfiguration() {
-    // Given
-    PipelineConfig pipelineConfig = new PipelineConfig();
-    pipelineConfig.profile("custom", new StepConfig().retryLimit(7).concurrency(15));
-    pipelineConfig.activate("custom");
+    @Test
+    void testProfileConfiguration() {
+        // Given
+        PipelineConfig pipelineConfig = new PipelineConfig();
+        pipelineConfig.profile("custom", new StepConfig().retryLimit(7).concurrency(15));
+        pipelineConfig.activate("custom");
 
-    // When
-    StepConfig activeConfig = pipelineConfig.defaults();
+        // When
+        StepConfig activeConfig = pipelineConfig.defaults();
 
-    // Then
-    assertEquals(7, activeConfig.retryLimit()); // from profile
-    assertEquals(15, activeConfig.concurrency()); // from profile
-    assertEquals(Duration.ofMillis(200), activeConfig.retryWait()); // default
-  }
+        // Then
+        assertEquals(7, activeConfig.retryLimit()); // from profile
+        assertEquals(15, activeConfig.concurrency()); // from profile
+        assertEquals(Duration.ofMillis(200), activeConfig.retryWait()); // default
+    }
 }

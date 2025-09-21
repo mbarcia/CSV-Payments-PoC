@@ -22,23 +22,23 @@ import java.util.concurrent.CompletableFuture;
 
 /** Example of a Future-based step that processes a payment asynchronously. */
 public class ProcessPaymentFutureStep extends ConfigurableStep
-    implements StepOneToOneCompletableFuture<String, String> {
+        implements StepOneToOneCompletableFuture<String, String> {
 
-  @Override
-  public CompletableFuture<String> applyAsync(String paymentRequest) {
-    // This returns a CompletableFuture that simulates async processing
-    return CompletableFuture.supplyAsync(
-        () -> {
-          // Simulate some async processing time
-          try {
-            Thread.sleep(200); // Simulate async work
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-          }
+    @Override
+    public CompletableFuture<String> applyAsync(String paymentRequest) {
+        // This returns a CompletableFuture that simulates async processing
+        return CompletableFuture.supplyAsync(
+                () -> {
+                    // Simulate some async processing time
+                    try {
+                        Thread.sleep(200); // Simulate async work
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
 
-          // Process the payment request
-          return "Processed: " + paymentRequest;
-        },
-        getExecutor());
-  }
+                    // Process the payment request
+                    return "Processed: " + paymentRequest;
+                },
+                getExecutor());
+    }
 }

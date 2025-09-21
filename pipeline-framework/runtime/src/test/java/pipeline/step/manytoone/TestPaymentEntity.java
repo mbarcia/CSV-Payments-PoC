@@ -23,51 +23,51 @@ import java.math.BigDecimal;
 
 @Entity
 public class TestPaymentEntity {
-  @Id @GeneratedValue private Long id;
+    @Id @GeneratedValue private Long id;
 
-  private String recipient;
-  private BigDecimal amount;
-  private String status;
+    private String recipient;
+    private BigDecimal amount;
+    private String status;
 
-  // Required for JPA
-  public TestPaymentEntity() {}
+    // Required for JPA
+    public TestPaymentEntity() {}
 
-  public TestPaymentEntity(String recipient, BigDecimal amount) {
-    this.recipient = recipient;
-    this.amount = amount;
-    this.status = "CREATED";
-  }
+    public TestPaymentEntity(String recipient, BigDecimal amount) {
+        this.recipient = recipient;
+        this.amount = amount;
+        this.status = "CREATED";
+    }
 
-  // Getters and setters
-  public Long getId() {
-    return id;
-  }
+    // Getters and setters
+    public Long getId() {
+        return id;
+    }
 
-  public void setId(Long id) {
-    this.id = id;
-  }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-  public String getRecipient() {
-    return recipient;
-  }
+    public String getRecipient() {
+        return recipient;
+    }
 
-  public void setRecipient(String recipient) {
-    this.recipient = recipient;
-  }
+    public void setRecipient(String recipient) {
+        this.recipient = recipient;
+    }
 
-  public BigDecimal getAmount() {
-    return amount;
-  }
+    public BigDecimal getAmount() {
+        return amount;
+    }
 
-  public void setAmount(BigDecimal amount) {
-    this.amount = amount;
-  }
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
 
-  public String getStatus() {
-    return status;
-  }
+    public String getStatus() {
+        return status;
+    }
 
-  public void setStatus(String status) {
-    this.status = status;
-  }
+    public void setStatus(String status) {
+        this.status = status;
+    }
 }

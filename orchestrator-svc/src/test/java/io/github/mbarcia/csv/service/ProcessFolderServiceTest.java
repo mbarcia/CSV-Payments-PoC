@@ -37,111 +37,112 @@ import org.mockito.MockitoAnnotations;
 
 public class ProcessFolderServiceTest {
 
-  @Mock private HybridResourceLoader resourceLoader;
+    @Mock private HybridResourceLoader resourceLoader;
 
-  @InjectMocks private ProcessFolderService processFolderService;
+    @InjectMocks private ProcessFolderService processFolderService;
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-  }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-  @Test
-  void testProcessWithValidDirectory(@TempDir Path tempDir) throws Exception {
-    // Given
-    String csvFolderPath = "test-csv-folder";
+    @Test
+    void testProcessWithValidDirectory(@TempDir Path tempDir) throws Exception {
+        // Given
+        String csvFolderPath = "test-csv-folder";
 
-    // Create CSV files in the temporary directory
-    File file1 = new File(tempDir.toFile(), "file1.csv");
-    File file2 = new File(tempDir.toFile(), "file2.csv");
-    file1.createNewFile();
-    file2.createNewFile();
+        // Create CSV files in the temporary directory
+        File file1 = new File(tempDir.toFile(), "file1.csv");
+        File file2 = new File(tempDir.toFile(), "file2.csv");
+        file1.createNewFile();
+        file2.createNewFile();
 
-    URL mockUrl = tempDir.toFile().toURI().toURL();
+        URL mockUrl = tempDir.toFile().toURI().toURL();
 
-    when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
+        when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
 
-    // When
-    Stream<CsvPaymentsInputFile> result = processFolderService.process(csvFolderPath);
+        // When
+        Stream<CsvPaymentsInputFile> result = processFolderService.process(csvFolderPath);
 
-    // Then
-    assertNotNull(result);
-    List<CsvPaymentsInputFile> resultList = result.collect(Collectors.toList());
-    assertEquals(2, resultList.size());
-  }
+        // Then
+        assertNotNull(result);
+        List<CsvPaymentsInputFile> resultList = result.collect(Collectors.toList());
+        assertEquals(2, resultList.size());
+    }
 
-  @Test
-  void testProcessWithNonExistentDirectory() {
-    // Given
-    String csvFolderPath = "non-existent-folder";
+    @Test
+    void testProcessWithNonExistentDirectory() {
+        // Given
+        String csvFolderPath = "non-existent-folder";
 
-    when(resourceLoader.getResource(csvFolderPath)).thenReturn(null);
+        when(resourceLoader.getResource(csvFolderPath)).thenReturn(null);
 
-    // When & Then
-    assertThrows(IllegalArgumentException.class, () -> processFolderService.process(csvFolderPath));
-  }
-
-  @Test
-  @SneakyThrows
-  void testProcessWithEmptyDirectory(@TempDir Path tempDir) {
-    // Given
-    String csvFolderPath = "empty-folder";
-    URL mockUrl = tempDir.toFile().toURI().toURL();
-
-    when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
-
-    // When
-    Stream<CsvPaymentsInputFile> result = processFolderService.process(csvFolderPath);
-
-    // Then
-    assertNotNull(result);
-    List<CsvPaymentsInputFile> resultList = result.collect(Collectors.toList());
-    assertTrue(resultList.isEmpty());
-  }
-
-  @Test
-  @SneakyThrows
-  void testProcessWithNoCsvFiles(@TempDir Path tempDir) {
-    // Given
-    String csvFolderPath = "no-csv-folder";
-
-    // Create non-CSV files in the temporary directory
-    File file1 = new File(tempDir.toFile(), "file1.txt");
-    File file2 = new File(tempDir.toFile(), "file2.doc");
-    file1.createNewFile();
-    file2.createNewFile();
-
-    URL mockUrl = tempDir.toFile().toURI().toURL();
-
-    when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
-
-    // When
-    Stream<CsvPaymentsInputFile> result = processFolderService.process(csvFolderPath);
-
-    // Then
-    assertNotNull(result);
-    List<CsvPaymentsInputFile> resultList = result.collect(Collectors.toList());
-    assertTrue(resultList.isEmpty());
-  }
-
-  @Test
-  @SneakyThrows
-  void testProcessWithInvalidDirectoryPath(@TempDir Path tempDir) {
-    // Given
-    String falseFolderPath = "invalid-directory";
-
-    // Create a file instead of directory
-    File falseFolder = new File(tempDir.toFile(), falseFolderPath);
-    assert falseFolder.createNewFile();
-
-    URL mockUrl = falseFolder.toURI().toURL();
-    when(resourceLoader.getResource(falseFolder.getPath())).thenReturn(mockUrl);
-
-    // When & Then
-    IllegalArgumentException exception =
+        // When & Then
         assertThrows(
-            IllegalArgumentException.class,
-            () -> processFolderService.process(falseFolder.getPath()));
-    assertTrue(exception.getMessage().contains("CSV path is not a valid directory"));
-  }
+                IllegalArgumentException.class, () -> processFolderService.process(csvFolderPath));
+    }
+
+    @Test
+    @SneakyThrows
+    void testProcessWithEmptyDirectory(@TempDir Path tempDir) {
+        // Given
+        String csvFolderPath = "empty-folder";
+        URL mockUrl = tempDir.toFile().toURI().toURL();
+
+        when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
+
+        // When
+        Stream<CsvPaymentsInputFile> result = processFolderService.process(csvFolderPath);
+
+        // Then
+        assertNotNull(result);
+        List<CsvPaymentsInputFile> resultList = result.collect(Collectors.toList());
+        assertTrue(resultList.isEmpty());
+    }
+
+    @Test
+    @SneakyThrows
+    void testProcessWithNoCsvFiles(@TempDir Path tempDir) {
+        // Given
+        String csvFolderPath = "no-csv-folder";
+
+        // Create non-CSV files in the temporary directory
+        File file1 = new File(tempDir.toFile(), "file1.txt");
+        File file2 = new File(tempDir.toFile(), "file2.doc");
+        file1.createNewFile();
+        file2.createNewFile();
+
+        URL mockUrl = tempDir.toFile().toURI().toURL();
+
+        when(resourceLoader.getResource(csvFolderPath)).thenReturn(mockUrl);
+
+        // When
+        Stream<CsvPaymentsInputFile> result = processFolderService.process(csvFolderPath);
+
+        // Then
+        assertNotNull(result);
+        List<CsvPaymentsInputFile> resultList = result.collect(Collectors.toList());
+        assertTrue(resultList.isEmpty());
+    }
+
+    @Test
+    @SneakyThrows
+    void testProcessWithInvalidDirectoryPath(@TempDir Path tempDir) {
+        // Given
+        String falseFolderPath = "invalid-directory";
+
+        // Create a file instead of directory
+        File falseFolder = new File(tempDir.toFile(), falseFolderPath);
+        assert falseFolder.createNewFile();
+
+        URL mockUrl = falseFolder.toURI().toURL();
+        when(resourceLoader.getResource(falseFolder.getPath())).thenReturn(mockUrl);
+
+        // When & Then
+        IllegalArgumentException exception =
+                assertThrows(
+                        IllegalArgumentException.class,
+                        () -> processFolderService.process(falseFolder.getPath()));
+        assertTrue(exception.getMessage().contains("CSV path is not a valid directory"));
+    }
 }

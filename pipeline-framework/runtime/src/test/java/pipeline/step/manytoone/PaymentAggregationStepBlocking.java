@@ -25,38 +25,41 @@ import java.util.List;
  * Example of a blocking many-to-one step that aggregates multiple payment entities into a summary.
  */
 public class PaymentAggregationStepBlocking extends ConfigurableStep
-    implements StepManyToOneBlocking<TestPaymentEntity, PaymentSummary> {
+        implements StepManyToOneBlocking<TestPaymentEntity, PaymentSummary> {
 
-  @Override
-  public PaymentSummary applyBatchList(List<TestPaymentEntity> inputs) {
-    // Simulate some processing time
-    try {
-      Thread.sleep(100); // Simulate work
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+    @Override
+    public PaymentSummary applyBatchList(List<TestPaymentEntity> inputs) {
+        // Simulate some processing time
+        try {
+            Thread.sleep(100); // Simulate work
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Aggregate payments into a summary
+        BigDecimal totalAmount =
+                inputs.stream()
+                        .map(TestPaymentEntity::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        String summary =
+                "Processed " + inputs.size() + " payments with total amount: " + totalAmount;
+
+        PaymentSummary paymentSummary = new PaymentSummary();
+        paymentSummary.setTotalPayments(inputs.size());
+        paymentSummary.setTotalAmount(totalAmount);
+        paymentSummary.setSummary(summary);
+
+        return paymentSummary;
     }
 
-    // Aggregate payments into a summary
-    BigDecimal totalAmount =
-        inputs.stream().map(TestPaymentEntity::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    @Override
+    public int batchSize() {
+        return 3; // Process in batches of 3
+    }
 
-    String summary = "Processed " + inputs.size() + " payments with total amount: " + totalAmount;
-
-    PaymentSummary paymentSummary = new PaymentSummary();
-    paymentSummary.setTotalPayments(inputs.size());
-    paymentSummary.setTotalAmount(totalAmount);
-    paymentSummary.setSummary(summary);
-
-    return paymentSummary;
-  }
-
-  @Override
-  public int batchSize() {
-    return 3; // Process in batches of 3
-  }
-
-  @Override
-  public long batchTimeoutMs() {
-    return 1000; // 1 second timeout
-  }
+    @Override
+    public long batchTimeoutMs() {
+        return 1000; // 1 second timeout
+    }
 }

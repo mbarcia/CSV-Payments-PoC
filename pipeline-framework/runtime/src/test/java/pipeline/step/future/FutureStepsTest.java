@@ -29,55 +29,55 @@ import org.junit.jupiter.api.Test;
 
 public class FutureStepsTest {
 
-  PipelineRunner pipelineRunner = new PipelineRunner();
+    PipelineRunner pipelineRunner = new PipelineRunner();
 
-  @Test
-  void testCompletableFutureStep() {
-    // Given: Create test data
-    Multi<String> input = Multi.createFrom().items("Payment1", "Payment2", "Payment3");
+    @Test
+    void testCompletableFutureStep() {
+        // Given: Create test data
+        Multi<String> input = Multi.createFrom().items("Payment1", "Payment2", "Payment3");
 
-    // Create steps
-    ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-    validateStep.liveConfig().overrides().autoPersist(false);
+        // Create steps
+        ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
+        validateStep.liveConfig().overrides().autoPersist(false);
 
-    ProcessPaymentFutureStep processStep = new ProcessPaymentFutureStep();
-    processStep.liveConfig().overrides().autoPersist(false);
+        ProcessPaymentFutureStep processStep = new ProcessPaymentFutureStep();
+        processStep.liveConfig().overrides().autoPersist(false);
 
-    // When: Run pipeline
-    AssertSubscriber<String> subscriber =
-        pipelineRunner
-            .run(input, List.of(validateStep, processStep))
-            .onItem()
-            .castTo(String.class)
-            .subscribe()
-            .withSubscriber(AssertSubscriber.create(3));
+        // When: Run pipeline
+        AssertSubscriber<String> subscriber =
+                pipelineRunner
+                        .run(input, List.of(validateStep, processStep))
+                        .onItem()
+                        .castTo(String.class)
+                        .subscribe()
+                        .withSubscriber(AssertSubscriber.create(3));
 
-    // Then: Verify results
-    subscriber.awaitItems(3).awaitCompletion(Duration.ofSeconds(10));
+        // Then: Verify results
+        subscriber.awaitItems(3).awaitCompletion(Duration.ofSeconds(10));
 
-    List<String> results = subscriber.getItems();
-    assertEquals(3, results.size());
+        List<String> results = subscriber.getItems();
+        assertEquals(3, results.size());
 
-    // Verify all items were processed
-    assertTrue(results.contains("Processed: Validated: Payment1"));
-    assertTrue(results.contains("Processed: Validated: Payment2"));
-    assertTrue(results.contains("Processed: Validated: Payment3"));
-  }
-
-  // Helper step for validating payments
-  public static class ValidatePaymentStepBlocking extends ConfigurableStep
-      implements StepOneToOneBlocking<String, String> {
-
-    @Override
-    public String apply(String payment) {
-      // Simulate some processing time
-      try {
-        Thread.sleep(50);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
-
-      return "Validated: " + payment;
+        // Verify all items were processed
+        assertTrue(results.contains("Processed: Validated: Payment1"));
+        assertTrue(results.contains("Processed: Validated: Payment2"));
+        assertTrue(results.contains("Processed: Validated: Payment3"));
     }
-  }
+
+    // Helper step for validating payments
+    public static class ValidatePaymentStepBlocking extends ConfigurableStep
+            implements StepOneToOneBlocking<String, String> {
+
+        @Override
+        public String apply(String payment) {
+            // Simulate some processing time
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            return "Validated: " + payment;
+        }
+    }
 }

@@ -26,61 +26,61 @@ import org.junit.jupiter.api.Test;
 
 class ReactivePanachePersistenceProviderTest {
 
-  private ReactivePanachePersistenceProvider provider;
+    private ReactivePanachePersistenceProvider provider;
 
-  @BeforeEach
-  void setUp() {
-    provider = new ReactivePanachePersistenceProvider();
-  }
+    @BeforeEach
+    void setUp() {
+        provider = new ReactivePanachePersistenceProvider();
+    }
 
-  @Test
-  void persist_WithNullEntity_ShouldReturnSameEntity() {
-    Object entity = null;
+    @Test
+    void persist_WithNullEntity_ShouldReturnSameEntity() {
+        Object entity = null;
 
-    Uni<Object> resultUni = provider.persist(entity);
+        Uni<Object> resultUni = provider.persist(entity);
 
-    UniAssertSubscriber<Object> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
+        UniAssertSubscriber<Object> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
 
-    assertNull(subscriber.getItem());
-  }
+        assertNull(subscriber.getItem());
+    }
 
-  @Test
-  void persist_WithNonPanacheEntity_ShouldReturnSameEntity() {
-    Object entity = new Object();
+    @Test
+    void persist_WithNonPanacheEntity_ShouldReturnSameEntity() {
+        Object entity = new Object();
 
-    Uni<Object> resultUni = provider.persist(entity);
+        Uni<Object> resultUni = provider.persist(entity);
 
-    UniAssertSubscriber<Object> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
+        UniAssertSubscriber<Object> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
 
-    assertSame(entity, subscriber.getItem());
-  }
+        assertSame(entity, subscriber.getItem());
+    }
 
-  @Test
-  void supports_WithPanacheEntity_ShouldReturnTrue() {
-    TestEntity entity = new TestEntity();
+    @Test
+    void supports_WithPanacheEntity_ShouldReturnTrue() {
+        TestEntity entity = new TestEntity();
 
-    boolean result = provider.supports(entity);
+        boolean result = provider.supports(entity);
 
-    assertTrue(result);
-  }
+        assertTrue(result);
+    }
 
-  @Test
-  void supports_WithNonPanacheEntity_ShouldReturnFalse() {
-    Object entity = new Object();
+    @Test
+    void supports_WithNonPanacheEntity_ShouldReturnFalse() {
+        Object entity = new Object();
 
-    boolean result = provider.supports(entity);
+        boolean result = provider.supports(entity);
 
-    assertFalse(result);
-  }
+        assertFalse(result);
+    }
 
-  @Test
-  void supports_WithNullEntity_ShouldReturnFalse() {
-    boolean result = provider.supports(null);
+    @Test
+    void supports_WithNullEntity_ShouldReturnFalse() {
+        boolean result = provider.supports(null);
 
-    assertFalse(result);
-  }
+        assertFalse(result);
+    }
 }

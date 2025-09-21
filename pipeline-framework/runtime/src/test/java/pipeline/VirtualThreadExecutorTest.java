@@ -33,69 +33,70 @@ import org.junit.jupiter.api.Test;
 
 class VirtualThreadExecutorTest {
 
-  static class VirtualThreadTestStep extends ConfigurableStep
-      implements StepOneToMany<String, String> {
-    private final AtomicBoolean usedVirtualThreads = new AtomicBoolean(false);
+    static class VirtualThreadTestStep extends ConfigurableStep
+            implements StepOneToMany<String, String> {
+        private final AtomicBoolean usedVirtualThreads = new AtomicBoolean(false);
 
-    @Override
-    public Multi<String> applyMulti(String input) {
-      // This is a simple test to verify the step is working
-      return Multi.createFrom().items(input + "-vt1", input + "-vt2");
+        @Override
+        public Multi<String> applyMulti(String input) {
+            // This is a simple test to verify the step is working
+            return Multi.createFrom().items(input + "-vt1", input + "-vt2");
+        }
+
+        @Override
+        public boolean runWithVirtualThreads() {
+            return true; // Enable virtual threads
+        }
     }
 
-    @Override
-    public boolean runWithVirtualThreads() {
-      return true; // Enable virtual threads
+    @Test
+    void testVirtualThreadExecutorIsCreated() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            assertNotNull(runner);
+            // The vThreadExecutor is created in the constructor and is private
+            // We can't directly test it, but we can verify it works by running a step that uses it
+        }
     }
-  }
 
-  @Test
-  void testVirtualThreadExecutorIsCreated() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      assertNotNull(runner);
-      // The vThreadExecutor is created in the constructor and is private
-      // We can't directly test it, but we can verify it works by running a step that uses it
+    @Test
+    void testRunWithVirtualThreads() {
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("item1", "item2");
+            VirtualThreadTestStep step = new VirtualThreadTestStep();
+
+            Multi<Object> result = runner.run(input, List.of(step));
+
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(4));
+            subscriber.awaitItems(4, Duration.ofSeconds(5));
+
+            // With virtual threads, the order is not guaranteed, so we need to check that all
+            // expected
+            // items are present regardless of order
+            List<Object> items = subscriber.getItems();
+            Set<Object> expectedItems = Set.of("item1-vt1", "item1-vt2", "item2-vt1", "item2-vt2");
+            Set<Object> actualItems = new HashSet<>(items);
+
+            assertEquals(expectedItems, actualItems, "All expected items should be present");
+            assertEquals(4, items.size(), "Should have exactly 4 items");
+        }
     }
-  }
 
-  @Test
-  void testRunWithVirtualThreads() {
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("item1", "item2");
-      VirtualThreadTestStep step = new VirtualThreadTestStep();
+    @Test
+    void testPipelineRunnerCloseCleansUpExecutor() {
+        // This test verifies that the PipelineRunner can be closed without issues
+        try (PipelineRunner runner = new PipelineRunner()) {
+            Multi<String> input = Multi.createFrom().items("test");
+            List<TestSteps.TestStepOneToOneBlocking> steps =
+                    List.of(new TestSteps.TestStepOneToOneBlocking());
 
-      Multi<Object> result = runner.run(input, List.of(step));
+            Multi<Object> result = runner.run(input, steps);
 
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(4));
-      subscriber.awaitItems(4, Duration.ofSeconds(5));
-
-      // With virtual threads, the order is not guaranteed, so we need to check that all expected
-      // items are present regardless of order
-      List<Object> items = subscriber.getItems();
-      Set<Object> expectedItems = Set.of("item1-vt1", "item1-vt2", "item2-vt1", "item2-vt2");
-      Set<Object> actualItems = new HashSet<>(items);
-
-      assertEquals(expectedItems, actualItems, "All expected items should be present");
-      assertEquals(4, items.size(), "Should have exactly 4 items");
+            AssertSubscriber<Object> subscriber =
+                    result.subscribe().withSubscriber(AssertSubscriber.create(1));
+            subscriber.awaitItems(1, Duration.ofSeconds(5));
+            subscriber.assertItems("Processed: test");
+        }
+        // This should not throw any exceptions
     }
-  }
-
-  @Test
-  void testPipelineRunnerCloseCleansUpExecutor() {
-    // This test verifies that the PipelineRunner can be closed without issues
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<String> input = Multi.createFrom().items("test");
-      List<TestSteps.TestStepOneToOneBlocking> steps =
-          List.of(new TestSteps.TestStepOneToOneBlocking());
-
-      Multi<Object> result = runner.run(input, steps);
-
-      AssertSubscriber<Object> subscriber =
-          result.subscribe().withSubscriber(AssertSubscriber.create(1));
-      subscriber.awaitItems(1, Duration.ofSeconds(5));
-      subscriber.assertItems("Processed: test");
-    }
-    // This should not throw any exceptions
-  }
 }

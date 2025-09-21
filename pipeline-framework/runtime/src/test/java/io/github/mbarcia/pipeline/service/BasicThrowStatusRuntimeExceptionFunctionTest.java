@@ -22,18 +22,18 @@ import org.junit.jupiter.api.Test;
 
 public class BasicThrowStatusRuntimeExceptionFunctionTest {
 
-  @Test
-  public void apply_ShouldWrapThrowable() {
-    // Given
-    throwStatusRuntimeExceptionFunction function = new throwStatusRuntimeExceptionFunction();
-    Throwable originalThrowable = new RuntimeException("Original error message");
+    @Test
+    public void apply_ShouldWrapThrowable() {
+        // Given
+        throwStatusRuntimeExceptionFunction function = new throwStatusRuntimeExceptionFunction();
+        Throwable originalThrowable = new RuntimeException("Original error message");
 
-    // When
-    Throwable result = function.apply(originalThrowable);
+        // When
+        Throwable result = function.apply(originalThrowable);
 
-    // Then
-    assertNotNull(result);
-    // Just check it's a throwable, not necessarily a RuntimeException
-    assertTrue(result instanceof Throwable);
-  }
+        // Then
+        assertNotNull(result);
+        // Just check it's a throwable, not necessarily a RuntimeException
+        assertTrue(result instanceof Throwable);
+    }
 }

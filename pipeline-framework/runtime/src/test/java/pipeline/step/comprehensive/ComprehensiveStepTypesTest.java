@@ -31,58 +31,58 @@ import pipeline.step.future.example.ProcessPaymentFutureStep;
 
 public class ComprehensiveStepTypesTest {
 
-  PipelineRunner pipelineRunner = new PipelineRunner();
+    PipelineRunner pipelineRunner = new PipelineRunner();
 
-  @Test
-  void testAllStepTypesWorkTogether() {
-    // Given: Create test data
-    Multi<String> input = Multi.createFrom().items("Payment1", "Payment2");
+    @Test
+    void testAllStepTypesWorkTogether() {
+        // Given: Create test data
+        Multi<String> input = Multi.createFrom().items("Payment1", "Payment2");
 
-    // Create different types of steps
-    ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-    validateStep.liveConfig().overrides().autoPersist(false);
+        // Create different types of steps
+        ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
+        validateStep.liveConfig().overrides().autoPersist(false);
 
-    ExpandPaymentCollectionStep expandStep = new ExpandPaymentCollectionStep();
-    expandStep.liveConfig().overrides().autoPersist(false);
+        ExpandPaymentCollectionStep expandStep = new ExpandPaymentCollectionStep();
+        expandStep.liveConfig().overrides().autoPersist(false);
 
-    ProcessPaymentFutureStep processStep = new ProcessPaymentFutureStep();
-    processStep.liveConfig().overrides().autoPersist(false);
+        ProcessPaymentFutureStep processStep = new ProcessPaymentFutureStep();
+        processStep.liveConfig().overrides().autoPersist(false);
 
-    // When: Run pipeline with mixed step types
-    AssertSubscriber<String> subscriber =
-        pipelineRunner
-            .run(input, List.of(validateStep, expandStep, processStep))
-            .onItem()
-            .castTo(String.class)
-            .subscribe()
-            .withSubscriber(AssertSubscriber.create(6)); // 2 inputs * 3 expanded each
+        // When: Run pipeline with mixed step types
+        AssertSubscriber<String> subscriber =
+                pipelineRunner
+                        .run(input, List.of(validateStep, expandStep, processStep))
+                        .onItem()
+                        .castTo(String.class)
+                        .subscribe()
+                        .withSubscriber(AssertSubscriber.create(6)); // 2 inputs * 3 expanded each
 
-    // Then: Verify results
-    subscriber.awaitItems(6).awaitCompletion(Duration.ofSeconds(10));
+        // Then: Verify results
+        subscriber.awaitItems(6).awaitCompletion(Duration.ofSeconds(10));
 
-    List<String> results = subscriber.getItems();
-    assertEquals(6, results.size());
+        List<String> results = subscriber.getItems();
+        assertEquals(6, results.size());
 
-    // Verify all items were processed
-    for (String result : results) {
-      assertTrue(result.startsWith("Processed: TXN-"));
+        // Verify all items were processed
+        for (String result : results) {
+            assertTrue(result.startsWith("Processed: TXN-"));
+        }
     }
-  }
 
-  // Standard StepOneToOneBlocking with blocking operations
-  public static class ValidatePaymentStepBlocking extends ConfigurableStep
-      implements StepOneToOneBlocking<String, String> {
+    // Standard StepOneToOneBlocking with blocking operations
+    public static class ValidatePaymentStepBlocking extends ConfigurableStep
+            implements StepOneToOneBlocking<String, String> {
 
-    @Override
-    public String apply(String payment) {
-      // Simulate validation work
-      try {
-        Thread.sleep(50);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-      }
+        @Override
+        public String apply(String payment) {
+            // Simulate validation work
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
 
-      return "Validated: " + payment;
+            return "Validated: " + payment;
+        }
     }
-  }
 }

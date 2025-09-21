@@ -23,180 +23,180 @@ import org.junit.jupiter.api.Test;
 
 class AckPaymentSentTest {
 
-  @Test
-  void testConstructorWithConversationId() {
-    // Given
-    UUID conversationId = UUID.randomUUID();
+    @Test
+    void testConstructorWithConversationId() {
+        // Given
+        UUID conversationId = UUID.randomUUID();
 
-    // When
-    AckPaymentSent ack = new AckPaymentSent(conversationId);
+        // When
+        AckPaymentSent ack = new AckPaymentSent(conversationId);
 
-    // Then
-    assertNotNull(ack.getId());
-    assertInstanceOf(UUID.class, ack.getId());
-    assertEquals(conversationId, ack.getConversationId());
-  }
+        // Then
+        assertNotNull(ack.getId());
+        assertInstanceOf(UUID.class, ack.getId());
+        assertEquals(conversationId, ack.getConversationId());
+    }
 
-  @Test
-  void testDefaultConstructor() {
-    // When
-    AckPaymentSent ack = new AckPaymentSent();
+    @Test
+    void testDefaultConstructor() {
+        // When
+        AckPaymentSent ack = new AckPaymentSent();
 
-    // Then
-    assertNotNull(ack.getId());
-    assertInstanceOf(UUID.class, ack.getId());
-  }
+        // Then
+        assertNotNull(ack.getId());
+        assertInstanceOf(UUID.class, ack.getId());
+    }
 
-  @Test
-  void testGetSetConversationId() {
-    // Given
-    AckPaymentSent ack = new AckPaymentSent();
-    UUID conversationId = UUID.randomUUID();
+    @Test
+    void testGetSetConversationId() {
+        // Given
+        AckPaymentSent ack = new AckPaymentSent();
+        UUID conversationId = UUID.randomUUID();
 
-    // When
-    ack.setConversationId(conversationId);
+        // When
+        ack.setConversationId(conversationId);
 
-    // Then
-    assertEquals(conversationId, ack.getConversationId());
-  }
+        // Then
+        assertEquals(conversationId, ack.getConversationId());
+    }
 
-  @Test
-  void testGetSetStatus() {
-    // Given
-    AckPaymentSent ack = new AckPaymentSent();
-    Long status = 200L;
+    @Test
+    void testGetSetStatus() {
+        // Given
+        AckPaymentSent ack = new AckPaymentSent();
+        Long status = 200L;
 
-    // When
-    ack.setStatus(status);
+        // When
+        ack.setStatus(status);
 
-    // Then
-    assertEquals(status, ack.getStatus());
-  }
+        // Then
+        assertEquals(status, ack.getStatus());
+    }
 
-  @Test
-  void testGetSetMessage() {
-    // Given
-    AckPaymentSent ack = new AckPaymentSent();
-    String message = "Test message";
+    @Test
+    void testGetSetMessage() {
+        // Given
+        AckPaymentSent ack = new AckPaymentSent();
+        String message = "Test message";
 
-    // When
-    ack.setMessage(message);
+        // When
+        ack.setMessage(message);
 
-    // Then
-    assertEquals(message, ack.getMessage());
-  }
+        // Then
+        assertEquals(message, ack.getMessage());
+    }
 
-  @Test
-  void testGetSetPaymentRecord() {
-    // Given
-    AckPaymentSent ack = new AckPaymentSent();
-    PaymentRecord paymentRecord = new PaymentRecord();
-    paymentRecord.setCsvId("test-record");
+    @Test
+    void testGetSetPaymentRecord() {
+        // Given
+        AckPaymentSent ack = new AckPaymentSent();
+        PaymentRecord paymentRecord = new PaymentRecord();
+        paymentRecord.setCsvId("test-record");
 
-    // When
-    ack.setPaymentRecord(paymentRecord);
+        // When
+        ack.setPaymentRecord(paymentRecord);
 
-    // Then
-    assertEquals(paymentRecord, ack.getPaymentRecord());
-  }
+        // Then
+        assertEquals(paymentRecord, ack.getPaymentRecord());
+    }
 
-  @Test
-  void testGetSetPaymentRecordId() {
-    // Given
-    AckPaymentSent ack = new AckPaymentSent();
-    UUID paymentRecordId = UUID.randomUUID();
+    @Test
+    void testGetSetPaymentRecordId() {
+        // Given
+        AckPaymentSent ack = new AckPaymentSent();
+        UUID paymentRecordId = UUID.randomUUID();
 
-    // When
-    ack.setPaymentRecordId(paymentRecordId);
+        // When
+        ack.setPaymentRecordId(paymentRecordId);
 
-    // Then
-    assertEquals(paymentRecordId, ack.getPaymentRecordId());
-  }
+        // Then
+        assertEquals(paymentRecordId, ack.getPaymentRecordId());
+    }
 
-  @Test
-  void testToString() {
-    // Given
-    AckPaymentSent ack = new AckPaymentSent();
-    UUID conversationId = UUID.randomUUID();
-    ack.setConversationId(conversationId);
-    ack.setStatus(200L);
-    ack.setMessage("Success");
-    UUID paymentRecordId = UUID.randomUUID();
-    ack.setPaymentRecordId(paymentRecordId);
+    @Test
+    void testToString() {
+        // Given
+        AckPaymentSent ack = new AckPaymentSent();
+        UUID conversationId = UUID.randomUUID();
+        ack.setConversationId(conversationId);
+        ack.setStatus(200L);
+        ack.setMessage("Success");
+        UUID paymentRecordId = UUID.randomUUID();
+        ack.setPaymentRecordId(paymentRecordId);
 
-    // When
-    String result = ack.toString();
+        // When
+        String result = ack.toString();
 
-    // Then
-    assertTrue(result.contains(conversationId.toString()));
-    assertTrue(result.contains("200"));
-    assertTrue(result.contains("Success"));
-    assertTrue(result.contains(paymentRecordId.toString()));
-  }
+        // Then
+        assertTrue(result.contains(conversationId.toString()));
+        assertTrue(result.contains("200"));
+        assertTrue(result.contains("Success"));
+        assertTrue(result.contains(paymentRecordId.toString()));
+    }
 
-  @Test
-  void testEquals_SameObject() {
-    // Given
-    AckPaymentSent ack = new AckPaymentSent();
+    @Test
+    void testEquals_SameObject() {
+        // Given
+        AckPaymentSent ack = new AckPaymentSent();
 
-    // When
-    boolean result = ack.equals(ack);
+        // When
+        boolean result = ack.equals(ack);
 
-    // Then
-    assertTrue(result);
-  }
+        // Then
+        assertTrue(result);
+    }
 
-  @Test
-  void testEquals_NullObject() {
-    // Given
-    AckPaymentSent ack = new AckPaymentSent();
+    @Test
+    void testEquals_NullObject() {
+        // Given
+        AckPaymentSent ack = new AckPaymentSent();
 
-    // When
-    boolean result = ack.equals(null);
+        // When
+        boolean result = ack.equals(null);
 
-    // Then
-    assertFalse(result);
-  }
+        // Then
+        assertFalse(result);
+    }
 
-  @Test
-  void testEquals_DifferentClass() {
-    // Given
-    AckPaymentSent ack = new AckPaymentSent();
-    String other = "other";
+    @Test
+    void testEquals_DifferentClass() {
+        // Given
+        AckPaymentSent ack = new AckPaymentSent();
+        String other = "other";
 
-    // When
-    boolean result = ack.equals(other);
+        // When
+        boolean result = ack.equals(other);
 
-    // Then
-    assertFalse(result);
-  }
+        // Then
+        assertFalse(result);
+    }
 
-  @Test
-  void testEquals_SameId() {
-    // Given
-    AckPaymentSent ack1 = new AckPaymentSent();
-    AckPaymentSent ack2 = new AckPaymentSent();
-    UUID id = UUID.randomUUID();
-    ack1.setId(id);
-    ack2.setId(id);
+    @Test
+    void testEquals_SameId() {
+        // Given
+        AckPaymentSent ack1 = new AckPaymentSent();
+        AckPaymentSent ack2 = new AckPaymentSent();
+        UUID id = UUID.randomUUID();
+        ack1.setId(id);
+        ack2.setId(id);
 
-    // When
-    boolean result = ack1.equals(ack2);
+        // When
+        boolean result = ack1.equals(ack2);
 
-    // Then
-    assertTrue(result);
-  }
+        // Then
+        assertTrue(result);
+    }
 
-  @Test
-  void testEquals_DifferentId() {
-    // Given
-    AckPaymentSent ack1 = new AckPaymentSent();
-    AckPaymentSent ack2 = new AckPaymentSent();
+    @Test
+    void testEquals_DifferentId() {
+        // Given
+        AckPaymentSent ack1 = new AckPaymentSent();
+        AckPaymentSent ack2 = new AckPaymentSent();
 
-    // When
-    boolean result = ack1.equals(ack2);
+        // When
+        boolean result = ack1.equals(ack2);
 
-    // Then
-    assertFalse(result);
-  }
+        // Then
+        assertFalse(result);
+    }
 }

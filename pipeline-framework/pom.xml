@@ -106,6 +106,7 @@
                         <java>
                             <googleJavaFormat>
                                 <version>${google-java-format.version}</version>
+                                <style>AOSP</style>
                             </googleJavaFormat>
                             <removeUnusedImports/>
                         </java>
@@ -122,7 +123,7 @@
                         <execution>
                             <!-- Runs in compile phase to fail fast in case of formatting issues.-->
                             <id>spotless-check</id>
-                            <phase>compile</phase>
+                            <phase>package</phase>
                             <goals>
                                 <goal>check</goal>
                             </goals>

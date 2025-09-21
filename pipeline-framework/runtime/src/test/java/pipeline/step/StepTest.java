@@ -27,62 +27,62 @@ import org.junit.jupiter.api.Test;
 
 class StepTest {
 
-  static class TestStep implements Step {
-    private final StepConfig config = new StepConfig();
+    static class TestStep implements Step {
+        private final StepConfig config = new StepConfig();
 
-    @Override
-    public StepConfig effectiveConfig() {
-      return config;
+        @Override
+        public StepConfig effectiveConfig() {
+            return config;
+        }
+
+        @Override
+        public Multi<Object> apply(Multi<Object> input) {
+            return input; // Pass through
+        }
     }
 
-    @Override
-    public Multi<Object> apply(Multi<Object> input) {
-      return input; // Pass through
+    @Test
+    void testDefaultMethods() {
+        // Given
+        TestStep step = new TestStep();
+
+        // When & Then
+        assertEquals(3, step.retryLimit());
+        assertEquals(Duration.ofMillis(200), step.retryWait());
+        assertFalse(step.debug());
+        assertFalse(step.recoverOnFailure());
+        assertFalse(step.runWithVirtualThreads());
+        assertEquals(Duration.ofSeconds(30), step.maxBackoff());
+        assertFalse(step.jitter());
     }
-  }
 
-  @Test
-  void testDefaultMethods() {
-    // Given
-    TestStep step = new TestStep();
+    @Test
+    void testDeadLetterMethod() {
+        // Given
+        TestStep step = new TestStep();
 
-    // When & Then
-    assertEquals(3, step.retryLimit());
-    assertEquals(Duration.ofMillis(200), step.retryWait());
-    assertFalse(step.debug());
-    assertFalse(step.recoverOnFailure());
-    assertFalse(step.runWithVirtualThreads());
-    assertEquals(Duration.ofSeconds(30), step.maxBackoff());
-    assertFalse(step.jitter());
-  }
+        // When
+        var result = step.deadLetter("testItem", new RuntimeException("test error"));
 
-  @Test
-  void testDeadLetterMethod() {
-    // Given
-    TestStep step = new TestStep();
+        // Then
+        assertNotNull(result);
+        // The deadLetter method should complete successfully
+        result.await().indefinitely();
+    }
 
-    // When
-    var result = step.deadLetter("testItem", new RuntimeException("test error"));
+    @Test
+    void testApplyMethod() {
+        // Given
+        TestStep step = new TestStep();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
-    // Then
-    assertNotNull(result);
-    // The deadLetter method should complete successfully
-    result.await().indefinitely();
-  }
+        // When
+        Multi<Object> result = step.apply(input);
 
-  @Test
-  void testApplyMethod() {
-    // Given
-    TestStep step = new TestStep();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
-
-    // When
-    Multi<Object> result = step.apply(input);
-
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(2));
-    subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("item1", "item2");
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(2));
+        subscriber.awaitItems(2, Duration.ofSeconds(5));
+        subscriber.assertItems("item1", "item2");
+    }
 }

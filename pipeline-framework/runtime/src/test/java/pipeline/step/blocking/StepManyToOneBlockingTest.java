@@ -28,73 +28,73 @@ import org.junit.jupiter.api.Test;
 
 class StepManyToOneBlockingTest {
 
-  static class TestStepBlocking implements StepManyToOneBlocking<String, String> {
-    @Override
-    public String applyBatchList(List<String> inputs) {
-      return "Batch processed: " + String.join(", ", inputs);
+    static class TestStepBlocking implements StepManyToOneBlocking<String, String> {
+        @Override
+        public String applyBatchList(List<String> inputs) {
+            return "Batch processed: " + String.join(", ", inputs);
+        }
+
+        @Override
+        public StepConfig effectiveConfig() {
+            return new StepConfig();
+        }
+
+        @Override
+        public int batchSize() {
+            return 2; // Small batch size for testing
+        }
     }
 
-    @Override
-    public StepConfig effectiveConfig() {
-      return new StepConfig();
+    @Test
+    void testApplyBatchListMethod() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
+        List<String> inputs = List.of("item1", "item2", "item3");
+
+        // When
+        String result = step.applyBatchList(inputs);
+
+        // Then
+        assertEquals("Batch processed: item1, item2, item3", result);
     }
 
-    @Override
-    public int batchSize() {
-      return 2; // Small batch size for testing
+    @Test
+    void testDefaultBatchSize() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
+
+        // When
+        int batchSize = step.batchSize();
+
+        // Then
+        assertEquals(2, batchSize); // Our overridden value
     }
-  }
 
-  @Test
-  void testApplyBatchListMethod() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
-    List<String> inputs = List.of("item1", "item2", "item3");
+    @Test
+    void testDefaultBatchTimeoutMs() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
 
-    // When
-    String result = step.applyBatchList(inputs);
+        // When
+        long batchTimeoutMs = step.batchTimeoutMs();
 
-    // Then
-    assertEquals("Batch processed: item1, item2, item3", result);
-  }
+        // Then
+        assertEquals(1000, batchTimeoutMs);
+    }
 
-  @Test
-  void testDefaultBatchSize() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
+    @Test
+    void testApplyMethodInStep() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3", "item4");
 
-    // When
-    int batchSize = step.batchSize();
+        // When
+        Multi<Object> result = step.apply(input);
 
-    // Then
-    assertEquals(2, batchSize); // Our overridden value
-  }
-
-  @Test
-  void testDefaultBatchTimeoutMs() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
-
-    // When
-    long batchTimeoutMs = step.batchTimeoutMs();
-
-    // Then
-    assertEquals(1000, batchTimeoutMs);
-  }
-
-  @Test
-  void testApplyMethodInStep() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3", "item4");
-
-    // When
-    Multi<Object> result = step.apply(input);
-
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(2));
-    subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("Batch processed: item1, item2", "Batch processed: item3, item4");
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(2));
+        subscriber.awaitItems(2, Duration.ofSeconds(5));
+        subscriber.assertItems("Batch processed: item1, item2", "Batch processed: item3, item4");
+    }
 }

@@ -28,61 +28,61 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class TestSteps {
 
-  public static class TestStepOneToOneBlocking extends ConfigurableStep
-      implements StepOneToOneBlocking<String, String> {
-    @Override
-    public String apply(String input) {
-      return "Processed: " + input;
-    }
-  }
-
-  public static class TestStepOneToMany extends ConfigurableStep
-      implements StepOneToMany<String, String> {
-    @Override
-    public Multi<String> applyMulti(String input) {
-      return Multi.createFrom().items(input + "-1", input + "-2", input + "-3");
-    }
-  }
-
-  public static class TestStepManyToMany extends ConfigurableStep implements StepManyToMany {
-    @Override
-    public Multi<Object> applyStreaming(Multi<Object> upstream) {
-      return upstream.onItem().transform(item -> "Streamed: " + item);
-    }
-  }
-
-  public static class TestStepOneToOne extends ConfigurableStep
-      implements StepOneToOne<String, String> {
-    @Override
-    public Uni<String> applyAsyncUni(String input) {
-      return Uni.createFrom().item("Async: " + input);
-    }
-  }
-
-  public static class FailingStepBlocking extends ConfigurableStep
-      implements StepOneToOneBlocking<String, String> {
-    private final boolean shouldRecover;
-
-    public FailingStepBlocking() {
-      this(false);
+    public static class TestStepOneToOneBlocking extends ConfigurableStep
+            implements StepOneToOneBlocking<String, String> {
+        @Override
+        public String apply(String input) {
+            return "Processed: " + input;
+        }
     }
 
-    public FailingStepBlocking(boolean shouldRecover) {
-      this.shouldRecover = shouldRecover;
-      if (shouldRecover) {
-        liveConfig().overrides().recoverOnFailure(true);
-      }
+    public static class TestStepOneToMany extends ConfigurableStep
+            implements StepOneToMany<String, String> {
+        @Override
+        public Multi<String> applyMulti(String input) {
+            return Multi.createFrom().items(input + "-1", input + "-2", input + "-3");
+        }
     }
 
-    @Override
-    public String apply(String input) {
-      throw new RuntimeException("Intentional failure for testing");
+    public static class TestStepManyToMany extends ConfigurableStep implements StepManyToMany {
+        @Override
+        public Multi<Object> applyStreaming(Multi<Object> upstream) {
+            return upstream.onItem().transform(item -> "Streamed: " + item);
+        }
     }
 
-    @Override
-    public Uni<Void> deadLetter(Object failedItem, Throwable cause) {
-      System.out.println("Dead letter handled for: " + failedItem);
-      return super.deadLetter(failedItem, cause);
+    public static class TestStepOneToOne extends ConfigurableStep
+            implements StepOneToOne<String, String> {
+        @Override
+        public Uni<String> applyAsyncUni(String input) {
+            return Uni.createFrom().item("Async: " + input);
+        }
     }
-  }
+
+    public static class FailingStepBlocking extends ConfigurableStep
+            implements StepOneToOneBlocking<String, String> {
+        private final boolean shouldRecover;
+
+        public FailingStepBlocking() {
+            this(false);
+        }
+
+        public FailingStepBlocking(boolean shouldRecover) {
+            this.shouldRecover = shouldRecover;
+            if (shouldRecover) {
+                liveConfig().overrides().recoverOnFailure(true);
+            }
+        }
+
+        @Override
+        public String apply(String input) {
+            throw new RuntimeException("Intentional failure for testing");
+        }
+
+        @Override
+        public Uni<Void> deadLetter(Object failedItem, Throwable cause) {
+            System.out.println("Dead letter handled for: " + failedItem);
+            return super.deadLetter(failedItem, cause);
+        }
+    }
 }

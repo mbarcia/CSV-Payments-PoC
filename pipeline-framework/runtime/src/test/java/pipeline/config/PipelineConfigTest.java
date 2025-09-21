@@ -24,48 +24,48 @@ import org.junit.jupiter.api.Test;
 
 class PipelineConfigTest {
 
-  @Test
-  void testPipelineConfigDefaults() {
-    // Given
-    PipelineConfig pipelineConfig = new PipelineConfig();
+    @Test
+    void testPipelineConfigDefaults() {
+        // Given
+        PipelineConfig pipelineConfig = new PipelineConfig();
 
-    // When
-    StepConfig defaults = pipelineConfig.defaults();
+        // When
+        StepConfig defaults = pipelineConfig.defaults();
 
-    // Then
-    assertNotNull(defaults);
-    assertEquals(3, defaults.retryLimit());
-    assertFalse(defaults.debug());
-  }
+        // Then
+        assertNotNull(defaults);
+        assertEquals(3, defaults.retryLimit());
+        assertFalse(defaults.debug());
+    }
 
-  @Test
-  void testPipelineConfigProfileManagement() {
-    // Given
-    PipelineConfig pipelineConfig = new PipelineConfig();
+    @Test
+    void testPipelineConfigProfileManagement() {
+        // Given
+        PipelineConfig pipelineConfig = new PipelineConfig();
 
-    // When
-    pipelineConfig.profile("test", new StepConfig().retryLimit(5).debug(true));
-    pipelineConfig.activate("test");
+        // When
+        pipelineConfig.profile("test", new StepConfig().retryLimit(5).debug(true));
+        pipelineConfig.activate("test");
 
-    StepConfig activeConfig = pipelineConfig.defaults();
+        StepConfig activeConfig = pipelineConfig.defaults();
 
-    // Then
-    assertEquals("test", pipelineConfig.activeProfile());
-    assertEquals(5, activeConfig.retryLimit());
-    assertTrue(activeConfig.debug());
-  }
+        // Then
+        assertEquals("test", pipelineConfig.activeProfile());
+        assertEquals(5, activeConfig.retryLimit());
+        assertTrue(activeConfig.debug());
+    }
 
-  @Test
-  void testNewStepConfigInheritsDefaults() {
-    // Given
-    PipelineConfig pipelineConfig = new PipelineConfig();
-    pipelineConfig.defaults().retryLimit(7).debug(true);
+    @Test
+    void testNewStepConfigInheritsDefaults() {
+        // Given
+        PipelineConfig pipelineConfig = new PipelineConfig();
+        pipelineConfig.defaults().retryLimit(7).debug(true);
 
-    // When
-    StepConfig stepConfig = pipelineConfig.newStepConfig();
+        // When
+        StepConfig stepConfig = pipelineConfig.newStepConfig();
 
-    // Then
-    assertEquals(7, stepConfig.retryLimit());
-    assertTrue(stepConfig.debug());
-  }
+        // Then
+        assertEquals(7, stepConfig.retryLimit());
+        assertTrue(stepConfig.debug());
+    }
 }

@@ -24,180 +24,180 @@ import org.junit.jupiter.api.Test;
 
 class StepConfigTest {
 
-  @Test
-  void testDefaultValues() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testDefaultValues() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // Then
-    assertEquals(3, config.retryLimit());
-    assertEquals(Duration.ofMillis(200), config.retryWait());
-    assertEquals(4, config.concurrency());
-    assertFalse(config.debug());
-    assertFalse(config.recoverOnFailure());
-    assertFalse(config.runWithVirtualThreads());
-    assertEquals(Duration.ofSeconds(30), config.maxBackoff());
-    assertFalse(config.jitter());
-  }
+        // Then
+        assertEquals(3, config.retryLimit());
+        assertEquals(Duration.ofMillis(200), config.retryWait());
+        assertEquals(4, config.concurrency());
+        assertFalse(config.debug());
+        assertFalse(config.recoverOnFailure());
+        assertFalse(config.runWithVirtualThreads());
+        assertEquals(Duration.ofSeconds(30), config.maxBackoff());
+        assertFalse(config.jitter());
+    }
 
-  @Test
-  void testRetryLimitSetter() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testRetryLimitSetter() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When
-    StepConfig result = config.retryLimit(5);
+        // When
+        StepConfig result = config.retryLimit(5);
 
-    // Then
-    assertEquals(5, config.retryLimit());
-    assertSame(config, result); // Fluent API
-  }
+        // Then
+        assertEquals(5, config.retryLimit());
+        assertSame(config, result); // Fluent API
+    }
 
-  @Test
-  void testRetryWaitSetter() {
-    // Given
-    StepConfig config = new StepConfig();
-    Duration newDuration = Duration.ofSeconds(1);
+    @Test
+    void testRetryWaitSetter() {
+        // Given
+        StepConfig config = new StepConfig();
+        Duration newDuration = Duration.ofSeconds(1);
 
-    // When
-    StepConfig result = config.retryWait(newDuration);
+        // When
+        StepConfig result = config.retryWait(newDuration);
 
-    // Then
-    assertEquals(newDuration, config.retryWait());
-    assertSame(config, result); // Fluent API
-  }
+        // Then
+        assertEquals(newDuration, config.retryWait());
+        assertSame(config, result); // Fluent API
+    }
 
-  @Test
-  void testRetryWaitSetterRejectsNull() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testRetryWaitSetterRejectsNull() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When/Then
-    assertThrows(NullPointerException.class, () -> config.retryWait(null));
-  }
+        // When/Then
+        assertThrows(NullPointerException.class, () -> config.retryWait(null));
+    }
 
-  @Test
-  void testConcurrencySetter() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testConcurrencySetter() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When
-    StepConfig result = config.concurrency(10);
+        // When
+        StepConfig result = config.concurrency(10);
 
-    // Then
-    assertEquals(10, config.concurrency());
-    assertSame(config, result); // Fluent API
-  }
+        // Then
+        assertEquals(10, config.concurrency());
+        assertSame(config, result); // Fluent API
+    }
 
-  @Test
-  void testDebugSetter() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testDebugSetter() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When
-    StepConfig result = config.debug(true);
+        // When
+        StepConfig result = config.debug(true);
 
-    // Then
-    assertTrue(config.debug());
-    assertSame(config, result); // Fluent API
-  }
+        // Then
+        assertTrue(config.debug());
+        assertSame(config, result); // Fluent API
+    }
 
-  @Test
-  void testRecoverOnFailureSetter() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testRecoverOnFailureSetter() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When
-    StepConfig result = config.recoverOnFailure(true);
+        // When
+        StepConfig result = config.recoverOnFailure(true);
 
-    // Then
-    assertTrue(config.recoverOnFailure());
-    assertSame(config, result); // Fluent API
-  }
+        // Then
+        assertTrue(config.recoverOnFailure());
+        assertSame(config, result); // Fluent API
+    }
 
-  @Test
-  void testRecoverOnFailureDefaultValue() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testRecoverOnFailureDefaultValue() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // Then
-    assertFalse(config.recoverOnFailure());
-  }
+        // Then
+        assertFalse(config.recoverOnFailure());
+    }
 
-  @Test
-  void testRecoverOnFailureSetterFalse() {
-    // Given
-    StepConfig config = new StepConfig();
-    config.recoverOnFailure(true); // Set to true first
+    @Test
+    void testRecoverOnFailureSetterFalse() {
+        // Given
+        StepConfig config = new StepConfig();
+        config.recoverOnFailure(true); // Set to true first
 
-    // When
-    StepConfig result = config.recoverOnFailure(false);
+        // When
+        StepConfig result = config.recoverOnFailure(false);
 
-    // Then
-    assertFalse(config.recoverOnFailure());
-    assertSame(config, result); // Fluent API
-  }
+        // Then
+        assertFalse(config.recoverOnFailure());
+        assertSame(config, result); // Fluent API
+    }
 
-  @Test
-  void testRunWithVirtualThreadsSetter() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testRunWithVirtualThreadsSetter() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When
-    StepConfig result = config.runWithVirtualThreads(true);
+        // When
+        StepConfig result = config.runWithVirtualThreads(true);
 
-    // Then
-    assertTrue(config.runWithVirtualThreads());
-    assertSame(config, result); // Fluent API
-  }
+        // Then
+        assertTrue(config.runWithVirtualThreads());
+        assertSame(config, result); // Fluent API
+    }
 
-  @Test
-  void testMaxBackoffSetter() {
-    // Given
-    StepConfig config = new StepConfig();
-    Duration newDuration = Duration.ofMinutes(2);
+    @Test
+    void testMaxBackoffSetter() {
+        // Given
+        StepConfig config = new StepConfig();
+        Duration newDuration = Duration.ofMinutes(2);
 
-    // When
-    StepConfig result = config.maxBackoff(newDuration);
+        // When
+        StepConfig result = config.maxBackoff(newDuration);
 
-    // Then
-    assertEquals(newDuration, config.maxBackoff());
-    assertSame(config, result); // Fluent API
-  }
+        // Then
+        assertEquals(newDuration, config.maxBackoff());
+        assertSame(config, result); // Fluent API
+    }
 
-  @Test
-  void testMaxBackoffSetterRejectsNull() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testMaxBackoffSetterRejectsNull() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When/Then
-    assertThrows(NullPointerException.class, () -> config.maxBackoff(null));
-  }
+        // When/Then
+        assertThrows(NullPointerException.class, () -> config.maxBackoff(null));
+    }
 
-  @Test
-  void testJitterSetter() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testJitterSetter() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When
-    StepConfig result = config.jitter(true);
+        // When
+        StepConfig result = config.jitter(true);
 
-    // Then
-    assertTrue(config.jitter());
-    assertSame(config, result); // Fluent API
-  }
+        // Then
+        assertTrue(config.jitter());
+        assertSame(config, result); // Fluent API
+    }
 
-  @Test
-  void testToString() {
-    // Given
-    StepConfig config = new StepConfig();
+    @Test
+    void testToString() {
+        // Given
+        StepConfig config = new StepConfig();
 
-    // When
-    String result = config.toString();
+        // When
+        String result = config.toString();
 
-    // Then
-    assertNotNull(result);
-    assertFalse(result.isEmpty());
-    assertTrue(result.contains("StepConfig"));
-  }
+        // Then
+        assertNotNull(result);
+        assertFalse(result.isEmpty());
+        assertTrue(result.contains("StepConfig"));
+    }
 }

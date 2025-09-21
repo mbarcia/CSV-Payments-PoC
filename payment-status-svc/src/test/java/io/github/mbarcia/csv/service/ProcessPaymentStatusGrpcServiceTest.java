@@ -35,48 +35,48 @@ import org.mockito.MockitoAnnotations;
 
 class ProcessPaymentStatusGrpcServiceTest {
 
-  @Mock ProcessPaymentStatusReactiveService domainService;
+    @Mock ProcessPaymentStatusReactiveService domainService;
 
-  @Mock PaymentStatusMapper paymentStatusMapper;
+    @Mock PaymentStatusMapper paymentStatusMapper;
 
-  @Mock PaymentOutputMapper paymentOutputMapper;
+    @Mock PaymentOutputMapper paymentOutputMapper;
 
-  @Mock PersistenceManager persistenceManager;
+    @Mock PersistenceManager persistenceManager;
 
-  @InjectMocks ProcessPaymentStatusGrpcService processPaymentStatusGrpcService;
+    @InjectMocks ProcessPaymentStatusGrpcService processPaymentStatusGrpcService;
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-  }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-  @Test
-  void remoteProcess() {
-    // Given
-    PaymentsProcessingSvc.PaymentStatus grpcRequest =
-        PaymentsProcessingSvc.PaymentStatus.newBuilder().build();
-    PaymentStatus domainPaymentStatus = new PaymentStatus();
-    PaymentOutput domainPaymentOutput =
-        new PaymentOutput(null, null, null, null, null, null, null, null, null);
-    io.github.mbarcia.csv.grpc.PaymentStatusSvc.PaymentOutput grpcOutput =
-        io.github.mbarcia.csv.grpc.PaymentStatusSvc.PaymentOutput.newBuilder().build();
+    @Test
+    void remoteProcess() {
+        // Given
+        PaymentsProcessingSvc.PaymentStatus grpcRequest =
+                PaymentsProcessingSvc.PaymentStatus.newBuilder().build();
+        PaymentStatus domainPaymentStatus = new PaymentStatus();
+        PaymentOutput domainPaymentOutput =
+                new PaymentOutput(null, null, null, null, null, null, null, null, null);
+        io.github.mbarcia.csv.grpc.PaymentStatusSvc.PaymentOutput grpcOutput =
+                io.github.mbarcia.csv.grpc.PaymentStatusSvc.PaymentOutput.newBuilder().build();
 
-    when(paymentStatusMapper.fromGrpc(any(PaymentsProcessingSvc.PaymentStatus.class)))
-        .thenReturn(domainPaymentStatus);
-    // Stub the persistence manager to return the same entity (persisted)
-    when(persistenceManager.persist(domainPaymentStatus))
-        .thenReturn(Uni.createFrom().item(domainPaymentStatus));
-    when(domainService.process(any(PaymentStatus.class)))
-        .thenReturn(Uni.createFrom().item(domainPaymentOutput));
-    when(paymentOutputMapper.toGrpc(any(PaymentOutput.class))).thenReturn(grpcOutput);
+        when(paymentStatusMapper.fromGrpc(any(PaymentsProcessingSvc.PaymentStatus.class)))
+                .thenReturn(domainPaymentStatus);
+        // Stub the persistence manager to return the same entity (persisted)
+        when(persistenceManager.persist(domainPaymentStatus))
+                .thenReturn(Uni.createFrom().item(domainPaymentStatus));
+        when(domainService.process(any(PaymentStatus.class)))
+                .thenReturn(Uni.createFrom().item(domainPaymentOutput));
+        when(paymentOutputMapper.toGrpc(any(PaymentOutput.class))).thenReturn(grpcOutput);
 
-    // When
-    Uni<io.github.mbarcia.csv.grpc.PaymentStatusSvc.PaymentOutput> resultUni =
-        processPaymentStatusGrpcService.remoteProcess(grpcRequest);
+        // When
+        Uni<io.github.mbarcia.csv.grpc.PaymentStatusSvc.PaymentOutput> resultUni =
+                processPaymentStatusGrpcService.remoteProcess(grpcRequest);
 
-    // Then
-    UniAssertSubscriber<io.github.mbarcia.csv.grpc.PaymentStatusSvc.PaymentOutput> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem().assertItem(grpcOutput);
-  }
+        // Then
+        UniAssertSubscriber<io.github.mbarcia.csv.grpc.PaymentStatusSvc.PaymentOutput> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem().assertItem(grpcOutput);
+    }
 }

@@ -32,30 +32,30 @@ import org.mockito.MockitoAnnotations;
 
 class SendPaymentRecordReactiveServiceTest {
 
-  @Mock private PaymentProviderServiceMock paymentProviderServiceMock;
+    @Mock private PaymentProviderServiceMock paymentProviderServiceMock;
 
-  @Mock private PaymentRecord paymentRecord;
+    @Mock private PaymentRecord paymentRecord;
 
-  @InjectMocks private SendPaymentRecordReactiveService sendPaymentRecordReactiveService;
+    @InjectMocks private SendPaymentRecordReactiveService sendPaymentRecordReactiveService;
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-  }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-  @Test
-  void testExecute() {
-    // Given
-    AckPaymentSent expectedAck = new AckPaymentSent();
+    @Test
+    void testExecute() {
+        // Given
+        AckPaymentSent expectedAck = new AckPaymentSent();
 
-    when(paymentProviderServiceMock.sendPayment(
-            any(SendPaymentRequestMapper.SendPaymentRequest.class)))
-        .thenReturn(expectedAck);
+        when(paymentProviderServiceMock.sendPayment(
+                        any(SendPaymentRequestMapper.SendPaymentRequest.class)))
+                .thenReturn(expectedAck);
 
-    // When
-    Uni<AckPaymentSent> result = sendPaymentRecordReactiveService.process(paymentRecord);
+        // When
+        Uni<AckPaymentSent> result = sendPaymentRecordReactiveService.process(paymentRecord);
 
-    // Then
-    result.subscribe().with(ack -> assertEquals(expectedAck, ack));
-  }
+        // Then
+        result.subscribe().with(ack -> assertEquals(expectedAck, ack));
+    }
 }

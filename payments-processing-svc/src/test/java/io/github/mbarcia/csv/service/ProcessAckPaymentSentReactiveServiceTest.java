@@ -30,29 +30,29 @@ import org.mockito.MockitoAnnotations;
 
 class ProcessAckPaymentSentReactiveServiceTest {
 
-  @Mock private PollAckPaymentSentReactiveService pollAckPaymentSentReactiveService;
+    @Mock private PollAckPaymentSentReactiveService pollAckPaymentSentReactiveService;
 
-  @Mock private AckPaymentSent ackPaymentSent;
+    @Mock private AckPaymentSent ackPaymentSent;
 
-  @InjectMocks private ProcessAckPaymentSentReactiveService processAckPaymentSentReactiveService;
+    @InjectMocks private ProcessAckPaymentSentReactiveService processAckPaymentSentReactiveService;
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-  }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-  @Test
-  void testExecute() {
-    // Given
-    PaymentStatus expectedStatus = new PaymentStatus();
+    @Test
+    void testExecute() {
+        // Given
+        PaymentStatus expectedStatus = new PaymentStatus();
 
-    when(pollAckPaymentSentReactiveService.process(ackPaymentSent, true))
-        .thenReturn(Uni.createFrom().item(expectedStatus));
+        when(pollAckPaymentSentReactiveService.process(ackPaymentSent, true))
+                .thenReturn(Uni.createFrom().item(expectedStatus));
 
-    // When
-    Uni<PaymentStatus> result = processAckPaymentSentReactiveService.process(ackPaymentSent);
+        // When
+        Uni<PaymentStatus> result = processAckPaymentSentReactiveService.process(ackPaymentSent);
 
-    // Then
-    result.subscribe().with(status -> assertEquals(expectedStatus, status));
-  }
+        // Then
+        result.subscribe().with(status -> assertEquals(expectedStatus, status));
+    }
 }

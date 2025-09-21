@@ -29,33 +29,33 @@ import org.junit.jupiter.api.Test;
 @DisabledOnIntegrationTest
 class ApplicationConfigurationIntegrationTest {
 
-  @Inject PipelineConfig pipelineConfig;
+    @Inject PipelineConfig pipelineConfig;
 
-  @Test
-  void testConfigurationViaEnvironmentVariables() {
-    // Save original defaults
-    StepConfig originalDefaults = pipelineConfig.defaults();
-    int originalRetryLimit = originalDefaults.retryLimit();
-    int originalConcurrency = originalDefaults.concurrency();
-    boolean originalDebug = originalDefaults.debug();
+    @Test
+    void testConfigurationViaEnvironmentVariables() {
+        // Save original defaults
+        StepConfig originalDefaults = pipelineConfig.defaults();
+        int originalRetryLimit = originalDefaults.retryLimit();
+        int originalConcurrency = originalDefaults.concurrency();
+        boolean originalDebug = originalDefaults.debug();
 
-    try {
-      // Set global defaults (simulating application.properties)
-      pipelineConfig.defaults().retryLimit(3).concurrency(4).debug(false);
+        try {
+            // Set global defaults (simulating application.properties)
+            pipelineConfig.defaults().retryLimit(3).concurrency(4).debug(false);
 
-      // For this test, we'll just verify we can access the injected steps
-      // and that they have the expected default configuration
-      assertNotNull(pipelineConfig.defaults());
-      assertEquals(3, pipelineConfig.defaults().retryLimit());
-      assertEquals(4, pipelineConfig.defaults().concurrency());
-      assertFalse(pipelineConfig.defaults().debug());
-    } finally {
-      // Restore original defaults
-      pipelineConfig
-          .defaults()
-          .retryLimit(originalRetryLimit)
-          .concurrency(originalConcurrency)
-          .debug(originalDebug);
+            // For this test, we'll just verify we can access the injected steps
+            // and that they have the expected default configuration
+            assertNotNull(pipelineConfig.defaults());
+            assertEquals(3, pipelineConfig.defaults().retryLimit());
+            assertEquals(4, pipelineConfig.defaults().concurrency());
+            assertFalse(pipelineConfig.defaults().debug());
+        } finally {
+            // Restore original defaults
+            pipelineConfig
+                    .defaults()
+                    .retryLimit(originalRetryLimit)
+                    .concurrency(originalConcurrency)
+                    .debug(originalDebug);
+        }
     }
-  }
 }

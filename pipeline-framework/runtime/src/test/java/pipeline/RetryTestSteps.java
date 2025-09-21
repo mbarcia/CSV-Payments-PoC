@@ -24,69 +24,71 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class RetryTestSteps {
 
-  public static class FailBlockingNTimesStep extends ConfigurableStep
-      implements StepOneToOneBlocking<String, String> {
-    private final int failCount;
-    private final AtomicInteger callCount = new AtomicInteger(0);
-    private final boolean shouldRecover;
+    public static class FailBlockingNTimesStep extends ConfigurableStep
+            implements StepOneToOneBlocking<String, String> {
+        private final int failCount;
+        private final AtomicInteger callCount = new AtomicInteger(0);
+        private final boolean shouldRecover;
 
-    public FailBlockingNTimesStep(int failCount) {
-      this(failCount, false);
+        public FailBlockingNTimesStep(int failCount) {
+            this(failCount, false);
+        }
+
+        public FailBlockingNTimesStep(int failCount, boolean shouldRecover) {
+            this.failCount = failCount;
+            this.shouldRecover = shouldRecover;
+            if (shouldRecover) {
+                liveConfig().overrides().recoverOnFailure(true);
+            }
+        }
+
+        @Override
+        public String apply(String input) {
+            int count = callCount.incrementAndGet();
+            if (count <= failCount) {
+                throw new RuntimeException("Intentional failure #" + count);
+            }
+            return "Success: " + input;
+        }
+
+        @Override
+        public Uni<Void> deadLetter(Object failedItem, Throwable cause) {
+            System.out.println("Dead letter handled for: " + failedItem);
+            return super.deadLetter(failedItem, cause);
+        }
+
+        public int getCallCount() {
+            return callCount.get();
+        }
     }
 
-    public FailBlockingNTimesStep(int failCount, boolean shouldRecover) {
-      this.failCount = failCount;
-      this.shouldRecover = shouldRecover;
-      if (shouldRecover) {
-        liveConfig().overrides().recoverOnFailure(true);
-      }
-    }
+    public static class AsyncFailNTimesStep extends ConfigurableStep
+            implements StepOneToOne<String, String> {
+        private final int failCount;
+        private final AtomicInteger callCount = new AtomicInteger(0);
 
-    @Override
-    public String apply(String input) {
-      int count = callCount.incrementAndGet();
-      if (count <= failCount) {
-        throw new RuntimeException("Intentional failure #" + count);
-      }
-      return "Success: " + input;
-    }
+        public AsyncFailNTimesStep(int failCount) {
+            this.failCount = failCount;
+        }
 
-    @Override
-    public Uni<Void> deadLetter(Object failedItem, Throwable cause) {
-      System.out.println("Dead letter handled for: " + failedItem);
-      return super.deadLetter(failedItem, cause);
-    }
+        @Override
+        public Uni<String> applyAsyncUni(String input) {
+            int count = callCount.incrementAndGet();
+            System.out.println(
+                    "AsyncFailNTimesStep called " + count + " times for input: " + input);
+            System.out.println("Fail count: " + failCount + ", Retry limit: " + retryLimit());
+            if (count <= failCount) {
+                RuntimeException exception =
+                        new RuntimeException("Intentional async failure #" + count);
+                System.out.println("Throwing exception: " + exception.getMessage());
+                return Uni.createFrom().failure(exception);
+            }
+            System.out.println("Returning success for input: " + input);
+            return Uni.createFrom().item("Async Success: " + input);
+        }
 
-    public int getCallCount() {
-      return callCount.get();
+        public int getCallCount() {
+            return callCount.get();
+        }
     }
-  }
-
-  public static class AsyncFailNTimesStep extends ConfigurableStep
-      implements StepOneToOne<String, String> {
-    private final int failCount;
-    private final AtomicInteger callCount = new AtomicInteger(0);
-
-    public AsyncFailNTimesStep(int failCount) {
-      this.failCount = failCount;
-    }
-
-    @Override
-    public Uni<String> applyAsyncUni(String input) {
-      int count = callCount.incrementAndGet();
-      System.out.println("AsyncFailNTimesStep called " + count + " times for input: " + input);
-      System.out.println("Fail count: " + failCount + ", Retry limit: " + retryLimit());
-      if (count <= failCount) {
-        RuntimeException exception = new RuntimeException("Intentional async failure #" + count);
-        System.out.println("Throwing exception: " + exception.getMessage());
-        return Uni.createFrom().failure(exception);
-      }
-      System.out.println("Returning success for input: " + input);
-      return Uni.createFrom().item("Async Success: " + input);
-    }
-
-    public int getCallCount() {
-      return callCount.get();
-    }
-  }
 }

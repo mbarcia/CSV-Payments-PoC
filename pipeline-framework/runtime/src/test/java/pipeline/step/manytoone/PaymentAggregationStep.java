@@ -26,40 +26,41 @@ import java.util.List;
  * Example of a reactive many-to-one step that aggregates multiple payment entities into a summary.
  */
 public class PaymentAggregationStep extends ConfigurableStep
-    implements StepManyToOne<TestPaymentEntity, PaymentSummary> {
+        implements StepManyToOne<TestPaymentEntity, PaymentSummary> {
 
-  @Override
-  public Uni<PaymentSummary> applyBatch(List<TestPaymentEntity> payments) {
-    // Simulate some processing time
-    try {
-      Thread.sleep(100); // Simulate work
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+    @Override
+    public Uni<PaymentSummary> applyBatch(List<TestPaymentEntity> payments) {
+        // Simulate some processing time
+        try {
+            Thread.sleep(100); // Simulate work
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Aggregate payments into a summary
+        BigDecimal totalAmount =
+                payments.stream()
+                        .map(TestPaymentEntity::getAmount)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        String summary =
+                "Processed " + payments.size() + " payments with total amount: " + totalAmount;
+
+        PaymentSummary paymentSummary = new PaymentSummary();
+        paymentSummary.setTotalPayments(payments.size());
+        paymentSummary.setTotalAmount(totalAmount);
+        paymentSummary.setSummary(summary);
+
+        return Uni.createFrom().item(paymentSummary);
     }
 
-    // Aggregate payments into a summary
-    BigDecimal totalAmount =
-        payments.stream()
-            .map(TestPaymentEntity::getAmount)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    @Override
+    public int batchSize() {
+        return 3; // Process in batches of 3
+    }
 
-    String summary = "Processed " + payments.size() + " payments with total amount: " + totalAmount;
-
-    PaymentSummary paymentSummary = new PaymentSummary();
-    paymentSummary.setTotalPayments(payments.size());
-    paymentSummary.setTotalAmount(totalAmount);
-    paymentSummary.setSummary(summary);
-
-    return Uni.createFrom().item(paymentSummary);
-  }
-
-  @Override
-  public int batchSize() {
-    return 3; // Process in batches of 3
-  }
-
-  @Override
-  public long batchTimeoutMs() {
-    return 1000; // 1 second timeout
-  }
+    @Override
+    public long batchTimeoutMs() {
+        return 1000; // 1 second timeout
+    }
 }

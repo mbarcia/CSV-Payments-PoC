@@ -36,43 +36,43 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class PollAckPaymentSentResourceTest {
 
-  private static String json;
-  private static String jsonUuid = "01d544c8-be28-4293-a5e0-1634addf0e42";
+    private static String json;
+    private static String jsonUuid = "01d544c8-be28-4293-a5e0-1634addf0e42";
 
-  @BeforeAll
-  @SneakyThrows
-  static void setUp() {
-    // Configure RestAssured to use HTTPS and trust all certificates for testing
-    RestAssured.useRelaxedHTTPSValidation();
-    RestAssured.config =
-        RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
-    // Update the port to match the HTTPS port
-    RestAssured.port = 8446;
+    @BeforeAll
+    @SneakyThrows
+    static void setUp() {
+        // Configure RestAssured to use HTTPS and trust all certificates for testing
+        RestAssured.useRelaxedHTTPSValidation();
+        RestAssured.config =
+                RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
+        // Update the port to match the HTTPS port
+        RestAssured.port = 8446;
 
-    PaymentRecordDto paymentRecordDto = createTestPaymentRecordDto();
-    ObjectMapper mapper = new ObjectMapper();
-    json = getJson(mapper, paymentRecordDto);
-  }
+        PaymentRecordDto paymentRecordDto = createTestPaymentRecordDto();
+        ObjectMapper mapper = new ObjectMapper();
+        json = getJson(mapper, paymentRecordDto);
+    }
 
-  private static PaymentRecordDto createTestPaymentRecordDto() {
-    PaymentRecordDto.PaymentRecordDtoBuilder paymentRecordDto = PaymentRecordDto.builder();
+    private static PaymentRecordDto createTestPaymentRecordDto() {
+        PaymentRecordDto.PaymentRecordDtoBuilder paymentRecordDto = PaymentRecordDto.builder();
 
-    paymentRecordDto.id(UUID.fromString(jsonUuid));
-    paymentRecordDto.amount(new BigDecimal("100.50"));
-    paymentRecordDto.currency(Currency.getInstance("EUR"));
-    paymentRecordDto.csvId("test-record");
-    //    paymentRecordDto.csvPaymentsInputFilePath(Path.of("file.csv"));
-    paymentRecordDto.recipient("Test Recipient");
+        paymentRecordDto.id(UUID.fromString(jsonUuid));
+        paymentRecordDto.amount(new BigDecimal("100.50"));
+        paymentRecordDto.currency(Currency.getInstance("EUR"));
+        paymentRecordDto.csvId("test-record");
+        //    paymentRecordDto.csvPaymentsInputFilePath(Path.of("file.csv"));
+        paymentRecordDto.recipient("Test Recipient");
 
-    return paymentRecordDto.build();
-  }
+        return paymentRecordDto.build();
+    }
 
-  @Test
-  @SneakyThrows
-  void testPollAckPaymentEndpointWithValidData() {
-    // Create a test DTO with valid structure
-    String requestBody =
-        """
+    @Test
+    @SneakyThrows
+    void testPollAckPaymentEndpointWithValidData() {
+        // Create a test DTO with valid structure
+        String requestBody =
+                """
                 {
                   "id": "%s",
                   "conversationId": "%s",
@@ -82,30 +82,29 @@ class PollAckPaymentSentResourceTest {
                   "paymentRecord": %s
                 }
                 """
-            .formatted(UUID.randomUUID(), UUID.randomUUID(), jsonUuid, json);
+                        .formatted(UUID.randomUUID(), UUID.randomUUID(), jsonUuid, json);
 
-    given()
-        .contentType(ContentType.JSON)
-        .body(requestBody)
-        .when()
-        .post("/api/v1/payments-processing/poll-ack-payment")
-        .then()
-        .statusCode(200)
-        .body("id", notNullValue())
-        .body("reference", notNullValue())
-        .body("status", notNullValue());
-  }
+        given().contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/v1/payments-processing/poll-ack-payment")
+                .then()
+                .statusCode(200)
+                .body("id", notNullValue())
+                .body("reference", notNullValue())
+                .body("status", notNullValue());
+    }
 
-  private static String getJson(ObjectMapper mapper, PaymentRecordDto paymentRecordDto)
-      throws JsonProcessingException {
-    return mapper.writeValueAsString(paymentRecordDto);
-  }
+    private static String getJson(ObjectMapper mapper, PaymentRecordDto paymentRecordDto)
+            throws JsonProcessingException {
+        return mapper.writeValueAsString(paymentRecordDto);
+    }
 
-  @Test
-  void testPollAckPaymentEndpointWithInvalidUUID() {
-    // Create a test DTO with invalid UUID
-    String requestBody =
-        """
+    @Test
+    void testPollAckPaymentEndpointWithInvalidUUID() {
+        // Create a test DTO with invalid UUID
+        String requestBody =
+                """
                 {
                   "id": "invalid-uuid",
                   "conversationId": "invalid-uuid",
@@ -115,32 +114,30 @@ class PollAckPaymentSentResourceTest {
                 }
                 """;
 
-    given()
-        .contentType(ContentType.JSON)
-        .body(requestBody)
-        .when()
-        .post("/api/v1/payments-processing/poll-ack-payment")
-        .then()
-        .statusCode(400); // Jackson deserialization error results in 400
-  }
+        given().contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/v1/payments-processing/poll-ack-payment")
+                .then()
+                .statusCode(400); // Jackson deserialization error results in 400
+    }
 
-  @Test
-  void testPollAckPaymentEndpointWithMissingRequiredFields() {
-    // Create a test DTO with missing required fields
-    String requestBody =
-        """
+    @Test
+    void testPollAckPaymentEndpointWithMissingRequiredFields() {
+        // Create a test DTO with missing required fields
+        String requestBody =
+                """
                 {
                   "message": "Payment sent successfully",
                   "status": 200
                 }
                 """;
 
-    given()
-        .contentType(ContentType.JSON)
-        .body(requestBody)
-        .when()
-        .post("/api/v1/payments-processing/poll-ack-payment")
-        .then()
-        .statusCode(500); // Missing required fields results in 500 due to NPE in mapper
-  }
+        given().contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/v1/payments-processing/poll-ack-payment")
+                .then()
+                .statusCode(500); // Missing required fields results in 500 due to NPE in mapper
+    }
 }

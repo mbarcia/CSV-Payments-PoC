@@ -28,80 +28,80 @@ import org.junit.jupiter.api.Test;
 
 class StepOneToOneCompletableFutureTest {
 
-  static class TestStepFuture implements StepOneToOneCompletableFuture<String, String> {
-    @Override
-    public CompletableFuture<String> applyAsync(String input) {
-      return CompletableFuture.completedFuture("Future processed: " + input);
+    static class TestStepFuture implements StepOneToOneCompletableFuture<String, String> {
+        @Override
+        public CompletableFuture<String> applyAsync(String input) {
+            return CompletableFuture.completedFuture("Future processed: " + input);
+        }
+
+        @Override
+        public StepConfig effectiveConfig() {
+            return new StepConfig();
+        }
     }
 
-    @Override
-    public StepConfig effectiveConfig() {
-      return new StepConfig();
+    @Test
+    void testApplyAsyncMethod() {
+        // Given
+        TestStepFuture step = new TestStepFuture();
+
+        // When
+        CompletableFuture<String> result = step.applyAsync("test");
+
+        // Then
+        String value = result.join();
+        assertEquals("Future processed: test", value);
     }
-  }
 
-  @Test
-  void testApplyAsyncMethod() {
-    // Given
-    TestStepFuture step = new TestStepFuture();
+    @Test
+    void testDefaultExecutor() {
+        // Given
+        TestStepFuture step = new TestStepFuture();
 
-    // When
-    CompletableFuture<String> result = step.applyAsync("test");
+        // When
+        var executor = step.getExecutor();
 
-    // Then
-    String value = result.join();
-    assertEquals("Future processed: test", value);
-  }
+        // Then
+        assertNotNull(executor);
+    }
 
-  @Test
-  void testDefaultExecutor() {
-    // Given
-    TestStepFuture step = new TestStepFuture();
+    @Test
+    void testDefaultConcurrency() {
+        // Given
+        TestStepFuture step = new TestStepFuture();
 
-    // When
-    var executor = step.getExecutor();
+        // When
+        int concurrency = step.concurrency();
 
-    // Then
-    assertNotNull(executor);
-  }
+        // Then
+        assertEquals(1, concurrency);
+    }
 
-  @Test
-  void testDefaultConcurrency() {
-    // Given
-    TestStepFuture step = new TestStepFuture();
+    @Test
+    void testDefaultRunWithVirtualThreads() {
+        // Given
+        TestStepFuture step = new TestStepFuture();
 
-    // When
-    int concurrency = step.concurrency();
+        // When
+        boolean runWithVirtualThreads = step.runWithVirtualThreads();
 
-    // Then
-    assertEquals(1, concurrency);
-  }
+        // Then
+        assertFalse(runWithVirtualThreads);
+    }
 
-  @Test
-  void testDefaultRunWithVirtualThreads() {
-    // Given
-    TestStepFuture step = new TestStepFuture();
+    @Test
+    void testApplyMethodInStep() {
+        // Given
+        TestStepFuture step = new TestStepFuture();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
-    // When
-    boolean runWithVirtualThreads = step.runWithVirtualThreads();
+        // When
+        Multi<Object> result = step.apply(input);
 
-    // Then
-    assertFalse(runWithVirtualThreads);
-  }
-
-  @Test
-  void testApplyMethodInStep() {
-    // Given
-    TestStepFuture step = new TestStepFuture();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
-
-    // When
-    Multi<Object> result = step.apply(input);
-
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(2));
-    subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("Future processed: item1", "Future processed: item2");
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(2));
+        subscriber.awaitItems(2, Duration.ofSeconds(5));
+        subscriber.assertItems("Future processed: item1", "Future processed: item2");
+    }
 }

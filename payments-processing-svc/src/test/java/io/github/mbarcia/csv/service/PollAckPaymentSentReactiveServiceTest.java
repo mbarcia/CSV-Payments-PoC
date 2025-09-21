@@ -31,34 +31,34 @@ import org.mockito.MockitoAnnotations;
 
 class PollAckPaymentSentReactiveServiceTest {
 
-  @Mock private PaymentProviderService paymentProviderService;
-  @Mock private PaymentProviderConfig paymentProviderConfig;
+    @Mock private PaymentProviderService paymentProviderService;
+    @Mock private PaymentProviderConfig paymentProviderConfig;
 
-  private PollAckPaymentSentReactiveService pollAckPaymentSentReactiveService;
+    private PollAckPaymentSentReactiveService pollAckPaymentSentReactiveService;
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-    pollAckPaymentSentReactiveService =
-        new PollAckPaymentSentReactiveService(
-            Executors.newVirtualThreadPerTaskExecutor(),
-            paymentProviderService,
-            paymentProviderConfig);
-  }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        pollAckPaymentSentReactiveService =
+                new PollAckPaymentSentReactiveService(
+                        Executors.newVirtualThreadPerTaskExecutor(),
+                        paymentProviderService,
+                        paymentProviderConfig);
+    }
 
-  @Test
-  void testExecute() throws JsonProcessingException {
-    // Given
-    AckPaymentSent ackPaymentSent = new AckPaymentSent();
-    PaymentStatus expectedStatus = new PaymentStatus();
+    @Test
+    void testExecute() throws JsonProcessingException {
+        // Given
+        AckPaymentSent ackPaymentSent = new AckPaymentSent();
+        PaymentStatus expectedStatus = new PaymentStatus();
 
-    when(paymentProviderConfig.waitMilliseconds()).thenReturn(1.0);
-    when(paymentProviderService.getPaymentStatus(ackPaymentSent)).thenReturn(expectedStatus);
+        when(paymentProviderConfig.waitMilliseconds()).thenReturn(1.0);
+        when(paymentProviderService.getPaymentStatus(ackPaymentSent)).thenReturn(expectedStatus);
 
-    // When
-    Uni<PaymentStatus> result = pollAckPaymentSentReactiveService.process(ackPaymentSent);
+        // When
+        Uni<PaymentStatus> result = pollAckPaymentSentReactiveService.process(ackPaymentSent);
 
-    // Then
-    result.subscribe().with(status -> assertEquals(expectedStatus, status));
-  }
+        // Then
+        result.subscribe().with(status -> assertEquals(expectedStatus, status));
+    }
 }

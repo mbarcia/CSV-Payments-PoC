@@ -24,25 +24,25 @@ import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
  * enrich entities with additional data.
  */
 public class EnrichPaymentStep extends ConfigurableStep
-    implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
+        implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
 
-  @Override
-  public TestPaymentEntity apply(TestPaymentEntity payment) {
-    // This is a blocking operation that simulates enrichment logic
+    @Override
+    public TestPaymentEntity apply(TestPaymentEntity payment) {
+        // This is a blocking operation that simulates enrichment logic
 
-    // Simulate some processing time (blocking operation)
-    try {
-      Thread.sleep(50); // Blocking sleep to simulate work
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+        // Simulate some processing time (blocking operation)
+        try {
+            Thread.sleep(50); // Blocking sleep to simulate work
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Enrich with additional data
+        if ("VALIDATED".equals(payment.getStatus())) {
+            // Simulate adding enriched data
+            payment.setStatus("ENRICHED");
+        }
+
+        return payment;
     }
-
-    // Enrich with additional data
-    if ("VALIDATED".equals(payment.getStatus())) {
-      // Simulate adding enriched data
-      payment.setStatus("ENRICHED");
-    }
-
-    return payment;
-  }
 }

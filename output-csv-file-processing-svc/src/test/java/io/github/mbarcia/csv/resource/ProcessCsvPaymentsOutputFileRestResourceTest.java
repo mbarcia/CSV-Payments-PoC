@@ -30,21 +30,21 @@ import org.junit.jupiter.api.Test;
 @QuarkusTest
 class ProcessCsvPaymentsOutputFileRestResourceTest {
 
-  @BeforeAll
-  static void setUp() {
-    // Configure RestAssured to use HTTPS and trust all certificates for testing
-    RestAssured.useRelaxedHTTPSValidation();
-    RestAssured.config =
-        RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
-    // Update the port to match the HTTPS port
-    RestAssured.port = 8444;
-  }
+    @BeforeAll
+    static void setUp() {
+        // Configure RestAssured to use HTTPS and trust all certificates for testing
+        RestAssured.useRelaxedHTTPSValidation();
+        RestAssured.config =
+                RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
+        // Update the port to match the HTTPS port
+        RestAssured.port = 8444;
+    }
 
-  @Test
-  void testProcessToFile() {
-    // Create test data
-    String requestBody =
-        """
+    @Test
+    void testProcessToFile() {
+        // Create test data
+        String requestBody =
+                """
                 [
                   {
                     "id": "%s",
@@ -92,34 +92,33 @@ class ProcessCsvPaymentsOutputFileRestResourceTest {
                   }
                 ]
                 """
-            .formatted(
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID(),
-                UUID.randomUUID());
+                        .formatted(
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                UUID.randomUUID(),
+                                UUID.randomUUID());
 
-    given()
-        .contentType(ContentType.JSON)
-        .body(requestBody)
-        .when()
-        .post("/api/v1/output-processing/process-file")
-        .then()
-        .statusCode(200)
-        .body("filepath", notNullValue())
-        .body("message", notNullValue());
-  }
+        given().contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/v1/output-processing/process-file")
+                .then()
+                .statusCode(200)
+                .body("filepath", notNullValue())
+                .body("message", notNullValue());
+    }
 
-  @Test
-  void testProcessToFileWithError() {
-    // Create test data with an intentionally malformed object to trigger error handling
-    String requestBody =
-        """
+    @Test
+    void testProcessToFileWithError() {
+        // Create test data with an intentionally malformed object to trigger error handling
+        String requestBody =
+                """
                 [
                   {
                     "id": "invalid-uuid",
@@ -135,12 +134,11 @@ class ProcessCsvPaymentsOutputFileRestResourceTest {
                 ]
                 """;
 
-    given()
-        .contentType(ContentType.JSON)
-        .body(requestBody)
-        .when()
-        .post("/api/v1/output-processing/process-file")
-        .then()
-        .statusCode(400); // Jackson deserialization error results in 400
-  }
+        given().contentType(ContentType.JSON)
+                .body(requestBody)
+                .when()
+                .post("/api/v1/output-processing/process-file")
+                .then()
+                .statusCode(400); // Jackson deserialization error results in 400
+    }
 }

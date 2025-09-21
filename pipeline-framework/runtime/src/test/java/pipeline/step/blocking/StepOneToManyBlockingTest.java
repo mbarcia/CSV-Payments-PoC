@@ -28,67 +28,67 @@ import org.junit.jupiter.api.Test;
 
 class StepOneToManyBlockingTest {
 
-  static class TestStepBlocking implements StepOneToManyBlocking<String, String> {
-    @Override
-    public List<String> applyList(String input) {
-      return List.of(input + "-1", input + "-2", input + "-3");
+    static class TestStepBlocking implements StepOneToManyBlocking<String, String> {
+        @Override
+        public List<String> applyList(String input) {
+            return List.of(input + "-1", input + "-2", input + "-3");
+        }
+
+        @Override
+        public StepConfig effectiveConfig() {
+            return new StepConfig();
+        }
     }
 
-    @Override
-    public StepConfig effectiveConfig() {
-      return new StepConfig();
+    @Test
+    void testApplyListMethod() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
+
+        // When
+        List<String> result = step.applyList("test");
+
+        // Then
+        assertEquals(List.of("test-1", "test-2", "test-3"), result);
     }
-  }
 
-  @Test
-  void testApplyListMethod() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
+    @Test
+    void testDefaultConcurrency() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
 
-    // When
-    List<String> result = step.applyList("test");
+        // When
+        int concurrency = step.concurrency();
 
-    // Then
-    assertEquals(List.of("test-1", "test-2", "test-3"), result);
-  }
+        // Then
+        assertEquals(1, concurrency);
+    }
 
-  @Test
-  void testDefaultConcurrency() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
+    @Test
+    void testDefaultRunWithVirtualThreads() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
 
-    // When
-    int concurrency = step.concurrency();
+        // When
+        boolean runWithVirtualThreads = step.runWithVirtualThreads();
 
-    // Then
-    assertEquals(1, concurrency);
-  }
+        // Then
+        assertFalse(runWithVirtualThreads);
+    }
 
-  @Test
-  void testDefaultRunWithVirtualThreads() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
+    @Test
+    void testApplyMethodInStep() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
-    // When
-    boolean runWithVirtualThreads = step.runWithVirtualThreads();
+        // When
+        Multi<Object> result = step.apply(input);
 
-    // Then
-    assertFalse(runWithVirtualThreads);
-  }
-
-  @Test
-  void testApplyMethodInStep() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
-
-    // When
-    Multi<Object> result = step.apply(input);
-
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(6));
-    subscriber.awaitItems(6, Duration.ofSeconds(5));
-    subscriber.assertItems("item1-1", "item1-2", "item1-3", "item2-1", "item2-2", "item2-3");
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(6));
+        subscriber.awaitItems(6, Duration.ofSeconds(5));
+        subscriber.assertItems("item1-1", "item1-2", "item1-3", "item2-1", "item2-2", "item2-3");
+    }
 }

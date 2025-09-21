@@ -31,31 +31,32 @@ import org.junit.jupiter.api.Test;
 
 class ExecutorProducerTest {
 
-  @Test
-  @DisplayName("Should produce a non-null Executor")
-  void produceVirtualThreadExecutor_shouldReturnNonNullExecutor() {
-    ExecutorProducer producer = new ExecutorProducer();
-    ExecutorService executor = (ExecutorService) producer.produceVirtualThreadExecutor();
-    assertNotNull(executor);
-  }
+    @Test
+    @DisplayName("Should produce a non-null Executor")
+    void produceVirtualThreadExecutor_shouldReturnNonNullExecutor() {
+        ExecutorProducer producer = new ExecutorProducer();
+        ExecutorService executor = (ExecutorService) producer.produceVirtualThreadExecutor();
+        assertNotNull(executor);
+    }
 
-  @Test
-  @DisplayName("Should produce an Executor that uses virtual threads")
-  void produceVirtualThreadExecutor_shouldUseVirtualThreads()
-      throws InterruptedException, ExecutionException, TimeoutException {
-    ExecutorProducer producer = new ExecutorProducer();
-    ExecutorService executor = (ExecutorService) producer.produceVirtualThreadExecutor();
+    @Test
+    @DisplayName("Should produce an Executor that uses virtual threads")
+    void produceVirtualThreadExecutor_shouldUseVirtualThreads()
+            throws InterruptedException, ExecutionException, TimeoutException {
+        ExecutorProducer producer = new ExecutorProducer();
+        ExecutorService executor = (ExecutorService) producer.produceVirtualThreadExecutor();
 
-    // Submit a task and check if it runs on a virtual thread
-    Callable<Boolean> isVirtualThread = () -> Thread.currentThread().isVirtual();
+        // Submit a task and check if it runs on a virtual thread
+        Callable<Boolean> isVirtualThread = () -> Thread.currentThread().isVirtual();
 
-    Future<Boolean> future = executor.submit(isVirtualThread);
+        Future<Boolean> future = executor.submit(isVirtualThread);
 
-    Boolean result = future.get(1, TimeUnit.SECONDS);
-    assertTrue(result, "The task should be executed by a virtual thread");
+        Boolean result = future.get(1, TimeUnit.SECONDS);
+        assertTrue(result, "The task should be executed by a virtual thread");
 
-    // It's good practice to shut down the executor in tests if it's created within the test method
-    executor.shutdown();
-    executor.awaitTermination(1, TimeUnit.SECONDS);
-  }
+        // It's good practice to shut down the executor in tests if it's created within the test
+        // method
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.SECONDS);
+    }
 }

@@ -45,228 +45,242 @@ import org.mapstruct.factory.Mappers;
 
 class ProcessCsvPaymentsOutputFileReactiveServiceTest {
 
-  ProcessCsvPaymentsOutputFileReactiveService service;
+    ProcessCsvPaymentsOutputFileReactiveService service;
 
-  PaymentOutputMapper mapper = Mappers.getMapper(PaymentOutputMapper.class);
+    PaymentOutputMapper mapper = Mappers.getMapper(PaymentOutputMapper.class);
 
-  @TempDir static Path tempDir;
-  static Path tempFile;
+    @TempDir static Path tempDir;
+    static Path tempFile;
 
-  @BeforeEach
-  void setUp() throws IOException {
-    service = new ProcessCsvPaymentsOutputFileReactiveService();
-    tempFile = Files.createFile(tempDir.resolve("test.csv"));
-  }
-
-  @AfterEach
-  void tearDown() throws IOException {
-    if (tempFile != null && Files.exists(tempFile)) {
-      Files.deleteIfExists(tempFile);
+    @BeforeEach
+    void setUp() throws IOException {
+        service = new ProcessCsvPaymentsOutputFileReactiveService();
+        tempFile = Files.createFile(tempDir.resolve("test.csv"));
     }
-  }
 
-  @Test
-  void execute_happy() throws IOException {
-    // Given
-    Multi<PaymentOutput> paymentOutputList = getMultiPaymentOutput();
+    @AfterEach
+    void tearDown() throws IOException {
+        if (tempFile != null && Files.exists(tempFile)) {
+            Files.deleteIfExists(tempFile);
+        }
+    }
 
-    Uni<CsvPaymentsOutputFile> resultUni = service.process(paymentOutputList);
+    @Test
+    void execute_happy() throws IOException {
+        // Given
+        Multi<PaymentOutput> paymentOutputList = getMultiPaymentOutput();
 
-    // Inspect/verify the output file
-    // When: Read the first two lines
-    List<String> lines = Files.readAllLines(resultUni.await().indefinitely().getFilepath());
+        Uni<CsvPaymentsOutputFile> resultUni = service.process(paymentOutputList);
 
-    // Then: Assert header and first record
-    assertThat(lines).hasSizeGreaterThanOrEqualTo(2);
+        // Inspect/verify the output file
+        // When: Read the first two lines
+        List<String> lines = Files.readAllLines(resultUni.await().indefinitely().getFilepath());
 
-    String headerLine = lines.get(0);
-    String firstRecordLine = lines.get(1);
-    String secondRecordLine = lines.get(2);
+        // Then: Assert header and first record
+        assertThat(lines).hasSizeGreaterThanOrEqualTo(2);
 
-    AssertionsForClassTypes.assertThat(headerLine)
-        .contains(
-            "AMOUNT", "CSV ID", "CURRENCY", "FEE", "MESSAGE", "RECIPIENT", "REFERENCE", "STATUS");
-    AssertionsForClassTypes.assertThat(firstRecordLine)
-        .contains(
-            "100.00",
-            "80e055c9-7dbe-4ef0-ad37-8360eb8d1e3e",
-            "USD",
-            "",
-            "",
-            "recipient123",
-            "abacd5c7-2230-4a24-a665-32a542468ea5",
-            "");
-    AssertionsForClassTypes.assertThat(secondRecordLine)
-        .contains(
-            "450.01",
-            "2d8acc5b-8dae-4240-b37c-893318aba63f",
-            "GBP",
-            "",
-            "",
-            "234recipient",
-            "746ab623-c070-49dd-87fb-ed2f39f2f3cf",
-            "");
-  }
+        String headerLine = lines.get(0);
+        String firstRecordLine = lines.get(1);
+        String secondRecordLine = lines.get(2);
 
-  private Multi<PaymentOutput> getMultiPaymentOutput() {
-    PaymentRecord paymentRecord = new PaymentRecord();
-    paymentRecord.setCsvPaymentsInputFilePath(tempFile);
-    paymentRecord.setCsvId(String.valueOf(UUID.randomUUID()));
-    paymentRecord.setRecipient("John Doe");
-    paymentRecord.setAmount(new BigDecimal("100.00"));
-    paymentRecord.setCurrency(Currency.getInstance("USD"));
+        AssertionsForClassTypes.assertThat(headerLine)
+                .contains(
+                        "AMOUNT",
+                        "CSV ID",
+                        "CURRENCY",
+                        "FEE",
+                        "MESSAGE",
+                        "RECIPIENT",
+                        "REFERENCE",
+                        "STATUS");
+        AssertionsForClassTypes.assertThat(firstRecordLine)
+                .contains(
+                        "100.00",
+                        "80e055c9-7dbe-4ef0-ad37-8360eb8d1e3e",
+                        "USD",
+                        "",
+                        "",
+                        "recipient123",
+                        "abacd5c7-2230-4a24-a665-32a542468ea5",
+                        "");
+        AssertionsForClassTypes.assertThat(secondRecordLine)
+                .contains(
+                        "450.01",
+                        "2d8acc5b-8dae-4240-b37c-893318aba63f",
+                        "GBP",
+                        "",
+                        "",
+                        "234recipient",
+                        "746ab623-c070-49dd-87fb-ed2f39f2f3cf",
+                        "");
+    }
 
-    AckPaymentSent ackPaymentSent = new AckPaymentSent();
-    ackPaymentSent.setPaymentRecord(paymentRecord);
-    ackPaymentSent.setConversationId(UUID.randomUUID());
-    PaymentStatus paymentStatus = new PaymentStatus();
-    paymentStatus.setAckPaymentSent(ackPaymentSent);
-    paymentStatus.setStatus("nada");
-    paymentStatus.setMessage("Success");
+    private Multi<PaymentOutput> getMultiPaymentOutput() {
+        PaymentRecord paymentRecord = new PaymentRecord();
+        paymentRecord.setCsvPaymentsInputFilePath(tempFile);
+        paymentRecord.setCsvId(String.valueOf(UUID.randomUUID()));
+        paymentRecord.setRecipient("John Doe");
+        paymentRecord.setAmount(new BigDecimal("100.00"));
+        paymentRecord.setCurrency(Currency.getInstance("USD"));
 
-    PaymentOutputDto paymentOutputDto1 =
-        aPaymentOutput()
-            .withCsvId("80e055c9-7dbe-4ef0-ad37-8360eb8d1e3e")
-            .withRecipient("recipient123")
-            .withAmount(new BigDecimal("100.00"))
-            .withCurrency(Currency.getInstance("USD"))
-            .withConversationId(UUID.fromString("abacd5c7-2230-4a24-a665-32a542468ea5"))
-            .withPaymentStatus(paymentStatus)
-            .buildDto();
+        AckPaymentSent ackPaymentSent = new AckPaymentSent();
+        ackPaymentSent.setPaymentRecord(paymentRecord);
+        ackPaymentSent.setConversationId(UUID.randomUUID());
+        PaymentStatus paymentStatus = new PaymentStatus();
+        paymentStatus.setAckPaymentSent(ackPaymentSent);
+        paymentStatus.setStatus("nada");
+        paymentStatus.setMessage("Success");
 
-    PaymentOutputDto paymentOutputDto2 =
-        aPaymentOutput()
-            .withCsvId("2d8acc5b-8dae-4240-b37c-893318aba63f")
-            .withRecipient("234recipient")
-            .withAmount(new BigDecimal("450.01"))
-            .withCurrency(Currency.getInstance("GBP"))
-            .withConversationId(UUID.fromString("746ab623-c070-49dd-87fb-ed2f39f2f3cf"))
-            .withPaymentStatus(paymentStatus)
-            .buildDto();
+        PaymentOutputDto paymentOutputDto1 =
+                aPaymentOutput()
+                        .withCsvId("80e055c9-7dbe-4ef0-ad37-8360eb8d1e3e")
+                        .withRecipient("recipient123")
+                        .withAmount(new BigDecimal("100.00"))
+                        .withCurrency(Currency.getInstance("USD"))
+                        .withConversationId(UUID.fromString("abacd5c7-2230-4a24-a665-32a542468ea5"))
+                        .withPaymentStatus(paymentStatus)
+                        .buildDto();
 
-    return Multi.createFrom()
-        .items(mapper.fromDto(paymentOutputDto1), mapper.fromDto(paymentOutputDto2));
-  }
+        PaymentOutputDto paymentOutputDto2 =
+                aPaymentOutput()
+                        .withCsvId("2d8acc5b-8dae-4240-b37c-893318aba63f")
+                        .withRecipient("234recipient")
+                        .withAmount(new BigDecimal("450.01"))
+                        .withCurrency(Currency.getInstance("GBP"))
+                        .withConversationId(UUID.fromString("746ab623-c070-49dd-87fb-ed2f39f2f3cf"))
+                        .withPaymentStatus(paymentStatus)
+                        .buildDto();
 
-  private Multi<PaymentOutput> getBadMultiPaymentOutput() {
-    return Multi.createFrom().empty();
-  }
+        return Multi.createFrom()
+                .items(mapper.fromDto(paymentOutputDto1), mapper.fromDto(paymentOutputDto2));
+    }
 
-  @Test
-  void execute_unhappy() {
-    // Given
-    Multi<PaymentOutput> paymentOutputList = getBadMultiPaymentOutput();
+    private Multi<PaymentOutput> getBadMultiPaymentOutput() {
+        return Multi.createFrom().empty();
+    }
 
-    // When (mock the getCsvPaymentsOutputFile method within the command)
+    @Test
+    void execute_unhappy() {
+        // Given
+        Multi<PaymentOutput> paymentOutputList = getBadMultiPaymentOutput();
 
-    Uni<CsvPaymentsOutputFile> resultUni = service.process(paymentOutputList);
+        // When (mock the getCsvPaymentsOutputFile method within the command)
 
-    // Then
-    UniAssertSubscriber<CsvPaymentsOutputFile> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem().assertItem(null);
-  }
+        Uni<CsvPaymentsOutputFile> resultUni = service.process(paymentOutputList);
 
-  @Test
-  void execute_with_multiple_input_files_should_not_mix_records() throws IOException {
-    // Given - Payment outputs from two different input files
-    Multi<PaymentOutput> paymentOutputList = getMultiPaymentOutputFromMultipleFiles();
+        // Then
+        UniAssertSubscriber<CsvPaymentsOutputFile> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem().assertItem(null);
+    }
 
-    Uni<CsvPaymentsOutputFile> resultUni = service.process(paymentOutputList);
+    @Test
+    void execute_with_multiple_input_files_should_not_mix_records() throws IOException {
+        // Given - Payment outputs from two different input files
+        Multi<PaymentOutput> paymentOutputList = getMultiPaymentOutputFromMultipleFiles();
 
-    // When: Process the mixed stream (this simulates the old behavior where records from
-    // different files would be mixed together)
-    CsvPaymentsOutputFile resultFile = resultUni.await().indefinitely();
+        Uni<CsvPaymentsOutputFile> resultUni = service.process(paymentOutputList);
 
-    // Then: Verify that all records are in the same output file (this is the current behavior
-    // before the pipeline fix, but after the pipeline fix, the ProcessOutputFileStep should
-    // ensure records from different files are processed separately)
-    assertThat(resultFile).isNotNull();
+        // When: Process the mixed stream (this simulates the old behavior where records from
+        // different files would be mixed together)
+        CsvPaymentsOutputFile resultFile = resultUni.await().indefinitely();
 
-    // Read the output file content
-    List<String> lines = Files.readAllLines(resultFile.getFilepath());
+        // Then: Verify that all records are in the same output file (this is the current behavior
+        // before the pipeline fix, but after the pipeline fix, the ProcessOutputFileStep should
+        // ensure records from different files are processed separately)
+        assertThat(resultFile).isNotNull();
 
-    // Should have header + 2 records from different files
-    assertThat(lines).hasSize(3);
+        // Read the output file content
+        List<String> lines = Files.readAllLines(resultFile.getFilepath());
 
-    String headerLine = lines.get(0);
-    String firstRecordLine = lines.get(1);
-    String secondRecordLine = lines.get(2);
+        // Should have header + 2 records from different files
+        assertThat(lines).hasSize(3);
 
-    // Verify header
-    AssertionsForClassTypes.assertThat(headerLine)
-        .contains(
-            "AMOUNT", "CSV ID", "CURRENCY", "FEE", "MESSAGE", "RECIPIENT", "REFERENCE", "STATUS");
+        String headerLine = lines.get(0);
+        String firstRecordLine = lines.get(1);
+        String secondRecordLine = lines.get(2);
 
-    // Verify that we have records from both files in the same output (this is the old behavior)
-    // In the new pipeline implementation, the ProcessOutputFileStep groups these by source file
-    // so they would be processed separately, but this service still handles them as one stream
-    AssertionsForClassTypes.assertThat(firstRecordLine)
-        .containsAnyOf(
-            "100.00", // From first file
-            "450.01"); // From second file
-    AssertionsForClassTypes.assertThat(secondRecordLine)
-        .containsAnyOf(
-            "100.00", // From first file
-            "450.01"); // From second file
-  }
+        // Verify header
+        AssertionsForClassTypes.assertThat(headerLine)
+                .contains(
+                        "AMOUNT",
+                        "CSV ID",
+                        "CURRENCY",
+                        "FEE",
+                        "MESSAGE",
+                        "RECIPIENT",
+                        "REFERENCE",
+                        "STATUS");
 
-  private Multi<PaymentOutput> getMultiPaymentOutputFromMultipleFiles() {
-    // Create payment record for first file
-    Path firstFile = tempDir.resolve("first.csv");
-    PaymentRecord paymentRecord1 = new PaymentRecord();
-    paymentRecord1.setCsvPaymentsInputFilePath(firstFile);
-    paymentRecord1.setCsvId(String.valueOf(UUID.randomUUID()));
-    paymentRecord1.setRecipient("John Doe");
-    paymentRecord1.setAmount(new BigDecimal("100.00"));
-    paymentRecord1.setCurrency(Currency.getInstance("USD"));
+        // Verify that we have records from both files in the same output (this is the old behavior)
+        // In the new pipeline implementation, the ProcessOutputFileStep groups these by source file
+        // so they would be processed separately, but this service still handles them as one stream
+        AssertionsForClassTypes.assertThat(firstRecordLine)
+                .containsAnyOf(
+                        "100.00", // From first file
+                        "450.01"); // From second file
+        AssertionsForClassTypes.assertThat(secondRecordLine)
+                .containsAnyOf(
+                        "100.00", // From first file
+                        "450.01"); // From second file
+    }
 
-    AckPaymentSent ackPaymentSent1 = new AckPaymentSent();
-    ackPaymentSent1.setPaymentRecord(paymentRecord1);
-    ackPaymentSent1.setConversationId(UUID.randomUUID());
-    PaymentStatus paymentStatus1 = new PaymentStatus();
-    paymentStatus1.setAckPaymentSent(ackPaymentSent1);
-    paymentStatus1.setStatus("nada");
-    paymentStatus1.setMessage("Success");
+    private Multi<PaymentOutput> getMultiPaymentOutputFromMultipleFiles() {
+        // Create payment record for first file
+        Path firstFile = tempDir.resolve("first.csv");
+        PaymentRecord paymentRecord1 = new PaymentRecord();
+        paymentRecord1.setCsvPaymentsInputFilePath(firstFile);
+        paymentRecord1.setCsvId(String.valueOf(UUID.randomUUID()));
+        paymentRecord1.setRecipient("John Doe");
+        paymentRecord1.setAmount(new BigDecimal("100.00"));
+        paymentRecord1.setCurrency(Currency.getInstance("USD"));
 
-    PaymentOutputDto paymentOutputDto1 =
-        aPaymentOutput()
-            .withCsvId("80e055c9-7dbe-4ef0-ad37-8360eb8d1e3e")
-            .withRecipient("recipient123")
-            .withAmount(new BigDecimal("100.00"))
-            .withCurrency(Currency.getInstance("USD"))
-            .withConversationId(UUID.fromString("abacd5c7-2230-4a24-a665-32a542468ea5"))
-            .withPaymentStatus(paymentStatus1)
-            .buildDto();
+        AckPaymentSent ackPaymentSent1 = new AckPaymentSent();
+        ackPaymentSent1.setPaymentRecord(paymentRecord1);
+        ackPaymentSent1.setConversationId(UUID.randomUUID());
+        PaymentStatus paymentStatus1 = new PaymentStatus();
+        paymentStatus1.setAckPaymentSent(ackPaymentSent1);
+        paymentStatus1.setStatus("nada");
+        paymentStatus1.setMessage("Success");
 
-    // Create payment record for second file
-    Path secondFile = tempDir.resolve("second.csv");
-    PaymentRecord paymentRecord2 = new PaymentRecord();
-    paymentRecord2.setCsvPaymentsInputFilePath(secondFile);
-    paymentRecord2.setCsvId(String.valueOf(UUID.randomUUID()));
-    paymentRecord2.setRecipient("Jane Doe");
-    paymentRecord2.setAmount(new BigDecimal("450.01"));
-    paymentRecord2.setCurrency(Currency.getInstance("GBP"));
+        PaymentOutputDto paymentOutputDto1 =
+                aPaymentOutput()
+                        .withCsvId("80e055c9-7dbe-4ef0-ad37-8360eb8d1e3e")
+                        .withRecipient("recipient123")
+                        .withAmount(new BigDecimal("100.00"))
+                        .withCurrency(Currency.getInstance("USD"))
+                        .withConversationId(UUID.fromString("abacd5c7-2230-4a24-a665-32a542468ea5"))
+                        .withPaymentStatus(paymentStatus1)
+                        .buildDto();
 
-    AckPaymentSent ackPaymentSent2 = new AckPaymentSent();
-    ackPaymentSent2.setPaymentRecord(paymentRecord2);
-    ackPaymentSent2.setConversationId(UUID.randomUUID());
-    PaymentStatus paymentStatus2 = new PaymentStatus();
-    paymentStatus2.setAckPaymentSent(ackPaymentSent2);
-    paymentStatus2.setStatus("nada");
-    paymentStatus2.setMessage("Success");
+        // Create payment record for second file
+        Path secondFile = tempDir.resolve("second.csv");
+        PaymentRecord paymentRecord2 = new PaymentRecord();
+        paymentRecord2.setCsvPaymentsInputFilePath(secondFile);
+        paymentRecord2.setCsvId(String.valueOf(UUID.randomUUID()));
+        paymentRecord2.setRecipient("Jane Doe");
+        paymentRecord2.setAmount(new BigDecimal("450.01"));
+        paymentRecord2.setCurrency(Currency.getInstance("GBP"));
 
-    PaymentOutputDto paymentOutputDto2 =
-        aPaymentOutput()
-            .withCsvId("2d8acc5b-8dae-4240-b37c-893318aba63f")
-            .withRecipient("234recipient")
-            .withAmount(new BigDecimal("450.01"))
-            .withCurrency(Currency.getInstance("GBP"))
-            .withConversationId(UUID.fromString("746ab623-c070-49dd-87fb-ed2f39f2f3cf"))
-            .withPaymentStatus(paymentStatus2)
-            .buildDto();
+        AckPaymentSent ackPaymentSent2 = new AckPaymentSent();
+        ackPaymentSent2.setPaymentRecord(paymentRecord2);
+        ackPaymentSent2.setConversationId(UUID.randomUUID());
+        PaymentStatus paymentStatus2 = new PaymentStatus();
+        paymentStatus2.setAckPaymentSent(ackPaymentSent2);
+        paymentStatus2.setStatus("nada");
+        paymentStatus2.setMessage("Success");
 
-    return Multi.createFrom()
-        .items(mapper.fromDto(paymentOutputDto1), mapper.fromDto(paymentOutputDto2));
-  }
+        PaymentOutputDto paymentOutputDto2 =
+                aPaymentOutput()
+                        .withCsvId("2d8acc5b-8dae-4240-b37c-893318aba63f")
+                        .withRecipient("234recipient")
+                        .withAmount(new BigDecimal("450.01"))
+                        .withCurrency(Currency.getInstance("GBP"))
+                        .withConversationId(UUID.fromString("746ab623-c070-49dd-87fb-ed2f39f2f3cf"))
+                        .withPaymentStatus(paymentStatus2)
+                        .buildDto();
+
+        return Multi.createFrom()
+                .items(mapper.fromDto(paymentOutputDto1), mapper.fromDto(paymentOutputDto2));
+    }
 }

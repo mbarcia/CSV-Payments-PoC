@@ -28,70 +28,70 @@ import org.junit.jupiter.api.Test;
 
 class StepSideEffectTest {
 
-  static class TestStep implements StepSideEffect<String> {
-    @Override
-    public Uni<Void> apply(String input) {
-      // Simulate some side effect
-      System.out.println("Side effect for: " + input);
-      return Uni.createFrom().voidItem();
+    static class TestStep implements StepSideEffect<String> {
+        @Override
+        public Uni<Void> apply(String input) {
+            // Simulate some side effect
+            System.out.println("Side effect for: " + input);
+            return Uni.createFrom().voidItem();
+        }
+
+        @Override
+        public StepConfig effectiveConfig() {
+            return new StepConfig();
+        }
     }
 
-    @Override
-    public StepConfig effectiveConfig() {
-      return new StepConfig();
+    @Test
+    void testApplyMethod() {
+        // Given
+        TestStep step = new TestStep();
+
+        // When
+        Uni<Void> result = step.apply("test");
+
+        // Then
+        Void value = result.await().indefinitely();
+        assertNull(value);
     }
-  }
 
-  @Test
-  void testApplyMethod() {
-    // Given
-    TestStep step = new TestStep();
+    @Test
+    void testDefaultConcurrency() {
+        // Given
+        TestStep step = new TestStep();
 
-    // When
-    Uni<Void> result = step.apply("test");
+        // When
+        int concurrency = step.concurrency();
 
-    // Then
-    Void value = result.await().indefinitely();
-    assertNull(value);
-  }
+        // Then
+        assertEquals(1, concurrency);
+    }
 
-  @Test
-  void testDefaultConcurrency() {
-    // Given
-    TestStep step = new TestStep();
+    @Test
+    void testDefaultRunWithVirtualThreads() {
+        // Given
+        TestStep step = new TestStep();
 
-    // When
-    int concurrency = step.concurrency();
+        // When
+        boolean runWithVirtualThreads = step.runWithVirtualThreads();
 
-    // Then
-    assertEquals(1, concurrency);
-  }
+        // Then
+        assertFalse(runWithVirtualThreads);
+    }
 
-  @Test
-  void testDefaultRunWithVirtualThreads() {
-    // Given
-    TestStep step = new TestStep();
+    @Test
+    void testApplyMethodInStep() {
+        // Given
+        TestStep step = new TestStep();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
-    // When
-    boolean runWithVirtualThreads = step.runWithVirtualThreads();
+        // When
+        Multi<Object> result = step.apply(input);
 
-    // Then
-    assertFalse(runWithVirtualThreads);
-  }
-
-  @Test
-  void testApplyMethodInStep() {
-    // Given
-    TestStep step = new TestStep();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
-
-    // When
-    Multi<Object> result = step.apply(input);
-
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(2));
-    subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("item1", "item2"); // Items should pass through unchanged
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(2));
+        subscriber.awaitItems(2, Duration.ofSeconds(5));
+        subscriber.assertItems("item1", "item2"); // Items should pass through unchanged
+    }
 }

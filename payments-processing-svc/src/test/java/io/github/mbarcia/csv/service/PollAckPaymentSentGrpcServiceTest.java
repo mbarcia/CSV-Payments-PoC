@@ -39,62 +39,63 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PollAckPaymentSentGrpcServiceTest {
 
-  @Mock PaymentStatusMapper paymentStatusMapper;
+    @Mock PaymentStatusMapper paymentStatusMapper;
 
-  @Mock AckPaymentSentMapper ackPaymentSentMapper;
+    @Mock AckPaymentSentMapper ackPaymentSentMapper;
 
-  @Mock PollAckPaymentSentReactiveService domainService;
+    @Mock PollAckPaymentSentReactiveService domainService;
 
-  @InjectMocks private PollAckPaymentSentGrpcService service;
+    @InjectMocks private PollAckPaymentSentGrpcService service;
 
-  private PaymentsProcessingSvc.AckPaymentSent request;
-  private PaymentsProcessingSvc.PaymentStatus expectedStatus;
+    private PaymentsProcessingSvc.AckPaymentSent request;
+    private PaymentsProcessingSvc.PaymentStatus expectedStatus;
 
-  @BeforeEach
-  void setUp() {
-    UUID conversationId = UUID.randomUUID();
-    request =
-        PaymentsProcessingSvc.AckPaymentSent.newBuilder()
-            .setConversationId(String.valueOf(conversationId))
-            .build();
-    expectedStatus = PaymentsProcessingSvc.PaymentStatus.newBuilder().setStatus("SUCCESS").build();
-  }
+    @BeforeEach
+    void setUp() {
+        UUID conversationId = UUID.randomUUID();
+        request =
+                PaymentsProcessingSvc.AckPaymentSent.newBuilder()
+                        .setConversationId(String.valueOf(conversationId))
+                        .build();
+        expectedStatus =
+                PaymentsProcessingSvc.PaymentStatus.newBuilder().setStatus("SUCCESS").build();
+    }
 
-  @Test
-  void testRemoteProcess_HappyPath() {
+    @Test
+    void testRemoteProcess_HappyPath() {
 
-    PaymentStatus domainResponse = new PaymentStatus().setStatus("SUCCESS");
-    when(domainService.process(any(AckPaymentSent.class)))
-        .thenReturn(Uni.createFrom().item(domainResponse));
-    when(ackPaymentSentMapper.fromGrpc(any(PaymentsProcessingSvc.AckPaymentSent.class)))
-        .thenReturn(new AckPaymentSent(UUID.randomUUID()));
-    when(paymentStatusMapper.toGrpc(any(PaymentStatus.class))).thenReturn(expectedStatus);
+        PaymentStatus domainResponse = new PaymentStatus().setStatus("SUCCESS");
+        when(domainService.process(any(AckPaymentSent.class)))
+                .thenReturn(Uni.createFrom().item(domainResponse));
+        when(ackPaymentSentMapper.fromGrpc(any(PaymentsProcessingSvc.AckPaymentSent.class)))
+                .thenReturn(new AckPaymentSent(UUID.randomUUID()));
+        when(paymentStatusMapper.toGrpc(any(PaymentStatus.class))).thenReturn(expectedStatus);
 
-    Uni<PaymentsProcessingSvc.PaymentStatus> result = service.remoteProcess(request);
+        Uni<PaymentsProcessingSvc.PaymentStatus> result = service.remoteProcess(request);
 
-    result
-        .subscribe()
-        .with(
-            status -> {
-              assertNotNull(expectedStatus);
-              assertEquals("SUCCESS", expectedStatus.getStatus());
-            });
-  }
+        result.subscribe()
+                .with(
+                        status -> {
+                            assertNotNull(expectedStatus);
+                            assertEquals("SUCCESS", expectedStatus.getStatus());
+                        });
+    }
 
-  @Test
-  void testRemoteProcess_UnhappyPath() {
-    RuntimeException exception = new RuntimeException("Domain service error");
-    when(domainService.process(any(AckPaymentSent.class)))
-        .thenReturn(Uni.createFrom().failure(exception));
-    when(ackPaymentSentMapper.fromGrpc(any(PaymentsProcessingSvc.AckPaymentSent.class)))
-        .thenReturn(new AckPaymentSent(UUID.randomUUID()));
+    @Test
+    void testRemoteProcess_UnhappyPath() {
+        RuntimeException exception = new RuntimeException("Domain service error");
+        when(domainService.process(any(AckPaymentSent.class)))
+                .thenReturn(Uni.createFrom().failure(exception));
+        when(ackPaymentSentMapper.fromGrpc(any(PaymentsProcessingSvc.AckPaymentSent.class)))
+                .thenReturn(new AckPaymentSent(UUID.randomUUID()));
 
-    Uni<PaymentsProcessingSvc.PaymentStatus> result = service.remoteProcess(request);
+        Uni<PaymentsProcessingSvc.PaymentStatus> result = service.remoteProcess(request);
 
-    result
-        .subscribe()
-        .with(
-            item -> fail("Should have failed"),
-            failure -> assertEquals("INTERNAL: Domain service error", failure.getMessage()));
-  }
+        result.subscribe()
+                .with(
+                        item -> fail("Should have failed"),
+                        failure ->
+                                assertEquals(
+                                        "INTERNAL: Domain service error", failure.getMessage()));
+    }
 }

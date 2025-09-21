@@ -31,191 +31,192 @@ import org.mockito.MockitoAnnotations;
 
 class GrpcServiceStreamingAdapterTest {
 
-  @Mock private ReactiveStreamingService<DomainIn, DomainOut> mockReactiveService;
+    @Mock private ReactiveStreamingService<DomainIn, DomainOut> mockReactiveService;
 
-  private GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> adapter;
+    private GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> adapter;
 
-  private static class GrpcIn {}
+    private static class GrpcIn {}
 
-  private static class GrpcOut {}
+    private static class GrpcOut {}
 
-  private static class DomainIn {}
+    private static class DomainIn {}
 
-  private static class DomainOut {}
+    private static class DomainOut {}
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
 
-    adapter =
-        new GrpcServiceStreamingAdapter<>() {
-          @Override
-          protected ReactiveStreamingService<DomainIn, DomainOut> getService() {
-            return mockReactiveService;
-          }
+        adapter =
+                new GrpcServiceStreamingAdapter<>() {
+                    @Override
+                    protected ReactiveStreamingService<DomainIn, DomainOut> getService() {
+                        return mockReactiveService;
+                    }
 
-          @Override
-          protected DomainIn fromGrpc(GrpcIn grpcIn) {
-            return new DomainIn();
-          }
+                    @Override
+                    protected DomainIn fromGrpc(GrpcIn grpcIn) {
+                        return new DomainIn();
+                    }
 
-          @Override
-          protected GrpcOut toGrpc(DomainOut domainOut) {
-            return new GrpcOut();
-          }
-        };
-  }
+                    @Override
+                    protected GrpcOut toGrpc(DomainOut domainOut) {
+                        return new GrpcOut();
+                    }
+                };
+    }
 
-  @Test
-  void testRemoteProcessSuccessPath() {
-    // Given
-    GrpcIn grpcRequest = new GrpcIn();
-    DomainOut domainOut1 = new DomainOut();
-    DomainOut domainOut2 = new DomainOut();
-    Multi<DomainOut> serviceResponse = Multi.createFrom().items(domainOut1, domainOut2);
+    @Test
+    void testRemoteProcessSuccessPath() {
+        // Given
+        GrpcIn grpcRequest = new GrpcIn();
+        DomainOut domainOut1 = new DomainOut();
+        DomainOut domainOut2 = new DomainOut();
+        Multi<DomainOut> serviceResponse = Multi.createFrom().items(domainOut1, domainOut2);
 
-    when(mockReactiveService.process(any(DomainIn.class))).thenReturn(serviceResponse);
+        when(mockReactiveService.process(any(DomainIn.class))).thenReturn(serviceResponse);
 
-    // When
-    Multi<GrpcOut> result = adapter.remoteProcess(grpcRequest);
+        // When
+        Multi<GrpcOut> result = adapter.remoteProcess(grpcRequest);
 
-    // Then
-    AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(2);
-    result.subscribe().withSubscriber(subscriber);
-    subscriber.awaitItems(2);
+        // Then
+        AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(2);
+        result.subscribe().withSubscriber(subscriber);
+        subscriber.awaitItems(2);
 
-    assertEquals(2, subscriber.getItems().size());
-    assertNotNull(subscriber.getItems().get(0));
-    assertNotNull(subscriber.getItems().get(1));
+        assertEquals(2, subscriber.getItems().size());
+        assertNotNull(subscriber.getItems().get(0));
+        assertNotNull(subscriber.getItems().get(1));
 
-    verify(mockReactiveService).process(any(DomainIn.class));
-    verifyNoMoreInteractions(mockReactiveService);
-  }
+        verify(mockReactiveService).process(any(DomainIn.class));
+        verifyNoMoreInteractions(mockReactiveService);
+    }
 
-  @Test
-  void testRemoteProcessFailurePath() {
-    // Given
-    GrpcIn grpcRequest = new GrpcIn();
-    RuntimeException testException = new RuntimeException("Processing failed");
+    @Test
+    void testRemoteProcessFailurePath() {
+        // Given
+        GrpcIn grpcRequest = new GrpcIn();
+        RuntimeException testException = new RuntimeException("Processing failed");
 
-    when(mockReactiveService.process(any(DomainIn.class)))
-        .thenReturn(Multi.createFrom().failure(testException));
+        when(mockReactiveService.process(any(DomainIn.class)))
+                .thenReturn(Multi.createFrom().failure(testException));
 
-    // When
-    Multi<GrpcOut> result = adapter.remoteProcess(grpcRequest);
+        // When
+        Multi<GrpcOut> result = adapter.remoteProcess(grpcRequest);
 
-    // Then
-    AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(1);
-    result.subscribe().withSubscriber(subscriber);
-    subscriber.awaitFailure();
+        // Then
+        AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(1);
+        result.subscribe().withSubscriber(subscriber);
+        subscriber.awaitFailure();
 
-    Throwable failure = subscriber.getFailure();
-    assertNotNull(failure);
-    assertTrue(failure instanceof StatusRuntimeException);
-    assertTrue(failure.getMessage().contains("Processing failed"));
+        Throwable failure = subscriber.getFailure();
+        assertNotNull(failure);
+        assertTrue(failure instanceof StatusRuntimeException);
+        assertTrue(failure.getMessage().contains("Processing failed"));
 
-    verify(mockReactiveService).process(any(DomainIn.class));
-  }
+        verify(mockReactiveService).process(any(DomainIn.class));
+    }
 
-  @Test
-  void testFromGrpcTransformation() {
-    // Given
-    GrpcIn grpcRequest = new GrpcIn();
+    @Test
+    void testFromGrpcTransformation() {
+        // Given
+        GrpcIn grpcRequest = new GrpcIn();
 
-    // Create a verification service to check the transformation
-    ReactiveStreamingService<DomainIn, DomainOut> verificationService =
-        domainIn -> {
-          assertNotNull(domainIn);
-          return Multi.createFrom().items(new DomainOut());
-        };
+        // Create a verification service to check the transformation
+        ReactiveStreamingService<DomainIn, DomainOut> verificationService =
+                domainIn -> {
+                    assertNotNull(domainIn);
+                    return Multi.createFrom().items(new DomainOut());
+                };
 
-    GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> verificationAdapter =
-        new GrpcServiceStreamingAdapter<>() {
-          @Override
-          protected ReactiveStreamingService<DomainIn, DomainOut> getService() {
-            return verificationService;
-          }
+        GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> verificationAdapter =
+                new GrpcServiceStreamingAdapter<>() {
+                    @Override
+                    protected ReactiveStreamingService<DomainIn, DomainOut> getService() {
+                        return verificationService;
+                    }
 
-          @Override
-          protected DomainIn fromGrpc(GrpcIn grpcIn) {
-            assertNotNull(grpcIn);
-            return new DomainIn();
-          }
+                    @Override
+                    protected DomainIn fromGrpc(GrpcIn grpcIn) {
+                        assertNotNull(grpcIn);
+                        return new DomainIn();
+                    }
 
-          @Override
-          protected GrpcOut toGrpc(DomainOut domainOut) {
-            return new GrpcOut();
-          }
-        };
+                    @Override
+                    protected GrpcOut toGrpc(DomainOut domainOut) {
+                        return new GrpcOut();
+                    }
+                };
 
-    // When
-    Multi<GrpcOut> result = verificationAdapter.remoteProcess(grpcRequest);
+        // When
+        Multi<GrpcOut> result = verificationAdapter.remoteProcess(grpcRequest);
 
-    // Then
-    AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(1);
-    result.subscribe().withSubscriber(subscriber);
-    subscriber.awaitItems(1);
+        // Then
+        AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(1);
+        result.subscribe().withSubscriber(subscriber);
+        subscriber.awaitItems(1);
 
-    assertEquals(1, subscriber.getItems().size());
-  }
+        assertEquals(1, subscriber.getItems().size());
+    }
 
-  @Test
-  void testToGrpcTransformation() {
-    // Given
-    GrpcIn grpcRequest = new GrpcIn();
-    DomainOut domainOut = new DomainOut();
+    @Test
+    void testToGrpcTransformation() {
+        // Given
+        GrpcIn grpcRequest = new GrpcIn();
+        DomainOut domainOut = new DomainOut();
 
-    when(mockReactiveService.process(any(DomainIn.class)))
-        .thenReturn(Multi.createFrom().items(domainOut));
+        when(mockReactiveService.process(any(DomainIn.class)))
+                .thenReturn(Multi.createFrom().items(domainOut));
 
-    // Create a verification adapter to check the transformation
-    GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> verificationAdapter =
-        new GrpcServiceStreamingAdapter<>() {
-          @Override
-          protected ReactiveStreamingService<DomainIn, DomainOut> getService() {
-            return mockReactiveService;
-          }
+        // Create a verification adapter to check the transformation
+        GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> verificationAdapter =
+                new GrpcServiceStreamingAdapter<>() {
+                    @Override
+                    protected ReactiveStreamingService<DomainIn, DomainOut> getService() {
+                        return mockReactiveService;
+                    }
 
-          @Override
-          protected DomainIn fromGrpc(GrpcIn grpcIn) {
-            return new DomainIn();
-          }
+                    @Override
+                    protected DomainIn fromGrpc(GrpcIn grpcIn) {
+                        return new DomainIn();
+                    }
 
-          @Override
-          protected GrpcOut toGrpc(DomainOut domainOut) {
-            assertNotNull(domainOut);
-            return new GrpcOut();
-          }
-        };
+                    @Override
+                    protected GrpcOut toGrpc(DomainOut domainOut) {
+                        assertNotNull(domainOut);
+                        return new GrpcOut();
+                    }
+                };
 
-    // When
-    Multi<GrpcOut> result = verificationAdapter.remoteProcess(grpcRequest);
+        // When
+        Multi<GrpcOut> result = verificationAdapter.remoteProcess(grpcRequest);
 
-    // Then
-    AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(1);
-    result.subscribe().withSubscriber(subscriber);
-    subscriber.awaitItems(1);
+        // Then
+        AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(1);
+        result.subscribe().withSubscriber(subscriber);
+        subscriber.awaitItems(1);
 
-    assertEquals(1, subscriber.getItems().size());
-    verify(mockReactiveService).process(any(DomainIn.class));
-  }
+        assertEquals(1, subscriber.getItems().size());
+        verify(mockReactiveService).process(any(DomainIn.class));
+    }
 
-  @Test
-  void testEmptyStream() {
-    // Given
-    GrpcIn grpcRequest = new GrpcIn();
+    @Test
+    void testEmptyStream() {
+        // Given
+        GrpcIn grpcRequest = new GrpcIn();
 
-    when(mockReactiveService.process(any(DomainIn.class))).thenReturn(Multi.createFrom().empty());
+        when(mockReactiveService.process(any(DomainIn.class)))
+                .thenReturn(Multi.createFrom().empty());
 
-    // When
-    Multi<GrpcOut> result = adapter.remoteProcess(grpcRequest);
+        // When
+        Multi<GrpcOut> result = adapter.remoteProcess(grpcRequest);
 
-    // Then
-    AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(1);
-    result.subscribe().withSubscriber(subscriber);
-    subscriber.awaitCompletion();
+        // Then
+        AssertSubscriber<GrpcOut> subscriber = AssertSubscriber.create(1);
+        result.subscribe().withSubscriber(subscriber);
+        subscriber.awaitCompletion();
 
-    assertEquals(0, subscriber.getItems().size());
-    verify(mockReactiveService).process(any(DomainIn.class));
-  }
+        assertEquals(0, subscriber.getItems().size());
+        verify(mockReactiveService).process(any(DomainIn.class));
+    }
 }

@@ -29,22 +29,22 @@ import org.slf4j.LoggerFactory;
 @QuarkusTest
 class CsvPaymentsIntegrationTest {
 
-  private static final Logger LOG = LoggerFactory.getLogger(CsvPaymentsIntegrationTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CsvPaymentsIntegrationTest.class);
 
-  private static final String TEST_RESOURCES_DIR = "src/test/resources";
-  private static final String TEST_OUTPUT_DIR = "target/test-output";
+    private static final String TEST_RESOURCES_DIR = "src/test/resources";
+    private static final String TEST_OUTPUT_DIR = "target/test-output";
 
-  @Test
-  void testCsvFileContent() throws Exception {
-    // Verify that our test CSV file has the expected content
-    Path testCsv = Paths.get(TEST_RESOURCES_DIR, "test-payments.csv");
-    assertTrue(Files.exists(testCsv), "Test CSV file should exist");
+    @Test
+    void testCsvFileContent() throws Exception {
+        // Verify that our test CSV file has the expected content
+        Path testCsv = Paths.get(TEST_RESOURCES_DIR, "test-payments.csv");
+        assertTrue(Files.exists(testCsv), "Test CSV file should exist");
 
-    String content = Files.readString(testCsv);
-    assertTrue(content.contains("Natasha Thomas"), "CSV should contain test data");
-    assertTrue(content.contains("Marc Joyce"), "CSV should contain test data");
-    assertTrue(content.contains("Anthony Franco"), "CSV should contain test data");
+        String content = Files.readString(testCsv);
+        assertTrue(content.contains("Natasha Thomas"), "CSV should contain test data");
+        assertTrue(content.contains("Marc Joyce"), "CSV should contain test data");
+        assertTrue(content.contains("Anthony Franco"), "CSV should contain test data");
 
-    LOG.info("CSV file content verified successfully");
-  }
+        LOG.info("CSV file content verified successfully");
+    }
 }

@@ -27,44 +27,44 @@ import org.junit.jupiter.api.Test;
 
 class StepOneToOneTest {
 
-  static class TestStep implements StepOneToOne<String, String> {
-    @Override
-    public Uni<String> applyAsyncUni(String input) {
-      return Uni.createFrom().item("Processed: " + input);
+    static class TestStep implements StepOneToOne<String, String> {
+        @Override
+        public Uni<String> applyAsyncUni(String input) {
+            return Uni.createFrom().item("Processed: " + input);
+        }
+
+        @Override
+        public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
+            return new io.github.mbarcia.pipeline.config.StepConfig();
+        }
     }
 
-    @Override
-    public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
-      return new io.github.mbarcia.pipeline.config.StepConfig();
+    @Test
+    void testApplyAsyncUniMethod() {
+        // Given
+        TestStep step = new TestStep();
+
+        // When
+        Uni<String> result = step.applyAsyncUni("test");
+
+        // Then
+        String value = result.await().indefinitely();
+        assertEquals("Processed: test", value);
     }
-  }
 
-  @Test
-  void testApplyAsyncUniMethod() {
-    // Given
-    TestStep step = new TestStep();
+    @Test
+    void testApplyMethod() {
+        // Given
+        TestStep step = new TestStep();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
-    // When
-    Uni<String> result = step.applyAsyncUni("test");
+        // When
+        Multi<Object> result = step.apply(input);
 
-    // Then
-    String value = result.await().indefinitely();
-    assertEquals("Processed: test", value);
-  }
-
-  @Test
-  void testApplyMethod() {
-    // Given
-    TestStep step = new TestStep();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
-
-    // When
-    Multi<Object> result = step.apply(input);
-
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(2));
-    subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("Processed: item1", "Processed: item2");
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(2));
+        subscriber.awaitItems(2, Duration.ofSeconds(5));
+        subscriber.assertItems("Processed: item1", "Processed: item2");
+    }
 }

@@ -29,90 +29,90 @@ import org.mockito.MockitoAnnotations;
 
 class PersistenceManagerTest {
 
-  @Mock Instance<PersistenceProvider<?>> mockProviders;
+    @Mock Instance<PersistenceProvider<?>> mockProviders;
 
-  private PersistenceManager persistenceManager;
+    private PersistenceManager persistenceManager;
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-    persistenceManager = new PersistenceManager();
-    // Use reflection to inject the mock providers
-    try {
-      java.lang.reflect.Field field = PersistenceManager.class.getDeclaredField("providers");
-      field.setAccessible(true);
-      field.set(persistenceManager, mockProviders);
-    } catch (Exception e) {
-      fail("Failed to inject mock providers: " + e.getMessage());
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+        persistenceManager = new PersistenceManager();
+        // Use reflection to inject the mock providers
+        try {
+            java.lang.reflect.Field field = PersistenceManager.class.getDeclaredField("providers");
+            field.setAccessible(true);
+            field.set(persistenceManager, mockProviders);
+        } catch (Exception e) {
+            fail("Failed to inject mock providers: " + e.getMessage());
+        }
     }
-  }
 
-  @Test
-  void persist_WithNullEntity_ShouldReturnSameEntity() {
-    Object entity = null;
+    @Test
+    void persist_WithNullEntity_ShouldReturnSameEntity() {
+        Object entity = null;
 
-    Uni<Object> resultUni = persistenceManager.persist(entity);
+        Uni<Object> resultUni = persistenceManager.persist(entity);
 
-    UniAssertSubscriber<Object> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
+        UniAssertSubscriber<Object> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
 
-    assertNull(subscriber.getItem());
-  }
+        assertNull(subscriber.getItem());
+    }
 
-  @Test
-  void persist_WithNoProviders_ShouldReturnSameEntity() {
-    Object entity = new Object();
-    when(mockProviders.isUnsatisfied()).thenReturn(true);
+    @Test
+    void persist_WithNoProviders_ShouldReturnSameEntity() {
+        Object entity = new Object();
+        when(mockProviders.isUnsatisfied()).thenReturn(true);
 
-    Uni<Object> resultUni = persistenceManager.persist(entity);
+        Uni<Object> resultUni = persistenceManager.persist(entity);
 
-    UniAssertSubscriber<Object> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
+        UniAssertSubscriber<Object> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
 
-    assertSame(entity, subscriber.getItem());
-    verify(mockProviders).isUnsatisfied();
-  }
+        assertSame(entity, subscriber.getItem());
+        verify(mockProviders).isUnsatisfied();
+    }
 
-  @Test
-  void persist_WithSupportedProvider_ShouldUseProvider() {
-    Object entity = new Object();
-    PersistenceProvider<Object> mockProvider = mock(PersistenceProvider.class);
+    @Test
+    void persist_WithSupportedProvider_ShouldUseProvider() {
+        Object entity = new Object();
+        PersistenceProvider<Object> mockProvider = mock(PersistenceProvider.class);
 
-    when(mockProviders.isUnsatisfied()).thenReturn(false);
-    when(mockProviders.stream()).thenReturn(java.util.stream.Stream.of(mockProvider));
-    when(mockProvider.supports(entity)).thenReturn(true);
-    when(mockProvider.persist(entity)).thenReturn(Uni.createFrom().item(entity));
+        when(mockProviders.isUnsatisfied()).thenReturn(false);
+        when(mockProviders.stream()).thenReturn(java.util.stream.Stream.of(mockProvider));
+        when(mockProvider.supports(entity)).thenReturn(true);
+        when(mockProvider.persist(entity)).thenReturn(Uni.createFrom().item(entity));
 
-    Uni<Object> resultUni = persistenceManager.persist(entity);
+        Uni<Object> resultUni = persistenceManager.persist(entity);
 
-    UniAssertSubscriber<Object> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
+        UniAssertSubscriber<Object> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
 
-    assertSame(entity, subscriber.getItem());
-    verify(mockProvider).supports(entity);
-    verify(mockProvider).persist(entity);
-  }
+        assertSame(entity, subscriber.getItem());
+        verify(mockProvider).supports(entity);
+        verify(mockProvider).persist(entity);
+    }
 
-  @Test
-  void persist_WithUnsupportedProvider_ShouldReturnSameEntity() {
-    Object entity = new Object();
-    PersistenceProvider<Object> mockProvider = mock(PersistenceProvider.class);
+    @Test
+    void persist_WithUnsupportedProvider_ShouldReturnSameEntity() {
+        Object entity = new Object();
+        PersistenceProvider<Object> mockProvider = mock(PersistenceProvider.class);
 
-    when(mockProviders.isUnsatisfied()).thenReturn(false);
-    when(mockProviders.stream()).thenReturn(java.util.stream.Stream.of(mockProvider));
-    when(mockProvider.supports(entity)).thenReturn(false);
+        when(mockProviders.isUnsatisfied()).thenReturn(false);
+        when(mockProviders.stream()).thenReturn(java.util.stream.Stream.of(mockProvider));
+        when(mockProvider.supports(entity)).thenReturn(false);
 
-    Uni<Object> resultUni = persistenceManager.persist(entity);
+        Uni<Object> resultUni = persistenceManager.persist(entity);
 
-    UniAssertSubscriber<Object> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
+        UniAssertSubscriber<Object> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
 
-    assertSame(entity, subscriber.getItem());
-    verify(mockProvider).supports(entity);
-    verify(mockProvider, never()).persist(any());
-  }
+        assertSame(entity, subscriber.getItem());
+        verify(mockProvider).supports(entity);
+        verify(mockProvider, never()).persist(any());
+    }
 }

@@ -31,77 +31,77 @@ import org.mockito.MockitoAnnotations;
 
 class GrpcReactiveServiceAdapterTest {
 
-  @Mock private ReactiveService<DomainIn, DomainOut> mockReactiveService;
+    @Mock private ReactiveService<DomainIn, DomainOut> mockReactiveService;
 
-  private GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> adapter;
+    private GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> adapter;
 
-  private static class GrpcIn {}
+    private static class GrpcIn {}
 
-  private static class GrpcOut {}
+    private static class GrpcOut {}
 
-  private static class DomainIn {}
+    private static class DomainIn {}
 
-  private static class DomainOut {}
+    private static class DomainOut {}
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
 
-    adapter =
-        new GrpcReactiveServiceAdapter<>() {
-          @Override
-          protected ReactiveService<DomainIn, DomainOut> getService() {
-            return mockReactiveService;
-          }
+        adapter =
+                new GrpcReactiveServiceAdapter<>() {
+                    @Override
+                    protected ReactiveService<DomainIn, DomainOut> getService() {
+                        return mockReactiveService;
+                    }
 
-          @Override
-          protected DomainIn fromGrpc(GrpcIn grpcIn) {
-            return new DomainIn();
-          }
+                    @Override
+                    protected DomainIn fromGrpc(GrpcIn grpcIn) {
+                        return new DomainIn();
+                    }
 
-          @Override
-          protected GrpcOut toGrpc(DomainOut domainOut) {
-            return new GrpcOut();
-          }
-        };
-  }
+                    @Override
+                    protected GrpcOut toGrpc(DomainOut domainOut) {
+                        return new GrpcOut();
+                    }
+                };
+    }
 
-  @Test
-  void remoteProcess_SuccessPath() {
-    GrpcIn grpcRequest = new GrpcIn();
-    DomainOut domainOut = new DomainOut();
+    @Test
+    void remoteProcess_SuccessPath() {
+        GrpcIn grpcRequest = new GrpcIn();
+        DomainOut domainOut = new DomainOut();
 
-    Mockito.when(mockReactiveService.process(ArgumentMatchers.any(DomainIn.class)))
-        .thenReturn(Uni.createFrom().item(domainOut));
+        Mockito.when(mockReactiveService.process(ArgumentMatchers.any(DomainIn.class)))
+                .thenReturn(Uni.createFrom().item(domainOut));
 
-    Uni<GrpcOut> resultUni = adapter.remoteProcess(grpcRequest);
+        Uni<GrpcOut> resultUni = adapter.remoteProcess(grpcRequest);
 
-    UniAssertSubscriber<GrpcOut> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
+        UniAssertSubscriber<GrpcOut> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
 
-    assertNotNull(subscriber.getItem());
-    Mockito.verify(mockReactiveService).process(ArgumentMatchers.any(DomainIn.class));
-  }
+        assertNotNull(subscriber.getItem());
+        Mockito.verify(mockReactiveService).process(ArgumentMatchers.any(DomainIn.class));
+    }
 
-  @Test
-  void remoteProcess_FailurePath() {
-    GrpcIn grpcRequest = new GrpcIn();
-    RuntimeException testException = new RuntimeException("Processing failed");
+    @Test
+    void remoteProcess_FailurePath() {
+        GrpcIn grpcRequest = new GrpcIn();
+        RuntimeException testException = new RuntimeException("Processing failed");
 
-    Mockito.when(mockReactiveService.process(ArgumentMatchers.any(DomainIn.class)))
-        .thenReturn(Uni.createFrom().failure(testException));
+        Mockito.when(mockReactiveService.process(ArgumentMatchers.any(DomainIn.class)))
+                .thenReturn(Uni.createFrom().failure(testException));
 
-    Uni<GrpcOut> resultUni = adapter.remoteProcess(grpcRequest);
+        Uni<GrpcOut> resultUni = adapter.remoteProcess(grpcRequest);
 
-    UniAssertSubscriber<GrpcOut> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitFailure();
+        UniAssertSubscriber<GrpcOut> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitFailure();
 
-    Throwable failure = subscriber.getFailure();
-    assertNotNull(failure);
-    assertInstanceOf(StatusRuntimeException.class, failure);
-    assertEquals("INTERNAL: Processing failed", failure.getMessage());
-    assertEquals(testException.getMessage(), failure.getCause().getMessage());
-  }
+        Throwable failure = subscriber.getFailure();
+        assertNotNull(failure);
+        assertInstanceOf(StatusRuntimeException.class, failure);
+        assertEquals("INTERNAL: Processing failed", failure.getMessage());
+        assertEquals(testException.getMessage(), failure.getCause().getMessage());
+    }
 }

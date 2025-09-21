@@ -29,81 +29,82 @@ import org.junit.jupiter.api.Test;
 
 class StepOneToOneBlockingTest {
 
-  static class TestStepBlocking implements StepOneToOneBlocking<String, String> {
-    @Override
-    public String apply(String input) {
-      return "Processed: " + input;
+    static class TestStepBlocking implements StepOneToOneBlocking<String, String> {
+        @Override
+        public String apply(String input) {
+            return "Processed: " + input;
+        }
+
+        @Override
+        public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
+            return new io.github.mbarcia.pipeline.config.StepConfig();
+        }
     }
 
-    @Override
-    public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
-      return new io.github.mbarcia.pipeline.config.StepConfig();
+    @Test
+    void testApplyMethod() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
+
+        // When
+        String result = step.apply("test");
+
+        // Then
+        assertEquals("Processed: test", result);
     }
-  }
 
-  @Test
-  void testApplyMethod() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
+    @Test
+    void testDefaultConcurrency() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
 
-    // When
-    String result = step.apply("test");
+        // When
+        int concurrency = step.concurrency();
 
-    // Then
-    assertEquals("Processed: test", result);
-  }
+        // Then
+        assertEquals(1, concurrency);
+    }
 
-  @Test
-  void testDefaultConcurrency() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
+    @Test
+    void testDefaultRunWithVirtualThreads() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
 
-    // When
-    int concurrency = step.concurrency();
+        // When
+        boolean runWithVirtualThreads = step.runWithVirtualThreads();
 
-    // Then
-    assertEquals(1, concurrency);
-  }
+        // Then
+        // The default value should be false, but in some test environments it might be true
+        // We're not asserting a specific value here because it depends on the test environment
+        // The important thing is that the method works
+        //noinspection DuplicateCondition,ConstantValue
+        assertTrue(
+                runWithVirtualThreads
+                        || !runWithVirtualThreads); // Always true, just testing the method works
+    }
 
-  @Test
-  void testDefaultRunWithVirtualThreads() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
+    @Test
+    void testApplyMethodInStep() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3");
 
-    // When
-    boolean runWithVirtualThreads = step.runWithVirtualThreads();
+        // When
+        Multi<Object> result = step.apply(input);
 
-    // Then
-    // The default value should be false, but in some test environments it might be true
-    // We're not asserting a specific value here because it depends on the test environment
-    // The important thing is that the method works
-    //noinspection DuplicateCondition,ConstantValue
-    assertTrue(
-        runWithVirtualThreads
-            || !runWithVirtualThreads); // Always true, just testing the method works
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(3));
+        subscriber.awaitItems(3, Duration.ofSeconds(5));
 
-  @Test
-  void testApplyMethodInStep() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3");
+        // Grab all items
+        List<Object> actualItems = subscriber.getItems();
 
-    // When
-    Multi<Object> result = step.apply(input);
+        // Expected items
+        Set<String> expectedItems =
+                Set.of("Processed: item1", "Processed: item2", "Processed: item3");
 
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(3));
-    subscriber.awaitItems(3, Duration.ofSeconds(5));
-
-    // Grab all items
-    List<Object> actualItems = subscriber.getItems();
-
-    // Expected items
-    Set<String> expectedItems = Set.of("Processed: item1", "Processed: item2", "Processed: item3");
-
-    // Assert ignoring order
-    assertEquals(expectedItems, new HashSet<>(actualItems));
-  }
+        // Assert ignoring order
+        assertEquals(expectedItems, new HashSet<>(actualItems));
+    }
 }

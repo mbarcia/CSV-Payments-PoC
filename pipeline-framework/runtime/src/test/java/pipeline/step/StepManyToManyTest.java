@@ -25,47 +25,47 @@ import org.junit.jupiter.api.Test;
 
 class StepManyToManyTest {
 
-  static class TestStep implements StepManyToMany {
-    @Override
-    public Multi<Object> applyStreaming(Multi<Object> upstream) {
-      return upstream.onItem().transform(item -> "Streamed: " + item);
+    static class TestStep implements StepManyToMany {
+        @Override
+        public Multi<Object> applyStreaming(Multi<Object> upstream) {
+            return upstream.onItem().transform(item -> "Streamed: " + item);
+        }
+
+        @Override
+        public StepConfig effectiveConfig() {
+            return new StepConfig();
+        }
     }
 
-    @Override
-    public StepConfig effectiveConfig() {
-      return new StepConfig();
+    @Test
+    void testApplyStreamingMethod() {
+        // Given
+        TestStep step = new TestStep();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2");
+
+        // When
+        Multi<Object> result = step.applyStreaming(input);
+
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(2));
+        subscriber.awaitItems(2, Duration.ofSeconds(5));
+        subscriber.assertItems("Streamed: item1", "Streamed: item2");
     }
-  }
 
-  @Test
-  void testApplyStreamingMethod() {
-    // Given
-    TestStep step = new TestStep();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
+    @Test
+    void testApplyMethod() {
+        // Given
+        TestStep step = new TestStep();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
-    // When
-    Multi<Object> result = step.applyStreaming(input);
+        // When
+        Multi<Object> result = step.apply(input);
 
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(2));
-    subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("Streamed: item1", "Streamed: item2");
-  }
-
-  @Test
-  void testApplyMethod() {
-    // Given
-    TestStep step = new TestStep();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
-
-    // When
-    Multi<Object> result = step.apply(input);
-
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(2));
-    subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("Streamed: item1", "Streamed: item2");
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(2));
+        subscriber.awaitItems(2, Duration.ofSeconds(5));
+        subscriber.assertItems("Streamed: item1", "Streamed: item2");
+    }
 }

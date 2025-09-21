@@ -24,24 +24,24 @@ import org.junit.jupiter.api.Test;
 
 class ConfigurableStepTest {
 
-  static class TestStepBlocking extends ConfigurableStep
-      implements StepOneToOneBlocking<String, String> {
-    TestStepBlocking() {
-      // No-args constructor
+    static class TestStepBlocking extends ConfigurableStep
+            implements StepOneToOneBlocking<String, String> {
+        TestStepBlocking() {
+            // No-args constructor
+        }
+
+        @Override
+        public String apply(String input) {
+            return "Processed: " + input;
+        }
     }
 
-    @Override
-    public String apply(String input) {
-      return "Processed: " + input;
+    @Test
+    void testConfigurableStepCreation() {
+        // When
+        TestStepBlocking step = new TestStepBlocking();
+
+        // Then
+        assertNotNull(step);
     }
-  }
-
-  @Test
-  void testConfigurableStepCreation() {
-    // When
-    TestStepBlocking step = new TestStepBlocking();
-
-    // Then
-    assertNotNull(step);
-  }
 }

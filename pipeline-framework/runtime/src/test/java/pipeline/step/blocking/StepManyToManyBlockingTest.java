@@ -29,64 +29,64 @@ import org.junit.jupiter.api.Test;
 
 class StepManyToManyBlockingTest {
 
-  static class TestStepBlocking implements StepManyToManyBlocking {
-    @Override
-    public List<Object> applyStreamingList(List<Object> upstream) {
-      List<Object> result = new ArrayList<>();
-      for (Object item : upstream) {
-        result.add("Streamed: " + item);
-      }
-      return result;
+    static class TestStepBlocking implements StepManyToManyBlocking {
+        @Override
+        public List<Object> applyStreamingList(List<Object> upstream) {
+            List<Object> result = new ArrayList<>();
+            for (Object item : upstream) {
+                result.add("Streamed: " + item);
+            }
+            return result;
+        }
+
+        @Override
+        public StepConfig effectiveConfig() {
+            return new StepConfig();
+        }
     }
 
-    @Override
-    public StepConfig effectiveConfig() {
-      return new StepConfig();
+    @Test
+    void testApplyStreamingListMethod() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
+        List<Object> input = new ArrayList<>();
+        input.add("item1");
+        input.add("item2");
+
+        // When
+        List<Object> result = step.applyStreamingList(input);
+
+        // Then
+        assertEquals(2, result.size());
+        assertEquals("Streamed: item1", result.get(0));
+        assertEquals("Streamed: item2", result.get(1));
     }
-  }
 
-  @Test
-  void testApplyStreamingListMethod() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
-    List<Object> input = new ArrayList<>();
-    input.add("item1");
-    input.add("item2");
+    @Test
+    void testDefaultRunWithVirtualThreads() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
 
-    // When
-    List<Object> result = step.applyStreamingList(input);
+        // When
+        boolean runWithVirtualThreads = step.runWithVirtualThreads();
 
-    // Then
-    assertEquals(2, result.size());
-    assertEquals("Streamed: item1", result.get(0));
-    assertEquals("Streamed: item2", result.get(1));
-  }
+        // Then
+        assertFalse(runWithVirtualThreads);
+    }
 
-  @Test
-  void testDefaultRunWithVirtualThreads() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
+    @Test
+    void testApplyMethodInStep() {
+        // Given
+        TestStepBlocking step = new TestStepBlocking();
+        Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
-    // When
-    boolean runWithVirtualThreads = step.runWithVirtualThreads();
+        // When
+        Multi<Object> result = step.apply(input);
 
-    // Then
-    assertFalse(runWithVirtualThreads);
-  }
-
-  @Test
-  void testApplyMethodInStep() {
-    // Given
-    TestStepBlocking step = new TestStepBlocking();
-    Multi<Object> input = Multi.createFrom().items("item1", "item2");
-
-    // When
-    Multi<Object> result = step.apply(input);
-
-    // Then
-    AssertSubscriber<Object> subscriber =
-        result.subscribe().withSubscriber(AssertSubscriber.create(2));
-    subscriber.awaitItems(2, Duration.ofSeconds(5));
-    subscriber.assertItems("Streamed: item1", "Streamed: item2");
-  }
+        // Then
+        AssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(AssertSubscriber.create(2));
+        subscriber.awaitItems(2, Duration.ofSeconds(5));
+        subscriber.assertItems("Streamed: item1", "Streamed: item2");
+    }
 }

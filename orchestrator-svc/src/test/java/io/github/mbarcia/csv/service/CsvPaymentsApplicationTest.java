@@ -27,16 +27,16 @@ import org.mockito.*;
 @QuarkusTest
 class CsvPaymentsApplicationTest {
 
-  @Test
-  void testMain() {
-    // Arrange
-    String[] args = {"--csv-folder", "test-folder"};
-    try (MockedStatic<Quarkus> quarkusMock = Mockito.mockStatic(Quarkus.class)) {
-      // Act
-      CsvPaymentsApplication.main(args);
+    @Test
+    void testMain() {
+        // Arrange
+        String[] args = {"--csv-folder", "test-folder"};
+        try (MockedStatic<Quarkus> quarkusMock = Mockito.mockStatic(Quarkus.class)) {
+            // Act
+            CsvPaymentsApplication.main(args);
 
-      // Assert
-      quarkusMock.verify(() -> Quarkus.run(CsvPaymentsApplication.class, args));
+            // Assert
+            quarkusMock.verify(() -> Quarkus.run(CsvPaymentsApplication.class, args));
+        }
     }
-  }
 }

@@ -43,66 +43,66 @@ import org.mockito.MockitoAnnotations;
 
 class ProcessPaymentStatusReactiveServiceTest {
 
-  @Mock PaymentOutputMapper mapper;
+    @Mock PaymentOutputMapper mapper;
 
-  @InjectMocks ProcessPaymentStatusReactiveService service;
+    @InjectMocks ProcessPaymentStatusReactiveService service;
 
-  @Captor ArgumentCaptor<PaymentOutputDto> dtoCaptor;
+    @Captor ArgumentCaptor<PaymentOutputDto> dtoCaptor;
 
-  private final PaymentRecordMapper paymentRecordMapper =
-      Mappers.getMapper(PaymentRecordMapper.class);
+    private final PaymentRecordMapper paymentRecordMapper =
+            Mappers.getMapper(PaymentRecordMapper.class);
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
-  }
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
+    }
 
-  @Test
-  void process() {
-    // Given
-    PaymentRecordDto paymentRecordDto =
-        PaymentRecordDto.builder()
-            .id(UUID.randomUUID())
-            .csvId(String.valueOf(UUID.randomUUID()))
-            .recipient("recipient123")
-            .amount(new java.math.BigDecimal("100.00"))
-            .currency(java.util.Currency.getInstance("USD"))
-            .csvPaymentsInputFilePath(null)
-            .build();
-    PaymentRecord paymentRecord = paymentRecordMapper.fromDto(paymentRecordDto);
-    AckPaymentSent ackPaymentSent =
-        new AckPaymentSent(UUID.randomUUID())
-            .setPaymentRecord(paymentRecord)
-            .setStatus(1L)
-            .setMessage("SUCCESS");
-    PaymentStatus paymentStatus = mock(PaymentStatus.class);
-    when(paymentStatus.getReference()).thenReturn(UUID.randomUUID().toString());
-    when(paymentStatus.getAckPaymentSent()).thenReturn(ackPaymentSent);
-    when(paymentStatus.getMessage()).thenReturn("Payment processed successfully");
-    when(paymentStatus.getFee()).thenReturn(new java.math.BigDecimal("1.50"));
+    @Test
+    void process() {
+        // Given
+        PaymentRecordDto paymentRecordDto =
+                PaymentRecordDto.builder()
+                        .id(UUID.randomUUID())
+                        .csvId(String.valueOf(UUID.randomUUID()))
+                        .recipient("recipient123")
+                        .amount(new java.math.BigDecimal("100.00"))
+                        .currency(java.util.Currency.getInstance("USD"))
+                        .csvPaymentsInputFilePath(null)
+                        .build();
+        PaymentRecord paymentRecord = paymentRecordMapper.fromDto(paymentRecordDto);
+        AckPaymentSent ackPaymentSent =
+                new AckPaymentSent(UUID.randomUUID())
+                        .setPaymentRecord(paymentRecord)
+                        .setStatus(1L)
+                        .setMessage("SUCCESS");
+        PaymentStatus paymentStatus = mock(PaymentStatus.class);
+        when(paymentStatus.getReference()).thenReturn(UUID.randomUUID().toString());
+        when(paymentStatus.getAckPaymentSent()).thenReturn(ackPaymentSent);
+        when(paymentStatus.getMessage()).thenReturn("Payment processed successfully");
+        when(paymentStatus.getFee()).thenReturn(new java.math.BigDecimal("1.50"));
 
-    PaymentOutput expectedOutput = new PaymentOutput();
-    when(mapper.fromDto(dtoCaptor.capture())).thenReturn(expectedOutput);
+        PaymentOutput expectedOutput = new PaymentOutput();
+        when(mapper.fromDto(dtoCaptor.capture())).thenReturn(expectedOutput);
 
-    // When
-    Uni<PaymentOutput> resultUni = service.process(paymentStatus);
+        // When
+        Uni<PaymentOutput> resultUni = service.process(paymentStatus);
 
-    // Then
-    UniAssertSubscriber<PaymentOutput> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
-    PaymentOutput result = subscriber.getItem();
-    assertNotNull(result);
+        // Then
+        UniAssertSubscriber<PaymentOutput> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
+        PaymentOutput result = subscriber.getItem();
+        assertNotNull(result);
 
-    PaymentOutputDto capturedDto = dtoCaptor.getValue();
-    assertEquals(paymentStatus, capturedDto.getPaymentStatus());
-    assertEquals(paymentRecord.getCsvId(), capturedDto.getCsvId());
-    assertEquals(paymentRecord.getRecipient(), capturedDto.getRecipient());
-    assertEquals(paymentRecord.getAmount(), capturedDto.getAmount());
-    assertEquals(paymentRecord.getCurrency(), capturedDto.getCurrency());
-    assertEquals(ackPaymentSent.getConversationId(), capturedDto.getConversationId());
-    assertEquals(ackPaymentSent.getStatus(), capturedDto.getStatus());
-    assertEquals(paymentStatus.getMessage(), capturedDto.getMessage());
-    assertEquals(paymentStatus.getFee(), capturedDto.getFee());
-  }
+        PaymentOutputDto capturedDto = dtoCaptor.getValue();
+        assertEquals(paymentStatus, capturedDto.getPaymentStatus());
+        assertEquals(paymentRecord.getCsvId(), capturedDto.getCsvId());
+        assertEquals(paymentRecord.getRecipient(), capturedDto.getRecipient());
+        assertEquals(paymentRecord.getAmount(), capturedDto.getAmount());
+        assertEquals(paymentRecord.getCurrency(), capturedDto.getCurrency());
+        assertEquals(ackPaymentSent.getConversationId(), capturedDto.getConversationId());
+        assertEquals(ackPaymentSent.getStatus(), capturedDto.getStatus());
+        assertEquals(paymentStatus.getMessage(), capturedDto.getMessage());
+        assertEquals(paymentStatus.getFee(), capturedDto.getFee());
+    }
 }

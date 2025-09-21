@@ -26,23 +26,23 @@ import java.util.List;
  * transactions.
  */
 public class ExpandPaymentCollectionStep extends ConfigurableStep
-    implements StepOneToManyBlocking<String, String> {
+        implements StepOneToManyBlocking<String, String> {
 
-  @Override
-  public List<String> applyList(String paymentRequest) {
-    // Simulate some processing time
-    try {
-      Thread.sleep(50); // Simulate work
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
+    @Override
+    public List<String> applyList(String paymentRequest) {
+        // Simulate some processing time
+        try {
+            Thread.sleep(50); // Simulate work
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        // Expand the single payment request into multiple transactions
+        List<String> transactions = new ArrayList<>();
+        transactions.add("TXN-001-" + paymentRequest);
+        transactions.add("TXN-002-" + paymentRequest);
+        transactions.add("TXN-003-" + paymentRequest);
+
+        return transactions;
     }
-
-    // Expand the single payment request into multiple transactions
-    List<String> transactions = new ArrayList<>();
-    transactions.add("TXN-001-" + paymentRequest);
-    transactions.add("TXN-002-" + paymentRequest);
-    transactions.add("TXN-003-" + paymentRequest);
-
-    return transactions;
-  }
 }

@@ -34,116 +34,117 @@ import org.mockito.MockitoAnnotations;
 
 class GrpcReactiveServiceAdapterIntegrationTest {
 
-  @Mock private PersistenceManager mockPersistenceManager;
+    @Mock private PersistenceManager mockPersistenceManager;
 
-  private GrpcReactiveServiceAdapter<Object, Object, TestEntity, TestResult> adapter;
+    private GrpcReactiveServiceAdapter<Object, Object, TestEntity, TestResult> adapter;
 
-  private static class TestGrpcRequest {}
+    private static class TestGrpcRequest {}
 
-  private static class TestGrpcResponse {}
+    private static class TestGrpcResponse {}
 
-  @BeforeEach
-  void setUp() {
-    MockitoAnnotations.openMocks(this);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
 
-    // Use reflection to inject the mock persistence manager
-    adapter =
-        new GrpcReactiveServiceAdapter<>() {
-          @Override
-          protected ReactiveService<TestEntity, TestResult> getService() {
-            return new TestReactiveService();
-          }
+        // Use reflection to inject the mock persistence manager
+        adapter =
+                new GrpcReactiveServiceAdapter<>() {
+                    @Override
+                    protected ReactiveService<TestEntity, TestResult> getService() {
+                        return new TestReactiveService();
+                    }
 
-          @Override
-          protected TestEntity fromGrpc(Object grpcIn) {
-            return new TestEntity("test", "description");
-          }
+                    @Override
+                    protected TestEntity fromGrpc(Object grpcIn) {
+                        return new TestEntity("test", "description");
+                    }
 
-          @Override
-          protected Object toGrpc(TestResult domainOut) {
-            return new TestGrpcResponse();
-          }
+                    @Override
+                    protected Object toGrpc(TestResult domainOut) {
+                        return new TestGrpcResponse();
+                    }
 
-          @Override
-          protected StepConfig getStepConfig() {
-            return new StepConfig().autoPersist(true);
-          }
-        };
+                    @Override
+                    protected StepConfig getStepConfig() {
+                        return new StepConfig().autoPersist(true);
+                    }
+                };
 
-    try {
-      java.lang.reflect.Field field =
-          GrpcReactiveServiceAdapter.class.getDeclaredField("persistenceManager");
-      field.setAccessible(true);
-      field.set(adapter, mockPersistenceManager);
-    } catch (Exception e) {
-      fail("Failed to inject mock persistence manager: " + e.getMessage());
-    }
-  }
-
-  @Test
-  void remoteProcess_WithAutoPersistenceEnabled_ShouldPersistEntity() {
-    TestGrpcRequest grpcRequest = new TestGrpcRequest();
-    TestEntity entity = new TestEntity("test", "description");
-    TestResult result = new TestResult("Processed: test", "Processed: description");
-
-    // Mock the persistence manager to return the same entity
-    when(mockPersistenceManager.persist(any(TestEntity.class)))
-        .thenReturn(Uni.createFrom().item(entity));
-
-    Uni<Object> resultUni = adapter.remoteProcess(grpcRequest);
-
-    UniAssertSubscriber<Object> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
-
-    assertNotNull(subscriber.getItem());
-    verify(mockPersistenceManager).persist(any(TestEntity.class));
-  }
-
-  @Test
-  void remoteProcess_WithAutoPersistenceDisabled_ShouldNotPersistEntity() {
-    GrpcReactiveServiceAdapter<Object, Object, TestEntity, TestResult> adapterWithoutPersistence =
-        new GrpcReactiveServiceAdapter<>() {
-          @Override
-          protected ReactiveService<TestEntity, TestResult> getService() {
-            return new TestReactiveService();
-          }
-
-          @Override
-          protected TestEntity fromGrpc(Object grpcIn) {
-            return new TestEntity("test", "description");
-          }
-
-          @Override
-          protected Object toGrpc(TestResult domainOut) {
-            return new TestGrpcResponse();
-          }
-
-          @Override
-          protected StepConfig getStepConfig() {
-            return new StepConfig().autoPersist(false);
-          }
-        };
-
-    // Inject the mock persistence manager
-    try {
-      java.lang.reflect.Field field =
-          GrpcReactiveServiceAdapter.class.getDeclaredField("persistenceManager");
-      field.setAccessible(true);
-      field.set(adapterWithoutPersistence, mockPersistenceManager);
-    } catch (Exception e) {
-      fail("Failed to inject mock persistence manager: " + e.getMessage());
+        try {
+            java.lang.reflect.Field field =
+                    GrpcReactiveServiceAdapter.class.getDeclaredField("persistenceManager");
+            field.setAccessible(true);
+            field.set(adapter, mockPersistenceManager);
+        } catch (Exception e) {
+            fail("Failed to inject mock persistence manager: " + e.getMessage());
+        }
     }
 
-    TestGrpcRequest grpcRequest = new TestGrpcRequest();
+    @Test
+    void remoteProcess_WithAutoPersistenceEnabled_ShouldPersistEntity() {
+        TestGrpcRequest grpcRequest = new TestGrpcRequest();
+        TestEntity entity = new TestEntity("test", "description");
+        TestResult result = new TestResult("Processed: test", "Processed: description");
 
-    Uni<Object> resultUni = adapterWithoutPersistence.remoteProcess(grpcRequest);
+        // Mock the persistence manager to return the same entity
+        when(mockPersistenceManager.persist(any(TestEntity.class)))
+                .thenReturn(Uni.createFrom().item(entity));
 
-    UniAssertSubscriber<Object> subscriber =
-        resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-    subscriber.awaitItem();
+        Uni<Object> resultUni = adapter.remoteProcess(grpcRequest);
 
-    assertNotNull(subscriber.getItem());
-    verify(mockPersistenceManager, never()).persist(any(TestEntity.class));
-  }
+        UniAssertSubscriber<Object> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
+
+        assertNotNull(subscriber.getItem());
+        verify(mockPersistenceManager).persist(any(TestEntity.class));
+    }
+
+    @Test
+    void remoteProcess_WithAutoPersistenceDisabled_ShouldNotPersistEntity() {
+        GrpcReactiveServiceAdapter<Object, Object, TestEntity, TestResult>
+                adapterWithoutPersistence =
+                        new GrpcReactiveServiceAdapter<>() {
+                            @Override
+                            protected ReactiveService<TestEntity, TestResult> getService() {
+                                return new TestReactiveService();
+                            }
+
+                            @Override
+                            protected TestEntity fromGrpc(Object grpcIn) {
+                                return new TestEntity("test", "description");
+                            }
+
+                            @Override
+                            protected Object toGrpc(TestResult domainOut) {
+                                return new TestGrpcResponse();
+                            }
+
+                            @Override
+                            protected StepConfig getStepConfig() {
+                                return new StepConfig().autoPersist(false);
+                            }
+                        };
+
+        // Inject the mock persistence manager
+        try {
+            java.lang.reflect.Field field =
+                    GrpcReactiveServiceAdapter.class.getDeclaredField("persistenceManager");
+            field.setAccessible(true);
+            field.set(adapterWithoutPersistence, mockPersistenceManager);
+        } catch (Exception e) {
+            fail("Failed to inject mock persistence manager: " + e.getMessage());
+        }
+
+        TestGrpcRequest grpcRequest = new TestGrpcRequest();
+
+        Uni<Object> resultUni = adapterWithoutPersistence.remoteProcess(grpcRequest);
+
+        UniAssertSubscriber<Object> subscriber =
+                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
+
+        assertNotNull(subscriber.getItem());
+        verify(mockPersistenceManager, never()).persist(any(TestEntity.class));
+    }
 }

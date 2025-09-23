@@ -14,4 +14,4 @@
  * limitations under the License.
  */
 
-import{_ as e,c as i,o as s,ae as t}from"./chunks/framework.Bi6zybwU.js";const u=JSON.parse('{"title":"Cloudflare Pages Deployment Instructions","description":"","frontmatter":{},"headers":[],"relativePath":"DEPLOYMENT.md","filePath":"DEPLOYMENT.md"}'),n={name:"DEPLOYMENT.md"};function l(o,a,r,p,d,h){return s(),i("div",null,[...a[0]||(a[0]=[t("",13)])])}const g=e(n,[["render",l]]);export{u as __pageData,g as default};
+import{_ as e,c as i,o as s,ae as t}from"./chunks/framework.Bi6zybwU.js";const c=JSON.parse('{"title":"Cloudflare Pages Deployment Instructions","description":"","frontmatter":{},"headers":[],"relativePath":"DEPLOYMENT.md","filePath":"DEPLOYMENT.md"}'),n={name:"DEPLOYMENT.md"};function o(l,a,r,d,p,h){return s(),i("div",null,[...a[0]||(a[0]=[t("",15)])])}const g=e(n,[["render",o]]);export{c as __pageData,g as default};

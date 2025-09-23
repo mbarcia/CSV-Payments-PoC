@@ -54,3 +54,13 @@ When you build your project, the framework will automatically generate the neces
 2. Use the configuration options in `@PipelineStep` to control behavior
 3. Implement proper error handling in your mappers
 4. Test your steps in isolation before integrating them into the pipeline
+
+## Diagrams
+
+If you need to include diagrams in your documentation, you can use Mermaid syntax which is supported by the documentation system. For example:
+
+```mermaid
+graph TD
+    A[Input] --> B[Process]
+    B --> C[Output]
+```

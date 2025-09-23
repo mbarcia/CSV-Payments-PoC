@@ -310,10 +310,6 @@ verify_output_files() {
 verify_database_persistence() {
     echo "Verifying database persistence..."
     
-    # Wait a bit longer for all data to be persisted
-    echo "Waiting 10 seconds for data to be fully persisted..."
-    sleep 10
-    
     # Check if Docker is running
     if ! detect_docker; then
         echo "✗ Docker not available, cannot verify database persistence"

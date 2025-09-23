@@ -23,6 +23,7 @@ import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.PipelineRunner;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
@@ -70,7 +71,11 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
   @Inject
   ProcessPaymentStatusStep processPaymentStatusStep;
   
-  @Inject CommandLine.IFactory factory;
+  @Inject
+  PipelineRunner pipelineRunner;
+  
+  @Inject
+  CommandLine.IFactory factory;
 
   @Inject
   SystemExiter exiter;
@@ -112,9 +117,8 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
     pipelineConfig.profile("dev", new StepConfig().retryLimit(1).debug(true));
     pipelineConfig.profile("prod", new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)));
 
-    try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<?> result = (Multi<?>) runner.run(
-              // TODO use the generated application runner
+    try {
+      Object result = pipelineRunner.run(
               Multi.createFrom().items(folderPath),
               List.of(processFolderStep,
                       processInputFileStep,
@@ -123,8 +127,17 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
                       processPaymentStatusStep,
                       processOutputFileStep)
       );
+      
+      Multi<?> multiResult;
+      if (result instanceof Multi) {
+        multiResult = (Multi<?>) result;
+      } else if (result instanceof Uni) {
+        multiResult = ((Uni<?>) result).toMulti();
+      } else {
+        throw new IllegalStateException("PipelineRunner returned unexpected type: " + result.getClass());
+      }
 
-      result
+      multiResult
           .subscribe()
           .with(_ -> {
                 LOG.info("Processing completed.");

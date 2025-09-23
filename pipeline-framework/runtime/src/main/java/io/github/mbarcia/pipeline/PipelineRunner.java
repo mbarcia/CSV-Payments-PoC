@@ -21,12 +21,11 @@ import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.*;
 import io.github.mbarcia.pipeline.step.functional.ManyToMany;
 import io.github.mbarcia.pipeline.step.functional.ManyToOne;
-import io.github.mbarcia.pipeline.step.functional.OneToMany;
-import io.github.mbarcia.pipeline.step.functional.OneToOne;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.concurrent.Executors;
 
@@ -53,40 +52,48 @@ public class PipelineRunner implements AutoCloseable {
                 c.initialiseWithConfig(live);
             }
 
-            if (step instanceof OneToOne<?, ?> oneToOne) {
-                current = applyOneToOneUnchecked(oneToOne, current);
-            } else if (step instanceof OneToMany<?, ?> oneToMany) {
-                current = applyOneToManyUnchecked(oneToMany, current);
-            } else if (step instanceof ManyToOne<?, ?> manyToOne) {
-                current = applyManyToOneUnchecked(manyToOne, current);
-            } else if (step instanceof ManyToMany<?, ?> manyToMany) {
-                current = applyManyToManyUnchecked(manyToMany, current);
+            switch (step) {
+                case StepOneToOne<?, ?> stepOneToOne -> current = applyOneToOneUnchecked(stepOneToOne, current);
+                case StepOneToMany<?, ?> stepOneToMany -> current = applyOneToManyUnchecked(stepOneToMany, current);
+                case ManyToOne<?, ?> manyToOne -> current = applyManyToOneUnchecked(manyToOne, current);
+                case ManyToMany<?, ?> manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
+                case null, default -> System.err.println("Step not recognised");
             }
         }
 
         return current; // could be Uni<?> or Multi<?>
     }
 
-    @SuppressWarnings("unchecked")
-    private static <I, O> Object applyOneToOneUnchecked(OneToOne<I, O> step, Object current) {
+    @SuppressWarnings({"unchecked", "UnnecessaryLocalVariable"})
+    private static <I, O> Object applyOneToOneUnchecked(io.github.mbarcia.pipeline.step.StepOneToOne<I, O> step, Object current) {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {
-            // convert Multi to Uni by taking first item (change if you need different semantics)
-            return step.apply(((Multi<I>) current).collect().first());
+            // Apply the OneToOne step to each item in the Multi individually
+            Multi<O> result = ((Multi<I>) current)
+                .onItem()
+                .transformToUni(step::applyOneToOne)
+                .concatenate();
+            return result;
         } else {
-            throw new IllegalArgumentException("Unsupported current type for OneToOne: " + current);
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToOne: {0}", current));
         }
     }
 
-    @SuppressWarnings("unchecked")
-    private static <I, O> Object applyOneToManyUnchecked(OneToMany<I, O> step, Object current) {
+    @SuppressWarnings({"unchecked", "UnnecessaryLocalVariable"})
+    private static <I, O> Object applyOneToManyUnchecked(io.github.mbarcia.pipeline.step.StepOneToMany<I, O> step, Object current) {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {
-            return step.apply(((Multi<I>) current).collect().first());
+            // Apply the OneToMany step to each item in the Multi, producing a Multi of Multi<O>,
+            // then flatten it to a single Multi<O>
+            Multi<O> result = ((Multi<I>) current)
+                .onItem()
+                .transformToMulti(step::applyOneToMany)
+                .concatenate();
+            return result;
         } else {
-            throw new IllegalArgumentException("Unsupported current type for OneToMany: " + current);
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToMany: {0}", current));
         }
     }
 
@@ -98,7 +105,7 @@ public class PipelineRunner implements AutoCloseable {
             // convert Uni to Multi and call applyReduce
             return step.applyReduce(((Uni<I>) current).toMulti());
         } else {
-            throw new IllegalArgumentException("Unsupported current type for ManyToOne: " + current);
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for ManyToOne: {0}", current));
         }
     }
 
@@ -109,7 +116,7 @@ public class PipelineRunner implements AutoCloseable {
         } else if (current instanceof Uni<?>) {
             return step.apply(((Uni<I>) current).toMulti());
         } else {
-            throw new IllegalArgumentException("Unsupported current type for ManyToMany: " + current);
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for ManyToMany: {0}", current));
         }
     }
 

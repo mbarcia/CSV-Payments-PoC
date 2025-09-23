@@ -47,7 +47,7 @@ class ProcessOutputFileStepTest {
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        processOutputFileStep = new ProcessOutputFileStep(pipelineConfig);
+        processOutputFileStep = new ProcessOutputFileStep();
 
         // Inject mocks using reflection since the fields are private
         try {
@@ -57,10 +57,6 @@ class ProcessOutputFileStepTest {
             serviceField.setAccessible(true);
             serviceField.set(processOutputFileStep, processCsvPaymentsOutputFileService);
 
-            java.lang.reflect.Field mapperField =
-                    ProcessOutputFileStep.class.getDeclaredField("csvPaymentsOutputFileMapper");
-            mapperField.setAccessible(true);
-            mapperField.set(processOutputFileStep, csvPaymentsOutputFileMapper);
         } catch (Exception e) {
             throw new RuntimeException("Failed to inject mocks", e);
         }

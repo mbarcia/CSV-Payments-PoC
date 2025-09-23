@@ -17,6 +17,8 @@
 package io.github.mbarcia.csv.step;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
+import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper;
+import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.service.ProcessFolderService;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
@@ -25,8 +27,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.URISyntaxException;
 import lombok.NoArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Step supplier that processes a folder path and produces a stream of input files.
@@ -34,19 +34,22 @@ import org.slf4j.LoggerFactory;
  */
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
-public class ProcessFolderStep extends ConfigurableStep implements StepOneToMany<String, CsvPaymentsInputFile> {
-
-    private static final Logger LOG = LoggerFactory.getLogger(ProcessFolderStep.class);
+public class ProcessFolderStep extends ConfigurableStep implements StepOneToMany<String, InputCsvFileProcessingSvc.CsvPaymentsInputFile> {
 
     @Inject
     ProcessFolderService processFolderService;
+    
+    @Inject
+    CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
 
     @Override
-    public Multi<CsvPaymentsInputFile> applyOneToMany(String csvFolderPath) {
+    public Multi<InputCsvFileProcessingSvc.CsvPaymentsInputFile> applyOneToMany(String csvFolderPath) {
         try {
             // We still do not have a gRPC client for this service
             // It is considered "local" to where the application runs and reads the folder from
-            return Multi.createFrom().items(processFolderService.process(csvFolderPath));
+            java.util.List<CsvPaymentsInputFile> inputFiles = processFolderService.process(csvFolderPath).toList();
+            return Multi.createFrom().iterable(inputFiles)
+                .map(csvPaymentsInputFileMapper::toGrpc);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

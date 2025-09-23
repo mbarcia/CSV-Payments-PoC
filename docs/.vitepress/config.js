@@ -15,58 +15,71 @@
  */
 
 import {defineConfig} from 'vitepress'
+import {withMermaid} from "vitepress-plugin-mermaid"
 
-export default defineConfig({
-  title: 'Pipeline Framework',
-  description: 'A framework for building reactive pipeline processing systems',
-  
-  // Disable dead links check since we're only documenting the pipeline framework
-  ignoreDeadLinks: true,
-  
-  // Base URL for the site (can be changed for different deployments)
-  base: '/',
-  
-  // Register custom theme
-  themeConfig: {
-    nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Guide', link: '/guide/' },
-      { text: 'Annotations', link: '/annotations/pipeline-step' },
-      { text: 'Versions', link: '/versions' }
-    ],
+// Use withMermaid to wrap the entire configuration - this enables GitHub-style mermaid code blocks
+// Note: This adds significant size to the bundle due to Mermaid's dependencies
+export default withMermaid(
+  defineConfig({
+    title: 'Pipeline Framework',
+    description: 'A framework for building reactive pipeline processing systems',
     
-    sidebar: [
-      {
-        text: 'Guide',
-        items: [
-          { text: 'Introduction', link: '/guide/' },
-          { text: 'Getting Started', link: '/guide/getting-started' },
-          { text: 'Creating Pipeline Steps', link: '/guide/creating-steps' }
-        ]
+    // Disable dead links check since we're only documenting the pipeline framework
+    ignoreDeadLinks: true,
+    
+    // Base URL for the site (can be changed for different deployments)
+    base: '/',
+    
+    // Register custom theme
+    themeConfig: {
+      nav: [
+        { text: 'Home', link: '/' },
+        { text: 'Guide', link: '/guide/' },
+        { text: 'Annotations', link: '/annotations/pipeline-step' },
+        { text: 'Versions', link: '/versions' }
+      ],
+      
+      sidebar: [
+        {
+          text: 'Guide',
+          items: [
+            { text: 'Introduction', link: '/guide/' },
+            { text: 'Getting Started', link: '/guide/getting-started' },
+            { text: 'Creating Pipeline Steps', link: '/guide/creating-steps' }
+          ]
+        },
+        {
+          text: 'Annotations',
+          items: [
+            { text: 'PipelineStep and MapperForStep', link: '/annotations/pipeline-step' }
+          ]
+        }
+      ],
+      
+      // Add search functionality
+      search: {
+        provider: 'local'
       },
-      {
-        text: 'Annotations',
-        items: [
-          { text: 'PipelineStep and MapperForStep', link: '/annotations/pipeline-step' }
-        ]
-      }
-    ],
-    
-    // Add search functionality
-    search: {
-      provider: 'local'
+      
+      socialLinks: [
+        { icon: 'github', link: 'https://github.com/mbarcia/CSV-Payments-PoC' }
+      ]
     },
     
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/mbarcia/CSV-Payments-PoC' }
-    ]
-  },
-  
-  vite: {
-    server: {
-      fs: {
-        allow: ['../..']
+    vite: {
+      optimizeDeps: { 
+        include: ['@braintree/sanitize-url'] 
+      },
+      resolve: {
+        alias: {
+          dayjs: 'dayjs/',
+        },
+      },
+      server: {
+        fs: {
+          allow: ['../..']
+        }
       }
     }
-  }
-})
+  })
+)

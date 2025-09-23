@@ -16,11 +16,5 @@
 
 // .vitepress/theme/index.js
 import DefaultTheme from 'vitepress/theme'
-import VersionSelector from '../components/VersionSelector.vue'
 
-export default {
-  extends: DefaultTheme,
-  enhanceApp({ app }) {
-    app.component('VersionSelector', VersionSelector)
-  }
-}
+export default DefaultTheme

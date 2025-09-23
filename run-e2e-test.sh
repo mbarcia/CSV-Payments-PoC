@@ -179,7 +179,7 @@ wait_for_services() {
         "output-csv-file-processing-svc:8447"
     )
     
-    local max_wait=120  # Maximum wait time in seconds
+    local max_wait=30  # Maximum wait time in seconds
     local check_interval=5  # Check every 5 seconds
     local elapsed=0
     
@@ -453,7 +453,7 @@ verify_database_persistence() {
     echo "Running orchestrator..."
     cd "$PROJECT_ROOT/orchestrator-svc"
     # Run the orchestrator in the background so we can monitor it
-    mvn quarkus:dev -Dquarkus.log.console.level=DEBUG -Dquarkus.args="--csv-folder=$TEST_OUTPUT_DIR" > "$PROJECT_ROOT/orchestrator.log" 2>&1 &
+    mvn quarkus:dev -Dmaven.test.skip=true -Dquarkus.log.console.level=DEBUG -Dquarkus.args="--csv-folder=$TEST_OUTPUT_DIR" > "$PROJECT_ROOT/orchestrator.log" 2>&1 &
     orchestrator_pid=$!
     
     # Wait for the orchestrator to complete or timeout after 30 seconds

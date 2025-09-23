@@ -548,6 +548,17 @@ Each service exposes a `/q/metrics` endpoint that provides Prometheus-formatted 
 
 For more information about the pipeline framework, see [pipeline-framework/README.md](./pipeline-framework/README.md).
 
+## Documentation
+
+Comprehensive documentation for the Pipeline Framework is available at our [documentation site](https://pipelineframework.org). The documentation site includes:
+
+- Detailed guides on using the framework
+- API references for annotations and interfaces
+- Examples and best practices
+- Deployment instructions
+
+The documentation source is located in the `docs` directory and is built using VitePress. For information on how to contribute to the documentation or run it locally, see [docs/README.md](./docs/README.md).
+
 ## External Interfaces
 
 The Orchestrator Service now exposes both gRPC and REST interfaces for external consumption:

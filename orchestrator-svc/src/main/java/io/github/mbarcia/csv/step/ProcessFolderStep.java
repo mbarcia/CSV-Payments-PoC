@@ -24,7 +24,6 @@ import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.net.URISyntaxException;
-import java.util.stream.Stream;
 import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,15 +43,12 @@ public class ProcessFolderStep extends ConfigurableStep implements StepOneToMany
 
     @Override
     public Multi<CsvPaymentsInputFile> applyOneToMany(String csvFolderPath) {
-        LOG.debug("Processing folder: {}", csvFolderPath);
         try {
-            Stream<CsvPaymentsInputFile> inputFileStream = processFolderService.process(csvFolderPath);
-            Multi<CsvPaymentsInputFile> inputFiles = Multi.createFrom().items(inputFileStream);
-            LOG.debug("Successfully processed folder: {}", csvFolderPath);
-            return inputFiles;
+            // We still do not have a gRPC client for this service
+            // It is considered "local" to where the application runs and reads the folder from
+            return Multi.createFrom().items(processFolderService.process(csvFolderPath));
         } catch (URISyntaxException e) {
-            LOG.error("Failed to process folder: {}", csvFolderPath, e);
-            return Multi.createFrom().failure(e);
+            throw new RuntimeException(e);
         }
     }
 }

@@ -19,7 +19,6 @@ package io.github.mbarcia.csv.step;
 import io.github.mbarcia.csv.grpc.MutinyProcessPaymentStatusServiceGrpc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
-import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.quarkus.grpc.GrpcClient;
@@ -35,26 +34,17 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor // for CDI proxying
 public class ProcessPaymentStatusStep extends ConfigurableStep implements StepOneToOne<PaymentsProcessingSvc.PaymentStatus, PaymentStatusSvc.PaymentOutput> {
 
-    @Inject
-    @GrpcClient("process-payment-status")
-    MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub processPaymentStatusService;
-
-    @Inject
-    public ProcessPaymentStatusStep(PipelineConfig pipelineConfig) {
-        // Constructor with dependencies
-        liveConfig().overrides()
-                .recoverOnFailure(true)
-                .debug(true)
-                .autoPersist(true); // Enable auto-persistence
-    }
-
-    @Override
-    public Uni<PaymentStatusSvc.PaymentOutput> applyOneToOne(PaymentsProcessingSvc.PaymentStatus status) {
-        return processPaymentStatusService.remoteProcess(status);
-    }
-
     @Override
     public boolean runWithVirtualThreads() {
         return true;
+    } // TODO configure this via annotation
+
+    @Inject
+    @GrpcClient("process-payment-status")
+    MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub processPaymentStatusService;
+    
+    @Override
+    public Uni<PaymentStatusSvc.PaymentOutput> applyOneToOne(PaymentsProcessingSvc.PaymentStatus status) {
+        return processPaymentStatusService.remoteProcess(status);
     }
 }

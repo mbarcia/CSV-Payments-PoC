@@ -16,13 +16,11 @@
 
 package io.github.mbarcia.csv.step;
 
-import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
-import io.grpc.StatusRuntimeException;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -37,7 +35,7 @@ import org.slf4j.LoggerFactory;
  */
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
-public class ProcessInputFileStep extends ConfigurableStep implements StepOneToMany<CsvPaymentsInputFile, InputCsvFileProcessingSvc.PaymentRecord> {
+public class ProcessInputFileStep extends ConfigurableStep implements StepOneToMany<InputCsvFileProcessingSvc.CsvPaymentsInputFile, InputCsvFileProcessingSvc.PaymentRecord> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcessInputFileStep.class);
 
@@ -49,24 +47,7 @@ public class ProcessInputFileStep extends ConfigurableStep implements StepOneToM
     CsvPaymentsInputFileMapper csvPaymentsInputFileMapper;
 
     @Override
-    public Multi<InputCsvFileProcessingSvc.PaymentRecord> applyOneToMany(CsvPaymentsInputFile inputFile) {
-        LOG.debug("Attempting to call processCsvPaymentsInputFileService.remoteProcess");
-        Multi<InputCsvFileProcessingSvc.PaymentRecord> inputRecords =
-            processCsvPaymentsInputFileService.remoteProcess(
-                csvPaymentsInputFileMapper.toGrpc(inputFile))
-            .onFailure()
-            .invoke(e -> {
-                if (e instanceof StatusRuntimeException grpcEx) {
-                    LOG.error("gRPC error when calling processCsvPaymentsInputFileService: code={0}, description={}, cause={}",
-                        grpcEx.getStatus().getCode(), 
-                        grpcEx.getStatus().getDescription(), 
-                        grpcEx.getCause());
-                } else {
-                    LOG.error("Non-gRPC error when calling processCsvPaymentsInputFileService", e);
-                }
-            });
-
-        LOG.debug("Successfully called processCsvPaymentsInputFileService.remoteProcess");
-        return inputRecords;
+    public Multi<InputCsvFileProcessingSvc.PaymentRecord> applyOneToMany(InputCsvFileProcessingSvc.CsvPaymentsInputFile inputFile) {
+        return processCsvPaymentsInputFileService.remoteProcess(inputFile);
     }
 }

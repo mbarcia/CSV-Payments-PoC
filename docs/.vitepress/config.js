@@ -23,11 +23,16 @@ export default defineConfig({
   // Disable dead links check since we're only documenting the pipeline framework
   ignoreDeadLinks: true,
   
+  // Base URL for the site (can be changed for different deployments)
+  base: '/',
+  
+  // Register custom theme
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },
       { text: 'Guide', link: '/guide/' },
-      { text: 'Annotations', link: '/annotations/pipeline-step' }
+      { text: 'Annotations', link: '/annotations/pipeline-step' },
+      { text: 'Versions', link: '/versions' }
     ],
     
     sidebar: [
@@ -47,8 +52,21 @@ export default defineConfig({
       }
     ],
     
+    // Add search functionality
+    search: {
+      provider: 'local'
+    },
+    
     socialLinks: [
       { icon: 'github', link: 'https://github.com/mbarcia/CSV-Payments-PoC' }
     ]
+  },
+  
+  vite: {
+    server: {
+      fs: {
+        allow: ['../..']
+      }
+    }
   }
 })

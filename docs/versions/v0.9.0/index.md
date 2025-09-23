@@ -1,8 +1,6 @@
-# Pipeline Framework
+# Pipeline Framework v0.9.0
 
 A framework for building reactive pipeline processing systems.
-
-> **Current Version:** v0.9.0 | [View all versions](/versions)
 
 ## Annotation-Based Automatic Adapter Generation
 

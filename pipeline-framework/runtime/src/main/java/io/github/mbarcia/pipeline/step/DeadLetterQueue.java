@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.pipeline.step.functional;
+package io.github.mbarcia.pipeline.step;
 
 import io.smallrye.mutiny.Uni;
 
-/**
- * Functional interface for side-effect step transformations.
- * 
- * @param <I> Input type
- */
-@FunctionalInterface
-public interface SideEffect<I> {
-    /**
-     * Apply a side effect to a single input item.
-     * 
-     * @param input The input item
-     * @return A Uni that completes when the side effect is done
-     */
-    Uni<Void> apply(I input);
+public interface DeadLetterQueue<I, O> {
+    default Uni<O> deadLetter(Uni<I> failedItem, Throwable cause) {
+        System.err.printf("DLQ drop: item=%s cause=%s%n", failedItem.toString(), cause);
+        return io.smallrye.mutiny.Uni.createFrom().nullItem();
+    }
 }

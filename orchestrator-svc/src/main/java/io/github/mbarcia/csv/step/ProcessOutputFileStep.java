@@ -20,10 +20,8 @@ import io.github.mbarcia.csv.common.mapper.CsvPaymentsOutputFileMapper;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
 import io.github.mbarcia.csv.grpc.OutputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.PaymentStatusSvc;
-import io.github.mbarcia.pipeline.annotation.PipelineStep;
-import io.github.mbarcia.pipeline.config.PipelineConfig;
-import io.github.mbarcia.pipeline.config.StepConfig;
-import io.github.mbarcia.pipeline.step.Step;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
+import io.github.mbarcia.pipeline.step.StepManyToMany;
 import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -40,21 +38,9 @@ import org.slf4j.LoggerFactory;
  * This implementation handles completion signals and partial writes by using a custom
  * gRPC adapter that provides detailed completion information.
  */
-@PipelineStep(
-    order = 6,
-    autoPersist = true,
-    debug = true,
-    recoverOnFailure = true,
-    inputType = PaymentStatusSvc.PaymentOutput.class,
-    outputType = OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.class,
-    stub = MutinyProcessCsvPaymentsOutputFileServiceGrpc.MutinyProcessCsvPaymentsOutputFileServiceStub.class,
-    inboundMapper = io.github.mbarcia.csv.mapper.PaymentOutputInboundMapper.class,
-    outboundMapper = io.github.mbarcia.csv.mapper.CsvPaymentsOutputFileOutboundMapper.class,
-    grpcClient = "process-csv-payments-output-file"
-)
 @ApplicationScoped
 @NoArgsConstructor // for CDI proxying
-public class ProcessOutputFileStep implements Step {
+public class ProcessOutputFileStep extends ConfigurableStep implements StepManyToMany<PaymentStatusSvc.PaymentOutput, OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProcessOutputFileStep.class);
 
@@ -65,37 +51,52 @@ public class ProcessOutputFileStep implements Step {
     @Inject
     CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
 
-    @Inject
-    public ProcessOutputFileStep(PipelineConfig pipelineConfig) {
-        // Constructor with dependencies
-        // Configuration is now handled by the @PipelineStep annotation
-    }
-
     @Override
-    public Multi<Object> apply(Multi<Object> input) {
+    public Multi<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> applyTransform(Multi<PaymentStatusSvc.PaymentOutput> upstream) {
         LOG.debug("Processing payment output stream in ProcessOutputFileStep");
-        
-        // Cast to the correct input type
-        Multi<PaymentStatusSvc.PaymentOutput> typedInput = input.onItem().transform(item -> (PaymentStatusSvc.PaymentOutput) item);
-        
-        // For now, we'll just pass through the items without complex grouping
-        // In a real implementation, this would group by input file path and create output files
-        return typedInput
-            .onItem().transform(item -> {
-                LOG.debug("Processing payment output item");
-                // Return the item as-is for now
-                return (Object) item;
+
+        // Group payment outputs by their source input file path
+        // This ensures that payment outputs from different input files are processed separately
+        return upstream
+            .group().by(this::getInputFilePath)
+            .onItem().transformToMultiAndMerge(groupedStream -> {
+                LOG.debug("Processing group of payment outputs for input file path");
+
+                // directly convert the Uni to a single-item Multi
+                    //noinspection ReactiveStreamsUnusedPublisher
+                    return processCsvPaymentsOutputFileService
+                        .remoteProcess(groupedStream)
+                        .toMulti(); // <— no emitter, no warning
             })
             .onFailure().invoke(failure -> {
                 LOG.error("Failure in ProcessOutputFileStep streaming", failure);
             });
     }
 
-    @Override
-    public StepConfig effectiveConfig() {
-        return new StepConfig()
-            .autoPersist(true)
-            .debug(true)
-            .recoverOnFailure(true);
+    /**
+     * Extract the input file path from a payment output.
+     * This is used to group payment outputs by their source input file.
+     * 
+     * @param paymentOutput the payment output to extract the path from
+     * @return the input file path as a string
+     */
+    private String getInputFilePath(PaymentStatusSvc.PaymentOutput paymentOutput) {
+        try {
+            // Extract the input file path from the payment output
+            // This assumes the payment output contains information about its source
+            if (paymentOutput.hasPaymentStatus() && 
+                paymentOutput.getPaymentStatus().hasAckPaymentSent() &&
+                paymentOutput.getPaymentStatus().getAckPaymentSent().hasPaymentRecord()) {
+
+                // Return the file path as a string for grouping
+                return paymentOutput.getPaymentStatus()
+                    .getAckPaymentSent().getPaymentRecord().getCsvPaymentsInputFilePath();
+            }
+        } catch (Exception e) {
+            LOG.warn("Failed to extract input file path from payment output", e);
+        }
+        
+        // Return a default value for grouping if we can't extract the path
+        return "unknown";
     }
 }

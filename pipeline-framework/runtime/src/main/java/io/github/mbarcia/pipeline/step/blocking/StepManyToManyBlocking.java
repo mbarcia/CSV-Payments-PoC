@@ -16,7 +16,9 @@
 
 package io.github.mbarcia.pipeline.step.blocking;
 
-import io.github.mbarcia.pipeline.step.Step;
+import io.github.mbarcia.pipeline.step.Configurable;
+import io.github.mbarcia.pipeline.step.DeadLetterQueue;
+import io.github.mbarcia.pipeline.step.functional.ManyToMany;
 import io.smallrye.mutiny.Multi;
 import java.util.Collections;
 import java.util.List;
@@ -31,10 +33,10 @@ import java.util.concurrent.Executors;
  * The PipelineRunner will automatically handle the conversion between reactive
  * and imperative representations.
  */
-public interface StepManyToManyBlocking extends Step {
-    List<Object> applyStreamingList(List<Object> upstream);
+public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configurable, DeadLetterQueue<I, O> {
+    List<O> applyStreamingList(List<I> upstream);
 
-    default List<Object> deadLetterList(List<Object> upstream, Throwable err) {
+    default List<O> deadLetterList(List<I> upstream, Throwable err) {
         System.err.print("DLQ drop");
         return Collections.emptyList();
     }
@@ -42,41 +44,36 @@ public interface StepManyToManyBlocking extends Step {
     default boolean runWithVirtualThreads() { return false; }
     
     @Override
-    default Multi<Object> apply(Multi<Object> input) {
+    default Multi<O> apply(Multi<I> input) {
         final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 
-        return Multi.createFrom().deferred(() -> {
-            Multi<Object> baseUpstream = (executor != null)
-                    ? input.runSubscriptionOn(executor)
-                    : input;
+        Multi<I> upstream = (executor != null) ? input.runSubscriptionOn(executor) : input;
 
-            // Collect items into a list, process blocking, then convert back to Multi
-            return baseUpstream
-                .collect().asList()
-                .onItem().transformToMulti(list -> {
-                    try {
-                        List<Object> result = applyStreamingList(list);
-                        return Multi.createFrom().iterable(result);
-                    } catch (Exception e) {
-                        if (recoverOnFailure()) {
-                            List<Object> dlqResult = deadLetterList(list, e);
-                            return Multi.createFrom().iterable(dlqResult);
-                        } else {
-                            return Multi.createFrom().failure(e);
-                        }
+        return upstream
+            .collect().asList()
+            .onItem().transformToMulti(list -> {
+                try {
+                    List<O> result = applyStreamingList(list);
+                    return Multi.createFrom().iterable(result);
+                } catch (Exception e) {
+                    if (recoverOnFailure()) {
+                        List<O> dlqResult = deadLetterList(list, e);
+                        return Multi.createFrom().iterable(dlqResult);
+                    } else {
+                        return Multi.createFrom().failure(e);
                     }
-                })
-                .onFailure().retry()
-                .withBackOff(retryWait(), maxBackoff())
-                .withJitter(jitter() ? 0.5 : 0.0)
-                .atMost(retryLimit())
-                .onItem().invoke(o -> {
-                    if (debug()) {
-                        System.out.printf("Blocking Step %s streamed item: %s%n",
-                                this.getClass().getSimpleName(), o);
-                    }
-                });
-        });
+                }
+            })
+            .onFailure().retry()
+            .withBackOff(retryWait(), maxBackoff())
+            .withJitter(jitter() ? 0.5 : 0.0)
+            .atMost(retryLimit())
+            .onItem().invoke(o -> {
+                if (debug()) {
+                    System.out.printf("Blocking Step %s streamed item: %s%n",
+                            this.getClass().getSimpleName(), o);
+                }
+            });
     }
 }

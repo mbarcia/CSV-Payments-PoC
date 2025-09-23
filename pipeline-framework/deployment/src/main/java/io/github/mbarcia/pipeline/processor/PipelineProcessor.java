@@ -20,6 +20,7 @@ import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -61,25 +62,28 @@ public class PipelineProcessor {
             String adapterClassName = MessageFormat.format("{0}GrpcService", stepClassInfo.name().toString());
 
             // generate a subclass of the specified backend adapter with @GrpcService
-            try (ClassCreator cc = ClassCreator.builder()
-                    .className(adapterClassName)
-                    .superClass(backendType)
-                    .build()) {
+            try (ClassCreator cc = new ClassCreator(
+                    new GeneratedClassGizmoAdaptor(generatedClasses, true),
+                    adapterClassName, null, backendType)) {
 
                 // Add @GrpcService annotation to the generated class
                 cc.addAnnotation(GrpcService.class);
                 
                 // Create fields with @Inject annotations
                 cc.getFieldCreator("inboundMapper", inMapperName)
+                        .setModifiers(java.lang.reflect.Modifier.PRIVATE)
                         .addAnnotation(Inject.class);
                         
                 cc.getFieldCreator("outboundMapper", outMapperName)
+                        .setModifiers(java.lang.reflect.Modifier.PRIVATE)
                         .addAnnotation(Inject.class);
                         
                 cc.getFieldCreator("service", serviceName)
+                        .setModifiers(java.lang.reflect.Modifier.PRIVATE)
                         .addAnnotation(Inject.class);
                         
                 cc.getFieldCreator("persistenceManager", PersistenceManager.class.getName())
+                        .setModifiers(java.lang.reflect.Modifier.PRIVATE)
                         .addAnnotation(Inject.class);
 
                 // Add default no-arg constructor
@@ -87,10 +91,6 @@ public class PipelineProcessor {
                     defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(backendType), defaultCtor.getThis());
                     defaultCtor.returnValue(null);
                 }
-                
-                // For now, we'll pass empty bytecode - this is a simplification
-                // In a real implementation, we would properly generate the bytecode
-                generatedClasses.produce(new GeneratedClassBuildItem(true, adapterClassName, new byte[0]));
             } catch (Exception e) {
                 throw new RuntimeException("Failed to generate adapter class", e);
             }

@@ -18,6 +18,7 @@ package io.github.mbarcia.csv;
 
 import io.github.mbarcia.csv.util.Sync;
 import io.github.mbarcia.csv.util.SystemExiter;
+import io.github.mbarcia.csv.step.*;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.PipelineRunner;
@@ -51,7 +52,6 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
   @Inject
   Sync sync;
 
-  // Inject the actual step classes
   @Inject
   ProcessFolderStep processFolderStep;
   
@@ -113,7 +113,8 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
     pipelineConfig.profile("prod", new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)));
 
     try (PipelineRunner runner = new PipelineRunner()) {
-      Multi<?> result = runner.run(
+      Multi<?> result = (Multi<?>) runner.run(
+              // TODO use the generated application runner
               Multi.createFrom().items(folderPath),
               List.of(processFolderStep,
                       processInputFileStep,

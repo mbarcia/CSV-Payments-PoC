@@ -16,16 +16,92 @@
 
 package io.github.mbarcia.pipeline.step;
 
+import io.github.mbarcia.pipeline.step.functional.ManyToOne;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import java.time.Duration;
+import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** N -> 1 */
-public interface StepManyToOne<I, O> extends Step {
-    Multi<O> applyReduce(Multi<I> input);
-    
+/** N -> 1 (reactive) */
+public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
+    /**
+     * Apply the step to a batch of inputs, producing a single output reactively.
+     *
+     * @param inputs The batch inputs as a Multi
+     * @return The single output as a Uni
+     */
+    Uni<O> applyBatchMulti(Multi<I> inputs);
+
+    /**
+     * The batch size for collecting inputs before processing.
+     *
+     * @return The batch size (default: 10)
+     */
+    default int batchSize() {
+        return 10;
+    }
+
+    /**
+     * The time window in milliseconds to wait before processing a batch,
+     * even if the batch size hasn't been reached.
+     *
+     * @return The time window in milliseconds (default: 1000ms)
+     */
+    default long batchTimeoutMs() {
+        return 1000;
+    }
+
+    /**
+     * Handle a failed batch by sending it to a dead letter queue or similar mechanism reactively.
+     *
+     * @param inputs The batch inputs as a Multi that failed to process
+     * @param error The error that occurred
+     * @return The result of dead letter handling as a Uni (can be null)
+     */
+    default Uni<O> deadLetterBatch(Multi<I> inputs, Throwable error) {
+        Logger LOG = LoggerFactory.getLogger(this.getClass());
+        return inputs.collect().asList()
+            .onItem().invoke(list -> LOG.error("DLQ drop for batch of {} items: {}", list.size(), error.getMessage()))
+            .onItem().transformToUni(list -> Uni.createFrom().nullItem());
+    }
+
     @Override
-    default Multi<Object> apply(Multi<Object> input) {
-        // Temporary implementation that just returns empty Multi
-        // TODO: Implement proper N->1 transformation
-        return Multi.createFrom().empty();
+    default Uni<O> applyReduce(Multi<I> input) {
+        Logger LOG = LoggerFactory.getLogger(this.getClass());
+        int batchSize = this.batchSize();
+        long batchTimeoutMs = this.batchTimeoutMs();
+
+        Multi<Multi<I>> batches = input.group().intoLists().of(batchSize, Duration.ofMillis(batchTimeoutMs))
+            .onItem().transform(list -> Multi.createFrom().iterable(list)); // convert List<I> to Multi<I> for applyBatchMulti
+
+        return batches
+            .onItem().transformToUniAndMerge(batch ->
+                applyBatchMulti(batch)
+                    .onItem().invoke(result -> {
+                        if (debug()) {
+                            LOG.debug(
+                                "Reactive Step {} processed batch into single output: {}",
+                                this.getClass().getSimpleName(), result
+                            );
+                        }
+                    })
+                    .onFailure().recoverWithUni(error -> {
+                        if (recoverOnFailure()) {
+                            if (debug()) {
+                                LOG.debug(
+                                    "Reactive Step {}: failed batch: {}",
+                                    this.getClass().getSimpleName(), error.getMessage()
+                                );
+                            }
+                            return deadLetterBatch(batch, error);
+                        } else {
+                            return Uni.createFrom().failure(error);
+                        }
+                    })
+                )
+                .filter(Objects::nonNull)
+                .collect().last();
     }
 }

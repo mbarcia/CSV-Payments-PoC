@@ -19,6 +19,7 @@ package io.github.mbarcia.pipeline.processor;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -59,16 +60,15 @@ public class PipelineClientProcessor {
             String stepClassName = MessageFormat.format("{0}Step", stepClassInfo.name().toString());
 
             // generate a subclass that implements the appropriate step interface
-            try (ClassCreator cc = ClassCreator.builder()
-                    .className(stepClassName)
-                    .superClass(ConfigurableStep.class)
-                    .build()) {
-
+            try (ClassCreator cc = new ClassCreator(
+                    new GeneratedClassGizmoAdaptor(generatedClasses, true),
+                    stepClassName, null, ConfigurableStep.class.getName())) {
                 // Add @ApplicationScoped annotation
                 cc.addAnnotation(ApplicationScoped.class);
                 
                 // Create field for gRPC client
-                FieldCreator fieldCreator = cc.getFieldCreator("grpcClient", stubClass);
+                FieldCreator fieldCreator = cc.getFieldCreator("grpcClient", stubClass)
+                    .setModifiers(java.lang.reflect.Modifier.PRIVATE);
                 fieldCreator.addAnnotation(Inject.class);
                 fieldCreator.addAnnotation(GrpcClient.class).addValue("value", grpcClientValue);
 
@@ -77,10 +77,6 @@ public class PipelineClientProcessor {
                     defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(ConfigurableStep.class), defaultCtor.getThis());
                     defaultCtor.returnValue(null);
                 }
-
-                // For now, we'll pass empty bytecode - this is a simplification
-                // In a real implementation, we would properly generate the bytecode
-                generatedClasses.produce(new GeneratedClassBuildItem(true, stepClassName, new byte[0]));
             } catch (Exception e) {
                 throw new RuntimeException("Failed to generate step class", e);
             }

@@ -16,77 +16,78 @@
 
 package io.github.mbarcia.pipeline.step;
 
-import io.smallrye.mutiny.Multi;
+import io.github.mbarcia.pipeline.step.functional.OneToOne;
 import io.smallrye.mutiny.Uni;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** 1 -> 1 (async) */
-public interface StepOneToOne<I, O> extends Step {
-    Uni<O> applyAsyncUni(I in);
+public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLetterQueue<I ,O> {
+    Uni<O> applyOneToOne(I in);
     
     @Override
-    default Multi<Object> apply(Multi<Object> input) {
+    default Uni<O> apply(Uni<I> input) {
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
-        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        
-        return input.onItem().transformToUniAndMerge(item -> {
-            Supplier<Uni<O>> uniSupplier = () -> applyAsyncUni((I) item);
-            
-            try {
-                return Uni.createFrom().deferred(() -> {
-                    Uni<O> uni = uniSupplier.get();
-                    if (uni == null) {
-                        return Uni.createFrom().failure(new NullPointerException("Step returned null Uni"));
-                    }
-                    return uni;
-                })
-                .onFailure().retry()
-                .withBackOff(retryWait(), maxBackoff())
-                .withJitter(jitter() ? 0.5 : 0.0)
-                .atMost(retryLimit())
-                .onItem().invoke(i -> {
-                    if (debug()) {
-                        LOG.debug(
-                            "Step {} processed item: {}",
-                            this.getClass().getSimpleName(), i
-                        );
-                    }
-                })
-                .onFailure().recoverWithUni(err -> {
-                    if (recoverOnFailure()) {
-                        if (debug()) {
-                            LOG.debug(
-                                "Step {0}: failed item={} after {} retries: {}",
-                                this.getClass().getSimpleName(), item, retryLimit(), err
-                            );
-                        }
-                        return deadLetter(item, err).onItem().transform(_ -> (O) item);
-                    } else {
-                        return Uni.createFrom().failure(err);
-                    }
-                })
-                .onTermination().invoke(() -> {
-                    // Termination handler
-                })
-                .onItem().transform(o -> (Object) o);
-            } catch (Throwable t) {
+        final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+
+        Supplier<Uni<O>> uniSupplier = () -> input.onItem().transformToUni(this::applyOneToOne);
+
+        try {
+            return Uni.createFrom().deferred(() -> {
+                Uni<O> uni = uniSupplier.get();
+                if (uni == null) {
+                    return Uni.createFrom().failure(new NullPointerException("Step returned null Uni"));
+                }
+
+                if (liveConfig().runWithVirtualThreads()) {
+                    return uni.runSubscriptionOn(vThreadExecutor);
+                }
+
+                return uni;
+            })
+            .onFailure().retry()
+            .withBackOff(retryWait(), maxBackoff())
+            .withJitter(jitter() ? 0.5 : 0.0)
+            .atMost(retryLimit())
+            .onItem().invoke(i -> {
+                if (debug()) {
+                    LOG.debug(
+                        "Step {} processed item: {}",
+                        this.getClass().getSimpleName(), i
+                    );
+                }
+            })
+            .onFailure().recoverWithUni(err -> {
                 if (recoverOnFailure()) {
                     if (debug()) {
                         LOG.debug(
-                            "Step {0}: synchronous failure item={}: {}",
-                            this.getClass().getSimpleName(), item, t
+                            "Step {0}: failed item={} after {} retries: {}",
+                            this.getClass().getSimpleName(), input, retryLimit(), err
                         );
                     }
-                    return deadLetter(item, t).onItem().transform(_ -> (O) item)
-                        .onItem().transform(o -> (Object) o);
+                    return deadLetter(input, err);
                 } else {
-                    return Uni.createFrom().failure(t)
-                        .onItem().transform(o -> (Object) o);
+                    return Uni.createFrom().failure(err);
                 }
+            })
+            .onTermination().invoke(() -> {
+                // Termination handler
+            });
+        } catch (Throwable t) {
+            if (recoverOnFailure()) {
+                if (debug()) {
+                    LOG.debug(
+                        "Step {0}: synchronous failure item={}: {}",
+                        this.getClass().getSimpleName(), input, t
+                    );
+                }
+                return deadLetter(input, t);
+            } else {
+                return Uni.createFrom().failure(t);
             }
-        });
+        }
     }
 }

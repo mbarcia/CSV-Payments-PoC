@@ -16,40 +16,34 @@
 
 package io.github.mbarcia.pipeline.step;
 
+import io.github.mbarcia.pipeline.step.functional.ManyToMany;
 import io.smallrye.mutiny.Multi;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** N -> N */
-public interface StepManyToMany<I, O> extends Step {
+public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, DeadLetterQueue<I, O> {
     Multi<O> applyTransform(Multi<I> input);
     
     @Override
-    default Multi<Object> apply(Multi<Object> input) {
+    default Multi<O> apply(Multi<I> input) {
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
         final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
-        int concurrency = Math.max(1, effectiveConfig().concurrency());
-
-        // Cast to the correct types
-        Multi<I> typedInput = input.onItem().transform(item -> (I) item);
+        java.util.concurrent.Executor executor = effectiveConfig().runWithVirtualThreads() ? vThreadExecutor : null;
 
         // Apply the transformation
-        Multi<O> typedOutput = applyTransform(typedInput);
-        
-        // Convert back to Object type
-        Multi<Object> objectOutput = typedOutput.onItem().transform(item -> (Object) item);
+        Multi<O> output = applyTransform(input);
 
         if (executor != null) {
             // shift blocking subscription work to virtual threads
-            objectOutput = objectOutput.runSubscriptionOn(executor);
+            output = output.runSubscriptionOn(executor);
         }
 
-        return objectOutput.onItem().transform(item -> {
+        return output.onItem().transform(item -> {
             if (debug()) {
                 LOG.debug(
-                    "Step {0} emitted item: {}",
+                    "Step {} emitted item: {}",
                     this.getClass().getSimpleName(), item
                 );
             }

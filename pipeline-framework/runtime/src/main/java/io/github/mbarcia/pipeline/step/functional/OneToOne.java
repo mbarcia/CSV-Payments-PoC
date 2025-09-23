@@ -32,5 +32,5 @@ public interface OneToOne<I, O> {
      * @param input The input item
      * @return A Uni that completes with the transformed output item
      */
-    Uni<O> apply(I input);
+    Uni<O> apply(Uni<I> input);
 }

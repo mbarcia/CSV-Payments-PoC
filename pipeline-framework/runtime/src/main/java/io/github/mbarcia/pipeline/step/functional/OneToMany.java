@@ -17,6 +17,7 @@
 package io.github.mbarcia.pipeline.step.functional;
 
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Functional interface for 1:N (one-to-many) step transformations.
@@ -32,5 +33,5 @@ public interface OneToMany<I, O> {
      * @param input The input item
      * @return A Multi that emits the transformed output items
      */
-    Multi<O> apply(I input);
+    Multi<O> apply(Uni<I> input);
 }

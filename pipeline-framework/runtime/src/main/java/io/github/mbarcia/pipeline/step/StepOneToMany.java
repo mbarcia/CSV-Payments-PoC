@@ -16,25 +16,26 @@
 
 package io.github.mbarcia.pipeline.step;
 
+import io.github.mbarcia.pipeline.step.functional.OneToMany;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** 1 -> N */
-public interface StepOneToMany<I, O> extends Step {
-    Multi<O> applyMulti(I in);
+public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, DeadLetterQueue<I, O> {
+    Multi<O> applyOneToMany(I in);
     
     @Override
-    default Multi<Object> apply(Multi<Object> input) {
+    default Multi<O> apply(Uni<I> input) {
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
-        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
-        int concurrency = Math.max(1, effectiveConfig().concurrency());
+        final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 
         return input.onItem().transformToMulti(item -> {
-            Multi<O> typedMulti = applyMulti((I) item);
-            Multi<Object> multi = typedMulti.onItem().transform(o -> (Object) o);
+            Multi<O> multi = applyOneToMany(item);
 
             if (executor != null) {
                 // shift blocking subscription work to virtual threads
@@ -50,6 +51,6 @@ public interface StepOneToMany<I, O> extends Step {
                 }
                 return o;
             });
-        }).merge(concurrency);
+        });
     }
 }

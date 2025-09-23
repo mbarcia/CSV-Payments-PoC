@@ -16,63 +16,58 @@
 
 package io.github.mbarcia.pipeline.step.blocking;
 
-import io.github.mbarcia.pipeline.step.Step;
+import io.github.mbarcia.pipeline.step.Configurable;
+import io.github.mbarcia.pipeline.step.DeadLetterQueue;
+import io.github.mbarcia.pipeline.step.functional.OneToMany;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Imperative variant of StepOneToMany that works with Lists instead of Multi.
- * 
+ * <p>
  * This interface is designed for developers who prefer imperative programming
  * and want to work with standard Java collections instead of reactive streams.
- * 
+ * <p>
  * The PipelineRunner will automatically handle the conversion between reactive
  * and imperative representations.
  */
-public interface StepOneToManyBlocking<I, O> extends Step {
+public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, O>, DeadLetterQueue<I, O> {
+
     List<O> applyList(I in);
 
-    default int concurrency() { return 1; } // max in-flight items per upstream item
+    default int concurrency() { return 1; }
 
     default boolean runWithVirtualThreads() { return false; }
-    
+
     @Override
-    default Multi<Object> apply(Multi<Object> input) {
+    default Multi<O> apply(Uni<I> inputUni) {
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
-        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
-        int concurrency = Math.max(1, effectiveConfig().concurrency());
+        final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        final Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 
-        return input.onItem().transformToMulti(item -> {
-            // Convert blocking List to reactive Multi
-            Multi<O> typedMulti = Multi.createFrom().iterable(() -> {
-                try {
-                    List<O> result = applyList((I) item);
-                    return result.iterator();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+        return inputUni
+            .onItem().transformToMulti(item -> {
+                Multi<O> multi = Multi.createFrom().iterable(() -> {
+                    try {
+                        return applyList(item).iterator();
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+                if (executor != null) {
+                    multi = multi.runSubscriptionOn(executor);
                 }
+
+                return multi.onItem().invoke(o -> {
+                    if (debug()) {
+                        LOG.debug("Blocking Step {} emitted item: {}", this.getClass().getSimpleName(), o);
+                    }
+                });
             });
-
-            Multi<Object> multi = typedMulti.onItem().transform(o -> (Object) o);
-
-            if (executor != null) {
-                // shift blocking subscription work to virtual threads
-                multi = multi.runSubscriptionOn(executor);
-            }
-
-            return multi.onItem().transform(o -> {
-                if (debug()) {
-                    LOG.debug(
-                        "Blocking Step {0} emitted item: {}{}",
-                        this.getClass().getSimpleName(), o
-                    );
-                }
-                return o;
-            });
-        }).merge(concurrency);
-    }
-}
+    }}

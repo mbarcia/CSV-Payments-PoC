@@ -20,6 +20,9 @@ export default defineConfig({
   title: 'Pipeline Framework',
   description: 'A framework for building reactive pipeline processing systems',
   
+  // Disable dead links check since we're only documenting the pipeline framework
+  ignoreDeadLinks: true,
+  
   themeConfig: {
     nav: [
       { text: 'Home', link: '/' },

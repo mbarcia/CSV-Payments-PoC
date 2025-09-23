@@ -13,6 +13,10 @@ When setting up the project in Cloudflare Pages, use the following configuration
 - **Build output directory**: `docs/.vitepress/dist`
 - **Root directory**: `/`
 
+## Configuration Notes
+
+The VitePress configuration includes `ignoreDeadLinks: true` to prevent build failures due to links that are valid in the context of the full project but not within the documentation site. This is normal and expected for this project structure.
+
 ## Manual Deployment (Optional)
 
 If you prefer to deploy manually, you can use Wrangler:

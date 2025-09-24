@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -180,7 +180,7 @@ class AckPaymentSentMapperTest {
                         .build();
 
         // When
-        AckPaymentSentDto dto = mapper.fromGrpcToDto(grpc);
+        AckPaymentSentDto dto = mapper.fromGrpc(grpc);
 
         // Then
         assertNotNull(dto);
@@ -205,7 +205,7 @@ class AckPaymentSentMapperTest {
         domain.setPaymentRecord(paymentRecord);
 
         // When
-        PaymentsProcessingSvc.AckPaymentSent grpc = mapper.toGrpc(domain);
+        PaymentsProcessingSvc.AckPaymentSent grpc = mapper.toDtoToGrpc(domain);
 
         // Then
         assertNotNull(grpc);
@@ -233,7 +233,7 @@ class AckPaymentSentMapperTest {
                         .build();
 
         // When
-        AckPaymentSent domain = mapper.fromGrpc(grpc);
+        AckPaymentSent domain = mapper.fromGrpcFromDto(grpc);
 
         // Then
         assertNotNull(domain);

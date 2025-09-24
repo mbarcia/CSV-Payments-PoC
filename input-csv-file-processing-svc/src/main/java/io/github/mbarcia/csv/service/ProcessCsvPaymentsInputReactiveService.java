@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,8 +45,8 @@ import org.slf4j.MDC;
     backendType = GenericGrpcServiceStreamingAdapter.class,
     grpcStub = io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc.MutinyProcessCsvPaymentsInputFileServiceStub.class,
     grpcImpl = MutinyProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase.class,
-    inboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputInboundMapper.class,
-    outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordOutboundMapper.class,
+    inboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputStreamMapper.class,
+    outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordMapper.class,
     grpcClient = "process-csv-payments-input-file",
     autoPersist = true,
     debug = true

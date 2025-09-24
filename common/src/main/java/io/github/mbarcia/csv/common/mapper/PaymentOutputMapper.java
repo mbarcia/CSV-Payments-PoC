@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,50 +24,33 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
+@SuppressWarnings("unused")
 @Mapper(
     componentModel = "cdi",
     uses = {CommonConverters.class, PaymentStatusMapper.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface PaymentOutputMapper {
+public interface PaymentOutputMapper extends io.github.mbarcia.pipeline.mapper.Mapper<PaymentStatusSvc.PaymentOutput, PaymentOutputDto, PaymentOutput> {
 
   PaymentOutputMapper INSTANCE = Mappers.getMapper( PaymentOutputMapper.class );
 
-  // Domain ↔ DTO
-  @Mapping(target = "id")
-  @Mapping(target = "amount")
-  @Mapping(target = "currency")
-  @Mapping(target = "fee")
-  @Mapping(target = "paymentStatus")
+  @Override
   PaymentOutputDto toDto(PaymentOutput entity);
 
-  @Mapping(target = "id")
-  @Mapping(target = "amount")
-  @Mapping(target = "currency")
-  @Mapping(target = "fee")
-  @Mapping(target = "paymentStatus")
+  @Override
   PaymentOutput fromDto(PaymentOutputDto dto);
 
-  // DTO ↔ gRPC
+  @Override
   @Mapping(target = "id", qualifiedByName = "uuidToString")
   @Mapping(target = "amount", qualifiedByName = "bigDecimalToString")
   @Mapping(target = "currency", qualifiedByName = "currencyToString")
   @Mapping(target = "fee", qualifiedByName = "bigDecimalToString")
-  @Mapping(target = "paymentStatus")
-  PaymentStatusSvc.PaymentOutput fromDtoToGrpc(PaymentOutputDto dto);
+  PaymentStatusSvc.PaymentOutput toGrpc(PaymentOutputDto dto);
 
+  @Override
   @Mapping(target = "id", qualifiedByName = "stringToUUID")
   @Mapping(target = "amount", qualifiedByName = "stringToBigDecimal")
   @Mapping(target = "currency", qualifiedByName = "stringToCurrency")
   @Mapping(target = "fee", qualifiedByName = "stringToBigDecimal")
   @Mapping(target = "paymentStatus")
-  PaymentOutputDto fromGrpcToDto(PaymentStatusSvc.PaymentOutput grpc);
-
-  // Domain ↔ DTO ↔ gRPC
-  default PaymentOutput fromGrpc(PaymentStatusSvc.PaymentOutput grpc) {
-    return fromDto(fromGrpcToDto(grpc));
-  }
-
-  default PaymentStatusSvc.PaymentOutput toGrpc(PaymentOutput entity) {
-    return fromDtoToGrpc(toDto(entity));
-  }
+  PaymentOutputDto fromGrpc(PaymentStatusSvc.PaymentOutput grpc);
 }

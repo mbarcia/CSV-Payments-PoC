@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -151,7 +151,7 @@ class PaymentRecordMapperTest {
                         .build();
 
         // When
-        PaymentRecordDto dto = mapper.fromGrpcToDto(grpc);
+        PaymentRecordDto dto = mapper.fromGrpc(grpc);
 
         // Then
         assertNotNull(dto);
@@ -169,7 +169,7 @@ class PaymentRecordMapperTest {
         PaymentRecord domain = createTestPaymentRecord();
 
         // When
-        InputCsvFileProcessingSvc.PaymentRecord grpc = mapper.toGrpc(domain);
+        InputCsvFileProcessingSvc.PaymentRecord grpc = mapper.toDtoToGrpc(domain);
 
         // Then
         assertNotNull(grpc);
@@ -199,7 +199,7 @@ class PaymentRecordMapperTest {
                         .build();
 
         // When
-        PaymentRecord domain = mapper.fromGrpc(grpc);
+        PaymentRecord domain = mapper.fromGrpcFromDto(grpc);
 
         // Then
         assertNotNull(domain);

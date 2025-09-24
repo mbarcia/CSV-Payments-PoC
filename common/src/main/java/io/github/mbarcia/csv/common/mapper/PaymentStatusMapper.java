@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,46 +24,32 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
+@SuppressWarnings("unused")
 @Mapper(
     componentModel = "cdi",
     uses = {CommonConverters.class, AckPaymentSentMapper.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface PaymentStatusMapper {
+public interface PaymentStatusMapper extends io.github.mbarcia.pipeline.mapper.Mapper<PaymentsProcessingSvc.PaymentStatus, PaymentStatusDto, PaymentStatus> {
 
   PaymentStatusMapper INSTANCE = Mappers.getMapper( PaymentStatusMapper.class );
 
   // Domain ↔ DTO
-  @Mapping(target = "id")
-  @Mapping(target = "fee")
-  @Mapping(target = "ackPaymentSentId")
-  @Mapping(target = "ackPaymentSent")
+  @Override
   PaymentStatusDto toDto(PaymentStatus entity);
 
-  @Mapping(target = "id")
-  @Mapping(target = "fee")
-  @Mapping(target = "ackPaymentSentId")
-  @Mapping(target = "ackPaymentSent")
+  @Override
   PaymentStatus fromDto(PaymentStatusDto dto);
 
   // DTO ↔ gRPC
+  @Override
   @Mapping(target = "id", qualifiedByName = "uuidToString")
   @Mapping(target = "fee", qualifiedByName = "bigDecimalToString")
   @Mapping(target = "ackPaymentSentId", qualifiedByName = "uuidToString")
-  @Mapping(target = "ackPaymentSent")
   PaymentsProcessingSvc.PaymentStatus toGrpc(PaymentStatusDto dto);
 
+  @Override
   @Mapping(target = "id", qualifiedByName = "stringToUUID")
   @Mapping(target = "fee", qualifiedByName = "stringToBigDecimal")
   @Mapping(target = "ackPaymentSentId", qualifiedByName = "stringToUUID")
-  @Mapping(target = "ackPaymentSent")
-  PaymentStatusDto toDto(PaymentsProcessingSvc.PaymentStatus grpc);
-
-  // Domain ↔ DTO ↔ gRPC
-  default PaymentStatus fromGrpc(PaymentsProcessingSvc.PaymentStatus grpc) {
-    return fromDto(toDto(grpc));
-  }
-
-  default PaymentsProcessingSvc.PaymentStatus toGrpc(PaymentStatus entity) {
-    return toGrpc(toDto(entity));
-  }
+  PaymentStatusDto fromGrpc(PaymentsProcessingSvc.PaymentStatus grpc);
 }

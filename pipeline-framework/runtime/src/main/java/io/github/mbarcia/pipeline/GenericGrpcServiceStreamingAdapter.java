@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,7 @@
 package io.github.mbarcia.pipeline;
 
 import io.github.mbarcia.pipeline.annotation.StepConfigProvider;
-import io.github.mbarcia.pipeline.mapper.InboundMapper;
-import io.github.mbarcia.pipeline.mapper.OutboundMapper;
+import io.github.mbarcia.pipeline.mapper.Mapper;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingService;
 import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
@@ -40,8 +39,8 @@ public class GenericGrpcServiceStreamingAdapter<GRpcIn, DomainIn, DomainOut, GRp
 
     private static final Logger LOG = LoggerFactory.getLogger(GenericGrpcServiceStreamingAdapter.class);
 
-    private final InboundMapper<GRpcIn, DomainIn> inboundMapper;
-    private final OutboundMapper<DomainOut, GRpcOut> outboundMapper;
+    private final Mapper<GRpcIn, ?, DomainIn> inboundMapper;
+    private final Mapper<GRpcOut, ?, DomainOut> outboundMapper;
     private final ReactiveStreamingService<DomainIn, DomainOut> service;
     private final PersistenceManager persistenceManager;
     private final Class<? extends ConfigurableStep> stepClass; // The step class this adapter is for
@@ -55,8 +54,8 @@ public class GenericGrpcServiceStreamingAdapter<GRpcIn, DomainIn, DomainOut, GRp
      * @param persistenceManager the persistence manager
      * @param stepClass corresponding Step subclass
      */
-    public GenericGrpcServiceStreamingAdapter(InboundMapper<GRpcIn, DomainIn> inboundMapper,
-                                              OutboundMapper<DomainOut, GRpcOut> outboundMapper,
+    public GenericGrpcServiceStreamingAdapter(Mapper<GRpcIn, ?, DomainIn> inboundMapper,
+                                              Mapper<GRpcOut, ?, DomainOut> outboundMapper,
                                               ReactiveStreamingService<DomainIn, DomainOut> service,
                                               PersistenceManager persistenceManager,
                                               Class<? extends ConfigurableStep> stepClass) {
@@ -68,7 +67,7 @@ public class GenericGrpcServiceStreamingAdapter<GRpcIn, DomainIn, DomainOut, GRp
     }
 
     public Multi<GRpcOut> remoteProcess(GRpcIn grpcRequest) {
-        DomainIn entity = inboundMapper.toDomain(grpcRequest);
+        DomainIn entity = inboundMapper.fromGrpcFromDto(grpcRequest);
 
         Uni<DomainIn> persistenceUni = getPersistedUni(entity);
 
@@ -77,7 +76,7 @@ public class GenericGrpcServiceStreamingAdapter<GRpcIn, DomainIn, DomainOut, GRp
                 service
                     .process(persistedEntity) // Multi<DomainOut>
                     .onItem()
-                    .transform(outboundMapper::toGrpc) // Multi<GrpcOut>
+                    .transform(outboundMapper::toDtoToGrpc) // Multi<GrpcOut>
                     .onFailure()
                     .transform(new throwStatusRuntimeExceptionFunction())
             );

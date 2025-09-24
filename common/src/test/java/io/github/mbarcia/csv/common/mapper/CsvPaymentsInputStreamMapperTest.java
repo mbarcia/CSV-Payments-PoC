@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,7 +88,7 @@ class CsvPaymentsInputStreamMapperTest {
                         .build();
 
         // When
-        CsvPaymentsInputStreamDto dto = mapper.fromGrpcToDto(grpc);
+        CsvPaymentsInputStreamDto dto = mapper.fromGrpc(grpc);
 
         // Then
         assertNotNull(dto);
@@ -103,7 +103,7 @@ class CsvPaymentsInputStreamMapperTest {
                         new ByteArrayInputStream("test".getBytes()), "test-source");
 
         // When
-        InputCsvFileProcessingSvc.CsvPaymentsInputStream grpc = mapper.toGrpc(domain);
+        InputCsvFileProcessingSvc.CsvPaymentsInputStream grpc = mapper.toDtoToGrpc(domain);
 
         // Then
         assertNotNull(grpc);
@@ -119,7 +119,7 @@ class CsvPaymentsInputStreamMapperTest {
                         .build();
 
         // When
-        CsvPaymentsInputStream domain = mapper.fromGrpc(grpc);
+        CsvPaymentsInputStream domain = mapper.fromGrpcFromDto(grpc);
 
         // Then
         assertNotNull(domain);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -55,7 +55,7 @@ class CsvFolderMapperTest {
         domain.setFolderPath(Path.of("/test/folder"));
 
         // When
-        InputCsvFileProcessingSvc.CsvFolder grpc = mapper.toGrpc(domain);
+        InputCsvFileProcessingSvc.CsvFolder grpc = mapper.toDtoToGrpc(domain);
 
         // Then
         assertNotNull(grpc);
@@ -72,7 +72,7 @@ class CsvFolderMapperTest {
                         .build();
 
         // When
-        CsvFolder domain = mapper.fromGrpc(grpc);
+        CsvFolder domain = mapper.fromGrpcFromDto(grpc);
 
         // Then
         assertNotNull(domain);

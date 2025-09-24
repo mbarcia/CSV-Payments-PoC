@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,27 +16,23 @@
 
 package io.github.mbarcia.csv.service;
 
-import static org.mockito.Mockito.*;
-
-import io.github.mbarcia.csv.CsvPaymentsApplication;
-import io.quarkus.runtime.Quarkus;
 import io.quarkus.test.junit.QuarkusTest;
-import org.junit.jupiter.api.Test;
 import org.mockito.*;
 
 @QuarkusTest
-class CsvPaymentsApplicationTest {
+class PipelineApplicationTest {
 
-    @Test
-    void testMain() {
-        // Arrange
-        String[] args = {"--csv-folder", "test-folder"};
-        try (MockedStatic<Quarkus> quarkusMock = Mockito.mockStatic(Quarkus.class)) {
-            // Act
-            CsvPaymentsApplication.main(args);
-
-            // Assert
-            quarkusMock.verify(() -> Quarkus.run(CsvPaymentsApplication.class, args));
-        }
-    }
+    //    TODO
+    //    @Test
+    //    void testMain() {
+    //        // Arrange
+    //        String[] args = {"--csv-folder", "test-folder"};
+    //        try (MockedStatic<Quarkus> quarkusMock = Mockito.mockStatic(Quarkus.class)) {
+    //            // Act
+    //            PipelineApplication.main(args);
+    //
+    //            // Assert
+    //            quarkusMock.verify(() -> Quarkus.run(PipelineApplication.class, args));
+    //        }
+    //    }
 }

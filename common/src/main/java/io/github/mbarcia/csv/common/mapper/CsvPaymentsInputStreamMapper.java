@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,29 +24,25 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
+@SuppressWarnings("unused")
 @Mapper(componentModel = "cdi", unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface CsvPaymentsInputStreamMapper {
+public interface CsvPaymentsInputStreamMapper extends io.github.mbarcia.pipeline.mapper.Mapper<InputCsvFileProcessingSvc.CsvPaymentsInputStream, CsvPaymentsInputStreamDto, CsvPaymentsInputStream> {
 
   CsvPaymentsInputStreamMapper INSTANCE = Mappers.getMapper( CsvPaymentsInputStreamMapper.class );
 
+  @Override
   @Mapping(target = "source")
   CsvPaymentsInputStreamDto toDto(CsvPaymentsInputStream entity);
 
+  @Override
   @Mapping(target = "source")
   CsvPaymentsInputStream fromDto(CsvPaymentsInputStreamDto dto);
 
+  @Override
   @Mapping(target = "source")
   InputCsvFileProcessingSvc.CsvPaymentsInputStream toGrpc(CsvPaymentsInputStreamDto entity);
 
+  @Override
   @Mapping(target = "source")
-  CsvPaymentsInputStreamDto fromGrpcToDto(InputCsvFileProcessingSvc.CsvPaymentsInputStream proto);
-
-  // Domain ↔ DTO ↔ gRPC
-  default InputCsvFileProcessingSvc.CsvPaymentsInputStream toGrpc(CsvPaymentsInputStream domain) {
-    return toGrpc(toDto(domain));
-  }
-
-  default CsvPaymentsInputStream fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputStream grpc) {
-    return fromDto(fromGrpcToDto(grpc));
-  }
+  CsvPaymentsInputStreamDto fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputStream proto);
 }

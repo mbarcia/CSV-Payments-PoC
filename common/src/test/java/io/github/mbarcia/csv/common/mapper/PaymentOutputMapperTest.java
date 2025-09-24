@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,7 +205,7 @@ class PaymentOutputMapperTest {
                         .build();
 
         // When
-        PaymentOutputDto dto = mapper.fromGrpcToDto(grpc);
+        PaymentOutputDto dto = mapper.fromGrpc(grpc);
 
         // Then
         assertNotNull(dto);
@@ -236,7 +236,7 @@ class PaymentOutputMapperTest {
     //   domain.setFee(new BigDecimal("1.50"));
 
     //   // When
-    //   PaymentStatusSvc.PaymentOutput grpc = mapper.toGrpc(domain);
+    //   PaymentStatusSvc.PaymentOutput grpc = mapper.toDtoToGrpc(domain);
 
     //   // Then
     //   assertNotNull(grpc);
@@ -271,7 +271,7 @@ class PaymentOutputMapperTest {
                         .build();
 
         // When
-        PaymentOutput domain = mapper.fromGrpc(grpc);
+        PaymentOutput domain = mapper.fromGrpcFromDto(grpc);
 
         // Then
         assertNotNull(domain);

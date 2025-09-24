@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,50 +24,34 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
+@SuppressWarnings("unused")
 @Mapper(
     componentModel = "cdi",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface PaymentRecordMapper {
+public interface PaymentRecordMapper extends io.github.mbarcia.pipeline.mapper.Mapper<InputCsvFileProcessingSvc.PaymentRecord, PaymentRecordDto, PaymentRecord> {
 
   PaymentRecordMapper INSTANCE = Mappers.getMapper( PaymentRecordMapper.class );
 
   // Domain ↔ DTO
-  @Mapping(target = "id")
-  @Mapping(target = "amount")
-  @Mapping(target = "currency")
-  @Mapping(target = "csvId")
-  @Mapping(target = "csvPaymentsInputFilePath")
+  @Override
   PaymentRecordDto toDto(PaymentRecord entity);
 
-  @Mapping(target = "id")
-  @Mapping(target = "amount")
-  @Mapping(target = "currency")
-  @Mapping(target = "csvId")
-  @Mapping(target = "csvPaymentsInputFilePath")
+  @Override
   PaymentRecord fromDto(PaymentRecordDto dto);
 
   // DTO ↔ gRPC
+  @Override
   @Mapping(target = "id", qualifiedByName = "uuidToString")
   @Mapping(target = "amount", qualifiedByName = "bigDecimalToString")
   @Mapping(target = "currency", qualifiedByName = "currencyToString")
-  @Mapping(target = "csvId")
   @Mapping(target = "csvPaymentsInputFilePath", qualifiedByName = "pathToString")
   InputCsvFileProcessingSvc.PaymentRecord toGrpc(PaymentRecordDto dto);
 
+  @Override
   @Mapping(target = "id", qualifiedByName = "stringToUUID")
   @Mapping(target = "amount", qualifiedByName = "stringToBigDecimal")
   @Mapping(target = "currency", qualifiedByName = "stringToCurrency")
-  @Mapping(target = "csvId")
   @Mapping(target = "csvPaymentsInputFilePath", qualifiedByName = "stringToPath")
-  PaymentRecordDto fromGrpcToDto(InputCsvFileProcessingSvc.PaymentRecord grpc);
-
-  // Domain ↔ DTO ↔ gRPC
-  default InputCsvFileProcessingSvc.PaymentRecord toGrpc(PaymentRecord entity) {
-    return toGrpc(toDto(entity));
-  }
-
-  default PaymentRecord fromGrpc(InputCsvFileProcessingSvc.PaymentRecord grpc) {
-    return fromDto(fromGrpcToDto(grpc));
-  }
+  PaymentRecordDto fromGrpc(InputCsvFileProcessingSvc.PaymentRecord grpc);
 }

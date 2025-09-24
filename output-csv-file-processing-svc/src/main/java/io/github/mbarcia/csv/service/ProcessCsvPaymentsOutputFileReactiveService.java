@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import org.slf4j.MDC;
  * for compatibility with the library's API.
  */
 @PipelineStep(
-  order = 5,
+  order = 6,
   inputType = PaymentOutput.class,
   outputType = CsvPaymentsOutputFile.class,
   stepType = StepManyToOne.class,

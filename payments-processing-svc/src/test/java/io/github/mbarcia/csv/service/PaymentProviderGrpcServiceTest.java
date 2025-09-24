@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -109,7 +109,7 @@ class PaymentProviderGrpcServiceTest {
                         any(io.github.mbarcia.csv.grpc.PaymentStatusSvc.SendPaymentRequest.class)))
                 .thenReturn(request);
         when(domainService.sendPayment(request)).thenReturn(domainOut);
-        when(ackPaymentSentMapper.toGrpc(domainOut)).thenReturn(grpcResponse);
+        when(ackPaymentSentMapper.toDtoToGrpc(domainOut)).thenReturn(grpcResponse);
 
         // When
         Uni<PaymentsProcessingSvc.AckPaymentSent> resultUni =
@@ -192,9 +192,9 @@ class PaymentProviderGrpcServiceTest {
         PaymentsProcessingSvc.PaymentStatus grpcResponse =
                 PaymentsProcessingSvc.PaymentStatus.newBuilder().setReference("ref").build();
 
-        when(ackPaymentSentMapper.fromGrpc(grpcRequest)).thenReturn(ackPaymentSent);
+        when(ackPaymentSentMapper.fromGrpcFromDto(grpcRequest)).thenReturn(ackPaymentSent);
         when(domainService.getPaymentStatus(ackPaymentSent)).thenReturn(domainOut);
-        when(paymentStatusMapper.toGrpc(domainOut)).thenReturn(grpcResponse);
+        when(paymentStatusMapper.toDtoToGrpc(domainOut)).thenReturn(grpcResponse);
 
         // When
         Uni<PaymentsProcessingSvc.PaymentStatus> resultUni =
@@ -221,7 +221,7 @@ class PaymentProviderGrpcServiceTest {
 
         RuntimeException domainException = new RuntimeException("Domain service failed");
 
-        when(ackPaymentSentMapper.fromGrpc(grpcRequest)).thenReturn(domainIn);
+        when(ackPaymentSentMapper.fromGrpcFromDto(grpcRequest)).thenReturn(domainIn);
         when(domainService.getPaymentStatus(domainIn)).thenThrow(domainException);
 
         // When & Then

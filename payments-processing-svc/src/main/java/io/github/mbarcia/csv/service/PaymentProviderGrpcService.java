@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public class PaymentProviderGrpcService
             () -> {
               var domainIn = sendPaymentRequestMapper.fromGrpc(grpcRequest);
               var domainOut = domainService.sendPayment(domainIn);
-              return ackPaymentSentMapper.toGrpc(domainOut);
+              return ackPaymentSentMapper.toDtoToGrpc(domainOut);
             })
         .onFailure()
         .transform(
@@ -71,9 +71,9 @@ public class PaymentProviderGrpcService
         .emitter(
             emitter -> {
               try {
-                var domainIn = ackPaymentSentMapper.fromGrpc(grpcRequest);
+                var domainIn = ackPaymentSentMapper.fromGrpcFromDto(grpcRequest);
                 var domainOut = domainService.getPaymentStatus(domainIn);
-                var grpcResponse = paymentStatusMapper.toGrpc(domainOut);
+                var grpcResponse = paymentStatusMapper.toDtoToGrpc(domainOut);
                 emitter.complete(grpcResponse);
               } catch (Exception e) {
                 emitter.fail(

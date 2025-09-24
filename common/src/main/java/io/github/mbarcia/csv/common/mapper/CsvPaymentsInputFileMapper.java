@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,37 +24,27 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
+@SuppressWarnings("unused")
 @Mapper(componentModel = "cdi", uses = {CommonConverters.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface CsvPaymentsInputFileMapper {
+public interface CsvPaymentsInputFileMapper extends io.github.mbarcia.pipeline.mapper.Mapper<InputCsvFileProcessingSvc.CsvPaymentsInputFile, CsvPaymentsInputFileDto, CsvPaymentsInputFile>{
 
   CsvPaymentsInputFileMapper INSTANCE = Mappers.getMapper( CsvPaymentsInputFileMapper.class );
 
-  @Mapping(target = "id")
-  @Mapping(target = "filepath")
-  @Mapping(target = "csvFolderPath")
+  @Override
   CsvPaymentsInputFileDto toDto(CsvPaymentsInputFile entity);
 
-  @Mapping(target = "id")
-  @Mapping(target = "filepath")
-  @Mapping(target = "csvFolderPath")
+  @Override
   CsvPaymentsInputFile fromDto(CsvPaymentsInputFileDto dto);
 
+  @Override
   @Mapping(target = "id", qualifiedByName = "uuidToString")
   @Mapping(target = "filepath", qualifiedByName = "pathToString")
   @Mapping(target = "csvFolderPath", qualifiedByName = "pathToString")
   InputCsvFileProcessingSvc.CsvPaymentsInputFile toGrpc(CsvPaymentsInputFileDto entity);
 
+  @Override
   @Mapping(target = "id", qualifiedByName = "stringToUUID")
   @Mapping(target = "filepath", qualifiedByName = "stringToPath")
   @Mapping(target = "csvFolderPath", qualifiedByName = "stringToPath")
-  CsvPaymentsInputFileDto fromGrpcToDto(InputCsvFileProcessingSvc.CsvPaymentsInputFile proto);
-
-  // Domain ↔ DTO ↔ gRPC
-  default InputCsvFileProcessingSvc.CsvPaymentsInputFile toGrpc(CsvPaymentsInputFile domain) {
-    return toGrpc(toDto(domain));
-  }
-
-  default CsvPaymentsInputFile fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile grpc) {
-    return fromDto(fromGrpcToDto(grpc));
-  }
+  CsvPaymentsInputFileDto fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile proto);
 }

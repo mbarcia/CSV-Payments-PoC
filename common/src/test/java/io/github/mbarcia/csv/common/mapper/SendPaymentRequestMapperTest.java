@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ class SendPaymentRequestMapperTest {
                         .build();
 
         // When
-        SendPaymentRequestMapper.SendPaymentRequest domain = mapper.fromGrpc(grpc);
+        SendPaymentRequestMapper.SendPaymentRequest domain = mapper.fromGrpcFromDto(grpc);
 
         // Then
         assertNotNull(domain);
@@ -120,7 +120,7 @@ class SendPaymentRequestMapperTest {
     //   domain.setPaymentRecordId(UUID.randomUUID());
 
     //   // When
-    //   PaymentStatusSvc.SendPaymentRequest grpc = mapper.toGrpc(domain);
+    //   PaymentStatusSvc.SendPaymentRequest grpc = mapper.toDtoToGrpc(domain);
 
     //   // Then
     //   assertNotNull(grpc);

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public class ProcessFolderStep extends ConfigurableStep implements StepOneToMany
             // It is considered "local" to where the application runs and reads the folder from
             java.util.List<CsvPaymentsInputFile> inputFiles = processFolderService.process(csvFolderPath).toList();
             return Multi.createFrom().iterable(inputFiles)
-                .map(csvPaymentsInputFileMapper::toGrpc);
+                .map(csvPaymentsInputFileMapper::toDtoToGrpc);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }

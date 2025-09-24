@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,25 +29,26 @@ import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
+@SuppressWarnings("unused")
 @Mapper(
     componentModel = "cdi",
     uses = {CommonConverters.class, PaymentRecordMapper.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface SendPaymentRequestMapper {
+public interface SendPaymentRequestMapper extends io.github.mbarcia.pipeline.mapper.Mapper<PaymentStatusSvc.SendPaymentRequest, SendPaymentRequestMapper.SendPaymentRequest, SendPaymentRequestMapper.SendPaymentRequest> {
 
   SendPaymentRequestMapper INSTANCE = Mappers.getMapper( SendPaymentRequestMapper.class );
-
+  
+  @Override
   @Mapping(source = "amount", target = "amount", qualifiedByName = "stringToBigDecimal")
   @Mapping(source = "currency", target = "currency", qualifiedByName = "stringToCurrency")
   @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "stringToUUID")
-  @Mapping(target = "paymentRecord")
   SendPaymentRequest fromGrpc(PaymentStatusSvc.SendPaymentRequest grpcRequest);
 
+  @Override
   @Mapping(source = "amount", target = "amount", qualifiedByName = "bigDecimalToString")
   @Mapping(source = "currency", target = "currency", qualifiedByName = "currencyToString")
   @Mapping(source = "paymentRecordId", target = "paymentRecordId", qualifiedByName = "uuidToString")
-  @Mapping(target = "paymentRecord")
-  PaymentStatusSvc.SendPaymentRequest toGrpc(SendPaymentRequest domainIn);
+  PaymentStatusSvc.SendPaymentRequest toGrpc(SendPaymentRequest dto);
 
   @Setter
   @Getter

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ class CsvPaymentsOutputFileMapperTest {
         domain.setCsvFolderPath(Path.of("/test/output"));
 
         // When
-        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpc = mapper.toGrpc(domain);
+        OutputCsvFileProcessingSvc.CsvPaymentsOutputFile grpc = mapper.toDtoToGrpc(domain);
 
         // Then
         assertNotNull(grpc);
@@ -80,7 +80,7 @@ class CsvPaymentsOutputFileMapperTest {
                         .build();
 
         // When
-        CsvPaymentsOutputFile domain = mapper.fromGrpc(grpc);
+        CsvPaymentsOutputFile domain = mapper.fromGrpcFromDto(grpc);
 
         // Then
         assertNotNull(domain);

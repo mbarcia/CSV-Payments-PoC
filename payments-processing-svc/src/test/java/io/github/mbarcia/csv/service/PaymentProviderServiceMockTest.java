@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ import io.github.mbarcia.csv.common.domain.PaymentRecord;
 import io.github.mbarcia.csv.common.domain.PaymentStatus;
 import io.github.mbarcia.csv.common.dto.PaymentRecordDto;
 import io.github.mbarcia.csv.common.mapper.*;
+import io.github.mbarcia.csv.common.mapper.AckPaymentSentMapperImpl;
+import io.github.mbarcia.csv.common.mapper.PaymentStatusMapperImpl;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.math.BigDecimal;

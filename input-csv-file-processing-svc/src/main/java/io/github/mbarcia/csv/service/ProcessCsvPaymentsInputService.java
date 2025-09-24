@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ package io.github.mbarcia.csv.service;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputStream;
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
-import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputInboundMapper;
+import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputStreamMapper;
 import io.github.mbarcia.csv.common.mapper.PaymentRecordMapper;
 import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputStreamServiceGrpc;
@@ -53,8 +53,8 @@ import org.slf4j.MDC;
     backendType = GenericGrpcServiceStreamingAdapter.class,
     grpcStub = MutinyProcessCsvPaymentsInputStreamServiceGrpc.MutinyProcessCsvPaymentsInputStreamServiceStub.class,
     grpcImpl = MutinyProcessCsvPaymentsInputStreamServiceGrpc.ProcessCsvPaymentsInputStreamServiceImplBase.class,
-    inboundMapper = CsvPaymentsInputInboundMapper.class,
-    outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordOutboundMapper.class,
+    inboundMapper = CsvPaymentsInputStreamMapper.class,
+    outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordMapper.class,
     grpcClient = "process-csv-payments-input-stream"
 )
 @ApplicationScoped

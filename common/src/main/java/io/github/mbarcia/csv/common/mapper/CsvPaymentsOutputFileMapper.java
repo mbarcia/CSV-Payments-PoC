@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package io.github.mbarcia.csv.common.mapper;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile;
+import io.github.mbarcia.csv.common.dto.CsvPaymentsOutputFileDto;
 import io.github.mbarcia.csv.grpc.OutputCsvFileProcessingSvc;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -27,22 +28,19 @@ import org.mapstruct.factory.Mappers;
     componentModel = "cdi",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface CsvPaymentsOutputFileMapper {
+public interface CsvPaymentsOutputFileMapper extends io.github.mbarcia.pipeline.mapper.Mapper<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile, CsvPaymentsOutputFileDto, CsvPaymentsOutputFile>{
 
   CsvPaymentsOutputFileMapper INSTANCE = Mappers.getMapper( CsvPaymentsOutputFileMapper.class );
 
+  @Override
   @Mapping(target = "id", qualifiedByName = "uuidToString")
   @Mapping(target = "filepath", qualifiedByName = "pathToString")
   @Mapping(target = "csvFolderPath", qualifiedByName = "pathToString")
-  OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(CsvPaymentsOutputFile entity);
+  OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(CsvPaymentsOutputFileDto dto);
 
+  @Override
   @Mapping(target = "id", qualifiedByName = "stringToUUID")
   @Mapping(target = "filepath", qualifiedByName = "stringToPath")
   @Mapping(target = "csvFolderPath", qualifiedByName = "stringToPath")
-  @Mapping(target = "csvFile", ignore = true)
-  @Mapping(target = "csvFolder", ignore = true)
-  @Mapping(target = "writer", ignore = true)
-  @Mapping(target = "sbc", ignore = true)
-  @Mapping(target = "paymentOutputs", ignore = true)
-  CsvPaymentsOutputFile fromGrpc(OutputCsvFileProcessingSvc.CsvPaymentsOutputFile proto);
+  CsvPaymentsOutputFileDto fromGrpc(OutputCsvFileProcessingSvc.CsvPaymentsOutputFile proto);
 }

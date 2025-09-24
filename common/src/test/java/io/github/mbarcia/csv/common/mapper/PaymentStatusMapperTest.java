@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -198,7 +198,7 @@ class PaymentStatusMapperTest {
                         .build();
 
         // When
-        PaymentStatusDto dto = mapper.toDto(grpc);
+        PaymentStatusDto dto = mapper.fromGrpc(grpc);
 
         // Then
         assertNotNull(dto);
@@ -223,7 +223,7 @@ class PaymentStatusMapperTest {
     //   domain.setAckPaymentSentId(UUID.randomUUID());
 
     //   // When
-    //   PaymentsProcessingSvc.PaymentStatus grpc = mapper.toGrpc(domain);
+    //   PaymentsProcessingSvc.PaymentStatus grpc = mapper.toDtoToGrpc(domain);
 
     //   // Then
     //   assertNotNull(grpc);
@@ -252,7 +252,7 @@ class PaymentStatusMapperTest {
                         .build();
 
         // When
-        PaymentStatus domain = mapper.fromGrpc(grpc);
+        PaymentStatus domain = mapper.fromGrpcFromDto(grpc);
 
         // Then
         assertNotNull(domain);

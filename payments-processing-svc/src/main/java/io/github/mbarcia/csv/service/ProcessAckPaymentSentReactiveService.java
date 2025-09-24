@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,11 @@ package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.AckPaymentSent;
 import io.github.mbarcia.csv.common.domain.PaymentStatus;
+import io.github.mbarcia.csv.grpc.MutinyProcessAckPaymentSentServiceGrpc;
+import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveService;
+import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -26,6 +30,20 @@ import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@PipelineStep(
+        order = 3,
+        inputType = AckPaymentSent.class,
+        outputType = PaymentStatus.class,
+        stepType = StepOneToOne.class,
+        backendType = GenericGrpcReactiveServiceAdapter.class,
+        grpcStub = MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase.class,
+        grpcImpl = MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase.class,
+        inboundMapper = io.github.mbarcia.csv.common.mapper.AckPaymentSentMapper.class,
+        outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentStatusMapper.class,
+        grpcClient = "process-ack-payment-sent",
+        autoPersist = true,
+        debug = true
+)
 @ApplicationScoped
 @Getter
 public class ProcessAckPaymentSentReactiveService

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,8 @@ import io.github.mbarcia.csv.common.domain.*;
 import io.github.mbarcia.csv.common.dto.PaymentOutputDto;
 import io.github.mbarcia.csv.common.mapper.PaymentOutputMapper;
 import io.github.mbarcia.csv.grpc.MutinyProcessPaymentStatusServiceGrpc;
-import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveService;
-import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -33,15 +31,15 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 @PipelineStep(
-    order = 4,
-    inputType = PaymentStatus.class,
-    outputType = PaymentOutput.class,
-    stepType = StepOneToOne.class,
-    backendType = GenericGrpcReactiveServiceAdapter.class,
+    order = 5,
+    inputType = io.github.mbarcia.csv.common.domain.PaymentStatus.class,
+    outputType = io.github.mbarcia.csv.common.domain.PaymentOutput.class,
+    stepType = io.github.mbarcia.pipeline.step.StepOneToOne.class,
+    backendType = io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter.class,
     grpcStub = MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub.class,
     grpcImpl = MutinyProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceImplBase.class,
-    inboundMapper = io.github.mbarcia.csv.common.mapper.PaymentStatusInboundMapper.class,
-    outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentOutputOutboundMapper.class,
+    inboundMapper = io.github.mbarcia.csv.common.mapper.PaymentStatusMapper.class,
+    outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentOutputMapper.class,
     grpcClient = "process-payment-status",
     autoPersist = true,
     debug = true
@@ -51,7 +49,8 @@ import org.slf4j.MDC;
 public class ProcessPaymentStatusReactiveService
     implements ReactiveService<PaymentStatus, PaymentOutput> {
 
-  @Inject PaymentOutputMapper mapper;
+  @Inject
+  PaymentOutputMapper mapper;
 
   @Override
   public Uni<PaymentOutput> process(PaymentStatus paymentStatus) {

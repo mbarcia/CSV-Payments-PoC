@@ -19,6 +19,7 @@ package io.github.mbarcia.pipeline.processor;
 import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
+import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -26,9 +27,12 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.ClassCreator;
+import io.quarkus.gizmo.FieldCreator;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.text.MessageFormat;
 import org.jboss.jandex.AnnotationInstance;
@@ -49,7 +53,7 @@ public class PipelineProcessor {
             ClassInfo stepClassInfo = ann.target().asClass();
 
             // extract annotation values
-            String stubName = ann.value("stub").asClass().name().toString();
+            String stubName = ann.value("grpcStub").asClass().name().toString();
             String serviceName = stepClassInfo.name().toString();
             String inMapperName = ann.value("inboundMapper").asClass().name().toString();
             String outMapperName = ann.value("outboundMapper").asClass().name().toString();
@@ -59,41 +63,71 @@ public class PipelineProcessor {
                 ann.value("backendType").asClass().name().toString() : 
                 GenericGrpcReactiveServiceAdapter.class.getName();
 
-            String adapterClassName = MessageFormat.format("{0}GrpcService", stepClassInfo.name().toString());
+            generateAdapterClasses(generatedClasses, stepClassInfo, backendType, inMapperName, outMapperName, serviceName);
+            generateStepClasses(generatedClasses, stepClassInfo, backendType, inMapperName, outMapperName, serviceName);
+        }
+    }
 
-            // generate a subclass of the specified backend adapter with @GrpcService
+    private static void generateAdapterClasses(BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo stepClassInfo, String backendType, String inMapperName, String outMapperName, String serviceName) {
+
+        // generate a subclass that implements the appropriate step interface
             try (ClassCreator cc = new ClassCreator(
-                    new GeneratedClassGizmoAdaptor(generatedClasses, true),
-                    adapterClassName, null, backendType)) {
+            new GeneratedClassGizmoAdaptor(generatedClasses, true),
+            stepClassName, null, ConfigurableStep.class.getName())) {
+        // Add @ApplicationScoped annotation
+        cc.addAnnotation(ApplicationScoped.class);
 
-                // Add @GrpcService annotation to the generated class
-                cc.addAnnotation(GrpcService.class);
-                
-                // Create fields with @Inject annotations
-                cc.getFieldCreator("inboundMapper", inMapperName)
-                        .setModifiers(java.lang.reflect.Modifier.PRIVATE)
-                        .addAnnotation(Inject.class);
-                        
-                cc.getFieldCreator("outboundMapper", outMapperName)
-                        .setModifiers(java.lang.reflect.Modifier.PRIVATE)
-                        .addAnnotation(Inject.class);
-                        
-                cc.getFieldCreator("service", serviceName)
-                        .setModifiers(java.lang.reflect.Modifier.PRIVATE)
-                        .addAnnotation(Inject.class);
-                        
-                cc.getFieldCreator("persistenceManager", PersistenceManager.class.getName())
-                        .setModifiers(java.lang.reflect.Modifier.PRIVATE)
-                        .addAnnotation(Inject.class);
+        // Create field for gRPC client
+        FieldCreator fieldCreator = cc.getFieldCreator("grpcClient", stubClass)
+                .setModifiers(java.lang.reflect.Modifier.PRIVATE);
+        fieldCreator.addAnnotation(Inject.class);
+        fieldCreator.addAnnotation(GrpcClient.class).addValue("value", grpcClientValue);
 
-                // Add default no-arg constructor
-                try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
-                    defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(backendType), defaultCtor.getThis());
-                    defaultCtor.returnValue(null);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to generate adapter class", e);
+        // Add default no-arg constructor
+        try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
+            defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(ConfigurableStep.class), defaultCtor.getThis());
+            defaultCtor.returnValue(null);
+        }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate step class", e);
+        }
+    }
+
+    private static void generateStepClasses(BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo stepClassInfo, String backendType, String inMapperName, String outMapperName, String serviceName) {
+        // generate a subclass of the specified backend adapter with @GrpcService
+        String adapterClassName = MessageFormat.format("{0}GrpcPipelineService", stepClassInfo.name().toString());
+
+        try (ClassCreator cc = new ClassCreator(
+                new GeneratedClassGizmoAdaptor(generatedClasses, true),
+                adapterClassName, null, backendType)) {
+
+            // Add @GrpcService annotation to the generated class
+            cc.addAnnotation(GrpcService.class);
+
+            // Create fields with @Inject annotations
+            cc.getFieldCreator("inboundMapper", inMapperName)
+                    .setModifiers(java.lang.reflect.Modifier.PRIVATE)
+                    .addAnnotation(Inject.class);
+
+            cc.getFieldCreator("outboundMapper", outMapperName)
+                    .setModifiers(java.lang.reflect.Modifier.PRIVATE)
+                    .addAnnotation(Inject.class);
+
+            cc.getFieldCreator("service", serviceName)
+                    .setModifiers(java.lang.reflect.Modifier.PRIVATE)
+                    .addAnnotation(Inject.class);
+
+            cc.getFieldCreator("persistenceManager", PersistenceManager.class.getName())
+                    .setModifiers(java.lang.reflect.Modifier.PRIVATE)
+                    .addAnnotation(Inject.class);
+
+            // Add default no-arg constructor
+            try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
+                defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(backendType), defaultCtor.getThis());
+                defaultCtor.returnValue(null);
             }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate adapter class", e);
         }
     }
 }

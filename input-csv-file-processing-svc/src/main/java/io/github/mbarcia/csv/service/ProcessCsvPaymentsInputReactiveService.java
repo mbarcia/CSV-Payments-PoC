@@ -19,8 +19,11 @@ package io.github.mbarcia.csv.service;
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInput;
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
+import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
+import io.github.mbarcia.pipeline.GenericGrpcServiceStreamingAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingService;
+import io.github.mbarcia.pipeline.step.StepManyToOne;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -35,16 +38,18 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 @PipelineStep(
-    order = 2,
-    autoPersist = true,
-    debug = true,
-    recoverOnFailure = true,
+    order = 1,
     inputType = CsvPaymentsInput.class,
     outputType = PaymentRecord.class,
-    stub = io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc.MutinyProcessCsvPaymentsInputFileServiceStub.class,
-    inboundMapper = io.github.mbarcia.csv.mapper.CsvPaymentsInputInboundMapper.class,
-    outboundMapper = io.github.mbarcia.csv.mapper.PaymentRecordOutboundMapper.class,
-    grpcClient = "process-csv-payments-input-file"
+    stepType = StepManyToOne.class,
+    backendType = GenericGrpcServiceStreamingAdapter.class,
+    grpcStub = io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc.MutinyProcessCsvPaymentsInputFileServiceStub.class,
+    grpcImpl = MutinyProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase.class,
+    inboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputInboundMapper.class,
+    outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordOutboundMapper.class,
+    grpcClient = "process-csv-payments-input-file",
+    autoPersist = true,
+    debug = true
 )
 @ApplicationScoped
 @Getter

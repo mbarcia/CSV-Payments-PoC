@@ -18,7 +18,11 @@ package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.AckPaymentSent;
 import io.github.mbarcia.csv.common.domain.PaymentStatus;
+import io.github.mbarcia.csv.grpc.MutinyPollAckPaymentSentServiceGrpc;
+import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveService;
+import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -28,6 +32,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+@PipelineStep(
+    order = 3,
+    inputType = AckPaymentSent.class,
+    outputType = PaymentStatus.class,
+    stepType = StepOneToOne.class,
+    backendType = GenericGrpcReactiveServiceAdapter.class,
+    grpcStub = MutinyPollAckPaymentSentServiceGrpc.MutinyPollAckPaymentSentServiceStub.class,
+    grpcImpl = MutinyPollAckPaymentSentServiceGrpc.PollAckPaymentSentServiceImplBase.class,
+    inboundMapper = io.github.mbarcia.csv.common.mapper.AckPaymentSentInboundMapper.class,
+    outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentStatusOutboundMapper.class,
+    grpcClient = "process-ack-payment-sent",
+    autoPersist = true,
+    debug = true
+)
 @ApplicationScoped
 public class PollAckPaymentSentReactiveService
     implements ReactiveService<AckPaymentSent, PaymentStatus> {
@@ -50,7 +68,6 @@ public class PollAckPaymentSentReactiveService
         config.permitsPerSecond(), config.timeoutMillis(), config.waitMilliseconds());
   }
 
-  @SuppressWarnings("BlockingMethodInNonBlockingContext")
   @Override
   public Uni<PaymentStatus> process(AckPaymentSent detachedAckPaymentSent) {
     return process(detachedAckPaymentSent, true); // Default to using virtual threads
@@ -73,6 +90,7 @@ public class PollAckPaymentSentReactiveService
     }
   }
 
+  @SuppressWarnings("BlockingMethodInNonBlockingContext")
   private Uni<PaymentStatus> processWithVirtualThreads(AckPaymentSent detachedAckPaymentSent) {
     return Uni.createFrom()
         .item(detachedAckPaymentSent)

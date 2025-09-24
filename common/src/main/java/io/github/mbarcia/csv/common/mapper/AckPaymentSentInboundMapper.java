@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.mapper;
+package io.github.mbarcia.csv.common.mapper;
 
 import io.github.mbarcia.csv.common.domain.AckPaymentSent;
-import io.github.mbarcia.csv.common.mapper.AckPaymentSentMapper;
 import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
 import io.github.mbarcia.pipeline.mapper.InboundMapper;
 import jakarta.enterprise.context.ApplicationScoped;

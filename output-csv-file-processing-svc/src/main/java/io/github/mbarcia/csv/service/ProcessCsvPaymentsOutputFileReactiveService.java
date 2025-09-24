@@ -17,7 +17,11 @@
 package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.*;
+import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
+import io.github.mbarcia.pipeline.GenericGrpcServiceClientStreamingAdapter;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingClientService;
+import io.github.mbarcia.pipeline.step.StepManyToOne;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -41,6 +45,20 @@ import org.slf4j.MDC;
  * streaming characteristics than list-based writing, even though we collect the stream
  * for compatibility with the library's API.
  */
+@PipelineStep(
+  order = 5,
+  inputType = PaymentOutput.class,
+  outputType = CsvPaymentsOutputFile.class,
+  stepType = StepManyToOne.class,
+  backendType = GenericGrpcServiceClientStreamingAdapter.class,
+  grpcStub = MutinyProcessCsvPaymentsOutputFileServiceGrpc.MutinyProcessCsvPaymentsOutputFileServiceStub.class,
+  grpcImpl = MutinyProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceImplBase.class,
+  inboundMapper = io.github.mbarcia.csv.common.mapper.PaymentOutputMapper.class,
+  outboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsOutputFileMapper.class,
+  grpcClient = "process-csv-payments-output-file",
+  autoPersist = true,
+  debug = true
+)
 @ApplicationScoped
 public class ProcessCsvPaymentsOutputFileReactiveService
     implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {

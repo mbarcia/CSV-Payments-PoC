@@ -14,26 +14,25 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.mapper;
+package io.github.mbarcia.csv.common.mapper;
 
-import io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile;
-import io.github.mbarcia.csv.common.mapper.CsvPaymentsOutputFileMapper;
-import io.github.mbarcia.csv.grpc.OutputCsvFileProcessingSvc;
+import io.github.mbarcia.csv.common.domain.PaymentStatus;
+import io.github.mbarcia.csv.grpc.PaymentsProcessingSvc;
 import io.github.mbarcia.pipeline.mapper.OutboundMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 
 /**
- * Outbound mapper for converting domain CsvPaymentsOutputFile to gRPC CsvPaymentsOutputFile.
+ * Outbound mapper for converting domain PaymentStatus to gRPC PaymentStatus.
  */
 @ApplicationScoped
-public class CsvPaymentsOutputFileOutboundMapper implements OutboundMapper<CsvPaymentsOutputFile, OutputCsvFileProcessingSvc.CsvPaymentsOutputFile> {
+public class PaymentStatusOutboundMapper implements OutboundMapper<PaymentStatus, PaymentsProcessingSvc.PaymentStatus> {
 
     @Inject
-    CsvPaymentsOutputFileMapper csvPaymentsOutputFileMapper;
+    PaymentStatusMapper paymentStatusMapper;
 
     @Override
-    public OutputCsvFileProcessingSvc.CsvPaymentsOutputFile toGrpc(CsvPaymentsOutputFile domainOut) {
-        return csvPaymentsOutputFileMapper.toGrpc(domainOut);
+    public PaymentsProcessingSvc.PaymentStatus toGrpc(PaymentStatus domainOut) {
+        return paymentStatusMapper.toGrpc(domainOut);
     }
 }

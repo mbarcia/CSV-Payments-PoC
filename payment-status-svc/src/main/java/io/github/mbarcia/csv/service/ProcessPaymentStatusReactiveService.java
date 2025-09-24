@@ -19,7 +19,11 @@ package io.github.mbarcia.csv.service;
 import io.github.mbarcia.csv.common.domain.*;
 import io.github.mbarcia.csv.common.dto.PaymentOutputDto;
 import io.github.mbarcia.csv.common.mapper.PaymentOutputMapper;
+import io.github.mbarcia.csv.grpc.MutinyProcessPaymentStatusServiceGrpc;
+import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveService;
+import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -28,6 +32,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+@PipelineStep(
+    order = 4,
+    inputType = PaymentStatus.class,
+    outputType = PaymentOutput.class,
+    stepType = StepOneToOne.class,
+    backendType = GenericGrpcReactiveServiceAdapter.class,
+    grpcStub = MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub.class,
+    grpcImpl = MutinyProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceImplBase.class,
+    inboundMapper = io.github.mbarcia.csv.common.mapper.PaymentStatusInboundMapper.class,
+    outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentOutputOutboundMapper.class,
+    grpcClient = "process-payment-status",
+    autoPersist = true,
+    debug = true
+)
 @ApplicationScoped
 @Getter
 public class ProcessPaymentStatusReactiveService
@@ -58,12 +76,12 @@ public class ProcessPaymentStatusReactiveService
     return Uni.createFrom()
             .item(mapper.fromDto(dto))
             .invoke(
-            result -> {
-              String serviceId = this.getClass().toString();
-              Logger logger = LoggerFactory.getLogger(this.getClass());
-              MDC.put("serviceId", serviceId);
-              logger.info("Executed command on {} --> {}", paymentStatus, result);
-              MDC.clear();
-            });
+                result -> {
+                  String serviceId = this.getClass().toString();
+                  Logger logger = LoggerFactory.getLogger(this.getClass());
+                  MDC.put("serviceId", serviceId);
+                  logger.info("Executed command on {} --> {}", paymentStatus, result);
+                  MDC.clear();
+                });
   }
 }

@@ -1,0 +1,398 @@
+# Pipeline Compilation and Generation
+
+This guide explains how the Pipeline Framework's annotation processor works to automatically generate pipeline applications and adapters at build time.
+
+## Overview
+
+The Pipeline Framework uses annotation processing to automatically generate the necessary infrastructure for pipeline execution. When you annotate your services with `@PipelineStep`, the framework's annotation processor:
+
+1. Discovers all annotated services at build time
+2. Generates gRPC and REST adapters for each service
+3. Creates a complete pipeline application that orchestrates all steps
+4. Registers all generated components with the dependency injection container
+
+This eliminates the need for manual configuration and ensures consistency across your pipeline.
+
+## Annotation Processing Workflow
+
+### 1. Build-Time Discovery
+During the Maven build process, the annotation processor scans for `@PipelineStep` annotations:
+
+```java
+// At build time, the processor finds this annotation
+@PipelineStep(
+    order = 1,
+    inputType = PaymentRecord.class,
+    outputType = PaymentStatus.class,
+    stepType = StepOneToOne.class,
+    backendType = GenericGrpcReactiveServiceAdapter.class,
+    grpcStub = MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub.class,
+    grpcImpl = MutinyProcessPaymentServiceGrpc.ProcessPaymentServiceImplBase.class,
+    inboundMapper = PaymentRecordInboundMapper.class,
+    outboundMapper = PaymentStatusOutboundMapper.class,
+    grpcClient = "process-payment",
+    autoPersist = true,
+    debug = true
+)
+@ApplicationScoped
+public class ProcessPaymentService implements StepOneToOne<PaymentRecord, PaymentStatus> {
+    // Implementation
+}
+```
+
+### 2. Code Generation
+The processor generates several classes:
+
+#### a) gRPC Adapter Class
+A service endpoint that handles gRPC requests:
+
+```java
+// Generated: ProcessPaymentServiceGrpcService.java
+@GrpcService
+public class ProcessPaymentServiceGrpcService extends GenericGrpcReactiveServiceAdapter<...> {
+    @Inject
+    PaymentRecordInboundMapper inboundMapper;
+    
+    @Inject
+    PaymentStatusOutboundMapper outboundMapper;
+    
+    @Inject
+    ProcessPaymentService service;
+    
+    @Inject
+    PersistenceManager persistenceManager;
+    
+    // Generated methods for gRPC endpoint
+}
+```
+
+#### b) Step Class
+A client-side step implementation for pipeline execution:
+
+```java
+// Generated: ProcessPaymentServiceStep.java
+@ApplicationScoped
+public class ProcessPaymentServiceStep implements StepOneToOne<PaymentRecord, PaymentStatus> {
+    @Inject
+    MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub grpcClient;
+    
+    @GrpcClient("process-payment")
+    // Generated methods for pipeline step execution
+}
+```
+
+#### c) Pipeline Application
+An orchestrator that includes all discovered steps:
+
+```java
+// Generated: GeneratedPipelineApplication.java
+@ApplicationScoped
+public class GeneratedPipelineApplication extends PipelineApplication {
+    @Inject
+    ProcessPaymentServiceStep step0;
+    
+    @Inject
+    SendPaymentServiceStep step1;
+    
+    @Inject
+    ProcessAckPaymentServiceStep step2;
+    
+    // Generated pipeline execution logic
+}
+```
+
+### 3. Dependency Injection Registration
+All generated classes are automatically registered with the CDI container, making them available for injection.
+
+## Generated Classes in Detail
+
+### gRPC Adapter Generation
+
+The gRPC adapter acts as a server-side endpoint that:
+
+1. Receives gRPC requests
+2. Uses the inbound mapper to convert gRPC objects to domain objects
+3. Calls the actual service implementation
+4. Uses the outbound mapper to convert domain objects to gRPC responses
+5. Handles persistence if auto-persist is enabled
+
+```java
+// Generated class structure
+public class ServiceNameGrpcService extends GenericGrpcReactiveServiceAdapter<GRpcIn, DomainIn, DomainOut, GRpcOut> {
+    
+    @Inject
+    InboundMapper<GRpcIn, DomainIn> inboundMapper;
+    
+    @Inject
+    OutboundMapper<DomainOut, GRpcOut> outboundMapper;
+    
+    @Inject
+    ServiceName service;  // Your actual service implementation
+    
+    @Inject
+    PersistenceManager persistenceManager;
+    
+    public Uni<GRpcOut> remoteProcess(GRpcIn grpcRequest) {
+        // Convert gRPC to domain
+        DomainIn domainInput = inboundMapper.fromGrpcFromDto(grpcRequest);
+        
+        // Auto-persist if enabled
+        Uni<DomainIn> persistedInput = getPersistedUni(domainInput);
+        
+        // Process through service
+        Uni<DomainOut> domainOutput = persistedInput
+            .onItem().transformToUni(service::process);
+            
+        // Convert domain to gRPC
+        return domainOutput.onItem().transform(outboundMapper::toDtoToGrpc);
+    }
+}
+```
+
+### Step Class Generation
+
+The step class acts as a client-side component that:
+
+1. Connects to the gRPC service
+2. Implements the pipeline step interface
+3. Handles the conversion between domain objects and gRPC calls
+
+```java
+// Generated class structure
+@ApplicationScoped
+public class ServiceNameStep implements StepOneToOne<DomainIn, DomainOut> {
+    
+    @Inject
+    @GrpcClient("grpc-client-name")
+    StubClass grpcClient;
+    
+    public Uni<DomainOut> applyOneToOne(Uni<DomainIn> input) {
+        return input.onItem().transformToUni(domainInput -> {
+            // Convert domain to gRPC
+            GRpcIn grpcInput = convertDomainToGrpc(domainInput);
+            
+            // Call remote service
+            return grpcClient.remoteProcess(grpcInput);
+        });
+    }
+}
+```
+
+### Pipeline Application Generation
+
+The pipeline application orchestrates all steps:
+
+```java
+// Generated class structure
+@ApplicationScoped
+public class GeneratedPipelineApplication extends PipelineApplication {
+    
+    // Injected steps in order
+    @Inject ProcessPaymentServiceStep step0;
+    @Inject SendPaymentServiceStep step1;
+    @Inject ProcessAckPaymentServiceStep step2;
+    
+    @Override
+    public void processPipeline(String input) {
+        // Create input stream
+        Multi<DomainInput> inputStream = createInputStream(input);
+        
+        // Execute pipeline with all steps
+        executePipeline(inputStream, Arrays.asList(step0, step1, step2));
+    }
+}
+```
+
+## Build Process Integration
+
+### Maven Configuration
+
+The pipeline framework integrates with the Maven build process through the deployment module:
+
+```xml
+<!-- pom.xml dependencies -->
+<dependency>
+    <groupId>io.github.mbarcia</groupId>
+    <artifactId>pipeline-framework-runtime</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.github.mbarcia</groupId>
+    <artifactId>pipeline-framework-deployment</artifactId>
+    <scope>provided</scope>
+</dependency>
+```
+
+### Annotation Processor Execution
+
+The annotation processor runs during the `compile` phase:
+
+```bash
+# During mvn compile
+[INFO] --- quarkus:3.28.0.CR1:generate-code (default) @ service-module ---
+[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generating adapters for annotated services
+[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Found 3 @PipelineStep annotated services
+[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated ProcessPaymentServiceGrpcService
+[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated ProcessPaymentServiceStep
+[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated SendPaymentServiceGrpcService
+[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated SendPaymentServiceStep
+[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated ProcessAckPaymentServiceGrpcService
+[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated ProcessAckPaymentServiceStep
+[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated GeneratedPipelineApplication
+```
+
+## Generated Code Verification
+
+### Viewing Generated Sources
+
+Generated sources can be found in the target directory:
+
+```bash
+# Generated sources location
+target/generated-sources/annotations/
+
+# Generated classes location  
+target/classes/
+```
+
+### Debugging Generation Issues
+
+Enable verbose logging to debug generation issues:
+
+```properties
+# application.properties
+quarkus.log.category."io.github.mbarcia.pipeline.processor".level=DEBUG
+```
+
+## Customization Points
+
+### Extending Generated Classes
+
+While generated classes are typically not modified directly, you can extend them:
+
+```java
+// Custom extension of generated step
+@ApplicationScoped
+public class CustomProcessPaymentServiceStep extends ProcessPaymentServiceStep {
+    
+    @Override
+    public Uni<PaymentStatus> applyOneToOne(Uni<PaymentRecord> input) {
+        // Add custom logic before/after calling super
+        return super.applyOneToOne(input)
+            .onItem().invoke(status -> {
+                // Custom post-processing
+                logPaymentStatus(status);
+            });
+    }
+    
+    private void logPaymentStatus(PaymentStatus status) {
+        // Custom logging logic
+    }
+}
+```
+
+### Customizing Generation
+
+The annotation processor can be customized through annotation parameters:
+
+```java
+@PipelineStep(
+    order = 1,
+    inputType = PaymentRecord.class,
+    outputType = PaymentStatus.class,
+    stepType = StepOneToOne.class,
+    backendType = CustomGrpcReactiveServiceAdapter.class,  // Custom adapter
+    grpcStub = MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub.class,
+    grpcImpl = MutinyProcessPaymentServiceGrpc.ProcessPaymentServiceImplBase.class,
+    inboundMapper = PaymentRecordInboundMapper.class,
+    outboundMapper = PaymentStatusOutboundMapper.class,
+    grpcClient = "process-payment",
+    autoPersist = true,
+    debug = true,
+    retryLimit = 5,
+    retryWait = "PT1S",
+    maxBackoff = "PT30S",
+    jitter = true
+)
+```
+
+## Troubleshooting
+
+### Common Issues
+
+#### 1. Missing Dependencies
+Ensure all required dependencies are present:
+
+```xml
+<dependency>
+    <groupId>io.github.mbarcia</groupId>
+    <artifactId>pipeline-framework-runtime</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.github.mbarcia</groupId>
+    <artifactId>pipeline-framework-deployment</artifactId>
+    <scope>provided</scope>
+</dependency>
+```
+
+#### 2. Annotation Processing Not Running
+Verify the processor is on the classpath:
+
+```bash
+# Check that deployment module is included
+mvn dependency:tree | grep pipeline-framework
+```
+
+#### 3. Generated Classes Not Found
+Check the generated sources directory:
+
+```bash
+# List generated classes
+find target/generated-sources -name "*.java" | grep -i pipeline
+```
+
+### Debugging Tips
+
+#### Enable Detailed Logging
+```properties
+# application.properties
+quarkus.log.category."io.github.mbarcia.pipeline".level=DEBUG
+quarkus.log.category."io.github.mbarcia.pipeline.processor".level=TRACE
+```
+
+#### Verify Generated Classes
+```bash
+# Check that classes were generated
+ls target/classes/io/github/mbarcia/pipeline/GeneratedPipelineApplication.class
+```
+
+#### Clean and Rebuild
+```bash
+# Clean build to force regeneration
+mvn clean compile
+```
+
+## Best Practices
+
+### Development Workflow
+
+1. **Annotate Services**: Add `@PipelineStep` to your service classes
+2. **Build Project**: Run `mvn compile` to trigger generation
+3. **Verify Generation**: Check that generated classes are created
+4. **Test Integration**: Run integration tests to verify the pipeline works
+5. **Deploy**: Deploy the complete application with generated components
+
+### Maintenance
+
+1. **Keep Annotations Updated**: Update `@PipelineStep` when changing service interfaces
+2. **Review Generated Code**: Periodically review generated code for correctness
+3. **Monitor Build Logs**: Watch for generation warnings or errors
+4. **Test Changes**: Thoroughly test after making changes to annotated services
+
+### Performance Considerations
+
+1. **Minimize Regeneration**: Only rebuild when annotations change
+2. **Optimize Mappers**: Ensure mappers are efficient
+3. **Configure Retries**: Set appropriate retry limits and wait times
+4. **Monitor Resource Usage**: Watch memory and CPU usage of generated components
+
+The Pipeline Framework's annotation processing provides a powerful way to automatically generate pipeline infrastructure while maintaining type safety and reducing boilerplate code. By understanding how this process works, you can leverage its full potential while troubleshooting any issues that may arise.

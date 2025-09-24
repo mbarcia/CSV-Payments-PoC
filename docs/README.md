@@ -1,10 +1,39 @@
-# Pipeline Framework Documentation Site
+# Pipeline Framework Documentation
 
-This directory contains the documentation site for the Pipeline Framework, built with VitePress and hosted on Cloudflare Pages.
+Welcome to the comprehensive documentation for the Pipeline Framework. This site provides everything you need to understand, use, and extend the framework for building reactive pipeline processing systems.
 
-## Content Source
+## About the Pipeline Framework
 
-The main content for this documentation site comes from [`../pipeline-framework/README.md`](../pipeline-framework/README.md), which serves as the home page. Additional guides and documentation are in this directory.
+The Pipeline Framework is a powerful tool for building reactive pipeline processing systems. It simplifies the development of distributed systems by providing a consistent way to create, configure, and deploy pipeline steps.
+
+### Key Features
+
+- **Reactive Programming**: Built on top of Mutiny for non-blocking operations
+- **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep` and `@MapperForStep`
+- **gRPC and REST Support**: Automatically generates adapters for both communication protocols
+- **Modular Design**: Clear separation between runtime and deployment components
+- **Auto-Generation**: Generates necessary infrastructure at build time
+- **Observability**: Built-in metrics, tracing, and logging support
+- **Error Handling**: Comprehensive error handling with DLQ support
+- **Concurrency Control**: Virtual threads and backpressure management
+
+## Documentation Structure
+
+### Getting Started
+- [Introduction](/): Overview of the framework and its capabilities
+- [Getting Started](/guide/getting-started): Setting up the framework in your project
+- [Creating Pipeline Steps](/guide/creating-steps): Building your first pipeline steps
+
+### Guides
+- [Application Structure](/guide/application-structure): Structuring pipeline applications
+- [Backend Services](/guide/backend-services): Creating backend services that implement pipeline steps
+- [Orchestrator Services](/guide/orchestrator-services): Building orchestrator services that coordinate pipelines
+- [Pipeline Compilation](/guide/pipeline-compilation): Understanding how the annotation processor works
+- [Error Handling & DLQ](/guide/error-handling): Managing errors and dead letter queues
+- [Observability](/guide/observability): Monitoring and observing pipeline applications
+
+### Reference
+- [Architecture](/reference/architecture): Deep dive into the framework architecture
 
 ## Development
 
@@ -15,6 +44,18 @@ cd docs
 npm install
 npm run dev
 ```
+
+The documentation site will be available at `http://localhost:5173`.
+
+## Contributing
+
+If you find issues with the documentation or want to contribute improvements:
+
+1. Fork the repository
+2. Make your changes
+3. Submit a pull request
+
+All contributions are welcome!
 
 The site will be available at http://localhost:5173
 

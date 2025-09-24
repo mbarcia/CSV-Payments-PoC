@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,21 +40,32 @@ export default withMermaid(
       ],
       
       sidebar: [
-        {
-          text: 'Guide',
-          items: [
-            { text: 'Introduction', link: '/guide/' },
-            { text: 'Getting Started', link: '/guide/getting-started' },
-            { text: 'Creating Pipeline Steps', link: '/guide/creating-steps' }
-          ]
-        },
-        {
-          text: 'Annotations',
-          items: [
-            { text: 'PipelineStep and MapperForStep', link: '/annotations/pipeline-step' }
-          ]
-        }
-      ],
+          {
+            text: 'Introduction',
+            items: [
+              { text: 'What is the Pipeline Framework?', link: '/' },
+              { text: 'Getting Started', link: '/guide/getting-started' },
+              { text: 'Creating Pipeline Steps', link: '/guide/creating-steps' },
+            ]
+          },
+          {
+            text: 'Guides',
+            items: [
+              { text: 'Application Structure', link: '/guide/application-structure' },
+              { text: 'Backend Services', link: '/guide/backend-services' },
+              { text: 'Orchestrator Services', link: '/guide/orchestrator-services' },
+              { text: 'Pipeline Compilation', link: '/guide/pipeline-compilation' },
+              { text: 'Error Handling & DLQ', link: '/guide/error-handling' },
+              { text: 'Observability', link: '/guide/observability' },
+            ]
+          },
+          {
+            text: 'Reference',
+            items: [
+              { text: 'Architecture', link: '/reference/architecture' },
+            ]
+          }
+        ]
       
       // Add search functionality
       search: {

@@ -32,41 +32,41 @@ export default withMermaid(
     
     // Register custom theme
     themeConfig: {
-      nav: [
-        { text: 'Home', link: '/' },
-        { text: 'Guide', link: '/guide/' },
-        { text: 'Annotations', link: '/annotations/pipeline-step' },
-        { text: 'Versions', link: '/versions' }
-      ],
-      
-      sidebar: [
-          {
-            text: 'Introduction',
-            items: [
-              { text: 'What is the Pipeline Framework?', link: '/' },
-              { text: 'Getting Started', link: '/guide/getting-started' },
-              { text: 'Creating Pipeline Steps', link: '/guide/creating-steps' },
-            ]
-          },
-          {
-            text: 'Guides',
-            items: [
-              { text: 'Application Structure', link: '/guide/application-structure' },
-              { text: 'Backend Services', link: '/guide/backend-services' },
-              { text: 'Orchestrator Services', link: '/guide/orchestrator-services' },
-              { text: 'Pipeline Compilation', link: '/guide/pipeline-compilation' },
-              { text: 'Error Handling & DLQ', link: '/guide/error-handling' },
-              { text: 'Observability', link: '/guide/observability' },
-            ]
-          },
-          {
-            text: 'Reference',
-            items: [
-              { text: 'Architecture', link: '/reference/architecture' },
-            ]
-          }
-        ]
-      
+        nav: [
+            {text: 'Home', link: '/'},
+            {text: 'Guide', link: '/guide/'},
+            {text: 'Annotations', link: '/annotations/pipeline-step'},
+            {text: 'Versions', link: '/versions'}
+        ],
+
+        sidebar: [
+            {
+                text: 'Introduction',
+                items: [
+                    {text: 'What is the Pipeline Framework?', link: '/'},
+                    {text: 'Getting Started', link: '/guide/getting-started'},
+                    {text: 'Creating Pipeline Steps', link: '/guide/creating-steps'},
+                ]
+            },
+            {
+                text: 'Guides',
+                items: [
+                    {text: 'Application Structure', link: '/guide/application-structure'},
+                    {text: 'Backend Services', link: '/guide/backend-services'},
+                    {text: 'Orchestrator Services', link: '/guide/orchestrator-services'},
+                    {text: 'Pipeline Compilation', link: '/guide/pipeline-compilation'},
+                    {text: 'Error Handling & DLQ', link: '/guide/error-handling'},
+                    {text: 'Observability', link: '/guide/observability'},
+                ]
+            },
+            {
+                text: 'Reference',
+                items: [
+                    {text: 'Architecture', link: '/reference/architecture'},
+                ]
+            }
+        ],
+
       // Add search functionality
       search: {
         provider: 'local'

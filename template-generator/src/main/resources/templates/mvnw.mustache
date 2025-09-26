@@ -1,0 +1,64 @@
+#!/bin/sh
+#
+# Copyright (c) 2023-2025 Mariano Barcia
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+# OS specific support.  $var _must_ be set to either true or false.
+cygwin=false;
+msys=false;
+darwin=false;
+nonstop=false;
+case "$(uname)" in
+  CYGWIN* )
+    cygwin=true
+    ;;
+  Darwin* )
+    darwin=true
+    ;;
+  MINGW* )
+    msys=true
+    ;;
+  NONSTOP* )
+    nonstop=true
+    ;;
+esac
+
+if [ -z "$MVN_CMD_LINE_ARGS" ]
+then
+  MVN_CMD_LINE_ARGS="$0" 
+  shift
+  MVN_CMD_LINE_ARGS="$MVN_CMD_LINE_ARGS \"$@\""
+fi
+
+# For Cygwin or MSYS, switch paths to Windows format before running java
+if $cygwin || $msys ; then
+  [ -n "$M2_HOME" ] &&
+    M2_HOME=`cygpath --unix "$M2_HOME"`
+  [ -n "$JAVA_HOME" ] &&
+    JAVA_HOME=`cygpath --unix "$JAVA_HOME"`
+  [ -n "$CLASSPATH" ] &&
+    CLASSPATH=`cygpath --path --unix "$CLASSPATH"`
+fi
+
+# Setup the command
+exec "$JAVA_HOME/bin/java" \
+  $MAVEN_OPTS \
+  -classpath "${M2_HOME}/boot/plexus-classworlds-2.7.0.jar" \
+  -Dclassworlds.conf="${M2_HOME}/bin/m2.conf" \
+  -Dmaven.home="${M2_HOME}" \
+  -Dlibrary.jansi.path="${M2_HOME}/lib/jansi-native" \
+  -Dmaven.multiModuleProjectDirectory="${MAVEN_PROJECTBASEDIR}" \
+  org.codehaus.plexus.classworlds.launcher.Launcher \
+  $@

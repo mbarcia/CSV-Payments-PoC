@@ -1,0 +1,32 @@
+package {{basePackage}}.common.mapper;
+
+import {{basePackage}}.common.domain.{{domainClass}};
+import {{basePackage}}.common.dto.{{dtoClass}};
+import {{grpcClass}};
+import org.mapstruct.Mapper;
+import org.mapstruct.ReportingPolicy;
+import org.mapstruct.factory.Mappers;
+
+@SuppressWarnings("unused")
+@Mapper(
+    componentModel = "cdi",
+    uses = {CommonConverters.class},
+    unmappedTargetPolicy = ReportingPolicy.WARN)
+public interface {{className}}Mapper extends io.github.mbarcia.pipeline.mapper.Mapper<{{grpcClass}}.{{className}}, {{dtoClass}}, {{domainClass}}> {
+
+  {{className}}Mapper INSTANCE = Mappers.getMapper( {{className}}Mapper.class );
+
+  // Domain ↔ DTO
+  @Override
+  {{dtoClass}} toDto({{domainClass}} entity);
+
+  @Override
+  {{domainClass}} fromDto({{dtoClass}} dto);
+
+  // DTO ↔ gRPC
+  @Override
+  {{grpcClass}}.{{className}} toGrpc({{dtoClass}} dto);
+
+  @Override
+  {{dtoClass}} fromGrpc({{grpcClass}}.{{className}} grpc);
+}

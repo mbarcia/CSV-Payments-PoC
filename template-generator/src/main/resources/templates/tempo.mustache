@@ -1,0 +1,42 @@
+server:
+  http_listen_port: 3200
+
+distributor:
+  receivers:                           # this configuration will listen on all ports and protocols that tempo is capable of.
+    zipkin:                           # the receives all come from the OpenTelemetry collector.  more configuration information can
+    otlp:                           # be found there: https://github.com/open-telemetry/opentelemetry-collector/tree/main/receiver
+    jaeger:                         # NOTE: OTLP receiver listens on port 4317 (gRPC) and 4318 (HTTP)
+    prometheus:
+      http_listen_port: 9411           # zipkin receiver listens on port 9411
+
+ingester:
+  max_block_duration: 5m               # cut the headblock when this much time passes. this is being set for demo purposes and should probably be left alone normally
+
+compactor:
+  compaction:
+    block_retention: 1h                # overall Tempo trace retention. set for demo purposes
+
+metrics_generator:
+  registry:
+    host: tempo
+    port: 8080
+  storage:
+    path: /tmp/tempo/generator/wal
+    remote_write:
+      - url: http://prometheus:9090/api/v1/write
+        send_exemplars: true
+
+storage:
+  trace:
+    backend: local                   # backend configuration to use
+    block:
+      bloom_filter_false_positive: .05    # bloom filter false positive rate.  this is used during block search and affects overall accuracy of queries
+      index_downsample_bytes: 1000        # number of bytes per index record.  the smaller this is the more accurate searching is at the cost of memory for the index
+      encoding: zstd                    # how to compress the trace data within the block
+    local:
+      path: /tmp/tempo/blocks          # where to store blocks locally
+
+overrides:
+  defaults:
+    metrics_generator:
+      processors: [service-graphs, span-metrics] # enables metrics generator for all tenants

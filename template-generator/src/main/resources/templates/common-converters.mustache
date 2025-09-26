@@ -1,0 +1,50 @@
+package {{basePackage}}.common.mapper;
+
+import java.nio.file.Path;
+import java.util.Currency;
+import java.util.UUID;
+import java.math.BigDecimal;
+import org.mapstruct.Named;
+
+public class CommonConverters {
+
+    @Named("uuidToString")
+    public String uuidToString(UUID uuid) {
+        return uuid != null ? uuid.toString() : null;
+    }
+
+    @Named("stringToUUID")
+    public UUID stringToUUID(String string) {
+        return string != null ? UUID.fromString(string) : null;
+    }
+
+    @Named("bigDecimalToString")
+    public String bigDecimalToString(BigDecimal value) {
+        return value != null ? value.toString() : null;
+    }
+
+    @Named("stringToBigDecimal")
+    public BigDecimal stringToBigDecimal(String value) {
+        return value != null ? new BigDecimal(value) : null;
+    }
+
+    @Named("currencyToString")
+    public String currencyToString(Currency currency) {
+        return currency != null ? currency.getCurrencyCode() : null;
+    }
+
+    @Named("stringToCurrency")
+    public Currency stringToCurrency(String code) {
+        return code != null ? Currency.getInstance(code) : null;
+    }
+
+    @Named("pathToString")
+    public String pathToString(Path path) {
+        return path != null ? path.toString() : null;
+    }
+
+    @Named("stringToPath")
+    public Path stringToPath(String string) {
+        return string != null ? Path.of(string) : null;
+    }
+}

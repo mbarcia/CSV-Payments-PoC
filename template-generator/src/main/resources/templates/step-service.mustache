@@ -1,0 +1,49 @@
+package {{basePackage}}.{{serviceName}}.service;
+
+import {{basePackage}}.common.domain.{{inputTypeName}};
+import {{basePackage}}.common.domain.{{outputTypeName}};
+import {{basePackage}}.grpc.{{grpcStubName}};
+import io.github.mbarcia.pipeline.{{grpcAdapter}};
+import io.github.mbarcia.pipeline.annotation.PipelineStep;
+import io.github.mbarcia.pipeline.service.{{reactiveServiceInterface}};
+import io.github.mbarcia.pipeline.step.{{stepType}};
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.Multi;
+import jakarta.enterprise.context.ApplicationScoped;
+import lombok.Getter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+@PipelineStep(
+    order = {{order}},
+    inputType = {{inputTypeName}}.class,
+    outputType = {{outputTypeName}}.class,
+    stepType = {{stepType}}.class,
+    backendType = {{grpcAdapter}}.class,
+    grpcStub = {{grpcStubName}}.class,
+    grpcImpl = {{grpcImplName}}.class,
+    inboundMapper = {{basePackage}}.common.mapper.{{inputTypeName}}Mapper.class,
+    outboundMapper = {{basePackage}}.common.mapper.{{outputTypeName}}Mapper.class,
+    grpcClient = "{{grpcClientName}}",
+    autoPersist = true,
+    debug = true
+)
+@ApplicationScoped
+@Getter
+public class Process{{serviceNameCamel}}Service
+    implements {{reactiveServiceInterface}}<{{inputTypeName}}, {{outputTypeName}}> {
+
+  @Override
+  public {{processMethodReturnType}} process({{processMethodParamType}} input) {
+    Logger logger = LoggerFactory.getLogger(getClass());
+
+    // TODO implement business logic here
+    logger.info("Processing input: {}", input);
+    
+    {{outputTypeName}} output = new {{outputTypeName}}();
+    // Set output fields based on input
+    // TODO: Add actual business logic here
+    
+    return {{returnStatement}};
+  }
+}

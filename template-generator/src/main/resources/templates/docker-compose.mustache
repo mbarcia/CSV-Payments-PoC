@@ -1,0 +1,82 @@
+networks:
+  pipeline-network:
+    driver: bridge
+
+services:
+
+  orchestrator-svc:
+    build:
+      dockerfile: orchestrator-svc/Dockerfile
+    ports:
+      - "8443:8443"
+    environment:
+      - CSV_FOLDER_PATH=/app/csv
+      {{#steps}}
+      - QUARKUS_GRPC_CLIENTS_{{grpcClientName}}_HOST={{serviceName}}
+      - QUARKUS_GRPC_CLIENTS_{{grpcClientName}}_PORT={{#portNumber}}{{order}}{{/portNumber}}
+      {{/steps}}
+    depends_on:
+      {{#steps}}
+      {{serviceName}}:
+        condition: service_healthy
+      {{/steps}}
+    volumes:
+      - ./data/csv:/app/csv:rw
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://orchestrator-svc:8443/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    # Run once and exit
+    restart: "no"
+    networks:
+      - pipeline-network
+
+{{#steps}}
+  {{serviceName}}:
+    build:
+      dockerfile: {{serviceName}}/Dockerfile
+    ports:
+      - "{{#portNumber}}{{order}}{{/portNumber}}:{{#portNumber}}{{order}}{{/portNumber}}"
+    environment:
+      - PROCESS_{{serviceNameUpperCase}}_PORT={{#portNumber}}{{order}}{{/portNumber}}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://{{serviceName}}:{{#portNumber}}{{order}}{{/portNumber}}/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    networks:
+      - pipeline-network
+{{/steps}}
+
+  postgres:
+    image: postgres:17
+    environment:
+      - POSTGRES_DB=pipeline
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d pipeline"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c work_mem=4MB
+      -c max_connections=50
+    networks:
+      - pipeline-network
+
+volumes:
+  postgres_data:

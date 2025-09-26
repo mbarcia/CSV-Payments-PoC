@@ -1,6 +1,6 @@
 # Creating Orchestrator Services
 
-This guide explains how to create orchestrator services using the Pipeline Framework, which coordinate and execute the complete pipeline of backend services.
+This guide explains how to create orchestrator services using The Pipeline Framework, which coordinate and execute the complete pipeline of backend services.
 
 ## Overview
 
@@ -84,7 +84,7 @@ public void processPipeline(String input) {
 
 ## Understanding Generated Pipeline Applications
 
-When backend services are annotated with `@PipelineStep`, the Pipeline Framework's annotation processor automatically generates a `GeneratedPipelineApplication` class that:
+When backend services are annotated with `@PipelineStep`, The Pipeline Framework's annotation processor automatically generates a `GeneratedPipelineApplication` class that:
 
 1. Extends your orchestrator service
 2. Automatically discovers all `@PipelineStep` annotated services

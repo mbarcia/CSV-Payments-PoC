@@ -1,6 +1,6 @@
 # Creating Pipeline Steps
 
-This guide explains how to create your own pipeline steps using the Pipeline Framework.
+This guide explains how to create your own pipeline steps using The Pipeline Framework.
 
 ## Step 1: Create Your Service Class
 

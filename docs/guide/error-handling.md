@@ -1,6 +1,6 @@
 # Concurrency, Error Handling, and DLQ
 
-This guide explains the advanced features of the Pipeline Framework including concurrency control, error handling mechanisms, and dead letter queue (DLQ) support.
+This guide explains the advanced features of The Pipeline Framework including concurrency control, error handling mechanisms, and dead letter queue (DLQ) support.
 
 ## Concurrency Control
 

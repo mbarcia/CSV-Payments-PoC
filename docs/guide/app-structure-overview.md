@@ -1,10 +1,10 @@
 # Application Structure Overview
 
-This guide explains how to structure applications using the Pipeline Framework, following the patterns demonstrated in the CSV Payments reference implementation.
+This guide explains how to structure applications using The Pipeline Framework, following the patterns demonstrated in the CSV Payments reference implementation.
 
 ## Overview
 
-Applications built with the Pipeline Framework follow a modular architecture with clear separation of concerns. The framework promotes a clean division between:
+Applications built with The Pipeline Framework follow a modular architecture with clear separation of concerns. The framework promotes a clean division between:
 
 1. **Orchestrator Service**: Coordinates the overall pipeline execution
 2. **Backend Services**: Implement individual pipeline steps

@@ -1,10 +1,10 @@
 # Observability
 
-This guide explains how to monitor, trace, and observe pipeline applications built with the Pipeline Framework using industry-standard tools and practices.
+This guide explains how to monitor, trace, and observe pipeline applications built with The Pipeline Framework using industry-standard tools and practices.
 
 ## Overview
 
-Observability in the Pipeline Framework encompasses:
+Observability in The Pipeline Framework encompasses:
 
 1. **Metrics**: Collecting quantitative data about pipeline performance
 2. **Tracing**: Tracking requests as they flow through the pipeline

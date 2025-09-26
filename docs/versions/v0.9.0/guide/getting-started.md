@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide will help you set up and start using the Pipeline Framework in your project.
+This guide will help you set up and start using The Pipeline Framework in your project.
 
 ## Prerequisites
 

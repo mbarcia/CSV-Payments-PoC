@@ -1,8 +1,8 @@
-# Pipeline Framework Documentation
+# The Pipeline Framework Documentation
 
-Welcome to the comprehensive documentation for the Pipeline Framework. This site provides everything you need to understand, use, and extend the framework for building reactive pipeline processing systems.
+Welcome to the comprehensive documentation for The Pipeline Framework. This site provides everything you need to understand, use, and extend the framework for building reactive pipeline processing systems.
 
-## About the Pipeline Framework
+## About the The Pipeline Framework
 
 The Pipeline Framework is a powerful tool for building reactive pipeline processing systems. It simplifies the development of distributed systems by providing a consistent way to create, configure, and deploy pipeline steps.
 
@@ -104,7 +104,7 @@ When setting up the project in Cloudflare Pages, use the following Vitepress con
 The documentation site now includes:
 
 1. **Search Functionality**: Users can search across all documentation pages using the search bar in the top navigation
-2. **Multi-Version Support**: Documentation is available for multiple versions of the Pipeline Framework:
+2. **Multi-Version Support**: Documentation is available for multiple versions of the The Pipeline Framework:
    - v0.9.0 (current)
    - v0.8.0
    - v0.7.0
@@ -114,7 +114,7 @@ The documentation site now includes:
 
 The VitePress configuration includes `ignoreDeadLinks: true` to prevent build failures due to links that are valid in the context of the full project but not within the documentation site. This is necessary because:
 
-1. The documentation site only covers the Pipeline Framework, not the entire project
+1. The documentation site only covers The Pipeline Framework, not the entire project
 2. Many markdown files in the project contain links that are valid in the context of the full repository but aren't relevant to the documentation site
 3. There are localhost links in various README files that can't be resolved during the build process
 

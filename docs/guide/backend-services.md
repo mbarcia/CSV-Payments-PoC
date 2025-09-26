@@ -1,6 +1,6 @@
 # Creating Backend Services
 
-This guide explains how to create backend services using the Pipeline Framework, following the patterns demonstrated in the CSV Payments reference implementation.
+This guide explains how to create backend services using The Pipeline Framework, following the patterns demonstrated in the CSV Payments reference implementation.
 
 ## Overview
 

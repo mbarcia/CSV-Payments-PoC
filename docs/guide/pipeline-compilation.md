@@ -1,6 +1,6 @@
 # Pipeline Compilation and Generation
 
-This guide explains how the Pipeline Framework's annotation processor works to automatically generate pipeline applications and adapters at build time.
+This guide explains how The Pipeline Framework's annotation processor works to automatically generate pipeline applications and adapters at build time.
 
 ## Overview
 

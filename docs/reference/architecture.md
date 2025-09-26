@@ -54,7 +54,7 @@ Adapters bridge the gap between the pipeline framework and external systems, han
 
 ```mermaid
 graph LR
-    subgraph "Pipeline Framework"
+    subgraph "The Pipeline Framework"
         A[Runtime Module]
         B[Deployment Module]
     end

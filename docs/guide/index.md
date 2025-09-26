@@ -52,12 +52,12 @@ public class MyPipelineStep implements StepOneToOne<FooRequest, BarResponse> {
 ```
 
 <Callout type="info" title="Getting Started">
-New to the Pipeline Framework? Start with our <a href="/guide/getting-started">Getting Started</a> guide to learn the basics.
+New to The Pipeline Framework? Start with our <a href="/guide/getting-started">Getting Started</a> guide to learn the basics.
 </Callout>
 
 ## Guides
 
-To get started with the Pipeline Framework, explore these guides:
+To get started with The Pipeline Framework, explore these guides:
 
 ### Getting Started
 - [Getting Started](/guide/getting-started): Setting up the framework in your project

@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide walks you through the process of setting up and using the Pipeline Framework in your project.
+This guide walks you through the process of setting up and using the The Pipeline Framework in your project.
 
 <Callout type="tip" title="Prerequisites">
 Before you begin, ensure you have Java 21+ and Maven 3.8+ installed on your system.

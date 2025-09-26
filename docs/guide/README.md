@@ -1,10 +1,10 @@
-# Pipeline Framework Guide
+# The Pipeline Framework Guide
 
-Welcome to the Pipeline Framework guide! This guide will help you understand how to use the framework to build reactive pipeline processing systems.
+Welcome to The Pipeline Framework guide! This guide will help you understand how to use the framework to build reactive pipeline processing systems.
 
 ## What You'll Learn
 
-This guide covers everything you need to know about the Pipeline Framework:
+This guide covers everything you need to know about The Pipeline Framework:
 
 1. **Getting Started**: Setting up the framework in your project
 2. **Creating Pipeline Steps**: Building your first pipeline steps
@@ -17,7 +17,7 @@ This guide covers everything you need to know about the Pipeline Framework:
 
 ## Prerequisites
 
-Before diving into the Pipeline Framework, make sure you have:
+Before diving into The Pipeline Framework, make sure you have:
 
 - Java 21 or higher
 - Maven 3.8+
@@ -26,7 +26,7 @@ Before diving into the Pipeline Framework, make sure you have:
 
 ## Quick Start
 
-To quickly get started with the Pipeline Framework:
+To quickly get started with The Pipeline Framework:
 
 1. Add the framework dependencies to your `pom.xml`
 2. Create your first pipeline step with the `@PipelineStep` annotation
@@ -36,7 +36,7 @@ To quickly get started with the Pipeline Framework:
 
 ## Next Steps
 
-Dive into the specific guides to learn more about each aspect of the Pipeline Framework:
+Dive into the specific guides to learn more about each aspect of The Pipeline Framework:
 
 - [Getting Started](/guide/getting-started): Detailed setup instructions
 - [Creating Pipeline Steps](/guide/creating-steps): Building your first steps

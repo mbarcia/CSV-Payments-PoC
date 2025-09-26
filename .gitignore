@@ -44,3 +44,6 @@ docker-compose.local.yml
 docker-compose.orchestrator.local.yml
 *.log
 *.pid
+
+# VitePress build output
+docs/.vitepress/dist/

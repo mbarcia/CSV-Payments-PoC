@@ -5,9 +5,9 @@ hero:
   name: The Pipeline Framework
   text: Reactive Pipeline Processing
   tagline: Build scalable, resilient pipeline applications with Quarkus and Mutiny
-#  image:
-#    src: /logo.svg
-#    alt: The Pipeline Framework
+  image:
+    src: /logo.png
+    alt: The Pipeline Framework
   actions:
     - theme: brand
       text: Get Started

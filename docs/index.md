@@ -5,9 +5,9 @@ hero:
   name: The Pipeline Framework
   text: Reactive Pipeline Processing
   tagline: Build scalable, resilient pipeline applications with Quarkus and Mutiny
-  image:
-    src: /logo.svg
-    alt: The Pipeline Framework
+#  image:
+#    src: /logo.svg
+#    alt: The Pipeline Framework
   actions:
     - theme: brand
       text: Get Started
@@ -15,30 +15,17 @@ hero:
     - theme: alt
       text: View on GitHub
       link: https://github.com/mbarcia/CSV-Payments-PoC
----
 
-<HeroSection
-  :primaryCta="{ text: 'Get Started', href: '/guide/getting-started' }"
-  :secondaryCta="{ text: 'View Source', href: 'https://github.com/mbarcia/CSV-Payments-PoC' }"
-  :features="[
-    {
-      title: 'Reactive by Design',
-      description: 'Built on Mutiny for non-blocking, high-performance applications'
-    },
-    {
-      title: 'Annotation Driven',
-      description: 'Simple annotations generate complex infrastructure automatically'
-    },
-    {
-      title: 'Observability First',
-      description: 'Built-in metrics, tracing, and logging support'
-    },
-    {
-      title: 'Resilient by Default',
-      description: 'Comprehensive error handling with dead letter queues'
-    }
-  ]"
-/>
+features:
+  - title: Reactive by Design
+    details: Built on Mutiny for non-blocking, high-performance applications
+  - title: Annotation Driven
+    details: Simple annotations generate complex infrastructure automatically
+  - title: Observability First
+    details: Built-in metrics, tracing, and logging support
+  - title: Resilient by Default
+    details: Comprehensive error handling with dead letter queues
+---
 
 ## Introduction
 

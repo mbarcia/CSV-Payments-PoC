@@ -14,19 +14,29 @@
   - limitations under the License.
   -->
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
-  <!-- Background circle -->
-  <circle cx="100" cy="100" r="100" fill="#2563eb"/>
-  
-  <!-- Pipeline elements -->
-  <rect x="30" y="85" width="50" height="30" rx="5" fill="white" opacity="0.9"/>
-  <rect x="90" y="85" width="50" height="30" rx="5" fill="white" opacity="0.9"/>
-  <rect x="150" y="85" width="20" height="30" rx="3" fill="white" opacity="0.9"/>
-  
-  <!-- Arrows between elements -->
-  <path d="M80 100 L85 95 L85 105 Z" fill="white"/>
-  <path d="M140 100 L145 95 L145 105 Z" fill="white"/>
-  
-  <!-- Title text -->
-  <text x="100" y="170" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="16" font-weight="bold">PIPELINE</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="1200" viewBox="0 0 2400 1200">
+  <!-- Background -->
+  <rect width="2400" height="1200" fill="#f2f4f7"/>
+
+  <g transform="translate(400,400)" filter="url(#shadow)">
+    <!-- Shortened blue entry line -->
+    <rect x="-120" y="120" width="120" height="40" rx="20" fill="#0a2747"/>
+
+    <!-- Pipeline arrows -->
+    <polygon points="0,0 140,140 0,280 -70,280 70,140 -70,0" fill="#0a2747"/>
+    <polygon points="0,0 140,140 0,280 -70,280 70,140 -70,0" fill="#b85300" transform="translate(170,0)"/>
+    <polygon points="0,0 140,140 0,280 -70,280 70,140 -70,0" fill="#b85300" transform="translate(340,0)"/>
+    <polygon points="0,0 140,140 0,280 -70,280 70,140 -70,0" fill="#0a2747" transform="translate(510,0)"/>
+
+    <!-- Green exit flows (only 2) -->
+    <rect x="680" y="40" width="160" height="40" fill="#146c2e"/>
+    <rect x="680" y="200" width="160" height="40" fill="#146c2e"/>
+  </g>
+
+  <!-- Subtle shadow filter -->
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="4" dy="4" stdDeviation="6" flood-color="rgba(0,0,0,0.2)"/>
+    </filter>
+  </defs>
 </svg>

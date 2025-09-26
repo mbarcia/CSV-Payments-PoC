@@ -207,18 +207,13 @@ public class GeneratedPipelineApplication extends PipelineApplication {
 
 ### Maven Configuration
 
-The pipeline framework integrates with the Maven build process through the deployment module:
+The pipeline framework integrates with the Maven build process. Both runtime and deployment components are bundled in a single dependency:
 
 ```xml
 <!-- pom.xml dependencies -->
 <dependency>
     <groupId>io.github.mbarcia</groupId>
-    <artifactId>pipeline-framework-runtime</artifactId>
-</dependency>
-<dependency>
-    <groupId>io.github.mbarcia</groupId>
-    <artifactId>pipeline-framework-deployment</artifactId>
-    <scope>provided</scope>
+    <artifactId>pipeline-framework</artifactId>
 </dependency>
 ```
 
@@ -320,17 +315,12 @@ The annotation processor can be customized through annotation parameters:
 ### Common Issues
 
 #### 1. Missing Dependencies
-Ensure all required dependencies are present:
+Ensure the required dependency is present. Both runtime and deployment components are bundled in a single dependency:
 
 ```xml
 <dependency>
     <groupId>io.github.mbarcia</groupId>
-    <artifactId>pipeline-framework-runtime</artifactId>
-</dependency>
-<dependency>
-    <groupId>io.github.mbarcia</groupId>
-    <artifactId>pipeline-framework-deployment</artifactId>
-    <scope>provided</scope>
+    <artifactId>pipeline-framework</artifactId>
 </dependency>
 ```
 

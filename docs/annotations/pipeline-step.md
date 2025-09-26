@@ -13,6 +13,10 @@ The `@PipelineStep` annotation marks a class as a pipeline step and enables auto
 - `outputType`: The output type for this step
 - `stepType`: The step type (StepOneToOne, StepOneToMany, etc.)
 - `backendType`: The backend adapter type (GenericGrpcReactiveServiceAdapter, etc.)
+- `backpressureBufferCapacity`: The buffer capacity for backpressure handling (default: 1024)
+- `backpressureStrategy`: The backpressure strategy ("BUFFER", "DROP"; default: "BUFFER")
+
+Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
 - `grpcStub`: The gRPC stub class for this pipeline step
 - `grpcImpl`: The gRPC implementation class for this backend service
 - `inboundMapper`: The inbound mapper class for this pipeline service/step

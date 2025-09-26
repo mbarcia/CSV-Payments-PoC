@@ -1,0 +1,320 @@
+/*
+ * Copyright (c) 2023-2025 Mariano Barcia
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+/* Custom theme to match Quarkus.io styling */
+
+/* Import Red Hat fonts */
+@import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Red+Hat+Text:wght@400;500&display=swap');
+
+/* Professional blue-based color palette */
+:root {
+  --vp-c-white: #ffffff;
+  --vp-c-black: #000000;
+  --vp-c-gray: #f8f9fa;
+  --vp-c-gray-light: #ffffff;
+  --vp-c-gray-dark: #212529;
+
+  /* Professional blue brand colors */
+  --vp-c-brand: #2563eb; /* Professional blue */
+  --vp-c-brand-light: #3b82f6;
+  --vp-c-brand-dark: #1d4ed8;
+  --vp-c-brand-1: #2563eb;
+  --vp-c-brand-2: #3b82f6;
+  --vp-c-brand-3: #1d4ed8;
+  
+  /* Backgrounds */
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-soft: #f8f9fa;
+  --vp-c-bg-alt: #f6f6f6;
+  
+  /* Text */
+  --vp-c-text-1: rgba(0, 0, 0, 0.87);
+  --vp-c-text-2: rgba(0, 0, 0, 0.60);
+  --vp-c-text-3: rgba(0, 0, 0, 0.38);
+  --vp-c-text-4: rgba(0, 0, 0, 0.18);
+  
+  /* Borders */
+  --vp-c-border: #e2e2e3;
+  --vp-c-divider: #e2e2e3;
+  
+  /* Code */
+  --vp-code-block-bg: #f8f8f8;
+  --vp-code-copy-code-bg: rgba(255, 255, 255, 0.8);
+  --vp-code-copy-code-hover-bg: rgba(255, 255, 255, 0.4);
+  
+  /* Layout */
+  --vp-layout-max-width: 1440px;
+  
+  /* Font families */
+  --vp-font-family-base: 'Red Hat Text', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  --vp-font-family-mono: 'Red Hat Mono', ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --vp-font-family-display: 'Red Hat Display', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+/* Apply fonts */
+body {
+  font-family: var(--vp-font-family-base);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--vp-font-family-display);
+  font-weight: 700;
+}
+
+kbd {
+  font-family: var(--vp-font-family-mono);
+}
+
+.dark:root {
+  --vp-c-bg: #1a1a1a;
+  --vp-c-bg-soft: #222222;
+  --vp-c-bg-alt: #141414;
+  --vp-c-gray: #2a2a2a;
+  --vp-c-text-1: rgba(255, 255, 255, 0.87);
+  --vp-c-text-2: rgba(255, 255, 255, 0.60);
+  --vp-c-text-3: rgba(255, 255, 255, 0.38);
+  --vp-c-text-4: rgba(255, 255, 255, 0.18);
+  --vp-c-border: #363636;
+  --vp-c-divider: #363636;
+  --vp-code-block-bg: #2d2d2d;
+}
+
+/* Navigation header */
+.nav-bar-title span {
+  font-weight: bold;
+  color: var(--vp-c-brand);
+}
+
+/* Navigation links */
+.nav-bar-link,
+.nav-bar-dropdown {
+  font-weight: 600;
+}
+
+/* Hero section styling */
+.vp-doc h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  color: var(--vp-c-brand);
+}
+
+/* Headers */
+.vp-doc h2 {
+  border-bottom: 2px solid var(--vp-c-brand);
+  padding-bottom: 0.3em;
+  margin-top: 1.5em;
+  margin-bottom: 1em;
+}
+
+.vp-doc h2, .vp-doc h3, .vp-doc h4, .vp-doc h5, .vp-doc h6 {
+  color: var(--vp-c-brand-3);
+}
+
+/* Links */
+.vp-doc a {
+  color: var(--vp-c-brand);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.vp-doc a:hover {
+  text-decoration: underline;
+}
+
+/* Code blocks */
+.vp-code {
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-border);
+  margin: 1rem 0;
+}
+
+/* Inline code */
+.vp-doc :not(pre) > code {
+  background-color: rgba(255, 229, 100, 0.2);
+  border: 1px solid var(--vp-c-border);
+  padding: 0.15rem 0.25rem;
+  border-radius: 4px;
+  color: var(--vp-c-brand-3);
+}
+
+/* Blockquote styling */
+.vp-doc blockquote {
+  border-left: 4px solid var(--vp-c-brand);
+  background-color: rgba(37, 99, 235, 0.05);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Table styling */
+.vp-doc table {
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--vp-c-border);
+  margin: 1.5rem 0;
+}
+
+.vp-doc table thead tr {
+  background-color: var(--vp-c-brand);
+  color: white;
+}
+
+.vp-doc table th, .vp-doc table td {
+  border: 1px solid var(--vp-c-border);
+  padding: 0.75rem;
+}
+
+.vp-doc table th {
+  font-weight: 600;
+  background-color: rgba(37, 99, 235, 0.1);
+}
+
+/* Button styling */
+.button {
+  display: inline-block;
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  border: 1px solid var(--vp-c-brand);
+  background-color: var(--vp-c-brand);
+  color: white;
+  text-align: center;
+  margin: 0.5rem 0;
+}
+
+.button:hover {
+  background-color: var(--vp-c-brand-dark);
+  border-color: var(--vp-c-brand-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* Home page hero style */
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #2563eb 30%, #3b82f6);
+  --vp-home-hero-image-background-image: linear-gradient(120deg, #2563eb 30%, #60a5fa);
+  --vp-home-hero-image-filter: blur(40px);
+}
+
+/* Home page features */
+.VPHero .name {
+  font-size: 3rem;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  font-weight: 800;
+}
+
+/* Sidebar */
+.VPSidebar {
+  padding-top: 1.5rem;
+}
+
+/* Sidebar links */
+.VPSidebar .link {
+  transition: all 0.25s ease;
+}
+
+.callout {
+  border-radius: 8px;
+  margin: 1.5rem 0;
+  overflow: hidden;
+  border-left: 4px solid;
+}
+
+.callout.info {
+  border-color: var(--vp-c-brand);
+  background-color: rgba(37, 99, 235, 0.05);
+}
+
+.callout.tip {
+  border-color: #10b981;
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+.callout.warning {
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.05);
+}
+
+.callout.danger {
+  border-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.05);
+}
+
+.callout-header {
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid transparent;
+}
+
+.callout.info .callout-header {
+  background-color: rgba(37, 99, 235, 0.15);
+  color: var(--vp-c-brand);
+}
+
+.callout.tip .callout-header {
+  background-color: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.callout.warning .callout-header {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+}
+
+.callout.danger .callout-header {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+/* Footer */
+.VPFooter {
+  background-color: var(--vp-c-bg-soft);
+  border-top: 1px solid var(--vp-c-border);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--vp-c-bg-soft);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--vp-c-brand);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vp-c-brand-dark);
+}
+
+/* Container for custom content */
+.vp-doc .container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 1rem;
+}

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,5 +16,15 @@
 
 // .vitepress/theme/index.js
 import DefaultTheme from 'vitepress/theme'
+import './custom.css'
+import Callout from './components/Callout.vue'
+import HeroSection from './components/HeroSection.vue'
 
-export default DefaultTheme
+export default {
+  ...DefaultTheme,
+  enhanceApp({ app }) {
+    // Register custom components
+    app.component('Callout', Callout)
+    app.component('HeroSection', HeroSection)
+  }
+}

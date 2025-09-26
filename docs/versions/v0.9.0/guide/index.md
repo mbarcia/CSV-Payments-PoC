@@ -5,7 +5,7 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 ## Key Features
 
 - **Reactive Programming**: Built on top of Mutiny for non-blocking operations
-- **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep` and `@MapperForStep`
+- **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
 - **gRPC and REST Support**: Automatically generates adapters for both communication protocols
 - **Modular Design**: Clear separation between runtime and deployment components
 

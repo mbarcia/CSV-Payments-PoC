@@ -64,6 +64,18 @@ export default withMermaid(
                 items: [
                     {text: 'Architecture', link: '/reference/architecture'},
                 ]
+            },
+            {
+                text: 'Advanced Topics',
+                items: [
+                    {text: 'Application Structure Overview', link: '/guide/app-structure-overview'},
+                    {text: 'Common Module Structure', link: '/guide/common-module-structure'},
+                    {text: 'Backend Service Structure', link: '/guide/backend-service-structure'},
+                    {text: 'Orchestrator Service Structure', link: '/guide/orchestrator-service-structure'},
+                    {text: 'Dependency Management', link: '/guide/dependency-management'},
+                    {text: 'Configuration', link: '/guide/configuration'},
+                    {text: 'Best Practices', link: '/guide/best-practices'},
+                ]
             }
         ],
 
@@ -91,6 +103,14 @@ export default withMermaid(
           allow: ['../..']
         }
       }
-    }
+    },
+    
+    head: [
+      // Add Google Fonts for Quarkus-like typography
+      ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+      ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+      ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;500;700;900&display=swap' }],
+      ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Red+Hat+Text:wght@400;500&display=swap' }]
+    ]
   })
 )

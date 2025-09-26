@@ -1,6 +1,10 @@
 # Getting Started
 
-This guide will help you set up and start using the Pipeline Framework in your project.
+This guide walks you through the process of setting up and using the Pipeline Framework in your project.
+
+<Callout type="tip" title="Prerequisites">
+Before you begin, ensure you have Java 21+ and Maven 3.8+ installed on your system.
+</Callout>
 
 ## Prerequisites
 
@@ -10,26 +14,53 @@ This guide will help you set up and start using the Pipeline Framework in your p
 
 ## Adding the Framework to Your Project
 
-Add the following dependencies to your `pom.xml`:
+Add the following dependency to your `pom.xml`. Both runtime and deployment components are bundled in a single dependency:
 
 ```xml
 <dependency>
   <groupId>io.github.mbarcia</groupId>
-  <artifactId>pipeline-framework-runtime</artifactId>
+  <artifactId>pipeline-framework</artifactId>
   <version>LATEST_VERSION</version>
-</dependency>
-
-<dependency>
-  <groupId>io.github.mbarcia</groupId>
-  <artifactId>pipeline-framework-deployment</artifactId>
-  <version>LATEST_VERSION</version>
-  <scope>provided</scope>
 </dependency>
 ```
 
 ## Basic Configuration
 
-### 1. Create Your Service Class
+### 1. Define Your Protocol Buffer (Proto) Definitions
+
+First, define your protocol buffer definitions in `src/main/proto/` that will be used for gRPC communication:
+
+```protobuf
+// src/main/proto/payment.proto
+syntax = "proto3";
+
+package com.example.payment;
+
+option java_multiple_files = true;
+option java_package = "com.example.grpc";
+option java_outer_classname = "PaymentGrpc";
+
+message PaymentRecordGrpc {
+  string id = 1;
+  string csv_id = 2;
+  string recipient = 3;
+  double amount = 4;
+  string currency = 5;
+}
+
+message PaymentStatusGrpc {
+  string id = 1;
+  string payment_record_id = 2;
+  string status = 3;
+  string message = 4;
+}
+
+service ProcessPaymentService {
+  rpc processPayment(PaymentRecordGrpc) returns (PaymentStatusGrpc) {}
+}
+```
+
+### 2. Create Your Service Class
 
 Create a class that implements one of the step interfaces:
 
@@ -59,16 +90,11 @@ public class ProcessPaymentService implements StepOneToOne<PaymentRecord, Paymen
 }
 ```
 
-### 2. Create Your Mapper Classes
+### 3. Create Your Mapper Classes
 
-Create mapper classes for converting between different representations:
+Create mapper classes for converting between different representations. Mappers implement the conversion interfaces directly:
 
 ```java
-@MapperForStep(
-    order = 1,
-    grpcType = PaymentRecordGrpc.class,
-    domainType = PaymentRecord.class
-)
 @ApplicationScoped
 public class PaymentRecordInboundMapper implements InboundMapper<PaymentRecordGrpc, PaymentRecord> {
     
@@ -85,11 +111,6 @@ public class PaymentRecordInboundMapper implements InboundMapper<PaymentRecordGr
     }
 }
 
-@MapperForStep(
-    order = 2,
-    grpcType = PaymentStatusGrpc.class,
-    domainType = PaymentStatus.class
-)
 @ApplicationScoped
 public class PaymentStatusOutboundMapper implements OutboundMapper<PaymentStatus, PaymentStatusGrpc> {
     
@@ -106,7 +127,41 @@ public class PaymentStatusOutboundMapper implements OutboundMapper<PaymentStatus
 }
 ```
 
-### 3. Create Your Orchestrator Service
+### 3. Define Your Protocol Buffer (Proto) Definitions
+
+Before creating your services, define your protocol buffer (proto) definitions that will be used for gRPC communication between pipeline steps:
+
+```protobuf
+// src/main/proto/payment.proto
+syntax = "proto3";
+
+package com.example.payment;
+
+option java_multiple_files = true;
+option java_package = "com.example.grpc";
+option java_outer_classname = "PaymentGrpc";
+
+message PaymentRecordGrpc {
+  string id = 1;
+  string csv_id = 2;
+  string recipient = 3;
+  double amount = 4;
+  string currency = 5;
+}
+
+message PaymentStatusGrpc {
+  string id = 1;
+  string payment_record_id = 2;
+  string status = 3;
+  string message = 4;
+}
+
+service ProcessPaymentService {
+  rpc processPayment(PaymentRecordGrpc) returns (PaymentStatusGrpc) {}
+}
+```
+
+### 4. Create Your Orchestrator Service
 
 Create an orchestrator service that coordinates the pipeline:
 
@@ -146,17 +201,35 @@ public class CsvPaymentsApplication extends PipelineApplication implements Runna
 
 ## Building Your Project
 
+First, you'll need to add the gRPC Maven plugin to your `pom.xml` to generate Java classes from your proto definitions:
+
+```xml
+<build>
+  <extensions>
+    <extension>
+      <groupId>kr.motd.maven</groupId>
+      <artifactId>os-maven-plugin</artifactId>
+      <version>1.7.1</version>
+    </extension>
+  </extensions>
+  <plugins>
+    <!-- Other plugins -->
+  </plugins>
+</build>
+```
+
 When you build your project, the framework will automatically generate the necessary adapters and register your step in the pipeline:
 
 ```bash
 mvn clean compile
 ```
 
-The annotation processor will:
-1. Discover all `@PipelineStep` annotated services
-2. Generate gRPC and REST adapters for each service
-3. Create a complete pipeline application that orchestrates all steps
-4. Register all generated components with the dependency injection container
+The build process will:
+1. Generate gRPC classes from your proto definitions
+2. Discover all `@PipelineStep` annotated services
+3. Generate gRPC and REST adapters for each service
+4. Create a complete pipeline application that orchestrates all steps
+5. Register all generated components with the dependency injection container
 
 ## Running Your Application
 

@@ -27,17 +27,13 @@ public class MyPipelineStep implements StepOneToOne<FooRequest, BarResponse> {
 
 ## Step 2: Create Your Mapper Classes
 
-Create mapper classes for converting between gRPC and domain types:
+Create mapper classes for converting between gRPC and domain types. Mappers implement the conversion interfaces directly:
 
 ```java
-@MapperForStep(
-    order = 1,
-    grpcType = FooRequest.class,
-    domainType = DomainFooRequest.class
-)
+@ApplicationScoped
 public class FooRequestToDomainMapper implements InboundMapper<FooRequest, DomainFooRequest> {
     @Override
-    public DomainFooRequest map(FooRequest source) {
+    public DomainFooRequest fromGrpc(FooRequest source) {
         // Mapping implementation
         return new DomainFooRequest();
     }

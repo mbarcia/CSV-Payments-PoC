@@ -1,6 +1,44 @@
-# Pipeline Framework Comprehensive Guide
+---
+layout: home
 
-This comprehensive guide covers all aspects of the Pipeline Framework, from basic concepts to advanced features, providing everything you need to build robust reactive pipeline applications.
+hero:
+  name: The Pipeline Framework
+  text: Reactive Pipeline Processing
+  tagline: Build scalable, resilient pipeline applications with Quarkus and Mutiny
+  image:
+    src: /logo.svg
+    alt: The Pipeline Framework
+  actions:
+    - theme: brand
+      text: Get Started
+      link: /guide/getting-started
+    - theme: alt
+      text: View on GitHub
+      link: https://github.com/mbarcia/CSV-Payments-PoC
+---
+
+<HeroSection
+  :primaryCta="{ text: 'Get Started', href: '/guide/getting-started' }"
+  :secondaryCta="{ text: 'View Source', href: 'https://github.com/mbarcia/CSV-Payments-PoC' }"
+  :features="[
+    {
+      title: 'Reactive by Design',
+      description: 'Built on Mutiny for non-blocking, high-performance applications'
+    },
+    {
+      title: 'Annotation Driven',
+      description: 'Simple annotations generate complex infrastructure automatically'
+    },
+    {
+      title: 'Observability First',
+      description: 'Built-in metrics, tracing, and logging support'
+    },
+    {
+      title: 'Resilient by Default',
+      description: 'Comprehensive error handling with dead letter queues'
+    }
+  ]"
+/>
 
 ## Table of Contents
 
@@ -38,6 +76,7 @@ A pipeline is a sequence of processing steps that transform input data into outp
 
 ### Step
 A step is a single processing unit within a pipeline. Steps can have different patterns:
+
 - **One-to-One**: Transforms a single input into a single output
 - **One-to-Many**: Transforms a single input into multiple outputs
 - **Many-to-One**: Aggregates multiple inputs into a single output
@@ -59,7 +98,7 @@ The Pipeline Framework follows a modular architecture with clear separation of c
 
 ### Runtime Module
 Contains the core framework components:
-- Annotations (`@PipelineStep`, `@MapperForStep`)
+- Annotations (`@PipelineStep`)
 - Interfaces (Step interfaces, Mapper interfaces)
 - Base classes and utilities
 - Configuration classes
@@ -104,6 +143,41 @@ graph TD
     end
 ```
 
+### Overflow Configuration
+
+The framework includes comprehensive overflow handling with configurable strategies:
+
+- **BUFFER**: Buffers items when downstream consumers cannot keep up (default) - implemented as `onOverflow().buffer(capacity)`
+- **DROP**: Drops items when downstream consumers cannot keep up - implemented as `onOverflow().drop()`  
+
+Note: In Mutiny 2.9.4, the explicit `onOverflow().fail()` method is not available. By default, Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
+
+```java
+@PipelineStep(
+    // ... other configuration
+    backpressureBufferCapacity = 1024,     // Buffer capacity when using BUFFER strategy
+    backpressureStrategy = "BUFFER"        // BUFFER, DROP, or ERROR strategy
+)
+```
+
+## Pipeline Data Flow
+
+The data flows through the pipeline as follows:
+
+```mermaid
+graph LR
+    A[Input Data] --> B[Step 1]
+    B --> C[Step 2]
+    C --> D[Step 3]
+    D --> E[Final Output]
+    B --> F[Error Handling]
+    C --> G[Error Handling]
+    D --> H[Error Handling]
+    F --> I[DLQ]
+    G --> I
+    H --> I
+```
+
 ## Getting Started
 
 ### Prerequisites
@@ -114,20 +188,13 @@ graph TD
 
 ### Adding Dependencies
 
-Add the following dependencies to your `pom.xml`:
+Add the following dependency to your `pom.xml`. Both runtime and deployment components are bundled in a single dependency:
 
 ```xml
 <dependency>
   <groupId>io.github.mbarcia</groupId>
-  <artifactId>pipeline-framework-runtime</artifactId>
+  <artifactId>pipeline-framework</artifactId>
   <version>LATEST_VERSION</version>
-</dependency>
-
-<dependency>
-  <groupId>io.github.mbarcia</groupId>
-  <artifactId>pipeline-framework-deployment</artifactId>
-  <version>LATEST_VERSION</version>
-  <scope>provided</scope>
 </dependency>
 ```
 

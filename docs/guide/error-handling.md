@@ -73,17 +73,61 @@ pipeline.concurrency=5000
 
 ### Backpressure Handling
 
-The framework automatically handles backpressure through reactive streams:
+The framework automatically handles backpressure through reactive streams with configurable strategies. You can control backpressure behavior through the `@PipelineStep` annotation:
+
+```java
+@PipelineStep(
+    order = 1,
+    inputType = PaymentRecord.class,
+    outputType = PaymentStatus.class,
+    stepType = StepOneToOne.class,
+    backendType = GenericGrpcReactiveServiceAdapter.class,
+    grpcStub = MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub.class,
+    grpcImpl = MutinyProcessPaymentServiceGrpc.ProcessPaymentServiceImplBase.class,
+    inboundMapper = PaymentRecordInboundMapper.class,
+    outboundMapper = PaymentStatusOutboundMapper.class,
+    grpcClient = "process-payment",
+    autoPersist = true,
+    debug = true,
+    // Backpressure configuration
+    backpressureBufferCapacity = 1024,           // Buffer capacity when using BUFFER strategy
+    backpressureStrategy = "BUFFER"              // BUFFER, DROP, or ERROR strategy
+)
+```
+
+The available overflow strategies are:
+
+- **BUFFER** (default): Buffers items when the downstream consumer cannot keep up (using `onOverflow().buffer(capacity)`)
+- **DROP**: Drops items when the downstream consumer cannot keep up (using `onOverflow().drop()`)
+
+Note: In Mutiny 2.9.4, the explicit `onOverflow().fail()` method is not available. By default, Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
+
+Programmatic configuration is also possible:
 
 ```java
 @Override
 public Uni<PaymentStatus> applyOneToOne(PaymentRecord paymentRecord) {
     return externalService.process(paymentRecord)
-        .onOverflow().buffer(1000)  // Buffer up to 1000 items
         .onFailure().retry().withBackOff(Duration.ofMillis(100), Duration.ofSeconds(5))
         .atMost(3);
 }
+
+// The framework automatically applies the configured backpressure strategy
+// based on the annotation or configuration settings.
 ```
+
+### Relationship Between Concurrency and Buffer
+
+Concurrency and buffer settings work together to control flow:
+
+- **Concurrency** limits the number of simultaneous operations that can be processed
+- **Buffer** controls how many items are queued when downstream operations are slower than upstream production
+
+Best practices:
+- Set concurrency based on system resources and external service limits
+- Set buffer capacity based on expected load spikes and acceptable memory usage
+- Monitor system performance to balance between throughput and resource utilization
+- Consider using virtual threads when dealing with I/O-bound operations to improve concurrency efficiency
 
 ## Error Handling
 

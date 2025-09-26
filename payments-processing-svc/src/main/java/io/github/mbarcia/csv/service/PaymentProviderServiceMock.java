@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,16 +43,11 @@ public class PaymentProviderServiceMock implements PaymentProviderService {
 
   private final RateLimiter rateLimiter;
   private final long timeoutMillis;
-  private final AckPaymentSentMapper ackPaymentSentMapper;
-  private final PaymentStatusMapper paymentStatusMapper;
+  private final AckPaymentSentMapper ackPaymentSentMapper = AckPaymentSentMapper.INSTANCE;
+  private final PaymentStatusMapper paymentStatusMapper = PaymentStatusMapper.INSTANCE;
 
   @Inject
-  public PaymentProviderServiceMock(
-      AckPaymentSentMapper ackPaymentSentMapper,
-      PaymentStatusMapper paymentStatusMapper,
-      PaymentProviderConfig config) {
-    this.ackPaymentSentMapper = ackPaymentSentMapper;
-    this.paymentStatusMapper = paymentStatusMapper;
+  public PaymentProviderServiceMock(PaymentProviderConfig config) {
     rateLimiter = RateLimiter.create(config.permitsPerSecond());
     timeoutMillis = config.timeoutMillis();
 

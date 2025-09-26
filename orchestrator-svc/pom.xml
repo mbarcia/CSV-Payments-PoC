@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2023-2025 Mariano Barcia
+  ~ Copyright (c) 2023-2025 Mariano Barcia
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -31,15 +32,30 @@
     </parent>
 
     <dependencies>
+        <!-- Backend service dependencies for pipeline processing -->
         <dependency>
             <groupId>io.github.mbarcia</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>input-csv-file-processing-svc</artifactId>
             <version>1.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.github.mbarcia</groupId>
-            <artifactId>pipeline-framework</artifactId>
-            <version>${pipeline.version}</version>
+            <artifactId>payments-processing-svc</artifactId>
+            <version>1.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.mbarcia</groupId>
+            <artifactId>payment-status-svc</artifactId>
+            <version>1.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.github.mbarcia</groupId>
+            <artifactId>output-csv-file-processing-svc</artifactId>
+            <version>1.0</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -147,6 +163,10 @@
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,7 +50,18 @@ public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configur
 
         Multi<I> upstream = (executor != null) ? input.runSubscriptionOn(executor) : input;
 
-        return upstream
+        // Apply overflow strategy to the input
+        Multi<I> backpressuredInput = upstream;
+        if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
+            backpressuredInput = backpressuredInput.onOverflow().buffer(backpressureBufferCapacity());
+        } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
+            backpressuredInput = backpressuredInput.onOverflow().drop();
+        } else {
+            // default behavior - buffer with default capacity (no explicit overflow strategy needed)
+            backpressuredInput = backpressuredInput; // default behavior will handle overflow
+        }
+
+        return backpressuredInput
             .collect().asList()
             .onItem().transformToMulti(list -> {
                 try {

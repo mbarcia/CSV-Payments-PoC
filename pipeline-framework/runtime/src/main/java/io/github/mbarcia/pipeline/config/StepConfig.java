@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,11 +29,13 @@ public class StepConfig {
     private final AtomicInteger retryLimit = new AtomicInteger(3);
     private final AtomicReference<Duration> retryWait = new AtomicReference<>(Duration.ofMillis(200));
     private final AtomicInteger concurrency = new AtomicInteger(4);
+    private final AtomicInteger backpressureBufferCapacity = new AtomicInteger(1024);
 
     private volatile boolean debug = false;
     private volatile boolean recoverOnFailure = false;
     private volatile boolean runWithVirtualThreads = false;
     private volatile boolean autoPersist = false;
+    private volatile String backpressureStrategy = "BUFFER";
 
     private final AtomicReference<Duration> maxBackoff = new AtomicReference<>(Duration.ofSeconds(30));
     private volatile boolean jitter = false;
@@ -45,6 +47,8 @@ public class StepConfig {
     public int retryLimit() { return retryLimit.get(); }
     public Duration retryWait() { return retryWait.get(); }
     public int concurrency() { return concurrency.get(); }
+    public int backpressureBufferCapacity() { return backpressureBufferCapacity.get(); }
+    public String backpressureStrategy() { return backpressureStrategy; }
     public boolean debug() { return debug; }
     public boolean recoverOnFailure() { return recoverOnFailure; }
     public boolean runWithVirtualThreads() { return runWithVirtualThreads; }
@@ -56,6 +60,8 @@ public class StepConfig {
     public StepConfig retryLimit(int v) { retryLimit.set(v); return this; }
     public StepConfig retryWait(Duration v) { retryWait.set(Objects.requireNonNull(v)); return this; }
     public StepConfig concurrency(int v) { concurrency.set(v); return this; }
+    public StepConfig backpressureBufferCapacity(int v) { backpressureBufferCapacity.set(v); return this; }
+    public StepConfig backpressureStrategy(String v) { backpressureStrategy = v; return this; }
     public StepConfig debug(boolean v) { debug = v; return this; }
     public StepConfig recoverOnFailure(boolean v) { recoverOnFailure = v; return this; }
     public StepConfig runWithVirtualThreads(boolean v) { runWithVirtualThreads = v; return this; }

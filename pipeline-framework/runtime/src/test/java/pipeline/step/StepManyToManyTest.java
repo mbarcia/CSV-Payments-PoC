@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,15 +25,20 @@ import org.junit.jupiter.api.Test;
 
 class StepManyToManyTest {
 
-    static class TestStep implements StepManyToMany {
+    static class TestStep implements StepManyToMany<Object, Object> {
         @Override
-        public Multi<Object> applyStreaming(Multi<Object> upstream) {
-            return upstream.onItem().transform(item -> "Streamed: " + item);
+        public Multi<Object> applyTransform(Multi<Object> input) {
+            return input.onItem().transform(item -> "Streamed: " + item);
         }
 
         @Override
         public StepConfig effectiveConfig() {
             return new StepConfig();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the config provided
         }
     }
 
@@ -44,7 +49,7 @@ class StepManyToManyTest {
         Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
         // When
-        Multi<Object> result = step.applyStreaming(input);
+        Multi<Object> result = step.apply(input);
 
         // Then
         AssertSubscriber<Object> subscriber =
@@ -60,7 +65,7 @@ class StepManyToManyTest {
         Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
         // When
-        Multi<Object> result = step.apply(input);
+        Multi<Object> result = (Multi<Object>) step.apply(input);
 
         // Then
         AssertSubscriber<Object> subscriber =

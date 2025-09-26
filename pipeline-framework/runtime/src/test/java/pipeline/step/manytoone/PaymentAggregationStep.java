@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package pipeline.step.manytoone;
 
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepManyToOne;
+import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.math.BigDecimal;
-import java.util.List;
 
 /**
  * Example of a reactive many-to-one step that aggregates multiple payment entities into a summary.
@@ -29,7 +29,7 @@ public class PaymentAggregationStep extends ConfigurableStep
         implements StepManyToOne<TestPaymentEntity, PaymentSummary> {
 
     @Override
-    public Uni<PaymentSummary> applyBatch(List<TestPaymentEntity> payments) {
+    public Uni<PaymentSummary> applyBatchMulti(Multi<TestPaymentEntity> inputs) {
         // Simulate some processing time
         try {
             Thread.sleep(100); // Simulate work
@@ -38,20 +38,29 @@ public class PaymentAggregationStep extends ConfigurableStep
         }
 
         // Aggregate payments into a summary
-        BigDecimal totalAmount =
-                payments.stream()
-                        .map(TestPaymentEntity::getAmount)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return inputs.collect()
+                .asList()
+                .onItem()
+                .transform(
+                        payments -> {
+                            BigDecimal totalAmount =
+                                    payments.stream()
+                                            .map(TestPaymentEntity::getAmount)
+                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        String summary =
-                "Processed " + payments.size() + " payments with total amount: " + totalAmount;
+                            String summary =
+                                    "Processed "
+                                            + payments.size()
+                                            + " payments with total amount: "
+                                            + totalAmount;
 
-        PaymentSummary paymentSummary = new PaymentSummary();
-        paymentSummary.setTotalPayments(payments.size());
-        paymentSummary.setTotalAmount(totalAmount);
-        paymentSummary.setSummary(summary);
+                            PaymentSummary paymentSummary = new PaymentSummary();
+                            paymentSummary.setTotalPayments(payments.size());
+                            paymentSummary.setTotalAmount(totalAmount);
+                            paymentSummary.setSummary(summary);
 
-        return Uni.createFrom().item(paymentSummary);
+                            return paymentSummary;
+                        });
     }
 
     @Override
@@ -62,5 +71,15 @@ public class PaymentAggregationStep extends ConfigurableStep
     @Override
     public long batchTimeoutMs() {
         return 1000; // 1 second timeout
+    }
+
+    @Override
+    public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
+        return new io.github.mbarcia.pipeline.config.StepConfig();
+    }
+
+    @Override
+    public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+        // Use the config provided
     }
 }

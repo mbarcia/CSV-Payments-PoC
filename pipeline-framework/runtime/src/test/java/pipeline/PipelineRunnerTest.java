@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.PipelineRunner;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
-import io.github.mbarcia.pipeline.step.Step;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import jakarta.inject.Inject;
@@ -47,9 +46,9 @@ class PipelineRunnerTest {
     void testRunWithStepOneToOne() {
         try (PipelineRunner runner = new PipelineRunner()) {
             Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
-            List<Step> steps = List.of(new TestSteps.TestStepOneToOneBlocking());
+            List<Object> steps = List.of(new TestSteps.TestStepOneToOneBlocking());
 
-            Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = (Multi<Object>) runner.run(input, steps);
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(3));
@@ -72,7 +71,7 @@ class PipelineRunnerTest {
             //    "Processed: item3"
             // );
             // assertEquals(expectedList.stream().sorted().toList(),
-            //              actualItems.stream().map(Object::toString).sorted().toList());
+            //              actualItems.stream().map(Object::toString).sorted().tolist());
         }
     }
 
@@ -80,9 +79,9 @@ class PipelineRunnerTest {
     void testRunWithStepOneToMany() {
         try (PipelineRunner runner = new PipelineRunner()) {
             Multi<String> input = Multi.createFrom().items("item1", "item2");
-            List<Step> steps = List.of(new TestSteps.TestStepOneToMany());
+            List<Object> steps = List.of(new TestSteps.TestStepOneToMany());
 
-            Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = (Multi<Object>) runner.run(input, steps);
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(6));
@@ -96,9 +95,9 @@ class PipelineRunnerTest {
     void testRunWithStepManyToMany() {
         try (PipelineRunner runner = new PipelineRunner()) {
             Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3");
-            List<Step> steps = List.of(new TestSteps.TestStepManyToMany());
+            List<Object> steps = List.of(new TestSteps.TestStepManyToMany());
 
-            Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = (Multi<Object>) runner.run(input, steps);
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(3));
@@ -111,9 +110,9 @@ class PipelineRunnerTest {
     void testRunWithStepOneToAsync() {
         try (PipelineRunner runner = new PipelineRunner()) {
             Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
-            List<Step> steps = List.of(new TestSteps.TestStepOneToOne());
+            List<Object> steps = List.of(new TestSteps.TestStepOneToOne());
 
-            Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = (Multi<Object>) runner.run(input, steps);
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(3));
@@ -126,12 +125,12 @@ class PipelineRunnerTest {
     void testRunWithMultipleSteps() {
         try (PipelineRunner runner = new PipelineRunner()) {
             Multi<String> input = Multi.createFrom().items("item1", "item2");
-            List<Step> steps =
+            List<Object> steps =
                     List.of(
                             new TestSteps.TestStepOneToOneBlocking(),
                             new TestSteps.TestStepOneToMany());
 
-            Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = (Multi<Object>) runner.run(input, steps);
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(6));
@@ -159,9 +158,9 @@ class PipelineRunnerTest {
     void testRunWithFailingStepAndRecovery() {
         try (PipelineRunner runner = new PipelineRunner()) {
             Multi<String> input = Multi.createFrom().items("item1", "item2");
-            List<Step> steps = List.of(new TestSteps.FailingStepBlocking(true));
+            List<Object> steps = List.of(new TestSteps.FailingStepBlocking(true));
 
-            Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = (Multi<Object>) runner.run(input, steps);
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(2));
@@ -183,9 +182,9 @@ class PipelineRunnerTest {
     void testRunWithFailingStepWithoutRecovery() {
         try (PipelineRunner runner = new PipelineRunner()) {
             Multi<String> input = Multi.createFrom().items("item1", "item2");
-            List<Step> steps = List.of(new TestSteps.FailingStepBlocking());
+            List<Object> steps = List.of(new TestSteps.FailingStepBlocking());
 
-            Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = (Multi<Object>) runner.run(input, steps);
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(1));
@@ -206,7 +205,7 @@ class PipelineRunnerTest {
             // Configure retry settings
             step.liveConfig().overrides().retryLimit(3).retryWait(Duration.ofMillis(10));
 
-            Multi<Object> result = runner.run(input, List.of((Step) step));
+            Multi<Object> result = (Multi<Object>) runner.run(input, List.of((Object) step));
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(1));
@@ -227,7 +226,7 @@ class PipelineRunnerTest {
             // Configure retry settings - only 2 retries, but need 3 failures to pass
             step.liveConfig().overrides().retryLimit(2).retryWait(Duration.ofMillis(10));
 
-            Multi<Object> result = runner.run(input, List.of((Step) step));
+            Multi<Object> result = (Multi<Object>) runner.run(input, List.of((Object) step));
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(1));
@@ -253,7 +252,7 @@ class PipelineRunnerTest {
                     .retryLimit(2)
                     .retryWait(Duration.ofMillis(10));
 
-            Multi<Object> result = runner.run(input, List.of((Step) step));
+            Multi<Object> result = (Multi<Object>) runner.run(input, List.of((Object) step));
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(1));
@@ -293,9 +292,9 @@ class PipelineRunnerTest {
             TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
             step.liveConfig().overrides().autoPersist(true);
 
-            List<Step> steps = List.of(step);
+            List<Object> steps = List.of(step);
 
-            Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result = (Multi<Object>) runner.run(input, steps);
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(3));

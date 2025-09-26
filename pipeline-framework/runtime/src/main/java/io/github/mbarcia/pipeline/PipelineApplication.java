@@ -26,7 +26,6 @@ import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,7 +89,7 @@ public abstract class PipelineApplication {
 
       multiResult
           .subscribe()
-          .with(_ -> {
+          .with(item -> {
                 LOG.info("Processing completed.");
                 watch.stop();
                 LOG.info(

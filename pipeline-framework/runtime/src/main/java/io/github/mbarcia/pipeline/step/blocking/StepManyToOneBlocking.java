@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import io.github.mbarcia.pipeline.step.functional.ManyToOne;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.Executors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,9 +62,9 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
      * @param error The error that occurred
      * @return The result of dead letter handling (can be null)
      */
-    default O deadLetterBatchList(List<I> inputs, Throwable error) {
+    default Uni<O> deadLetterBatchList(List<I> inputs, Throwable error) {
         System.err.printf("DLQ drop for batch of %d items: %s%n", inputs.size(), error.getMessage());
-        return null;
+        return Uni.createFrom().item((O) null);
     }
 
     @Override
@@ -80,9 +79,20 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                 ? input.runSubscriptionOn(executor)
                 : input;
 
-        return upstream
+        // Apply overflow strategy to the input
+        Multi<I> backpressuredInput = upstream;
+        if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
+            backpressuredInput = backpressuredInput.onOverflow().buffer(backpressureBufferCapacity());
+        } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
+            backpressuredInput = backpressuredInput.onOverflow().drop();
+        } else {
+            // default behavior - buffer with default capacity (no explicit overflow strategy needed)
+            backpressuredInput = backpressuredInput; // default behavior will handle overflow
+        }
+
+        return backpressuredInput
             .group().intoLists().of(batchSize, java.time.Duration.ofMillis(batchTimeoutMs))
-            .onItem().transformToUni(list -> {
+            .onItem().transformToUniAndConcatenate(list -> {
                 try {
                     O result = applyBatchList(list);
 
@@ -98,18 +108,20 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     if (recoverOnFailure()) {
                         if (debug()) {
                             LOG.debug(
-                                "Blocking Step {}: failed batch of {} items: {}",
-                                this.getClass().getSimpleName(), list.size(), e.getMessage()
+                                "Blocking Step {}: failed batch: {}",
+                                this.getClass().getSimpleName(), e.getMessage()
                             );
                         }
-                        return Uni.createFrom().nullItem();
+                        return deadLetterBatchList(list, e);
                     } else {
                         return Uni.createFrom().failure(e);
                     }
                 }
             })
-            .merge()
-            .filter(Objects::nonNull)
+            .onFailure().retry()
+            .withBackOff(retryWait(), maxBackoff())
+            .withJitter(jitter() ? 0.5 : 0.0)
+            .atMost(retryLimit())
             .collect().last();
     }
 }

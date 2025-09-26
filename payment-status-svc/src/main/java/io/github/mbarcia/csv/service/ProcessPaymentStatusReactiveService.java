@@ -24,7 +24,6 @@ import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,8 +48,7 @@ import org.slf4j.MDC;
 public class ProcessPaymentStatusReactiveService
     implements ReactiveService<PaymentStatus, PaymentOutput> {
 
-  @Inject
-  PaymentOutputMapper mapper;
+  PaymentOutputMapper mapper = PaymentOutputMapper.INSTANCE;
 
   @Override
   public Uni<PaymentOutput> process(PaymentStatus paymentStatus) {

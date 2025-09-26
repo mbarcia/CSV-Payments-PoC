@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -130,4 +130,19 @@ public @interface PipelineStep {
      * @return true if REST adapter should be generated, false otherwise
      */
     boolean restEnabled() default false;
+
+    /**
+     * The backpressure buffer capacity for this step (default=1024)
+     * @return the buffer capacity for backpressure handling
+     */
+    int backpressureBufferCapacity() default 1024;
+
+    /**
+     * The backpressure strategy for this step (default="BUFFER")
+     * Valid values: "BUFFER", "DROP"
+     * Note: "ERROR" strategy is not available in Mutiny 2.9.4. By default, 
+     * Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
+     * @return the backpressure strategy for this step
+     */
+    String backpressureStrategy() default "BUFFER";
 }

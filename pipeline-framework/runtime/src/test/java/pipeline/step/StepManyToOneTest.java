@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,22 +22,28 @@ import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.step.StepManyToOne;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class StepManyToOneTest {
 
     static class TestStep implements StepManyToOne<String, String> {
         @Override
-        public Uni<String> applyBatch(List<String> inputs) {
-            return Uni.createFrom().item("Batch processed: " + String.join(", ", inputs));
+        public Uni<String> applyBatchMulti(Multi<String> inputs) {
+            return inputs.collect()
+                    .asList()
+                    .onItem()
+                    .transform(list -> "Batch processed: " + String.join(", ", list));
         }
 
         @Override
         public StepConfig effectiveConfig() {
             return new StepConfig();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the config provided
         }
 
         @Override
@@ -50,10 +56,10 @@ class StepManyToOneTest {
     void testApplyBatchMethod() {
         // Given
         TestStep step = new TestStep();
-        List<String> inputs = List.of("item1", "item2", "item3");
+        Multi<String> inputs = Multi.createFrom().items("item1", "item2", "item3");
 
         // When
-        Uni<String> result = step.applyBatch(inputs);
+        Uni<String> result = step.applyBatchMulti(inputs);
 
         // Then
         String value = result.await().indefinitely();
@@ -64,15 +70,19 @@ class StepManyToOneTest {
     void testApplyMethod() {
         // Given
         TestStep step = new TestStep();
-        Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3", "item4");
+        Multi<String> input = Multi.createFrom().items("item1", "item2", "item3", "item4");
 
         // When
-        Multi<Object> result = step.apply(input);
+        Uni<String> result = step.applyReduce(input);
 
         // Then
-        AssertSubscriber<Object> subscriber =
-                result.subscribe().withSubscriber(AssertSubscriber.create(2));
-        subscriber.awaitItems(2, Duration.ofSeconds(5));
-        subscriber.assertItems("Batch processed: item1, item2", "Batch processed: item3, item4");
+        io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =
+                result.subscribe()
+                        .withSubscriber(
+                                io.smallrye.mutiny.helpers.test.UniAssertSubscriber.create());
+        subscriber.awaitItem(Duration.ofSeconds(5));
+        // With batch size of 2, we expect 2 batches: ["item1", "item2"] and ["item3", "item4"]
+        // The applyReduce method uses .collect().last(), so only the last batch result is returned
+        subscriber.assertItem("Batch processed: item3, item4");
     }
 }

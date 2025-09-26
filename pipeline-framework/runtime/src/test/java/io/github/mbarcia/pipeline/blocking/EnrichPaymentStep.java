@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package io.github.mbarcia.pipeline.blocking;
 
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
+import io.smallrye.mutiny.Uni;
 
 /**
  * Another example of a blocking step that processes payment entities. This step demonstrates how to
@@ -27,7 +28,7 @@ public class EnrichPaymentStep extends ConfigurableStep
         implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
 
     @Override
-    public TestPaymentEntity apply(TestPaymentEntity payment) {
+    public Uni<TestPaymentEntity> apply(TestPaymentEntity payment) {
         // This is a blocking operation that simulates enrichment logic
 
         // Simulate some processing time (blocking operation)
@@ -43,6 +44,15 @@ public class EnrichPaymentStep extends ConfigurableStep
             payment.setStatus("ENRICHED");
         }
 
-        return payment;
+        return Uni.createFrom().item(payment);
+    }
+
+    @Override
+    public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+        super.initialiseWithConfig(config);
+    }
+
+    public Uni<TestPaymentEntity> applyOneToOne(TestPaymentEntity input) {
+        return apply(input);
     }
 }

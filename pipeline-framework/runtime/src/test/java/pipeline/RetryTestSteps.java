@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,22 +43,27 @@ public class RetryTestSteps {
         }
 
         @Override
-        public String apply(String input) {
-            int count = callCount.incrementAndGet();
-            if (count <= failCount) {
-                throw new RuntimeException("Intentional failure #" + count);
+        public Uni<String> apply(String input) {
+            if (callCount.incrementAndGet() <= failCount) {
+                throw new RuntimeException(
+                        "Intentional failure for testing - attempt " + callCount.get());
             }
-            return "Success: " + input;
+            return Uni.createFrom().item("Success: " + input);
         }
 
         @Override
-        public Uni<Void> deadLetter(Object failedItem, Throwable cause) {
-            System.out.println("Dead letter handled for: " + failedItem);
-            return super.deadLetter(failedItem, cause);
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            super.initialiseWithConfig(config);
         }
 
-        public int getCallCount() {
-            return callCount.get();
+        public Uni<String> applyOneToOne(String input) {
+            return apply(input);
+        }
+
+        @Override
+        public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
+            System.out.println("DLQ: " + failedItem.toString() + " due to " + cause.getMessage());
+            return Uni.createFrom().nullItem();
         }
     }
 
@@ -72,18 +77,10 @@ public class RetryTestSteps {
         }
 
         @Override
-        public Uni<String> applyAsyncUni(String input) {
-            int count = callCount.incrementAndGet();
-            System.out.println(
-                    "AsyncFailNTimesStep called " + count + " times for input: " + input);
-            System.out.println("Fail count: " + failCount + ", Retry limit: " + retryLimit());
-            if (count <= failCount) {
-                RuntimeException exception =
-                        new RuntimeException("Intentional async failure #" + count);
-                System.out.println("Throwing exception: " + exception.getMessage());
-                return Uni.createFrom().failure(exception);
+        public Uni<String> applyOneToOne(String input) {
+            if (callCount.incrementAndGet() <= failCount) {
+                throw new RuntimeException("Intentional async failure # " + callCount.get());
             }
-            System.out.println("Returning success for input: " + input);
             return Uni.createFrom().item("Async Success: " + input);
         }
 

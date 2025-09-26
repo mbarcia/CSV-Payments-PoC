@@ -24,16 +24,25 @@ The `@PipelineStep` annotation is used to mark a class as a pipeline step. This 
 )
 ```
 
-#### @MapperForStep
+#### Mapper Classes
 
-The `@MapperForStep` annotation is used to mark mapper classes that handle conversions between different representations of the same entity: domain, DTO, and gRPC formats.
+Mapper classes implement the conversion interfaces directly to handle conversions between different representations of the same entity: domain, DTO, and gRPC formats.
 
 ```java
-@MapperForStep(
-    order = 3,
-    grpcType = PaymentsProcessingSvc.AckPaymentSent.class,
-    domainType = AckPaymentSent.class
-)
+@ApplicationScoped
+public class PaymentRecordInboundMapper implements InboundMapper<PaymentRecordGrpc, PaymentRecord> {
+    @Override
+    public PaymentRecord fromGrpc(PaymentRecordGrpc grpc) {
+        // Mapping implementation
+        return PaymentRecord.builder()
+            .id(UUID.fromString(grpc.getId()))
+            .csvId(grpc.getCsvId())
+            .recipient(grpc.getRecipient())
+            .amount(new BigDecimal(grpc.getAmount()))
+            .currency(Currency.getInstance(grpc.getCurrency()))
+            .build();
+    }
+}
 ```
 
 ### Benefits
@@ -55,7 +64,7 @@ The `@MapperForStep` annotation is used to mark mapper classes that handle conve
 Developers only need to:
 
 1. Annotate their service class with `@PipelineStep`
-2. Annotate their mapper classes with `@MapperForStep`
+2. Create their mapper classes that implement the appropriate mapper interfaces
 3. Implement the mapper interfaces (`InboundMapper`, `OutboundMapper`)
 4. Implement the service interface (`StepOneToOne`, etc.)
 

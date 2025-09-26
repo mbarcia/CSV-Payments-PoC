@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,12 +49,11 @@ public class ComprehensiveStepTypesTest {
         processStep.liveConfig().overrides().autoPersist(false);
 
         // When: Run pipeline with mixed step types
+        Multi<String> result =
+                (Multi<String>)
+                        pipelineRunner.run(input, List.of(validateStep, expandStep, processStep));
         AssertSubscriber<String> subscriber =
-                pipelineRunner
-                        .run(input, List.of(validateStep, expandStep, processStep))
-                        .onItem()
-                        .castTo(String.class)
-                        .subscribe()
+                result.subscribe()
                         .withSubscriber(AssertSubscriber.create(6)); // 2 inputs * 3 expanded each
 
         // Then: Verify results
@@ -64,8 +63,8 @@ public class ComprehensiveStepTypesTest {
         assertEquals(6, results.size());
 
         // Verify all items were processed
-        for (String result : results) {
-            assertTrue(result.startsWith("Processed: TXN-"));
+        for (String res : results) {
+            assertTrue(res.startsWith("Processed: TXN-"));
         }
     }
 
@@ -74,7 +73,7 @@ public class ComprehensiveStepTypesTest {
             implements StepOneToOneBlocking<String, String> {
 
         @Override
-        public String apply(String payment) {
+        public io.smallrye.mutiny.Uni<String> apply(String payment) {
             // Simulate validation work
             try {
                 Thread.sleep(50);
@@ -82,7 +81,22 @@ public class ComprehensiveStepTypesTest {
                 Thread.currentThread().interrupt();
             }
 
-            return "Validated: " + payment;
+            return io.smallrye.mutiny.Uni.createFrom().item("Validated: " + payment);
+        }
+
+        @Override
+        public io.smallrye.mutiny.Uni<String> applyOneToOne(String input) {
+            return apply(input);
+        }
+
+        @Override
+        public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
+            return new io.github.mbarcia.pipeline.config.StepConfig();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the config provided
         }
     }
 }

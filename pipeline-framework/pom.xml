@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright © 2023-2025 Mariano Barcia
+  ~ Copyright (c) 2023-2025 Mariano Barcia
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <enablePreview>true</enablePreview>
-        <quarkus.platform.version>3.28.0.CR1</quarkus.platform.version>
+        <quarkus.platform.version>3.28.1</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <version.jandex>3.5.0</version.jandex>
@@ -84,11 +84,33 @@
                                 <artifactId>mapstruct-processor</artifactId>
                                 <version>1.5.5.Final</version>
                             </path>
+                            <path>
+                                <groupId>io.quarkus</groupId>
+                                <artifactId>quarkus-extension-processor</artifactId>
+                                <version>${quarkus.platform.version}</version>
+                            </path>
                         </annotationProcessorPaths>
                         <compilerArgs>
                             <arg>--enable-preview</arg>
                         </compilerArgs>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-maven-plugin</artifactId>
+                    <version>${quarkus.platform.version}</version>
+                    <configuration>
+                        <jvmArgs>--enable-preview</jvmArgs>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>build</goal>
+                                <goal>generate-code</goal>
+                                <goal>generate-code-tests</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -170,5 +192,4 @@
             </plugins>
         </pluginManagement>
     </build>
-
-        </project>
+</project>

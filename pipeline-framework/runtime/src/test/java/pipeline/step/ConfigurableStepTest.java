@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
+import io.smallrye.mutiny.Uni;
 import org.junit.jupiter.api.Test;
 
 class ConfigurableStepTest {
@@ -31,8 +32,23 @@ class ConfigurableStepTest {
         }
 
         @Override
-        public String apply(String input) {
-            return "Processed: " + input;
+        public Uni<String> apply(String input) {
+            // This is a blocking operation that simulates processing
+            try {
+                Thread.sleep(10); // Simulate some work
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return Uni.createFrom().item("Processed: " + input);
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            super.initialiseWithConfig(config);
+        }
+
+        public Uni<String> applyOneToOne(String input) {
+            return apply(input);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,11 @@ class StepManyToOneBlockingTest {
         @Override
         public int batchSize() {
             return 2; // Small batch size for testing
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the config provided
         }
     }
 
@@ -86,13 +91,24 @@ class StepManyToOneBlockingTest {
     void testApplyMethodInStep() {
         // Given
         TestStepBlocking step = new TestStepBlocking();
-        Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3", "item4");
+        Multi<String> input = Multi.createFrom().items("item1", "item2", "item3", "item4");
 
         // When
-        Multi<Object> result = step.apply(input);
+        Multi<String> result =
+                input.group()
+                        .intoLists()
+                        .of(step.batchSize())
+                        .onItem()
+                        .transformToUniAndMerge(
+                                list ->
+                                        io.smallrye.mutiny.Uni.createFrom()
+                                                .item(step.applyBatchList(list)))
+                        .onItem()
+                        .transformToMulti(item -> io.smallrye.mutiny.Multi.createFrom().item(item))
+                        .concatenate();
 
         // Then
-        AssertSubscriber<Object> subscriber =
+        AssertSubscriber<String> subscriber =
                 result.subscribe().withSubscriber(AssertSubscriber.create(2));
         subscriber.awaitItems(2, Duration.ofSeconds(5));
         subscriber.assertItems("Batch processed: item1, item2", "Batch processed: item3, item4");

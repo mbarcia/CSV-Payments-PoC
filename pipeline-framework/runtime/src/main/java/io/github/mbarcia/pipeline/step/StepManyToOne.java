@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,18 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
         int batchSize = this.batchSize();
         long batchTimeoutMs = this.batchTimeoutMs();
 
-        Multi<Multi<I>> batches = input.group().intoLists().of(batchSize, Duration.ofMillis(batchTimeoutMs))
+        // Apply overflow strategy to the input
+        Multi<I> backpressuredInput = input;
+        if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
+            backpressuredInput = backpressuredInput.onOverflow().buffer(backpressureBufferCapacity());
+        } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
+            backpressuredInput = backpressuredInput.onOverflow().drop();
+        } else {
+            // default behavior - buffer with default capacity
+            backpressuredInput = backpressuredInput.onOverflow().buffer(128); // default buffer size
+        }
+
+        Multi<Multi<I>> batches = backpressuredInput.group().intoLists().of(batchSize, Duration.ofMillis(batchTimeoutMs))
             .onItem().transform(list -> Multi.createFrom().iterable(list)); // convert List<I> to Multi<I> for applyBatchMulti
 
         return batches
@@ -101,6 +112,10 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
                         }
                     })
                 )
+                .onFailure().retry()
+                .withBackOff(retryWait(), maxBackoff())
+                .withJitter(jitter() ? 0.5 : 0.0)
+                .atMost(retryLimit())
                 .filter(Objects::nonNull)
                 .collect().last();
     }

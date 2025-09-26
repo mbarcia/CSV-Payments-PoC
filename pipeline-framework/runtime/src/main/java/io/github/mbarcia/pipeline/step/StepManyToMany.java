@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,16 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
         // Apply the transformation
         Multi<O> output = applyTransform(input);
 
+        // Apply overflow strategy
+        if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
+            output = output.onOverflow().buffer(backpressureBufferCapacity());
+        } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
+            output = output.onOverflow().drop();
+        } else {
+            // default behavior - buffer with default capacity
+            output = output.onOverflow().buffer(128); // default buffer size
+        }
+
         if (executor != null) {
             // shift blocking subscription work to virtual threads
             output = output.runSubscriptionOn(executor);
@@ -48,6 +58,10 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
                 );
             }
             return item;
-        });
+        })
+        .onFailure().retry()
+        .withBackOff(retryWait(), maxBackoff())
+        .withJitter(jitter() ? 0.5 : 0.0)
+        .atMost(retryLimit());
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,11 +40,8 @@ public class ProcessPaymentStatusResource {
     @Inject
     ProcessPaymentStatusReactiveService service;
 
-    @Inject
-    PaymentStatusMapper paymentStatusMapper;
-
-    @Inject
-    PaymentOutputMapper paymentOutputMapper;
+    PaymentStatusMapper paymentStatusMapper = PaymentStatusMapper.INSTANCE;
+    PaymentOutputMapper paymentOutputMapper = PaymentOutputMapper.INSTANCE;
 
     @POST
     @Path("/process")

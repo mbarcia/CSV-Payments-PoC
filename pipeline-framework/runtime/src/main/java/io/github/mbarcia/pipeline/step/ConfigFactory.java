@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,9 @@ public class ConfigFactory {
             return (LiveStepConfig) config.overrides()
                     .autoPersist(annotation.autoPersist())
                     .debug(annotation.debug())
-                    .recoverOnFailure(annotation.recoverOnFailure());
+                    .recoverOnFailure(annotation.recoverOnFailure())
+                    .backpressureBufferCapacity(annotation.backpressureBufferCapacity())
+                    .backpressureStrategy(annotation.backpressureStrategy());
         }
 
         return config;

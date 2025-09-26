@@ -18,12 +18,14 @@ package io.github.mbarcia.pipeline.processor;
 
 import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
+import io.github.mbarcia.pipeline.config.PipelineBuildTimeConfig;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.gizmo.*;
 import io.quarkus.grpc.GrpcClient;
@@ -39,6 +41,7 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 // Helper class to store step information
+@SuppressWarnings("ClassCanBeRecord")
 class StepInfo {
     final String stepClassName;
     final String stepType;
@@ -51,14 +54,24 @@ class StepInfo {
 
 public class PipelineProcessor {
 
+    private static final String FEATURE_NAME = "pipeline-framework";
+
     public static final String REMOTE_PROCESS_METHOD = "remoteProcess";
     public static final String UNI = "io.smallrye.mutiny.Uni";
     public static final String MULTI = "io.smallrye.mutiny.Multi";
 
     @BuildStep
+    FeatureBuildItem feature() {
+        return new FeatureBuildItem(FEATURE_NAME);
+    }
+
+    @BuildStep
     void generateAdapters(CombinedIndexBuildItem index,
+                          PipelineBuildTimeConfig config,
                           BuildProducer<SyntheticBeanBuildItem> beans,
                           BuildProducer<GeneratedClassBuildItem> generatedClasses) {
+
+        System.out.println("PipelineProcessor.generateAdapters executed");
 
         IndexView view = index.getIndex();
 
@@ -83,64 +96,117 @@ public class PipelineProcessor {
                 ann.value("backendType").asClass().name().toString() : 
                 GenericGrpcReactiveServiceAdapter.class.getName();
 
-            // Generate gRPC adapter class (server-side) - the service endpoint
-            generateGrpcAdapterClass(generatedClasses, stepClassInfo, backendType, inMapperName, outMapperName, serviceName);
-            
-            // Generate step class (client-side) - the pipeline step
-            generateStepClass(generatedClasses, stepClassInfo, stubName, stepType, grpcClientValue, inputType, outputType);
-            
+            if (config.generateCli()) {
+                // Generate step class (client-side) - the pipeline step 
+                generateStepClass(generatedClasses, stepClassInfo, stubName, stepType, grpcClientValue, inputType, outputType);
+            } else {
+                // Generate gRPC adapter class (server-side) - the service endpoint
+                generateGrpcAdapterClass(generatedClasses, stepClassInfo, backendType, inMapperName, outMapperName, serviceName);
+            }
             // Store step info for application generation
             stepInfos.add(new StepInfo(
                 stepClassInfo.name().toString() + "Step",
                 stepType
             ));
         }
-        
-        // Generate the pipeline application class if there are any steps
-        if (!stepInfos.isEmpty()) {
-            generatePipelineApplicationClass(generatedClasses, stepInfos);
-        }
     }
+    
+    @BuildStep
+    void generateCliApplication(CombinedIndexBuildItem index,
+                                PipelineBuildTimeConfig config,
+                                BuildProducer<GeneratedClassBuildItem> generatedClasses) {
+        IndexView view = index.getIndex();
 
-    private static void generateGrpcAdapterClass(BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo stepClassInfo, String backendType, String inMapperName, String outMapperName, String serviceName) {
-        // Generate a subclass of the specified backend adapter with @GrpcService
-        String adapterClassName = MessageFormat.format("{0}GrpcService", stepClassInfo.name().toString());
+        System.out.println("PipelineProcessor.generateCliApplication");
 
-        try (ClassCreator cc = new ClassCreator(
-                new GeneratedClassGizmoAdaptor(generatedClasses, true),
-                adapterClassName, null, backendType)) {
+        // Collect all step classes for application generation only if CLI generation is enabled
+        if (config.generateCli()) {
+            System.out.println("PipelineProcessor.generateCliApplication (generate-cli=true)");
 
-            // Add @GrpcService annotation to the generated class
-            cc.addAnnotation(GrpcService.class);
+            List<StepInfo> stepInfos = new ArrayList<>();
 
-            // Create fields with @Inject annotations
-            cc.getFieldCreator("inboundMapper", inMapperName)
-                    .setModifiers(java.lang.reflect.Modifier.PRIVATE)
-                    .addAnnotation(Inject.class);
+            for (AnnotationInstance ann : view.getAnnotations(DotName.createSimple(PipelineStep.class.getName()))) {
+                ClassInfo stepClassInfo = ann.target().asClass();
 
-            cc.getFieldCreator("outboundMapper", outMapperName)
-                    .setModifiers(java.lang.reflect.Modifier.PRIVATE)
-                    .addAnnotation(Inject.class);
+                // extract annotation values
+                String stepType = ann.value("stepType").asClass().name().toString();
 
-            cc.getFieldCreator("service", serviceName)
-                    .setModifiers(java.lang.reflect.Modifier.PRIVATE)
-                    .addAnnotation(Inject.class);
-
-            cc.getFieldCreator("persistenceManager", PersistenceManager.class.getName())
-                    .setModifiers(java.lang.reflect.Modifier.PRIVATE)
-                    .addAnnotation(Inject.class);
-
-            // Add default no-arg constructor
-            try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
-                defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(backendType), defaultCtor.getThis());
-                defaultCtor.returnValue(null);
+                // Store step info for application generation
+                stepInfos.add(new StepInfo(
+                    stepClassInfo.name().toString() + "Step",
+                    stepType
+                ));
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate gRPC adapter class", e);
+            
+            // Generate the pipeline application class if steps exist
+            if (!stepInfos.isEmpty()) {
+                generatePipelineApplicationClass(generatedClasses, stepInfos);
+            }
         }
     }
 
-    private static void generateStepClass(BuildProducer<GeneratedClassBuildItem> generatedClasses, ClassInfo stepClassInfo, String stubName, String stepType, String grpcClientValue, String inputType, String outputType) {
+  private static void generateGrpcAdapterClass(
+      BuildProducer<GeneratedClassBuildItem> generatedClasses,
+      ClassInfo stepClassInfo,
+      String backendType,
+      String inMapperName,
+      String outMapperName,
+      String serviceName) {
+    // Generate a subclass of the specified backend adapter with @GrpcService
+    String adapterClassName =
+        MessageFormat.format("{0}GrpcService", stepClassInfo.name().toString());
+
+    System.out.println("PipelineProcessor.generateGrpcAdapterClass");
+
+      try (ClassCreator cc =
+          new ClassCreator(
+              new GeneratedClassGizmoAdaptor(generatedClasses, true),
+              adapterClassName,
+              null,
+              backendType)) {
+
+        // Add @GrpcService annotation to the generated class
+        cc.addAnnotation(GrpcService.class);
+
+        // Create fields with @Inject annotations
+        cc.getFieldCreator("inboundMapper", inMapperName)
+            .setModifiers(java.lang.reflect.Modifier.PRIVATE)
+            .addAnnotation(Inject.class);
+
+        cc.getFieldCreator("outboundMapper", outMapperName)
+            .setModifiers(java.lang.reflect.Modifier.PRIVATE)
+            .addAnnotation(Inject.class);
+
+        cc.getFieldCreator("service", serviceName)
+            .setModifiers(java.lang.reflect.Modifier.PRIVATE)
+            .addAnnotation(Inject.class);
+
+        cc.getFieldCreator("persistenceManager", PersistenceManager.class.getName())
+            .setModifiers(java.lang.reflect.Modifier.PRIVATE)
+            .addAnnotation(Inject.class);
+
+        // Add default no-arg constructor
+        try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
+          defaultCtor.invokeSpecialMethod(
+              MethodDescriptor.ofConstructor(backendType), defaultCtor.getThis());
+          defaultCtor.returnValue(null);
+        } catch (Exception e) {
+          throw new RuntimeException("Failed to generate gRPC adapter class", e);
+        }
+    }
+  }
+
+  private static void generateStepClass(
+      BuildProducer<GeneratedClassBuildItem> generatedClasses,
+      ClassInfo stepClassInfo,
+      String stubName,
+      String stepType,
+      String grpcClientValue,
+      String inputType,
+      String outputType) {
+
+        System.out.println("PipelineProcessor.generateStepClass");
+
         // Generate a subclass that implements the appropriate step interface
         String stepClassName = MessageFormat.format("{0}Step", stepClassInfo.name().toString());
 
@@ -211,12 +277,23 @@ public class PipelineProcessor {
     private static void generatePipelineApplicationClass(BuildProducer<GeneratedClassBuildItem> generatedClasses, List<StepInfo> stepInfos) {
         String applicationClassName = "io.github.mbarcia.pipeline.GeneratedPipelineApplication";
 
-        try (ClassCreator cc = new ClassCreator(
-                new GeneratedClassGizmoAdaptor(generatedClasses, true),
-                applicationClassName, null, "io.github.mbarcia.pipeline.PipelineApplication")) {
+        System.out.println("PipelineProcessor.generatePipelineApplicationClass");
 
-            // Add imports and annotations would be handled by the framework
-            
+        ClassCreator cc = ClassCreator.builder()
+                .classOutput(new GeneratedClassGizmoAdaptor(generatedClasses, true))
+                .className(applicationClassName)
+                .superClass("io.github.mbarcia.pipeline.PipelineApplication")
+                .build();
+
+        try {
+            // Add @QuarkusMain and @CommandLine.Command annotations to the generated class
+            cc.addAnnotation("io.quarkus.runtime.annotations.QuarkusMain");
+            var commandAnnotation = cc.addAnnotation("picocli.CommandLine.Command");
+            commandAnnotation.addValue("name", "pipeline");
+            commandAnnotation.addValue("mixinStandardHelpOptions", true);
+            commandAnnotation.addValue("version", "1.0.0");
+            commandAnnotation.addValue("description", "Generic pipeline application to process data through configured steps");
+
             // Create fields for each step
             for (int i = 0; i < stepInfos.size(); i++) {
                 StepInfo stepInfo = stepInfos.get(i);
@@ -227,12 +304,70 @@ public class PipelineProcessor {
                 fieldCreator.addAnnotation(Inject.class);
             }
 
+            // Add CommandLine.IFactory field
+            FieldCreator factoryField = cc.getFieldCreator("factory", "picocli.CommandLine$IFactory")
+                    .setModifiers(java.lang.reflect.Modifier.PRIVATE);
+            factoryField.addAnnotation(Inject.class);
+            
+            // Add @CommandLine.Option field for input
+            FieldCreator inputField = cc.getFieldCreator("input", String.class)
+                    .setModifiers(java.lang.reflect.Modifier.PRIVATE);
+            var optionAnnotation = inputField.addAnnotation("picocli.CommandLine.Option");
+            optionAnnotation.addValue("names", new String[]{"-i", "--input"});
+            optionAnnotation.addValue("description", "Input to the pipeline");
+            optionAnnotation.addValue("required", true);
+
             // Add default no-arg constructor
             try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
                 defaultCtor.invokeSpecialMethod(
                     MethodDescriptor.ofConstructor("io.github.mbarcia.pipeline.PipelineApplication"), 
                     defaultCtor.getThis());
                 defaultCtor.returnValue(null);
+            }
+            
+            // Implement CommandLine.Runnable method (void run() method)
+            try (MethodCreator runMethod = cc.getMethodCreator("run", void.class)) {
+                runMethod.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod("io.github.mbarcia.pipeline.GeneratedPipelineApplication", "processPipeline", 
+                        void.class, String.class),
+                    runMethod.getThis(),
+                    runMethod.readInstanceField(
+                        FieldDescriptor.of("io.github.mbarcia.pipeline.GeneratedPipelineApplication", "input", String.class),
+                        runMethod.getThis()
+                    )
+                );
+                runMethod.returnValue(null);
+            }
+            
+            // Implement QuarkusApplication run method (int run(String... args) method)
+            try (MethodCreator quarkusRunMethod = cc.getMethodCreator("run", int.class, String[].class)) {
+                ResultHandle cmdLine = quarkusRunMethod.newInstance(
+                    MethodDescriptor.ofConstructor("picocli.CommandLine", Object.class, "picocli.CommandLine$IFactory"), 
+                    quarkusRunMethod.getThis(),
+                    quarkusRunMethod.readInstanceField(
+                        FieldDescriptor.of("io.github.mbarcia.pipeline.GeneratedPipelineApplication", "factory", "picocli.CommandLine$IFactory"),
+                        quarkusRunMethod.getThis()
+                    )
+                );
+                
+                ResultHandle result = quarkusRunMethod.invokeVirtualMethod(
+                    MethodDescriptor.ofMethod("picocli.CommandLine", "execute", int.class, String[].class),
+                    cmdLine,
+                    quarkusRunMethod.getMethodParam(0)
+                );
+                
+                quarkusRunMethod.returnValue(result);
+            }
+            
+            // Add a static main method
+            try (MethodCreator mainMethod = cc.getMethodCreator("main", void.class, String[].class)) {
+                mainMethod.setModifiers(java.lang.reflect.Modifier.PUBLIC | java.lang.reflect.Modifier.STATIC);
+                mainMethod.invokeStaticMethod(
+                    MethodDescriptor.ofMethod("io.quarkus.runtime.Quarkus", "run", void.class, Class.class, String[].class),
+                    mainMethod.loadClass("io.github.mbarcia.pipeline.GeneratedPipelineApplication"),
+                    mainMethod.getMethodParam(0)
+                );
+                mainMethod.returnValue(null);
             }
             
             // Override processPipeline method
@@ -260,8 +395,8 @@ public class PipelineProcessor {
                 
                 processMethod.returnValue(null);
             }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to generate pipeline application class", e);
+        } finally {
+            cc.close();
         }
     }
     

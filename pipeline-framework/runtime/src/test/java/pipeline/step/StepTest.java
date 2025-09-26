@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,16 +19,17 @@ package pipeline.step;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.config.StepConfig;
-import io.github.mbarcia.pipeline.step.Step;
+import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
 class StepTest {
 
-    static class TestStep implements Step {
-        private final StepConfig config = new StepConfig();
+    static class TestStep implements StepOneToOne<Object, Object> {
+        private StepConfig config = new StepConfig();
 
         @Override
         public StepConfig effectiveConfig() {
@@ -36,8 +37,13 @@ class StepTest {
         }
 
         @Override
-        public Multi<Object> apply(Multi<Object> input) {
-            return input; // Pass through
+        public Uni<Object> applyOneToOne(Object input) {
+            return Uni.createFrom().item(input); // Pass through
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            this.config = config;
         }
     }
 
@@ -62,7 +68,10 @@ class StepTest {
         TestStep step = new TestStep();
 
         // When
-        var result = step.deadLetter("testItem", new RuntimeException("test error"));
+        var result =
+                step.deadLetter(
+                        io.smallrye.mutiny.Uni.createFrom().item("testItem"),
+                        new RuntimeException("test error"));
 
         // Then
         assertNotNull(result);
@@ -77,7 +86,7 @@ class StepTest {
         Multi<Object> input = Multi.createFrom().items("item1", "item2");
 
         // When
-        Multi<Object> result = step.apply(input);
+        Multi<Object> result = input.onItem().transformToUni(step::applyOneToOne).concatenate();
 
         // Then
         AssertSubscriber<Object> subscriber =

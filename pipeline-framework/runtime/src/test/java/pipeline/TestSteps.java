@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,30 +31,46 @@ public class TestSteps {
     public static class TestStepOneToOneBlocking extends ConfigurableStep
             implements StepOneToOneBlocking<String, String> {
         @Override
-        public String apply(String input) {
-            return "Processed: " + input;
+        public Uni<String> apply(String input) {
+            // This is a blocking operation that simulates processing
+            try {
+                Thread.sleep(10); // Simulate some work
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return Uni.createFrom().item("Processed: " + input);
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            super.initialiseWithConfig(config);
+        }
+
+        public Uni<String> applyOneToOne(String input) {
+            return apply(input);
         }
     }
 
     public static class TestStepOneToMany extends ConfigurableStep
             implements StepOneToMany<String, String> {
         @Override
-        public Multi<String> applyMulti(String input) {
+        public Multi<String> applyOneToMany(String input) {
             return Multi.createFrom().items(input + "-1", input + "-2", input + "-3");
         }
     }
 
-    public static class TestStepManyToMany extends ConfigurableStep implements StepManyToMany {
+    public static class TestStepManyToMany extends ConfigurableStep
+            implements StepManyToMany<Object, Object> {
         @Override
-        public Multi<Object> applyStreaming(Multi<Object> upstream) {
-            return upstream.onItem().transform(item -> "Streamed: " + item);
+        public Multi<Object> applyTransform(Multi<Object> input) {
+            return input.onItem().transform(item -> "Streamed: " + item);
         }
     }
 
     public static class TestStepOneToOne extends ConfigurableStep
             implements StepOneToOne<String, String> {
         @Override
-        public Uni<String> applyAsyncUni(String input) {
+        public Uni<String> applyOneToOne(String input) {
             return Uni.createFrom().item("Async: " + input);
         }
     }
@@ -75,14 +91,23 @@ public class TestSteps {
         }
 
         @Override
-        public String apply(String input) {
+        public Uni<String> apply(String input) {
             throw new RuntimeException("Intentional failure for testing");
         }
 
         @Override
-        public Uni<Void> deadLetter(Object failedItem, Throwable cause) {
-            System.out.println("Dead letter handled for: " + failedItem);
-            return super.deadLetter(failedItem, cause);
+        public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
+            System.out.println("Dead letter handled for: " + failedItem.toString());
+            return Uni.createFrom().nullItem();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            super.initialiseWithConfig(config);
+        }
+
+        public Uni<String> applyOneToOne(String input) {
+            return apply(input);
         }
     }
 }

@@ -35,11 +35,9 @@ public class PaymentProviderGrpcService
 
   @Inject PaymentProviderService domainService;
 
-  @Inject SendPaymentRequestMapper sendPaymentRequestMapper;
-
-  @Inject AckPaymentSentMapper ackPaymentSentMapper;
-
-  @Inject PaymentStatusMapper paymentStatusMapper;
+  SendPaymentRequestMapper sendPaymentRequestMapper = SendPaymentRequestMapper.INSTANCE;
+  AckPaymentSentMapper ackPaymentSentMapper = AckPaymentSentMapper.INSTANCE;
+  PaymentStatusMapper paymentStatusMapper = PaymentStatusMapper.INSTANCE;
 
   @Override
   public Uni<PaymentsProcessingSvc.AckPaymentSent> sendPayment(

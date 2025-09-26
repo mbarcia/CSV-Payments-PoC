@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,9 +51,9 @@ public class ManyToOneStepsTest {
         aggregateStep.liveConfig().overrides().autoPersist(false);
 
         // When: Run pipeline
+        Object result1 = pipelineRunner.run(input, List.of(validateStep, aggregateStep));
         AssertSubscriber<PaymentSummary> subscriber =
-                pipelineRunner
-                        .run(input, List.of(validateStep, aggregateStep))
+                ((Multi<PaymentSummary>) result1)
                         .onItem()
                         .castTo(PaymentSummary.class)
                         .subscribe()
@@ -98,9 +98,9 @@ public class ManyToOneStepsTest {
         aggregateStep.liveConfig().overrides().autoPersist(false);
 
         // When: Run pipeline
+        Object result2 = pipelineRunner.run(input, List.of(validateStep, aggregateStep));
         AssertSubscriber<PaymentSummary> subscriber =
-                pipelineRunner
-                        .run(input, List.of(validateStep, aggregateStep))
+                ((Multi<PaymentSummary>) result2)
                         .onItem()
                         .castTo(PaymentSummary.class)
                         .subscribe()
@@ -128,7 +128,7 @@ public class ManyToOneStepsTest {
             implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
 
         @Override
-        public TestPaymentEntity apply(TestPaymentEntity payment) {
+        public io.smallrye.mutiny.Uni<TestPaymentEntity> apply(TestPaymentEntity payment) {
             // Simulate some processing time
             try {
                 Thread.sleep(50);
@@ -143,7 +143,22 @@ public class ManyToOneStepsTest {
                 payment.setStatus("REJECTED");
             }
 
-            return payment;
+            return io.smallrye.mutiny.Uni.createFrom().item(payment);
+        }
+
+        @Override
+        public io.smallrye.mutiny.Uni<TestPaymentEntity> applyOneToOne(TestPaymentEntity input) {
+            return apply(input);
+        }
+
+        @Override
+        public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
+            return new io.github.mbarcia.pipeline.config.StepConfig();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the config provided
         }
     }
 }

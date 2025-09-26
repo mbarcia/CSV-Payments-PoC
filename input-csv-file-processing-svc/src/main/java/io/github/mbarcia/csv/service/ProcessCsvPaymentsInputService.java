@@ -63,8 +63,7 @@ public class ProcessCsvPaymentsInputService
 
   Executor executor;
   
-  @Inject
-  PaymentRecordMapper paymentRecordMapper;
+  PaymentRecordMapper paymentRecordMapper = PaymentRecordMapper.INSTANCE;
 
   @Inject
   public ProcessCsvPaymentsInputService(@Named("virtualExecutor") Executor executor) {

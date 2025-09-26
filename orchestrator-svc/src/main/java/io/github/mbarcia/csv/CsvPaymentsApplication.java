@@ -17,8 +17,6 @@
 package io.github.mbarcia.csv;
 
 import io.github.mbarcia.csv.service.ProcessFolderService;
-import io.github.mbarcia.csv.util.Sync;
-import io.github.mbarcia.csv.util.SystemExiter;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.QuarkusApplication;
 import io.quarkus.runtime.annotations.QuarkusMain;
@@ -42,14 +40,8 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
   private static final Logger LOG = LoggerFactory.getLogger(CsvPaymentsApplication.class);
 
   @Inject
-  Sync sync;
-
-  @Inject
-  SystemExiter exiter;
-
-  @Inject
   ProcessFolderService processFolderService;
-
+  
   @Inject
   CommandLine.IFactory factory;
 
@@ -71,25 +63,13 @@ public class CsvPaymentsApplication implements Runnable, QuarkusApplication {
 
   @Override
   public void run() {
-    LOG.info("Starting pipeline processing for folder: {}", csvFolder);
-    
+    LOG.info("Starting CSV Payments Orchestrator Service...");
     try {
-        // For now, just process the folder and log the results
-        // In a real implementation, this would trigger the generated pipeline application
-        var files = processFolderService.process(csvFolder);
-        LOG.info("Found {} CSV files to process in folder: {}", files.count(), csvFolder);
-        
-        // If we had the generated pipeline application, we would use it like this:
-        // generatedPipelineApp.processPipeline(csvFolder);
-        // But for now we'll just log and exit
-        
-        LOG.info("Pipeline processing completed for: {}", csvFolder);
-        
-        // Signal completion
-        sync.signal();
+      processFolderService.process(csvFolder);
+      LOG.info("CSV Payments Orchestrator Service completed.");
     } catch (Exception e) {
-        LOG.error("Error during pipeline processing", e);
-        exiter.exit(1);
+      LOG.error("Error processing CSV folder", e);
+      throw new RuntimeException(e);
     }
   }
 }

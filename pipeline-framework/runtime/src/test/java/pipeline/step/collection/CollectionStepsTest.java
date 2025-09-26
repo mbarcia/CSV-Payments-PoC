@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,12 +44,10 @@ public class CollectionStepsTest {
         expandStep.liveConfig().overrides().autoPersist(false);
 
         // When: Run pipeline
+        Multi<String> result =
+                (Multi<String>) pipelineRunner.run(input, List.of(validateStep, expandStep));
         AssertSubscriber<String> subscriber =
-                pipelineRunner
-                        .run(input, List.of(validateStep, expandStep))
-                        .onItem()
-                        .castTo(String.class)
-                        .subscribe()
+                result.subscribe()
                         .withSubscriber(AssertSubscriber.create(6)); // 2 inputs * 3 expanded each
 
         // Then: Verify results
@@ -72,7 +70,7 @@ public class CollectionStepsTest {
             implements StepOneToOneBlocking<String, String> {
 
         @Override
-        public String apply(String payment) {
+        public io.smallrye.mutiny.Uni<String> apply(String payment) {
             // Simulate some processing time
             try {
                 Thread.sleep(50);
@@ -80,7 +78,22 @@ public class CollectionStepsTest {
                 Thread.currentThread().interrupt();
             }
 
-            return "Validated: " + payment;
+            return io.smallrye.mutiny.Uni.createFrom().item("Validated: " + payment);
+        }
+
+        @Override
+        public io.smallrye.mutiny.Uni<String> applyOneToOne(String input) {
+            return apply(input);
+        }
+
+        @Override
+        public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
+            return new io.github.mbarcia.pipeline.config.StepConfig();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the config provided
         }
     }
 }

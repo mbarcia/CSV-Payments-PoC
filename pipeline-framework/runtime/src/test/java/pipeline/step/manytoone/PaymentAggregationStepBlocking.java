@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,11 @@ public class PaymentAggregationStepBlocking extends ConfigurableStep
         return paymentSummary;
     }
 
+    public io.smallrye.mutiny.Uni<PaymentSummary> applyBatchMulti(
+            io.smallrye.mutiny.Multi<TestPaymentEntity> inputs) {
+        return inputs.collect().asList().onItem().transform(this::applyBatchList);
+    }
+
     @Override
     public int batchSize() {
         return 3; // Process in batches of 3
@@ -61,5 +66,15 @@ public class PaymentAggregationStepBlocking extends ConfigurableStep
     @Override
     public long batchTimeoutMs() {
         return 1000; // 1 second timeout
+    }
+
+    @Override
+    public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
+        return new io.github.mbarcia.pipeline.config.StepConfig();
+    }
+
+    @Override
+    public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+        // Use the config provided
     }
 }

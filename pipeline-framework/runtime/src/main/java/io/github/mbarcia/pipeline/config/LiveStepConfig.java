@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,6 +68,14 @@ public final class LiveStepConfig extends StepConfig {
     }
     @Override public boolean autoPersist() {
         return overrides().autoPersist() != super.autoPersist() ? overrides().autoPersist() : currentDefaults().autoPersist();
+    }
+    @Override public int backpressureBufferCapacity() {
+        return overrides().backpressureBufferCapacity() != super.backpressureBufferCapacity() ? 
+               overrides().backpressureBufferCapacity() : currentDefaults().backpressureBufferCapacity();
+    }
+    @Override public String backpressureStrategy() {
+        return !overrides().backpressureStrategy().equals(super.backpressureStrategy()) ? 
+               overrides().backpressureStrategy() : currentDefaults().backpressureStrategy();
     }
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,22 +36,30 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
         Supplier<Uni<O>> uniSupplier = () -> input.onItem().transformToUni(this::applyOneToOne);
 
         try {
-            return Uni.createFrom().deferred(() -> {
-                Uni<O> uni = uniSupplier.get();
-                if (uni == null) {
+            Uni<O> uni = Uni.createFrom().deferred(() -> {
+                Uni<O> result = uniSupplier.get();
+                if (result == null) {
                     return Uni.createFrom().failure(new NullPointerException("Step returned null Uni"));
                 }
 
                 if (liveConfig().runWithVirtualThreads()) {
-                    return uni.runSubscriptionOn(vThreadExecutor);
+                    result = result.runSubscriptionOn(vThreadExecutor);
                 }
 
-                return uni;
-            })
-            .onFailure().retry()
-            .withBackOff(retryWait(), maxBackoff())
-            .withJitter(jitter() ? 0.5 : 0.0)
-            .atMost(retryLimit())
+                return result;
+            });
+
+            // Apply backpressure strategy if input is a Multi (stream)
+            // For Uni, we handle it as part of the Multi pipeline in the pipeline execution
+            if (input != null) {
+                uni = uni
+                    .onFailure().retry()
+                    .withBackOff(retryWait(), maxBackoff())
+                    .withJitter(jitter() ? 0.5 : 0.0)
+                    .atMost(retryLimit());
+            }
+
+            return uni
             .onItem().invoke(i -> {
                 if (debug()) {
                     LOG.debug(

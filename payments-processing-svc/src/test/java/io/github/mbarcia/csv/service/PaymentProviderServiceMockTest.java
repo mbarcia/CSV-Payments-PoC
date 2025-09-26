@@ -27,8 +27,6 @@ import io.github.mbarcia.csv.common.domain.PaymentRecord;
 import io.github.mbarcia.csv.common.domain.PaymentStatus;
 import io.github.mbarcia.csv.common.dto.PaymentRecordDto;
 import io.github.mbarcia.csv.common.mapper.*;
-import io.github.mbarcia.csv.common.mapper.AckPaymentSentMapperImpl;
-import io.github.mbarcia.csv.common.mapper.PaymentStatusMapperImpl;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.math.BigDecimal;
@@ -75,10 +73,9 @@ class PaymentProviderServiceMockTest {
 
         PaymentProviderConfig config = new FakePaymentProviderConfig();
         PaymentProviderServiceMock paymentProviderServiceMock =
-                new PaymentProviderServiceMock(
-                        this.ackPaymentSentMapper, this.paymentStatusMapper, config);
+                new PaymentProviderServiceMock(config);
 
-        // When
+        new PaymentProviderServiceMock(config);
         AckPaymentSent testAckPaymentSent =
                 new AckPaymentSent(UUID.randomUUID())
                         .setStatus(1000L)
@@ -103,7 +100,7 @@ class PaymentProviderServiceMockTest {
         // Given a service with a very low permit rate and no timeout
         PaymentProviderConfig config = new ThrottledPaymentProviderConfig();
         PaymentProviderServiceMock paymentProviderServiceMock =
-                new PaymentProviderServiceMock(ackPaymentSentMapper, paymentStatusMapper, config);
+                new PaymentProviderServiceMock(config);
 
         // Acquire a permit to ensure the rate limiter is exhausted for subsequent calls
         // RateLimiter.create(rate) allows the first acquire to pass even if rate is very low.
@@ -151,12 +148,9 @@ class PaymentProviderServiceMockTest {
     @DisplayName("Should throw StatusRuntimeException when sendPayment timeoutMillis is -1L")
     void sendPayment_timeoutMinusOne_shouldThrowException() {
         // Given a service with timeoutMillis set to -1L
-        AckPaymentSentMapper ackPaymentSentMapper = new AckPaymentSentMapperImpl();
-        PaymentStatusMapper paymentStatusMapper = new PaymentStatusMapperImpl();
         PaymentProviderConfig config = new NegativeTimeoutPaymentProviderConfig();
 
-        this.paymentProviderServiceMock =
-                new PaymentProviderServiceMock(ackPaymentSentMapper, paymentStatusMapper, config);
+        this.paymentProviderServiceMock = new PaymentProviderServiceMock(config);
 
         PaymentRecordDto dtoIn =
                 PaymentRecordDto.builder()
@@ -193,8 +187,7 @@ class PaymentProviderServiceMockTest {
         // Given
         PaymentProviderConfig config = new FakePaymentProviderConfig();
         PaymentProviderServiceMock paymentProviderServiceMock =
-                new PaymentProviderServiceMock(
-                        this.ackPaymentSentMapper, this.paymentStatusMapper, config);
+                new PaymentProviderServiceMock(config);
 
         // When
         PaymentRecordDto dtoIn =
@@ -233,9 +226,9 @@ class PaymentProviderServiceMockTest {
         // Then
         assertThat(paymentStatus).isNotNull();
         assertThat(paymentStatus.getReference()).isEqualTo("101");
-        assertThat(paymentStatus.getStatus()).isEqualTo("nada");
+        assertThat(paymentStatus.getStatus()).isEqualTo("Complete");
         assertThat(paymentStatus.getFee()).isEqualTo(new BigDecimal("1.01"));
-        assertThat(paymentStatus.getMessage()).isEqualTo("This is a test");
+        assertThat(paymentStatus.getMessage()).isEqualTo("Mock response");
         assertThat(paymentStatus.getAckPaymentSent()).isEqualTo(testAckPaymentSent);
         assertThat(paymentStatus.getAckPaymentSentId()).isEqualTo(testAckPaymentSent.getId());
     }
@@ -246,8 +239,7 @@ class PaymentProviderServiceMockTest {
         // Given a service with a very low permit rate and no timeout
         PaymentProviderConfig config = new LowRatePaymentProviderConfig();
         PaymentProviderServiceMock paymentProviderServiceMock =
-                new PaymentProviderServiceMock(
-                        this.ackPaymentSentMapper, this.paymentStatusMapper, config);
+                new PaymentProviderServiceMock(config);
 
         // When
         PaymentRecordDto dtoIn =

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,6 +35,8 @@ public interface Configurable {
     default boolean runWithVirtualThreads() { return effectiveConfig().runWithVirtualThreads(); }
     default java.time.Duration maxBackoff() { return effectiveConfig().maxBackoff(); }
     default boolean jitter() { return effectiveConfig().jitter(); }
+    default int backpressureBufferCapacity() { return effectiveConfig().backpressureBufferCapacity(); }
+    default String backpressureStrategy() { return effectiveConfig().backpressureStrategy(); }
 
     /**
      * Get the live configuration for this step that can be modified at runtime

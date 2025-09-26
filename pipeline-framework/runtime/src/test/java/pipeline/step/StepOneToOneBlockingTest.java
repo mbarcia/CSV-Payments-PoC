@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
 import java.util.HashSet;
@@ -31,13 +32,29 @@ class StepOneToOneBlockingTest {
 
     static class TestStepBlocking implements StepOneToOneBlocking<String, String> {
         @Override
-        public String apply(String input) {
-            return "Processed: " + input;
+        public Uni<String> apply(String input) {
+            // This is a blocking operation that simulates processing
+            try {
+                Thread.sleep(10); // Simulate some work
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return Uni.createFrom().item("Processed: " + input);
+        }
+
+        @Override
+        public Uni<String> applyOneToOne(String input) {
+            return apply(input);
         }
 
         @Override
         public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
             return new io.github.mbarcia.pipeline.config.StepConfig();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the config provided
         }
     }
 
@@ -47,7 +64,8 @@ class StepOneToOneBlockingTest {
         TestStepBlocking step = new TestStepBlocking();
 
         // When
-        String result = step.apply("test");
+        Uni<String> uniResult = step.apply("test");
+        String result = uniResult.await().indefinitely();
 
         // Then
         assertEquals("Processed: test", result);
@@ -87,18 +105,18 @@ class StepOneToOneBlockingTest {
     void testApplyMethodInStep() {
         // Given
         TestStepBlocking step = new TestStepBlocking();
-        Multi<Object> input = Multi.createFrom().items("item1", "item2", "item3");
+        Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
 
         // When
-        Multi<Object> result = step.apply(input);
+        Multi<String> result = input.onItem().transformToUni(step::apply).concatenate();
 
         // Then
-        AssertSubscriber<Object> subscriber =
+        AssertSubscriber<String> subscriber =
                 result.subscribe().withSubscriber(AssertSubscriber.create(3));
         subscriber.awaitItems(3, Duration.ofSeconds(5));
 
         // Grab all items
-        List<Object> actualItems = subscriber.getItems();
+        List<String> actualItems = subscriber.getItems();
 
         // Expected items
         Set<String> expectedItems =

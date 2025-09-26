@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ class VirtualThreadExecutorTest {
         private final AtomicBoolean usedVirtualThreads = new AtomicBoolean(false);
 
         @Override
-        public Multi<String> applyMulti(String input) {
+        public Multi<String> applyOneToMany(String input) {
             // This is a simple test to verify the step is working
             return Multi.createFrom().items(input + "-vt1", input + "-vt2");
         }
@@ -64,7 +64,7 @@ class VirtualThreadExecutorTest {
             Multi<String> input = Multi.createFrom().items("item1", "item2");
             VirtualThreadTestStep step = new VirtualThreadTestStep();
 
-            Multi<Object> result = runner.run(input, List.of(step));
+            Multi<Object> result = (Multi<Object>) runner.run(input, List.of(step));
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(4));
@@ -90,7 +90,8 @@ class VirtualThreadExecutorTest {
             List<TestSteps.TestStepOneToOneBlocking> steps =
                     List.of(new TestSteps.TestStepOneToOneBlocking());
 
-            Multi<Object> result = runner.run(input, steps);
+            Multi<Object> result =
+                    (Multi<Object>) runner.run(input, (List<Object>) (List<?>) steps);
 
             AssertSubscriber<Object> subscriber =
                     result.subscribe().withSubscriber(AssertSubscriber.create(1));

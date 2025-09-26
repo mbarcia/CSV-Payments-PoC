@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,16 @@ public class ConfigurableStep implements Configurable {
     }
 
     @Override
+    public int backpressureBufferCapacity() { return effectiveConfig().backpressureBufferCapacity(); }
+    
+    @Override
+    public String backpressureStrategy() { return effectiveConfig().backpressureStrategy(); }
+    
+    @Override
     public void initialiseWithConfig(LiveStepConfig config) {
-        this.config = config;
+        // Default implementation - subclasses should override if they need specific initialization
+        if (config != null) {
+            this.config = config; // Update the internal config reference
+        }
     }
 }

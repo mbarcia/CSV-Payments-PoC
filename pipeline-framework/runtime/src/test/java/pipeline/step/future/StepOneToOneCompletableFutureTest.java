@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,11 @@ class StepOneToOneCompletableFutureTest {
         @Override
         public StepConfig effectiveConfig() {
             return new StepConfig();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the config provided
         }
     }
 
@@ -93,13 +98,16 @@ class StepOneToOneCompletableFutureTest {
     void testApplyMethodInStep() {
         // Given
         TestStepFuture step = new TestStepFuture();
-        Multi<Object> input = Multi.createFrom().items("item1", "item2");
+        Multi<String> input = Multi.createFrom().items("item1", "item2");
 
         // When
-        Multi<Object> result = step.apply(input);
+        Multi<String> result =
+                input.onItem()
+                        .transformToUniAndMerge(
+                                item -> step.apply(io.smallrye.mutiny.Uni.createFrom().item(item)));
 
         // Then
-        AssertSubscriber<Object> subscriber =
+        AssertSubscriber<String> subscriber =
                 result.subscribe().withSubscriber(AssertSubscriber.create(2));
         subscriber.awaitItems(2, Duration.ofSeconds(5));
         subscriber.assertItems("Future processed: item1", "Future processed: item2");

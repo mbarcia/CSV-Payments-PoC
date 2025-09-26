@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,6 +37,16 @@ public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, Dead
         return input.onItem().transformToMulti(item -> {
             Multi<O> multi = applyOneToMany(item);
 
+            // Apply overflow strategy
+            if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
+                multi = multi.onOverflow().buffer(backpressureBufferCapacity());
+            } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
+                multi = multi.onOverflow().drop();
+            } else {
+                // default behavior - buffer with default capacity
+                multi = multi.onOverflow().buffer(128); // default buffer size
+            }
+
             if (executor != null) {
                 // shift blocking subscription work to virtual threads
                 multi = multi.runSubscriptionOn(executor);
@@ -45,12 +55,16 @@ public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, Dead
             return multi.onItem().transform(o -> {
                 if (debug()) {
                     LOG.debug(
-                        "Step {0} emitted item: {}{}",
+                        "Step {} emitted item: {}",
                         this.getClass().getSimpleName(), o
                     );
                 }
                 return o;
             });
-        });
+        })
+        .onFailure().retry()
+        .withBackOff(retryWait(), maxBackoff())
+        .withJitter(jitter() ? 0.5 : 0.0)
+        .atMost(retryLimit());
     }
 }

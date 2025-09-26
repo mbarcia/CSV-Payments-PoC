@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,8 +43,7 @@ public class ProcessCsvPaymentsInputStreamRestResource {
   @Inject
   ProcessCsvPaymentsInputReactiveService domainService;
 
-  @Inject
-  PaymentRecordMapper paymentRecordMapper;
+  PaymentRecordMapper paymentRecordMapper = PaymentRecordMapper.INSTANCE;
 
   @POST
   @Path("/process")

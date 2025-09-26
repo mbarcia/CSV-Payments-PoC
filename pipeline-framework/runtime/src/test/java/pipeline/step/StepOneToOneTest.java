@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,13 +29,18 @@ class StepOneToOneTest {
 
     static class TestStep implements StepOneToOne<String, String> {
         @Override
-        public Uni<String> applyAsyncUni(String input) {
+        public Uni<String> applyOneToOne(String input) {
             return Uni.createFrom().item("Processed: " + input);
         }
 
         @Override
         public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
             return new io.github.mbarcia.pipeline.config.StepConfig();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the config provided
         }
     }
 
@@ -45,7 +50,7 @@ class StepOneToOneTest {
         TestStep step = new TestStep();
 
         // When
-        Uni<String> result = step.applyAsyncUni("test");
+        Uni<String> result = step.applyOneToOne("test");
 
         // Then
         String value = result.await().indefinitely();
@@ -56,13 +61,13 @@ class StepOneToOneTest {
     void testApplyMethod() {
         // Given
         TestStep step = new TestStep();
-        Multi<Object> input = Multi.createFrom().items("item1", "item2");
+        Multi<String> input = Multi.createFrom().items("item1", "item2");
 
         // When
-        Multi<Object> result = step.apply(input);
+        Multi<String> result = input.onItem().transformToUni(step::applyOneToOne).concatenate();
 
         // Then
-        AssertSubscriber<Object> subscriber =
+        AssertSubscriber<String> subscriber =
                 result.subscribe().withSubscriber(AssertSubscriber.create(2));
         subscriber.awaitItems(2, Duration.ofSeconds(5));
         subscriber.assertItems("Processed: item1", "Processed: item2");

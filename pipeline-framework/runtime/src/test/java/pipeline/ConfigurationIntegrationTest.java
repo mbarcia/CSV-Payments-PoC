@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
+import io.smallrye.mutiny.Uni;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
@@ -33,8 +34,23 @@ class ConfigurationIntegrationTest {
     static class ConfigTestStepBlocking extends ConfigurableStep
             implements StepOneToOneBlocking<String, String> {
         @Override
-        public String apply(String input) {
-            return "ConfigTest: " + input;
+        public Uni<String> apply(String input) {
+            // This is a blocking operation that simulates processing
+            try {
+                Thread.sleep(10); // Simulate some work
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return Uni.createFrom().item("ConfigTest: " + input);
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            super.initialiseWithConfig(config);
+        }
+
+        public Uni<String> applyOneToOne(String input) {
+            return apply(input);
         }
     }
 

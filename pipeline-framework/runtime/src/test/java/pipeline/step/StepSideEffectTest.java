@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,15 +30,20 @@ class StepSideEffectTest {
 
     static class TestStep implements StepSideEffect<String> {
         @Override
-        public Uni<Void> apply(String input) {
+        public Uni<String> applyOneToOne(String input) {
             // Simulate some side effect
             System.out.println("Side effect for: " + input);
-            return Uni.createFrom().voidItem();
+            return Uni.createFrom().item(input); // Return original input after side effect
         }
 
         @Override
         public StepConfig effectiveConfig() {
             return new StepConfig();
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Use the passed config
         }
     }
 
@@ -48,11 +53,11 @@ class StepSideEffectTest {
         TestStep step = new TestStep();
 
         // When
-        Uni<Void> result = step.apply("test");
+        Uni<String> result = step.applyOneToOne("test");
 
         // Then
-        Void value = result.await().indefinitely();
-        assertNull(value);
+        String value = result.await().indefinitely();
+        assertEquals("test", value);
     }
 
     @Test
@@ -83,13 +88,13 @@ class StepSideEffectTest {
     void testApplyMethodInStep() {
         // Given
         TestStep step = new TestStep();
-        Multi<Object> input = Multi.createFrom().items("item1", "item2");
+        Multi<String> input = Multi.createFrom().items("item1", "item2");
 
         // When
-        Multi<Object> result = step.apply(input);
+        Multi<String> result = input.onItem().transformToUni(step::applyOneToOne).concatenate();
 
         // Then
-        AssertSubscriber<Object> subscriber =
+        AssertSubscriber<String> subscriber =
                 result.subscribe().withSubscriber(AssertSubscriber.create(2));
         subscriber.awaitItems(2, Duration.ofSeconds(5));
         subscriber.assertItems("item1", "item2"); // Items should pass through unchanged

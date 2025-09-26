@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -37,11 +37,8 @@ public class ProcessAckPaymentSentResource {
     @Inject
     io.github.mbarcia.csv.service.ProcessAckPaymentSentReactiveService service;
 
-    @Inject
-    AckPaymentSentMapper ackPaymentSentMapper;
-
-    @Inject
-    PaymentStatusMapper paymentStatusMapper;
+    AckPaymentSentMapper ackPaymentSentMapper = AckPaymentSentMapper.INSTANCE;
+    PaymentStatusMapper paymentStatusMapper = PaymentStatusMapper.INSTANCE;
 
     @POST
     @Path("/process-ack-payment")

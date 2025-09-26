@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
+import io.github.mbarcia.pipeline.config.PipelineBuildTimeConfig;
 import io.github.mbarcia.pipeline.mapper.Mapper;
 import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
@@ -40,10 +41,11 @@ public class PipelineProcessorTest {
         assertNotNull(annotation, "TestReactiveService should be annotated with @PipelineStep");
 
         // Check that all required annotation parameters are set properly
-        assertTrue(annotation.order() == 1, "Order should be 1");
-        assertTrue(annotation.stepType() == StepOneToOne.class, "Step type should be StepOneToOne");
-        assertTrue(
-                annotation.backendType() == GenericGrpcReactiveServiceAdapter.class,
+        assertEquals(1, annotation.order(), "Order should be 1");
+        assertSame(annotation.stepType(), StepOneToOne.class, "Step type should be StepOneToOne");
+        assertSame(
+                annotation.backendType(),
+                GenericGrpcReactiveServiceAdapter.class,
                 "Backend type should be GenericGrpcReactiveServiceAdapter");
     }
 
@@ -57,19 +59,13 @@ public class PipelineProcessorTest {
                         TestMapper.class,
                         TestOutboundMapper.class);
 
-        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
-        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
-                new DummyGeneratedClassBuildProducer();
+                getDummyGeneratedClassBuildProducer(index, false);
 
-        // Execute the build step
-        PipelineProcessor processor = new PipelineProcessor();
-        processor.generateAdapters(indexBuildItem, beansProducer, generatedClassesProducer);
-
-        // Verify that generated classes were produced
+        // Verify that generated gRPC adapter classes were produced when generateCli is false
         assertTrue(
-                generatedClassesProducer.items.size() >= 2,
-                "Should generate both gRPC adapter and step class");
+                generatedClassesProducer.items.size() >= 1,
+                "Should generate gRPC adapter when generateCli is false");
     }
 
     @Test
@@ -77,19 +73,13 @@ public class PipelineProcessorTest {
         // Create index with multiple services
         Index index = Index.of(TestReactiveService.class, TestOneToManyService.class);
 
-        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
-        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
-                new DummyGeneratedClassBuildProducer();
+                getDummyGeneratedClassBuildProducer(index, false);
 
-        // Execute the build step
-        PipelineProcessor processor = new PipelineProcessor();
-        processor.generateAdapters(indexBuildItem, beansProducer, generatedClassesProducer);
-
-        // Should generate 4 classes: 2 services * (1 adapter + 1 step) = 4
+        // Should generate 2 gRPC adapter classes: 2 services * 1 adapter = 2
         assertTrue(
-                generatedClassesProducer.items.size() >= 4,
-                "Should generate both gRPC adapter and step class for each service");
+                generatedClassesProducer.items.size() >= 2,
+                "Should generate gRPC adapter for each service when generateCli is false");
     }
 
     @Test
@@ -97,14 +87,8 @@ public class PipelineProcessorTest {
         // Create index without any @PipelineStep annotations
         Index index = Index.of(TestGrpcStub.class); // Only include classes without @PipelineStep
 
-        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
-        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
-                new DummyGeneratedClassBuildProducer();
-
-        // Execute the build step
-        PipelineProcessor processor = new PipelineProcessor();
-        processor.generateAdapters(indexBuildItem, beansProducer, generatedClassesProducer);
+                getDummyGeneratedClassBuildProducer(index, false);
 
         // Should not generate any classes since there are no @PipelineStep annotations
         assertEquals(
@@ -118,20 +102,14 @@ public class PipelineProcessorTest {
         // Create index with multiple services to trigger application generation
         Index index = Index.of(TestReactiveService.class, TestOneToManyService.class);
 
-        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
-        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
-                new DummyGeneratedClassBuildProducer();
+                getDummyGeneratedClassBuildProducer(index, true);
 
-        // Execute the build step
-        PipelineProcessor processor = new PipelineProcessor();
-        processor.generateAdapters(indexBuildItem, beansProducer, generatedClassesProducer);
-
-        // Should generate gRPC adapters, step classes, and the pipeline application
-        // With 2 services: 2 adapters + 2 steps + 1 application = 5 classes at minimum
+        // Should generate step classes, and the pipeline application (when generateCli=true)
+        // With 2 services: 2 steps + 1 application = 3 classes at minimum
         assertTrue(
-                generatedClassesProducer.items.size() >= 5,
-                "Should generate gRPC adapters, step classes, and pipeline application");
+                generatedClassesProducer.items.size() >= 3,
+                "Should generate step classes and pipeline application");
 
         // Check that the GeneratedPipelineApplication class was created
         boolean hasGeneratedApp =
@@ -145,20 +123,14 @@ public class PipelineProcessorTest {
         // Create index with single service
         Index index = Index.of(TestReactiveService.class);
 
-        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
-        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
-                new DummyGeneratedClassBuildProducer();
+                getDummyGeneratedClassBuildProducer(index, true);
 
-        // Execute the build step
-        PipelineProcessor processor = new PipelineProcessor();
-        processor.generateAdapters(indexBuildItem, beansProducer, generatedClassesProducer);
-
-        // Should generate gRPC adapter, step class, and the pipeline application
-        // With 1 service: 1 adapter + 1 step + 1 application = 3 classes
+        // Should generate step class and the pipeline application (when generateCli=true)
+        // With 1 service: 1 step + 1 application = 2 classes
         assertTrue(
-                generatedClassesProducer.items.size() >= 3,
-                "Should generate gRPC adapter, step class, and pipeline application for single service");
+                generatedClassesProducer.items.size() >= 2,
+                "Should generate step class and pipeline application for single service");
 
         // Check that the GeneratedPipelineApplication class was created
         boolean hasGeneratedApp =
@@ -167,6 +139,34 @@ public class PipelineProcessorTest {
         assertTrue(
                 hasGeneratedApp,
                 "Should generate GeneratedPipelineApplication class for single service");
+    }
+
+    private static DummyGeneratedClassBuildProducer getDummyGeneratedClassBuildProducer(
+            Index index, boolean x) {
+        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
+        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
+        DummyGeneratedClassBuildProducer generatedClassesProducer =
+                new DummyGeneratedClassBuildProducer();
+        PipelineBuildTimeConfig config =
+                new PipelineBuildTimeConfig() {
+                    @Override
+                    public Boolean generateCli() {
+                        return x;
+                    }
+
+                    @Override
+                    public String version() {
+                        return "";
+                    }
+                };
+
+        // Execute both build steps
+        PipelineProcessor processor = new PipelineProcessor();
+        processor.generateAdapters(indexBuildItem, config, beansProducer, generatedClassesProducer);
+
+        // Also execute the CLI application generation step if needed
+        processor.generateCliApplication(indexBuildItem, config, generatedClassesProducer);
+        return generatedClassesProducer;
     }
 
     // Test classes

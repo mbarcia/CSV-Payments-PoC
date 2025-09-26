@@ -1,0 +1,1 @@
+#!/bin/bash\n\necho -e \"Test Pipeline App\\nio.github.mbarcia.test\\nProcess Customer\\n1\\nCustomerInput\\nname string\\nemail string\\n\\nCustomerOutput\\nstatus string\\nprocessedAt string\\n\\n\\n\" | java -jar /Users/mari/IdeaProjects/CSV-Payments-PoC/template-generator/target/template-generator-1.0.0.jar -o /tmp/test-generated-app

@@ -91,6 +91,13 @@ kbd {
   --vp-c-border: #363636;
   --vp-c-divider: #363636;
   --vp-code-block-bg: #2d2d2d;
+  /* Adjust brand colors for better dark theme contrast */
+  --vp-c-brand: #3b82f6; /* Lighter blue */
+  --vp-c-brand-light: #60a5fa;
+  --vp-c-brand-dark: #2563eb;
+  --vp-c-brand-1: #3b82f6;
+  --vp-c-brand-2: #60a5fa;
+  --vp-c-brand-3: #93c5fd;
 }
 
 /* Navigation header */
@@ -124,6 +131,11 @@ kbd {
 
 .vp-doc h2, .vp-doc h3, .vp-doc h4, .vp-doc h5, .vp-doc h6 {
   color: var(--vp-c-brand-3);
+}
+
+/* Dark theme header contrast fix */
+.dark .vp-doc h2, .dark .vp-doc h3, .dark .vp-doc h4, .dark .vp-doc h5, .dark .vp-doc h6 {
+  color: var(--vp-c-brand-light);
 }
 
 /* Links */
@@ -285,6 +297,43 @@ kbd {
 .callout.danger .callout-header {
   background-color: rgba(239, 68, 68, 0.15);
   color: #ef4444;
+}
+
+/* Dark theme callout contrast fixes */
+.dark .callout.info {
+  background-color: rgba(59, 130, 246, 0.1);
+}
+
+.dark .callout.info .callout-header {
+  background-color: rgba(59, 130, 246, 0.2);
+  color: #93c5fd;
+}
+
+.dark .callout.tip {
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.dark .callout.tip .callout-header {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.dark .callout.warning {
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.dark .callout.warning .callout-header {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #fcd34d;
+}
+
+.dark .callout.danger {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.dark .callout.danger .callout-header {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
 }
 
 /* Footer */

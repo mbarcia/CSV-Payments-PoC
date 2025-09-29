@@ -21,7 +21,7 @@ import {withMermaid} from "vitepress-plugin-mermaid"
 // Note: This adds significant size to the bundle due to Mermaid's dependencies
 export default withMermaid(
   defineConfig({
-    title: 'Pipeline Framework',
+    title: 'The Pipeline Framework',
     description: 'A framework for building reactive pipeline processing systems',
     
     // Disable dead links check since we're only documenting the pipeline framework
@@ -43,7 +43,7 @@ export default withMermaid(
             {
                 text: 'Introduction',
                 items: [
-                    {text: 'What is the Pipeline Framework?', link: '/'},
+                    {text: 'What is The Pipeline Framework?', link: '/'},
                     {text: 'Getting Started', link: '/guide/getting-started'},
                     {text: 'Creating Pipeline Steps', link: '/guide/creating-steps'},
                 ]

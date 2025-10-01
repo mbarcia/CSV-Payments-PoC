@@ -21,7 +21,7 @@ import adapter from '@sveltejs/adapter-static';
 export default defineConfig({
 	plugins: [sveltekit()],
 	build: {
-		minify: 'terser', // Use terser instead of esbuild to reduce memory usage
+		minify: false, // Disable minification to reduce memory usage
 		rollupOptions: {
 			output: {
 				// Reduce memory usage during build
@@ -31,16 +31,6 @@ export default defineConfig({
 		},
 		// Reduce memory usage
 		target: 'es2020',
-		// Reduce parallel processing
-		terserOptions: {
-			compress: {
-				// Reduce compression to save memory
-				reduce_funcs: false,
-			},
-			mangle: {
-				properties: false // Disable property mangling to reduce memory usage
-			}
-		}
 	},
 	kit: {
 		adapter: adapter({

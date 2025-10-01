@@ -145,4 +145,11 @@ public @interface PipelineStep {
      * @return the backpressure strategy for this step
      */
     String backpressureStrategy() default "BUFFER";
+
+    /**
+     * Whether this step is local to the runner (default=false)
+     * When true, no gRPC client is generated and the service is called directly
+     * @return true if the step is local, false if it requires a gRPC client
+     */
+    boolean local() default false;
 }

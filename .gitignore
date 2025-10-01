@@ -50,3 +50,14 @@ docs/.vitepress/dist/
 
 # Web UI build output
 web-ui/build/
+web-ui/.svelte-kit/
+web-ui/node_modules/
+
+# UI Dashboard build output
+ui-dashboard/dist/
+ui-dashboard/node_modules/
+
+# Vite cache
+web-ui/node_modules/.vite/
+!/web-ui/.svelte-kit/
+!/web-ui/build/

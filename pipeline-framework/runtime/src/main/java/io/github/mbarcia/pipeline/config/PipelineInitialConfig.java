@@ -76,7 +76,7 @@ public interface PipelineInitialConfig {
      * @return maximum backoff time in milliseconds
      */
     @WithDefault("30000")
-    Long maxBackoffMs();
+    Long maxBackoff();
 
     /**
      * Add jitter to retry delays.

@@ -437,36 +437,36 @@ public Uni<PaymentStatus> applyOneToOne(PaymentRecord paymentRecord) {
 ```properties
 # application.properties
 # Retry configuration
-pipeline.retry-limit=3
-pipeline.retry-wait=PT500MS
-pipeline.max-backoff=PT30S
-pipeline.jitter=true
+pipeline.runtime.retry-limit=3
+pipeline.runtime.retry-wait=PT500MS
+pipeline.runtime.max-backoff=PT30S
+pipeline.runtime.jitter=true
 
 # Concurrency configuration
-pipeline.concurrency=1000
-pipeline.run-with-virtual-threads=true
+pipeline.runtime.concurrency=1000
+pipeline.runtime.run-with-virtual-threads=true
 
 # Error handling
-pipeline.recover-on-failure=true
-pipeline.auto-persist=true
-pipeline.debug=false
+pipeline.runtime.recover-on-failure=true
+pipeline.runtime.auto-persist=true
+pipeline.runtime.debug=false
 ```
 
 ### Profile-Specific Configuration
 
 ```properties
 # application-dev.properties
-pipeline.retry-limit=1
-pipeline.retry-wait=PT100MS
-pipeline.debug=true
-pipeline.run-with-virtual-threads=false  # Disable in dev for easier debugging
+pipeline.runtime.retry-limit=1
+pipeline.runtime.retry-wait=PT100MS
+pipeline.runtime.debug=true
+pipeline.runtime.run-with-virtual-threads=false  # Disable in dev for easier debugging
 
 # application-prod.properties
-pipeline.retry-limit=5
-pipeline.retry-wait=PT1S
-pipeline.max-backoff=PT60S
-pipeline.concurrency=5000
-pipeline.run-with-virtual-threads=true
+pipeline.runtime.retry-limit=5
+pipeline.runtime.retry-wait=PT1S
+pipeline.runtime.max-backoff=PT60S
+pipeline.runtime.concurrency=5000
+pipeline.runtime.run-with-virtual-threads=true
 ```
 
 ### Runtime Configuration

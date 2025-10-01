@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import java.text.MessageFormat;
 
 /**
  * Reactive persistence provider using Hibernate Reactive Panache.
+ * This provider only activates when Hibernate Reactive classes are available,
+ * which happens when auto-persistence is enabled and required dependencies are present.
  */
 @ApplicationScoped
 public class ReactivePanachePersistenceProvider implements PersistenceProvider<Object> {

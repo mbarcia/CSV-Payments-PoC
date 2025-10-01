@@ -28,6 +28,23 @@ Add the following dependency to your `pom.xml`. Both runtime and deployment comp
 </dependency>
 ```
 
+### Optional Dependencies for Persistence
+
+If you plan to use the `autoPersist = true` feature for automatic entity persistence, you'll also need to include database dependencies:
+
+```xml
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-reactive-pg-client</artifactId>
+</dependency>
+<dependency>
+  <groupId>io.quarkus</groupId>
+  <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+</dependency>
+```
+
+If you don't need persistence functionality, you can omit these dependencies and set `autoPersist = false` on all your pipeline steps.
+
 ## Basic Configuration
 
 ### 1. Define Your Protocol Buffer (Proto) Definitions
@@ -77,10 +94,10 @@ Create a class that implements one of the step interfaces:
    backendType = GenericGrpcReactiveServiceAdapter.class,
    grpcStub = MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub.class,
    grpcImpl = MutinyProcessPaymentServiceGrpc.ProcessPaymentServiceImplBase.class,
-   inboundMapper = PaymentRecordInboundMapper.class,
-   outboundMapper = PaymentStatusOutboundMapper.class,
+   inboundMapper = PaymentRecordMapper.class,
+   outboundMapper = PaymentStatusMapper.class,
    grpcClient = "process-payment",
-   autoPersist = true,
+   autoPersist = true,        // Enable auto-persistence (requires quarkus-reactive-pg-client dependency)
    debug = true
 )
 @ApplicationScoped
@@ -96,40 +113,41 @@ public class ProcessPaymentService implements StepOneToOne<PaymentRecord, Paymen
 
 ### 3. Create Your Mapper Classes
 
-Create mapper classes for converting between different representations. Mappers implement the conversion interfaces directly:
+Create mapper classes for converting between gRPC, DTO, and domain types using MapStruct. Mappers implement the `Mapper` interface with three generic types (gRPC, DTO, Domain):
 
 ```java
-@ApplicationScoped
-public class PaymentRecordInboundMapper implements InboundMapper<PaymentRecordGrpc, PaymentRecord> {
-    
-    @Override
-    public PaymentRecord fromGrpc(PaymentRecordGrpc grpc) {
-        // Mapping implementation
-        return PaymentRecord.builder()
-            .id(UUID.fromString(grpc.getId()))
-            .csvId(grpc.getCsvId())
-            .recipient(grpc.getRecipient())
-            .amount(new BigDecimal(grpc.getAmount()))
-            .currency(Currency.getInstance(grpc.getCurrency()))
-            .build();
-    }
-}
+@Mapper(
+    componentModel = "cdi",
+    uses = {CommonConverters.class},
+    unmappedTargetPolicy = ReportingPolicy.WARN
+)
+public interface PaymentRecordMapper extends Mapper<PaymentRecordGrpc, PaymentRecordDto, PaymentRecord> {
 
-@ApplicationScoped
-public class PaymentStatusOutboundMapper implements OutboundMapper<PaymentStatus, PaymentStatusGrpc> {
-    
+    PaymentRecordMapper INSTANCE = Mappers.getMapper(PaymentRecordMapper.class);
+
+    // Domain ↔ DTO
     @Override
-    public PaymentStatusGrpc toGrpc(PaymentStatus domain) {
-        // Mapping implementation
-        return PaymentStatusGrpc.newBuilder()
-            .setId(domain.getId().toString())
-            .setPaymentRecordId(domain.getPaymentRecord().getId().toString())
-            .setStatus(domain.getStatus())
-            .setMessage(domain.getMessage())
-            .build();
-    }
+    PaymentRecordDto toDto(PaymentRecord domain);
+
+    @Override
+    PaymentRecord fromDto(PaymentRecordDto dto);
+
+    // DTO ↔ gRPC
+    @Override
+    @Mapping(target = "id", qualifiedByName = "uuidToString")
+    @Mapping(target = "amount", qualifiedByName = "bigDecimalToString")
+    @Mapping(target = "currency", qualifiedByName = "currencyToString")
+    PaymentRecordGrpc toGrpc(PaymentRecordDto dto);
+
+    @Override
+    @Mapping(target = "id", qualifiedByName = "stringToUUID")
+    @Mapping(target = "amount", qualifiedByName = "stringToBigDecimal")
+    @Mapping(target = "currency", qualifiedByName = "stringToCurrency")
+    PaymentRecordDto fromGrpc(PaymentRecordGrpc grpc);
 }
 ```
+
+The MapStruct annotation processor automatically generates the implementation classes. You only need to define the interface methods with appropriate `@Mapping` annotations for complex transformations.
 
 ### 3. Define Your Protocol Buffer (Proto) Definitions
 

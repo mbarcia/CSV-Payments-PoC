@@ -16,8 +16,8 @@ Annotate your service class with `@PipelineStep`:
     backendType = GenericGrpcReactiveServiceAdapter.class,
     grpcStub = MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub.class,
     grpcImpl = MutinyProcessPaymentServiceGrpc.ProcessPaymentServiceImplBase.class,
-    inboundMapper = PaymentRecordInboundMapper.class,
-    outboundMapper = PaymentStatusOutboundMapper.class,
+    inboundMapper = PaymentRecordMapper.class,
+    outboundMapper = PaymentStatusMapper.class,
     grpcClient = "process-payment",
     autoPersist = true,
     debug = true
@@ -35,18 +35,38 @@ public class ProcessPaymentStep implements StepOneToOne<PaymentRecord, PaymentSt
 
 ## Step-Specific Mappers
 
-Mappers that are specific to a step should be in that service's module:
+Mappers that are specific to a step should be in that service's module using MapStruct:
 
 ```java
-// step-one-svc/src/main/java/com/example/app/stepone/mapper/PaymentRecordInboundMapper.java
-@ApplicationScoped
-public class PaymentRecordInboundMapper implements InboundMapper<PaymentRecordGrpc, PaymentRecord> {
-    
+// step-one-svc/src/main/java/com/example/app/stepone/mapper/PaymentRecordMapper.java
+@Mapper(
+    componentModel = "cdi",
+    uses = {CommonConverters.class},
+    unmappedTargetPolicy = ReportingPolicy.WARN
+)
+public interface PaymentRecordMapper extends Mapper<PaymentRecordGrpc, PaymentRecordDto, PaymentRecord> {
+
+    PaymentRecordMapper INSTANCE = Mappers.getMapper(PaymentRecordMapper.class);
+
+    // Domain ↔ DTO
     @Override
-    public PaymentRecord fromGrpc(PaymentRecordGrpc grpc) {
-        // Convert gRPC to domain
-        return new PaymentRecord(/* ... */);
-    }
+    PaymentRecordDto toDto(PaymentRecord domain);
+
+    @Override
+    PaymentRecord fromDto(PaymentRecordDto dto);
+
+    // DTO ↔ gRPC
+    @Override
+    @Mapping(target = "id", qualifiedByName = "uuidToString")
+    @Mapping(target = "amount", qualifiedByName = "bigDecimalToString")
+    @Mapping(target = "currency", qualifiedByName = "currencyToString")
+    PaymentRecordGrpc toGrpc(PaymentRecordDto dto);
+
+    @Override
+    @Mapping(target = "id", qualifiedByName = "stringToUUID")
+    @Mapping(target = "amount", qualifiedByName = "stringToBigDecimal")
+    @Mapping(target = "currency", qualifiedByName = "stringToCurrency")
+    PaymentRecordDto fromGrpc(PaymentRecordGrpc grpc);
 }
 ```
 

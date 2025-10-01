@@ -51,6 +51,7 @@ export default withMermaid(
             {
                 text: 'Guides',
                 items: [
+                    {text: 'Overview', link: '/guide/'},
                     {text: 'Application Structure', link: '/guide/application-structure'},
                     {text: 'Backend Services', link: '/guide/backend-services'},
                     {text: 'Orchestrator Services', link: '/guide/orchestrator-services'},
@@ -63,6 +64,11 @@ export default withMermaid(
                 text: 'Reference',
                 items: [
                     {text: 'Architecture', link: '/reference/architecture'},
+                    {text: 'Framework Overview', link: '/FRAMEWORK_OVERVIEW'},
+                    {text: 'Reference Implementation', link: '/REFERENCE_IMPLEMENTATION'},
+                    {text: 'YAML Schema', link: '/YAML_SCHEMA'},
+                    {text: 'Canvas Guide', link: '/CANVAS_GUIDE'},
+                    {text: 'Java-Centered Types', link: '/JAVA_CENTERED_TYPES'},
                 ]
             },
             {

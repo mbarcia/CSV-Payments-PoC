@@ -256,6 +256,23 @@ Enable DLQ at the step level:
 )
 ```
 
+### Persistence Dependencies
+
+When using `autoPersist = true`, you must include the necessary persistence dependencies in your `pom.xml`:
+
+```xml
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-reactive-pg-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+</dependency>
+```
+
+If you do not need persistence functionality, you can omit these dependencies and set `autoPersist = false` on all steps. This allows you to run pipeline services without database dependencies.
+
 ### Custom DLQ Implementation
 
 Implement custom DLQ handling:

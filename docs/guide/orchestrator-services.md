@@ -411,15 +411,15 @@ Configure orchestrator behavior through application properties:
 ```properties
 # application.properties
 # Pipeline configuration
-csv-poc.pipeline.retry-limit=3
-csv-poc.pipeline.retry-wait-ms=500
-csv-poc.pipeline.concurrency=2000
-csv-poc.pipeline.debug=false
-csv-poc.pipeline.recover-on-failure=false
-csv-poc.pipeline.run-with-virtual-threads=true
-csv-poc.pipeline.auto-persist=true
-csv-poc.pipeline.max-backoff-ms=30000
-csv-poc.pipeline.jitter=false
+pipeline.runtime.retry-limit=3
+pipeline.runtime.retry-wait-ms=500
+pipeline.runtime.concurrency=2000
+pipeline.runtime.debug=false
+pipeline.runtime.recover-on-failure=false
+pipeline.runtime.run-with-virtual-threads=true
+pipeline.runtime.auto-persist=true
+pipeline.runtime.max-backoff-ms=30000
+pipeline.runtime.jitter=false
 
 # gRPC clients
 quarkus.grpc.clients.process-csv-payments-input-file.host=localhost

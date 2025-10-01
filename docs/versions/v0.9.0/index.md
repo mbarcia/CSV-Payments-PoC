@@ -19,31 +19,42 @@ The `@PipelineStep` annotation is used to mark a class as a pipeline step. This 
    debug = true,
    recoverOnFailure = true,
    stub = MyGrpc.MyStub.class,
-   inboundMapper = FooRequestToDomainMapper.class,
-   outboundMapper = DomainToBarResponseMapper.class
+   inboundMapper = MyMapper.class,
+   outboundMapper = MyMapper.class
 )
 ```
 
 #### Mapper Classes
 
-Mapper classes implement the conversion interfaces directly to handle conversions between different representations of the same entity: domain, DTO, and gRPC formats.
+Mapper classes implement the conversion interfaces using MapStruct to handle conversions between different representations of the same entity: domain, DTO, and gRPC formats.
 
 ```java
-@ApplicationScoped
-public class PaymentRecordInboundMapper implements InboundMapper<PaymentRecordGrpc, PaymentRecord> {
+@Mapper(
+    componentModel = "cdi",
+    uses = {CommonConverters.class},
+    unmappedTargetPolicy = ReportingPolicy.WARN
+)
+public interface MyMapper extends Mapper<MyGrpcType, MyDtoType, MyDomainType> {
+
+    MyMapper INSTANCE = Mappers.getMapper(MyMapper.class);
+
+    // Domain ↔ DTO
     @Override
-    public PaymentRecord fromGrpc(PaymentRecordGrpc grpc) {
-        // Mapping implementation
-        return PaymentRecord.builder()
-            .id(UUID.fromString(grpc.getId()))
-            .csvId(grpc.getCsvId())
-            .recipient(grpc.getRecipient())
-            .amount(new BigDecimal(grpc.getAmount()))
-            .currency(Currency.getInstance(grpc.getCurrency()))
-            .build();
-    }
+    MyDtoType toDto(MyDomainType domain);
+
+    @Override
+    MyDomainType fromDto(MyDtoType dto);
+
+    // DTO ↔ gRPC
+    @Override
+    MyGrpcType toGrpc(MyDtoType dto);
+
+    @Override
+    MyDtoType fromGrpc(MyGrpcType grpc);
 }
 ```
+
+The MapStruct annotation processor automatically generates the implementation classes. You only need to define the interface methods with appropriate `@Mapping` annotations for complex transformations.
 
 ### Benefits
 
@@ -65,7 +76,7 @@ Developers only need to:
 
 1. Annotate their service class with `@PipelineStep`
 2. Create their mapper classes that implement the appropriate mapper interfaces
-3. Implement the mapper interfaces (`InboundMapper`, `OutboundMapper`)
+3. Create MapStruct-based mapper interfaces that extend the `Mapper<Grpc, Dto, Domain>` interface
 4. Implement the service interface (`StepOneToOne`, etc.)
 
 The framework automatically generates and registers the adapter beans at build time.

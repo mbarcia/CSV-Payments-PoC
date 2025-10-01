@@ -34,8 +34,8 @@ Create your service class with the `@PipelineStep` annotation:
     backendType = GenericGrpcReactiveServiceAdapter.class,
     grpcStub = MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub.class,
     grpcImpl = MutinyProcessPaymentServiceGrpc.ProcessPaymentServiceImplBase.class,
-    inboundMapper = PaymentRecordInboundMapper.class,
-    outboundMapper = PaymentStatusOutboundMapper.class,
+    inboundMapper = PaymentRecordMapper.class,
+    outboundMapper = PaymentStatusMapper.class,
     grpcClient = "process-payment",
     autoPersist = true,
     debug = true
@@ -100,44 +100,42 @@ private PaymentStatus createErrorStatus(PaymentRecord record, Throwable error) {
 
 ## Mapper Creation
 
-### Inbound Mapper
-Converts gRPC objects to domain objects:
+### MapStruct-Based Mappers
+Create unified mappers using MapStruct that handle all conversions:
 
 ```java
-@ApplicationScoped
-public class PaymentRecordInboundMapper implements InboundMapper<PaymentRecordGrpc, PaymentRecord> {
-    
+@Mapper(
+    componentModel = "cdi",
+    uses = {CommonConverters.class},
+    unmappedTargetPolicy = ReportingPolicy.WARN
+)
+public interface PaymentRecordMapper extends Mapper<PaymentRecordGrpc, PaymentRecordDto, PaymentRecord> {
+
+    PaymentRecordMapper INSTANCE = Mappers.getMapper(PaymentRecordMapper.class);
+
+    // Domain ↔ DTO
     @Override
-    public PaymentRecord fromGrpc(PaymentRecordGrpc grpc) {
-        return PaymentRecord.builder()
-            .id(UUID.fromString(grpc.getId()))
-            .csvId(grpc.getCsvId())
-            .recipient(grpc.getRecipient())
-            .amount(new BigDecimal(grpc.getAmount()))
-            .currency(Currency.getInstance(grpc.getCurrency()))
-            .build();
-    }
+    PaymentRecordDto toDto(PaymentRecord domain);
+
+    @Override
+    PaymentRecord fromDto(PaymentRecordDto dto);
+
+    // DTO ↔ gRPC
+    @Override
+    @Mapping(target = "id", qualifiedByName = "uuidToString")
+    @Mapping(target = "amount", qualifiedByName = "bigDecimalToString")
+    @Mapping(target = "currency", qualifiedByName = "currencyToString")
+    PaymentRecordGrpc toGrpc(PaymentRecordDto dto);
+
+    @Override
+    @Mapping(target = "id", qualifiedByName = "stringToUUID")
+    @Mapping(target = "amount", qualifiedByName = "stringToBigDecimal")
+    @Mapping(target = "currency", qualifiedByName = "stringToCurrency")
+    PaymentRecordDto fromGrpc(PaymentRecordGrpc grpc);
 }
 ```
 
-### Outbound Mapper
-Converts domain objects to gRPC objects:
-
-```java
-@ApplicationScoped
-public class PaymentStatusOutboundMapper implements OutboundMapper<PaymentStatus, PaymentStatusGrpc> {
-    
-    @Override
-    public PaymentStatusGrpc toGrpc(PaymentStatus domain) {
-        return PaymentStatusGrpc.newBuilder()
-            .setId(domain.getId().toString())
-            .setPaymentRecordId(domain.getPaymentRecord().getId().toString())
-            .setStatus(domain.getStatus())
-            .setMessage(domain.getMessage())
-            .build();
-    }
-}
-```
+The same unified mapper interface handles both inbound and outbound conversions, so no separate outbound mapper is needed when using the MapStruct approach.
 
 ## Working with DTOs
 

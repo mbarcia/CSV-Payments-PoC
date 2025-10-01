@@ -19,10 +19,10 @@ The `@PipelineStep` annotation marks a class as a pipeline step and enables auto
 Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
 - `grpcStub`: The gRPC stub class for this pipeline step
 - `grpcImpl`: The gRPC implementation class for this backend service
-- `inboundMapper`: The inbound mapper class for this pipeline service/step
-- `outboundMapper`: The outbound mapper class for this pipeline service/step
+- `inboundMapper`: The inbound mapper class for this pipeline service/step - handles conversion from gRPC to domain types (using MapStruct-based unified Mapper interface)
+- `outboundMapper`: The outbound mapper class for this pipeline service/step - handles conversion from domain to gRPC types (using MapStruct-based unified Mapper interface)
 - `grpcClient`: The gRPC client name for this pipeline step
-- `autoPersist`: Whether to enable auto-persistence for this step
+- `autoPersist`: Whether to enable auto-persistence for this step. Note: When set to `true`, requires the `quarkus-reactive-pg-client` dependency and related Hibernate Reactive dependencies for database persistence functionality.
 - `debug`: Whether to enable debug mode for this step
 - `recoverOnFailure`: Whether to enable failure recovery for this step
 - `grpcEnabled`: Whether to enable gRPC adapter generation for this step
@@ -46,8 +46,8 @@ Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny 
    backendType = GenericGrpcReactiveServiceAdapter.class,
    grpcStub = MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub.class,
    grpcImpl = MutinyProcessPaymentServiceGrpc.ProcessPaymentServiceImplBase.class,
-   inboundMapper = PaymentRecordInboundMapper.class,
-   outboundMapper = PaymentStatusOutboundMapper.class,
+   inboundMapper = PaymentRecordMapper.class,
+   outboundMapper = PaymentStatusMapper.class,
    grpcClient = "process-payment",
    autoPersist = true,
    debug = true,
@@ -81,7 +81,7 @@ public class ProcessPaymentService implements StepOneToOne<PaymentRecord, Paymen
 Developers only need to:
 
 1. Annotate their service class with `@PipelineStep`
-3. Implement the mapper interfaces (`Mapper`)
-4. Implement the service interface (`StepOneToOne`, etc.)
+2. Create MapStruct-based mapper interfaces that extend the `Mapper<Grpc, Dto, Domain>` interface
+3. Implement the service interface (`StepOneToOne`, etc.)
 
 The framework automatically generates and registers the adapter beans at build time.

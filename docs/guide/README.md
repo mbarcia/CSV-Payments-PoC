@@ -14,6 +14,10 @@ This guide covers everything you need to know about The Pipeline Framework:
 6. **Pipeline Compilation**: Understanding how the annotation processor works
 7. **Error Handling & DLQ**: Managing errors and dead letter queues
 8. **Observability**: Monitoring and observing pipeline applications
+9. **Framework Overview**: Complete architecture and comparison to original spec ([Framework Overview](/FRAMEWORK_OVERVIEW.html))
+10. **Reference Implementation**: Complete implementation guide with examples ([Reference Implementation](/REFERENCE_IMPLEMENTATION.html))
+11. **YAML Configuration**: Schema documentation and configuration guide ([YAML Schema](/YAML_SCHEMA.html))
+12. **Visual Design**: Canvas designer usage guide ([Canvas Guide](/CANVAS_GUIDE.html))
 
 ## Prerequisites
 

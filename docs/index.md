@@ -75,5 +75,10 @@ To get started with The Pipeline Framework, explore these guides:
 
 ### Reference
 - [Architecture](/reference/architecture.html): Deep dive into the framework architecture
+- [Framework Overview](/FRAMEWORK_OVERVIEW.html): Complete architecture and comparison to original spec
+- [Reference Implementation](/REFERENCE_IMPLEMENTATION.html): Complete implementation guide with examples
+- [YAML Configuration Schema](/YAML_SCHEMA.html): Complete YAML schema documentation
+- [Canvas Designer Guide](/CANVAS_GUIDE.html): Complete Canvas usage guide
+- [Java-Centered Types](/JAVA_CENTERED_TYPES.html): Java-first approach with protobuf mapping
 
 This approach reduces boilerplate code and ensures consistency across your pipeline steps.

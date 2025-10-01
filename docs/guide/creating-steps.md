@@ -31,18 +31,35 @@ public class MyPipelineStep implements StepOneToOne<FooRequest, BarResponse> {
 
 ## Step 2: Create Your Mapper Classes
 
-Create mapper classes for converting between gRPC and domain types. Mappers implement the conversion interfaces directly:
+Create mapper classes for converting between gRPC, DTO, and domain types using MapStruct. Mappers implement the `Mapper` interface with three generic types (gRPC, DTO, Domain):
 
 ```java
-@ApplicationScoped
-public class FooRequestToDomainMapper implements InboundMapper<FooRequest, DomainFooRequest> {
+@Mapper(
+    componentModel = "cdi",
+    uses = {CommonConverters.class},
+    unmappedTargetPolicy = ReportingPolicy.WARN
+)
+public interface MyMapper extends Mapper<MyGrpcType, MyDtoType, MyDomainType> {
+
+    MyMapper INSTANCE = Mappers.getMapper(MyMapper.class);
+
+    // Domain ↔ DTO
     @Override
-    public DomainFooRequest fromGrpc(FooRequest source) {
-        // Mapping implementation
-        return new DomainFooRequest();
-    }
+    MyDtoType toDto(MyDomainType domain);
+
+    @Override
+    MyDomainType fromDto(MyDtoType dto);
+
+    // DTO ↔ gRPC
+    @Override
+    MyGrpcType toGrpc(MyDtoType dto);
+
+    @Override
+    MyDtoType fromGrpc(MyGrpcType grpc);
 }
 ```
+
+The MapStruct annotation processor automatically generates the implementation classes. You only need to define the interface methods with appropriate `@Mapping` annotations for complex transformations.
 
 ## Step 3: Build Your Project
 

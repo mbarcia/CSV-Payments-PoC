@@ -14,6 +14,16 @@ The Pipeline Framework includes a visual canvas designer at <a href="https://app
 - **gRPC and REST Support**: Automatically generates adapters for both communication protocols
 - **Modular Design**: Clear separation between runtime and deployment components
 
+## Framework Overview
+
+For complete documentation of the framework architecture, implementation details, and reference implementations, see the complete documentation files in the main repository:
+
+- [Framework Overview](/FRAMEWORK_OVERVIEW.html) - Complete architecture and comparison to original spec
+- [Reference Implementation](/REFERENCE_IMPLEMENTATION.html) - Complete implementation guide with examples
+- [YAML Configuration Schema](/YAML_SCHEMA.html) - Complete YAML schema documentation
+- [Canvas Designer Guide](/CANVAS_GUIDE.html) - Complete Canvas usage guide
+- [Java-Centered Types](/JAVA_CENTERED_TYPES.html) - Comprehensive Java-first approach with automatic protobuf mapping
+
 ## How It Works
 
 The framework allows you to define pipeline steps as simple classes annotated with `@PipelineStep`. The framework automatically generates the necessary adapters at build time, eliminating the need for manual configuration.

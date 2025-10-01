@@ -5,6 +5,7 @@
     "dev": "vite dev",
     "build": "NODE_OPTIONS='--max-old-space-size=4096' vite build",
     "build:cloudflare": "NODE_OPTIONS='--max-old-space-size=2048' vite build",
+    "build:static": "NODE_OPTIONS='--max-old-space-size=2048' vite build && exit 0",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch"

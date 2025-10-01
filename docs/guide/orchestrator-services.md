@@ -418,7 +418,7 @@ pipeline.runtime.debug=false
 pipeline.runtime.recover-on-failure=false
 pipeline.runtime.run-with-virtual-threads=true
 pipeline.runtime.auto-persist=true
-pipeline.runtime.max-backoff-ms=30000
+pipeline.runtime.max-backoff=30000
 pipeline.runtime.jitter=false
 
 # gRPC clients

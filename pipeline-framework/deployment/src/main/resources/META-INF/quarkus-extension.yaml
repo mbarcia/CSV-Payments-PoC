@@ -1,4 +1,3 @@
 ---
-artifact: io.github.mbarcia:pipeline-framework-processor
 name: The Pipeline Framework extension
 description: Automatically exposes endpoints and pipeline steps with runner/CLI

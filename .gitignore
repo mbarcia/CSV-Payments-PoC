@@ -59,5 +59,3 @@ ui-dashboard/node_modules/
 
 # Vite cache
 web-ui/node_modules/.vite/
-!/web-ui/.svelte-kit/
-!/web-ui/build/

@@ -2,6 +2,10 @@
 
 This guide explains how to structure applications using The Pipeline Framework, following the patterns demonstrated in the CSV Payments reference implementation. The application structure is broken down into several key components that promote modularity and separation of concerns.
 
+<Callout type="tip" title="Visual Design with Canvas">
+The Pipeline Framework includes a visual canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> that allows you to visually plan and configure your application structure. You can create and connect services on the canvas, which then generates the corresponding configuration for your application.
+</Callout>
+
 ## Overview
 
 Applications built with The Pipeline Framework follow a modular architecture with clear separation of concerns. The framework promotes a clean division between:

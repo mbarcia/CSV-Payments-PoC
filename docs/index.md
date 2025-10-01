@@ -15,17 +15,26 @@ hero:
     - theme: alt
       text: View on GitHub
       link: https://github.com/mbarcia/CSV-Payments-PoC
+    - theme: alt
+      text: Design with Canvas
+      link: https://app.pipelineframework.org
 
 features:
   - title: Reactive by Design
     details: Built on Mutiny for non-blocking, high-performance applications
   - title: Annotation Driven
     details: Simple annotations generate complex infrastructure automatically
+  - title: Visual Design
+    details: Use the Canvas designer to create and configure pipelines visually
   - title: Observability First
     details: Built-in metrics, tracing, and logging support
   - title: Resilient by Default
     details: Comprehensive error handling with dead letter queues
 ---
+
+<Callout type="tip" title="Visual Pipeline Designer Available">
+The Pipeline Framework includes a visual canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> that allows you to create and configure your pipelines using an intuitive drag-and-drop interface. This tool makes it easier to visualize the flow between steps and manage complex pipeline configurations.
+</Callout>
 
 ## Introduction
 

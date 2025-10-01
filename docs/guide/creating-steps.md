@@ -2,6 +2,10 @@
 
 This guide explains how to create your own pipeline steps using The Pipeline Framework.
 
+<Callout type="tip" title="Visual Pipeline Designer">
+While you can create pipeline steps programmatically as shown below, you can also design your entire pipeline visually using the Canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>. The Canvas allows you to define steps, their types, and connections without writing code, then generates the appropriate configuration files.
+</Callout>
+
 ## Step 1: Create Your Service Class
 
 Create a class that implements one of the step interfaces:

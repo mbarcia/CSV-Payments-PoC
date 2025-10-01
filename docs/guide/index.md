@@ -2,9 +2,14 @@
 
 The Pipeline Framework is a powerful tool for building reactive pipeline processing systems. It simplifies the development of distributed systems by providing a consistent way to create, configure, and deploy pipeline steps.
 
+<Callout type="tip" title="Visual Pipeline Designer">
+The Pipeline Framework includes a visual canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> that allows you to create and configure your pipelines using an intuitive drag-and-drop interface. This tool is particularly useful for designing complex pipeline architectures and understanding the flow between different steps.
+</Callout>
+
 ## Key Features
 
 - **Reactive Programming**: Built on top of Mutiny for non-blocking operations
+- **Visual Design Canvas**: Create and configure pipelines with the visual designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>
 - **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
 - **gRPC and REST Support**: Automatically generates adapters for both communication protocols
 - **Modular Design**: Clear separation between runtime and deployment components
@@ -20,6 +25,7 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 ## Key Features
 
 - **Reactive Programming**: Built on top of Mutiny for non-blocking operations
+- **Visual Design Canvas**: Create and configure pipelines with the visual designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>
 - **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
 - **gRPC and REST Support**: Automatically generates adapters for both communication protocols
 - **Modular Design**: Clear separation between runtime and deployment components

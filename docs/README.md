@@ -2,6 +2,10 @@
 
 Welcome to the comprehensive documentation for The Pipeline Framework. This site provides everything you need to understand, use, and extend the framework for building reactive pipeline processing systems.
 
+<Callout type="tip" title="Visual Pipeline Designer">
+In addition to programmatic development, The Pipeline Framework includes a visual canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> that allows you to create and configure your pipelines using an intuitive visual interface. This tool makes it easier to design complex pipeline architectures without writing code.
+</Callout>
+
 ## About the The Pipeline Framework
 
 The Pipeline Framework is a powerful tool for building reactive pipeline processing systems. It simplifies the development of distributed systems by providing a consistent way to create, configure, and deploy pipeline steps.
@@ -10,12 +14,22 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 
 - **Reactive Programming**: Built on top of Mutiny for non-blocking operations
 - **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
+- **Visual Design Canvas**: Create and configure pipelines with the visual designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>
 - **gRPC and REST Support**: Automatically generates adapters for both communication protocols
 - **Modular Design**: Clear separation between runtime and deployment components
 - **Auto-Generation**: Generates necessary infrastructure at build time
 - **Observability**: Built-in metrics, tracing, and logging support
 - **Error Handling**: Comprehensive error handling with DLQ support
 - **Concurrency Control**: Virtual threads and backpressure management
+
+## Complete Documentation
+
+For complete documentation including detailed reference implementation, YAML configuration schema, and Canvas designer guide, see:
+
+- [Framework Overview](https://github.com/mbarcia/CSV-Payments-PoC/blob/main/FRAMEWORK_OVERVIEW.md) - Complete architecture overview
+- [Reference Implementation](https://github.com/mbarcia/CSV-Payments-PoC/blob/main/REFERENCE_IMPLEMENTATION.md) - Complete implementation guide
+- [YAML Configuration Schema](https://github.com/mbarcia/CSV-Payments-PoC/blob/main/YAML_SCHEMA.md) - Complete YAML schema documentation
+- [Canvas Designer Guide](https://github.com/mbarcia/CSV-Payments-PoC/blob/main/CANVAS_GUIDE.md) - Complete Canvas usage guide
 
 ## Documentation Structure
 
@@ -26,15 +40,20 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 
 ### Guides
 - [Application Structure](/guide/application-structure): Structuring pipeline applications
-- [Local Steps](/guide/local-steps): Creating steps that run within the same process
 - [Backend Services](/guide/backend-services): Creating backend services that implement pipeline steps
 - [Orchestrator Services](/guide/orchestrator-services): Building orchestrator services that coordinate pipelines
-- [Pipeline Compilation](/guide/pipeline-compilation): Understanding how the annotation processor works
-- [Error Handling & DLQ](/guide/error-handling): Managing errors and dead letter queues
+- [Configuration](/guide/configuration): Configuration options and best practices
+- [Error Handling](/guide/error-handling): Managing errors and dead letter queues
 - [Observability](/guide/observability): Monitoring and observing pipeline applications
+- [Best Practices](/guide/best-practices): Recommended practices for pipeline development
+- [Local Steps](/guide/local-steps): Creating pipeline steps that run locally within the orchestrator
 
-### Reference
-- [Architecture](/reference/architecture): Deep dive into the framework architecture
+### Architecture
+- [Architecture](/reference/architecture): Core concepts and architectural patterns
+- [Annotations](/annotations/pipeline-step): Detailed annotation reference
+- [Pipeline Compilation](/guide/pipeline-compilation): How the annotation processor works
+- [Common Module Structure](/guide/common-module-structure): Shared components structure
+- [Dependency Management](/guide/dependency-management): Managing dependencies in pipeline applications
 
 ## Development
 

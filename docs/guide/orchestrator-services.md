@@ -2,6 +2,10 @@
 
 This guide explains how to create orchestrator services using The Pipeline Framework, which coordinate and execute the complete pipeline of backend services.
 
+<Callout type="tip" title="Visual Orchestrator Configuration">
+Use the Canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> to visually configure your orchestrator services. The Canvas allows you to define the complete pipeline flow, including input sources, step connections, and output handlers, without writing complex orchestration code.
+</Callout>
+
 ## Overview
 
 Orchestrator services are responsible for:

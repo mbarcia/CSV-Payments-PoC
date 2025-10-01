@@ -6,6 +6,10 @@ This guide walks you through the process of setting up and using the The Pipelin
 Before you begin, ensure you have Java 21+ and Maven 3.8+ installed on your system.
 </Callout>
 
+<Callout type="tip" title="Visual Pipeline Designer">
+In addition to programmatic configuration, you can use the visual Canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> to create and configure your pipeline applications. The Canvas provides an intuitive interface for defining pipeline steps and their connections.
+</Callout>
+
 ## Prerequisites
 
 - Java 21 or higher

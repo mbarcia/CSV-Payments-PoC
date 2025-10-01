@@ -2,6 +2,10 @@
 
 This guide explains how to create backend services using The Pipeline Framework, following the patterns demonstrated in the CSV Payments reference implementation.
 
+<Callout type="tip" title="Visual Service Design">
+Design your backend services using the Canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>. The Canvas provides a visual interface for defining service types, input/output transformations, and step characteristics, which can then be exported as configuration for your application.
+</Callout>
+
 ## Overview
 
 Backend services implement individual pipeline steps that process data as it flows through the pipeline. Each service focuses on a specific transformation or operation, promoting loose coupling and high cohesion.

@@ -13,6 +13,7 @@ The `@PipelineStep` annotation is used to mark a class as a pipeline step. This 
 - `outboundMapper`: The mapper class to convert outgoing responses
 - `grpcType`: The gRPC type this mapper handles
 - `domainType`: The domain type this mapper handles
+- `local`: Whether this step runs locally in the same process (default: false). When `true`, the step runs in the same application process without requiring gRPC communication, making it suitable for services that process data locally within the orchestrator.
 
 ## Example Usage
 

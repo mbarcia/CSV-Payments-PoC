@@ -40,6 +40,7 @@ Dive into the specific guides to learn more about each aspect of The Pipeline Fr
 
 - [Getting Started](/guide/getting-started): Detailed setup instructions
 - [Creating Pipeline Steps](/guide/creating-steps): Building your first steps
+- [Local Steps](/guide/local-steps): Creating steps that run within the same process
 - [Application Structure](/guide/application-structure): Structuring complex applications
 - [Backend Services](/guide/backend-services): Implementing backend services
 - [Orchestrator Services](/guide/orchestrator-services): Coordinating pipelines

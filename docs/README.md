@@ -26,6 +26,7 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 
 ### Guides
 - [Application Structure](/guide/application-structure): Structuring pipeline applications
+- [Local Steps](/guide/local-steps): Creating steps that run within the same process
 - [Backend Services](/guide/backend-services): Creating backend services that implement pipeline steps
 - [Orchestrator Services](/guide/orchestrator-services): Building orchestrator services that coordinate pipelines
 - [Pipeline Compilation](/guide/pipeline-compilation): Understanding how the annotation processor works

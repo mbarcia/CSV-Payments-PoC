@@ -26,6 +26,7 @@ Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny 
 - `debug`: Whether to enable debug mode for this step
 - `recoverOnFailure`: Whether to enable failure recovery for this step
 - `grpcEnabled`: Whether to enable gRPC adapter generation for this step
+- `local`: Whether this step runs locally in the same process (default: false). When `true`, the step runs in the same application process without requiring gRPC communication, making it suitable for services that process data locally within the orchestrator.
 - `restEnabled`: Whether to enable REST adapter generation for this step
 - `runWithVirtualThreads`: Whether to run with virtual threads
 - `retryLimit`: The retry limit for this step

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import io.smallrye.config.WithDefault;
  * All pipeline-level configuration properties with their defaults.
  * These serve as defaults for individual steps unless overridden.
  */
-@ConfigMapping(prefix = "pipeline")
+@ConfigMapping(prefix = "pipeline.runtime")
 public interface PipelineInitialConfig {
     /**
      * Maximum number of retry attempts for failed operations.

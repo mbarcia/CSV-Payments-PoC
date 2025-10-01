@@ -19,17 +19,33 @@ package io.github.mbarcia.pipeline.config;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
+import java.util.Optional;
 
 /**
  * Build-time config for the Pipeline Framework extension.
  */
-@ConfigMapping(prefix = "pipeline")
+@ConfigMapping(prefix = "pipeline.build")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface PipelineBuildTimeConfig {
 
     /** Generate CLI entrypoint? */
+    @WithDefault("false")
     Boolean generateCli();
 
     /** Version of The Pipeline Framework */
+    @WithDefault("0.9.0")
     String version();
+    
+    /** CLI Command Name */
+    @WithDefault("")
+    Optional<String> cliName();
+
+    /** CLI Command Description */
+    @WithDefault("")
+    Optional<String> cliDescription();
+
+    /** CLI Command Version */
+    @WithDefault("0.9.0")
+    Optional<String> cliVersion();
 }

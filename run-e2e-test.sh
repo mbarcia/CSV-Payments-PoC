@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #
-# Copyright © 2023-2025 Mariano Barcia
+# Copyright (c) 2023-2025 Mariano Barcia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,16 @@
 # from different files don't get mixed up
 
 set -e  # Exit on any error
+
+# Check for --dev-mode flag
+MODE="prod"
+for arg in "$@"; do
+    if [[ "$arg" == "--dev-mode" ]]; then
+        MODE="dev"
+        echo "Running in development mode"
+        break
+    fi
+done
 
 # Global variable to track if services are running
 SERVICES_STARTED=false
@@ -81,26 +91,43 @@ start_service() {
 
     local service_dir=$1
     local service_name=$2
+    local mode=${3:-prod}  # Default to prod mode unless specified
     
-    echo "Starting $service_name..."
+    echo "Starting $service_name in $mode mode..."
     
-    # Start the service in the background with a unique debug port
+    # Start the service in the background
     cd "$PROJECT_ROOT"
-    case "$service_name" in
-        "input-csv-file-processing-svc")
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5005 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
-            ;;
-        "payments-processing-svc")
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5006 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
-            ;;
-        "payment-status-svc")
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5007 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
-            ;;
-        "output-csv-file-processing-svc")
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5008 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+    case "$mode" in
+        "dev")
+            case "$service_name" in
+                "input-csv-file-processing-svc")
+                    mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5005 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+                    ;;
+                "payments-processing-svc")
+                    mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5006 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+                    ;;
+                "payment-status-svc")
+                    mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5007 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+                    ;;
+                "output-csv-file-processing-svc")
+                    mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG -Ddebug=5008 > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+                    ;;
+                *)
+                    mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+                    ;;
+            esac
             ;;
         *)
-            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" quarkus:dev -Dquarkus.log.console.level=DEBUG > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
+            # Production mode - build and run the jar
+            mvn -f "$PROJECT_ROOT/$service_dir/pom.xml" clean package -DskipTests -Dspotless.check.skip=true > "$PROJECT_ROOT/${service_name}_build.log" 2>&1
+            if [[ $? -ne 0 ]]; then
+                echo "Failed to build $service_name"
+                cat "$PROJECT_ROOT/${service_name}_build.log"
+                exit 1
+            fi
+            
+            # Run the service using java -jar
+            java -jar "$PROJECT_ROOT/$service_dir/target/quarkus-app/quarkus-run.jar" > "$PROJECT_ROOT/${service_name}.log" 2>&1 &
             ;;
     esac
     
@@ -423,11 +450,11 @@ verify_database_persistence() {
     create_test_csv_files
     
     # Start all services
-    echo "Starting all services..."
-    start_service "input-csv-file-processing-svc" "input-csv-file-processing-svc"
-    start_service "payments-processing-svc" "payments-processing-svc"
-    start_service "payment-status-svc" "payment-status-svc"
-    start_service "output-csv-file-processing-svc" "output-csv-file-processing-svc"
+    echo "Starting all services in $MODE mode..."
+    start_service "input-csv-file-processing-svc" "input-csv-file-processing-svc" "$MODE"
+    start_service "payments-processing-svc" "payments-processing-svc" "$MODE"
+    start_service "payment-status-svc" "payment-status-svc" "$MODE"
+    start_service "output-csv-file-processing-svc" "output-csv-file-processing-svc" "$MODE"
     
     # Mark services as started
     SERVICES_STARTED=true
@@ -445,11 +472,21 @@ verify_database_persistence() {
         exit 1
     fi
     
-    # Run the orchestrator
+    # Run the orchestrator in production mode
     echo "Running orchestrator..."
     cd "$PROJECT_ROOT/orchestrator-svc"
-    # Run the orchestrator in the background so we can monitor it
-    mvn quarkus:dev -Dmaven.test.skip=true -Dquarkus.log.console.level=DEBUG -Dquarkus.args="--csv-folder=$TEST_OUTPUT_DIR" > "$PROJECT_ROOT/orchestrator.log" 2>&1 &
+    
+    # Build the orchestrator service first
+    echo "Building orchestrator service..."
+    mvn clean package -DskipTests -Dspotless.check.skip=true > "$PROJECT_ROOT/orchestrator_build.log" 2>&1
+    if [[ $? -ne 0 ]]; then
+        echo "Failed to build orchestrator service"
+        cat "$PROJECT_ROOT/orchestrator_build.log"
+        exit 1
+    fi
+    
+    # Run the orchestrator using java -jar in the background so we can monitor it
+    java -jar target/quarkus-app/quarkus-run.jar --input="$TEST_OUTPUT_DIR" > "$PROJECT_ROOT/orchestrator.log" 2>&1 &
     orchestrator_pid=$!
     
     # Wait for the orchestrator to complete or timeout after 30 seconds

@@ -16,6 +16,9 @@ steps:
   - protoType: "string"
     name: "email"
     type: "String"
+  - protoType: "string"
+    name: "createdAt"
+    type: "LocalDateTime"
   outputFields:
   - protoType: "string"
     name: "id"

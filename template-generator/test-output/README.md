@@ -1,0 +1,45 @@
+# TestApp
+
+This is a generated pipeline application built with the Pipeline Framework.
+
+## Prerequisites
+
+- Java 21
+- Maven 3.8+
+
+## Verifying the Generated Application
+
+To verify that the application was generated correctly:
+
+```bash
+cd TestApp
+./mvnw clean compile
+```
+
+This will compile all modules and verify that there are no syntax or dependency issues.
+
+## Running the Application
+
+### With Docker
+
+```bash
+./up-docker.sh
+```
+
+### In Development Mode
+
+1. Start the database with Docker:
+
+```bash
+docker run --name pipeline-postgres -p 5432:5432 -e POSTGRES_DB=pipeline -e POSTGRES_USER=user -e POSTGRES_PASSWORD=password -d postgres:17
+```
+
+2. Run each service in development mode:
+
+```bash
+cd <service-name> && mvn quarkus:dev
+```
+
+## Architecture
+
+This application follows the pipeline pattern with multiple microservices, each responsible for a specific step in the processing workflow.

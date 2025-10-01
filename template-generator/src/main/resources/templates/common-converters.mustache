@@ -1,32 +1,12 @@
 package {{basePackage}}.common.mapper;
 
-import java.nio.file.Path;
 import java.util.Currency;
-import java.util.UUID;
-import java.math.BigDecimal;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
 import org.mapstruct.Named;
 
 public class CommonConverters {
-
-    @Named("uuidToString")
-    public String uuidToString(UUID uuid) {
-        return uuid != null ? uuid.toString() : null;
-    }
-
-    @Named("stringToUUID")
-    public UUID stringToUUID(String string) {
-        return string != null ? UUID.fromString(string) : null;
-    }
-
-    @Named("bigDecimalToString")
-    public String bigDecimalToString(BigDecimal value) {
-        return value != null ? value.toString() : null;
-    }
-
-    @Named("stringToBigDecimal")
-    public BigDecimal stringToBigDecimal(String value) {
-        return value != null ? new BigDecimal(value) : null;
-    }
 
     @Named("currencyToString")
     public String currencyToString(Currency currency) {
@@ -38,13 +18,33 @@ public class CommonConverters {
         return code != null ? Currency.getInstance(code) : null;
     }
 
-    @Named("pathToString")
-    public String pathToString(Path path) {
-        return path != null ? path.toString() : null;
+    @Named("atomicIntegerToString")
+    public String atomicIntegerToString(AtomicInteger atomicInteger) {
+        return atomicInteger != null ? String.valueOf(atomicInteger.get()) : null;
     }
 
-    @Named("stringToPath")
-    public Path stringToPath(String string) {
-        return string != null ? Path.of(string) : null;
+    @Named("stringToAtomicInteger")
+    public AtomicInteger stringToAtomicInteger(String string) {
+        return string != null ? new AtomicInteger(Integer.parseInt(string)) : null;
+    }
+
+    @Named("atomicLongToString")
+    public String atomicLongToString(AtomicLong atomicLong) {
+        return atomicLong != null ? String.valueOf(atomicLong.get()) : null;
+    }
+
+    @Named("stringToAtomicLong")
+    public AtomicLong stringToAtomicLong(String string) {
+        return string != null ? new AtomicLong(Long.parseLong(string)) : null;
+    }
+    
+    @Named("listToString")
+    public String listToString(List<String> list) {
+        return list != null ? String.join(",", list) : null;
+    }
+    
+    @Named("stringToList")
+    public List<String> stringToList(String string) {
+        return string != null ? java.util.Arrays.asList(string.split(",")) : null;
     }
 }

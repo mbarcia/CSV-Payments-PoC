@@ -5,9 +5,12 @@
 
   export let step;
   export let stepIndex;
-    // Field types for dropdowns (using Protobuf scalar types)
+    // Field types for dropdowns (using Java types with protobuf mappings)
   export let fieldTypes = [
-    'string', 'int32', 'int64', 'float', 'double', 'bool', 'bytes', 'Enum'
+    'String', 'Integer', 'Long', 'Double', 'Boolean', 
+    'UUID', 'BigDecimal', 'Currency', 'Path',
+    'List<String>', 'LocalDateTime', 'LocalDate', 'OffsetDateTime', 'ZonedDateTime', 'Instant', 'Duration', 'Period',
+    'URI', 'URL', 'File', 'BigInteger', 'AtomicInteger', 'AtomicLong', 'Enum'
   ];
   
   // Function to get all available types including custom message types from previous steps

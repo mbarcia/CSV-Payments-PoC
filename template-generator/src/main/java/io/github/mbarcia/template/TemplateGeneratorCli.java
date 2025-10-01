@@ -307,6 +307,12 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         inputField3.put("protoType", "string");
         inputFields1.add(inputField3);
         
+        Map<String, String> inputField4 = new HashMap<>();
+        inputField4.put("name", "createdAt");
+        inputField4.put("type", "LocalDateTime");
+        inputField4.put("protoType", "string");
+        inputFields1.add(inputField4);
+        
         step1.put("inputFields", inputFields1);
         step1.put("outputTypeName", "CustomerOutput");
         step1.put("outputTypeSimpleName", "CustomerOutput");
@@ -400,8 +406,32 @@ public class TemplateGeneratorCli implements Callable<Integer> {
                 break;
             }
             
-            System.out.println("Available types: string, int, long, double, boolean, uuid, bigdecimal, currency, path");
-            System.out.print("Field type for '" + fieldName + "': ");
+            System.out.println("Available Java types with protobuf mappings:");
+            System.out.println("  String -> string");
+            System.out.println("  Integer -> int32");
+            System.out.println("  Long -> int64");
+            System.out.println("  Double -> double");
+            System.out.println("  Boolean -> bool");
+            System.out.println("  UUID -> string");
+            System.out.println("  BigDecimal -> string");
+            System.out.println("  Currency -> string");
+            System.out.println("  Path -> string");
+            System.out.println("  List<String> -> repeated string");
+            System.out.println("  LocalDateTime -> string");
+            System.out.println("  LocalDate -> string");
+            System.out.println("  OffsetDateTime -> string");
+            System.out.println("  ZonedDateTime -> string");
+            System.out.println("  Instant -> int64");
+            System.out.println("  Duration -> int64");
+            System.out.println("  Period -> string");
+            System.out.println("  URI -> string");
+            System.out.println("  URL -> string");
+            System.out.println("  File -> string");
+            System.out.println("  BigInteger -> string");
+            System.out.println("  AtomicInteger -> int32");
+            System.out.println("  AtomicLong -> int64");
+            System.out.println("");
+            System.out.print("Java field type for '" + fieldName + "': ");
             String fieldType = scanner.nextLine().trim();
             
             if (fieldType.isEmpty()) {
@@ -421,29 +451,77 @@ public class TemplateGeneratorCli implements Callable<Integer> {
     private String mapFieldType(String inputType) {
         switch (inputType.toLowerCase()) {
             case "string": return "String";
-            case "int": return "Integer";
+            case "int": 
+            case "integer": return "Integer";
             case "long": return "Long";
             case "double": return "Double";
             case "boolean": return "Boolean";
             case "uuid": return "UUID";
-            case "bigdecimal": return "BigDecimal";
+            case "bigdecimal": 
+            case "big_decimal": return "BigDecimal";
             case "currency": return "Currency";
             case "path": return "Path";
+            case "list<string>":
+            case "list_string": return "List<String>";
+            case "localdatetime": 
+            case "local_date_time": return "LocalDateTime";
+            case "localdate": 
+            case "local_date": return "LocalDate";
+            case "offsetdatetime": 
+            case "offset_date_time": return "OffsetDateTime";
+            case "zoneddatetime": 
+            case "zoned_date_time": return "ZonedDateTime";
+            case "instant": return "Instant";
+            case "duration": return "Duration";
+            case "period": return "Period";
+            case "uri": return "URI";
+            case "url": return "URL";
+            case "file": return "File";
+            case "biginteger": 
+            case "big_integer": return "BigInteger";
+            case "atomicinteger": 
+            case "atomic_integer": return "AtomicInteger";
+            case "atomiclong": 
+            case "atomic_long": return "AtomicLong";
             default: return "String"; // default to String
         }
     }
     
     private String mapToProtoType(String inputType) {
         switch (inputType.toLowerCase()) {
-            case "string": return "string";
-            case "int": return "int32";
-            case "long": return "int64";
+            case "string": 
+            case "list<string>":
+            case "list_string": return "string";
+            case "int": 
+            case "integer": 
+            case "atomicinteger": 
+            case "atomic_integer": return "int32";
+            case "long": 
+            case "atomiclong": 
+            case "atomic_long": 
+            case "instant": 
+            case "duration": return "int64";
             case "double": return "double";
             case "boolean": return "bool";
-            case "uuid": return "string";
-            case "bigdecimal": return "string";
-            case "currency": return "string";
-            case "path": return "string";
+            case "uuid": 
+            case "currency": 
+            case "path": 
+            case "localdatetime": 
+            case "local_date_time": 
+            case "localdate": 
+            case "local_date": 
+            case "offsetdatetime": 
+            case "offset_date_time": 
+            case "zoneddatetime": 
+            case "zoned_date_time": 
+            case "period": 
+            case "uri": 
+            case "url": 
+            case "file": 
+            case "bigdecimal": 
+            case "big_decimal": 
+            case "biginteger": 
+            case "big_integer": return "string";
             default: return "string"; // default to string
         }
     }

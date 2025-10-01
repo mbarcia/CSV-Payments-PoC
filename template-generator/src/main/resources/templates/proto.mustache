@@ -4,13 +4,23 @@ option java_package = "{{basePackage}}.grpc";
 
 message {{inputTypeName}} {
 {{#inputFields}}
+{{#isListType}}
+  repeated {{listInnerType}} {{name}} = {{fieldNumber}};
+{{/isListType}}
+{{^isListType}}
   {{protoType}} {{name}} = {{fieldNumber}};
+{{/isListType}}
 {{/inputFields}}
 }
 
 message {{outputTypeName}} {
 {{#outputFields}}
+{{#isListType}}
+  repeated {{listInnerType}} {{name}} = {{fieldNumber}};
+{{/isListType}}
+{{^isListType}}
   {{protoType}} {{name}} = {{fieldNumber}};
+{{/isListType}}
 {{/outputFields}}
 }
 

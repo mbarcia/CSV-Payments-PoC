@@ -152,11 +152,14 @@ public class MustacheTemplateEngine {
     }
     
     private void generateDomainClasses(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath) throws IOException {
-        // Generate input domain class
+        // Process input domain class
+        @SuppressWarnings("unchecked")
+        List<Map<String, String>> inputFields = (List<Map<String, String>>) step.get("inputFields");
         Map<String, Object> inputContext = new HashMap<>(step);
         inputContext.put("basePackage", basePackage);
         inputContext.put("className", step.get("inputTypeName"));
-        inputContext.put("fields", step.get("inputFields"));
+        inputContext.put("fields", inputFields);
+        addImportFlagsToContext(inputContext, inputFields);
         
         Mustache mustache = mf.compile("templates/domain.mustache");
         StringWriter stringWriter = new StringWriter();
@@ -167,11 +170,14 @@ public class MustacheTemplateEngine {
             .resolve(step.get("inputTypeName") + ".java");
         Files.write(inputDomainPath, stringWriter.toString().getBytes());
         
-        // Generate output domain class
+        // Process output domain class
+        @SuppressWarnings("unchecked")
+        List<Map<String, String>> outputFields = (List<Map<String, String>>) step.get("outputFields");
         Map<String, Object> outputContext = new HashMap<>(step);
         outputContext.put("basePackage", basePackage);
         outputContext.put("className", step.get("outputTypeName"));
-        outputContext.put("fields", step.get("outputFields"));
+        outputContext.put("fields", outputFields);
+        addImportFlagsToContext(outputContext, outputFields);
         
         mustache = mf.compile("templates/domain.mustache");
         stringWriter = new StringWriter();
@@ -198,11 +204,14 @@ public class MustacheTemplateEngine {
     }
     
     private void generateDtoClasses(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath) throws IOException {
-        // Generate input DTO class
+        // Process input DTO class
+        @SuppressWarnings("unchecked")
+        List<Map<String, String>> inputFields = (List<Map<String, String>>) step.get("inputFields");
         Map<String, Object> inputContext = new HashMap<>(step);
         inputContext.put("basePackage", basePackage);
         inputContext.put("className", step.get("inputTypeName") + "Dto");
-        inputContext.put("fields", step.get("inputFields"));
+        inputContext.put("fields", inputFields);
+        addImportFlagsToContext(inputContext, inputFields);
         
         Mustache mustache = mf.compile("templates/dto.mustache");
         StringWriter stringWriter = new StringWriter();
@@ -213,11 +222,14 @@ public class MustacheTemplateEngine {
             .resolve(step.get("inputTypeName") + "Dto.java");
         Files.write(inputDtoPath, stringWriter.toString().getBytes());
         
-        // Generate output DTO class
+        // Process output DTO class
+        @SuppressWarnings("unchecked")
+        List<Map<String, String>> outputFields = (List<Map<String, String>>) step.get("outputFields");
         Map<String, Object> outputContext = new HashMap<>(step);
         outputContext.put("basePackage", basePackage);
         outputContext.put("className", step.get("outputTypeName") + "Dto");
-        outputContext.put("fields", step.get("outputFields"));
+        outputContext.put("fields", outputFields);
+        addImportFlagsToContext(outputContext, outputFields);
         
         mustache = mf.compile("templates/dto.mustache");
         stringWriter = new StringWriter();
@@ -527,5 +539,85 @@ public class MustacheTemplateEngine {
     
     private String toPath(String packageName) {
         return packageName.replace('.', '/');
+    }
+    
+    private void addImportFlagsToContext(Map<String, Object> context, List<Map<String, String>> fields) {
+        boolean hasDateFields = false;
+        boolean hasBigIntegerFields = false;
+        boolean hasBigDecimalFields = false;
+        boolean hasCurrencyFields = false;
+        boolean hasPathFields = false;
+        boolean hasNetFields = false;
+        boolean hasIoFields = false;
+        boolean hasAtomicFields = false;
+        boolean hasUtilFields = false;
+        
+        // Process fields and add list type information
+        List<Map<String, String>> processedFields = new ArrayList<>();
+        for (Map<String, String> field : fields) {
+            Map<String, String> processedField = new HashMap<>(field);
+            
+            // Check if this is a list type and handle it appropriately
+            String type = field.get("type");
+            if ("List<String>".equals(type)) {
+                processedField.put("isListType", "true");
+                processedField.put("listInnerType", "string");
+            } else {
+                processedField.put("isListType", "false");
+            }
+            
+            processedFields.add(processedField);
+            
+            if (type != null) {
+                switch (type) {
+                    case "LocalDate":
+                    case "LocalDateTime":
+                    case "OffsetDateTime":
+                    case "ZonedDateTime":
+                    case "Instant":
+                    case "Duration":
+                    case "Period":
+                        hasDateFields = true;
+                        break;
+                    case "BigInteger":
+                        hasBigIntegerFields = true;
+                        break;
+                    case "BigDecimal":
+                        hasBigDecimalFields = true;
+                        break;
+                    case "Currency":
+                        hasCurrencyFields = true;
+                        break;
+                    case "Path":
+                        hasPathFields = true;
+                        break;
+                    case "URI":
+                    case "URL":
+                        hasNetFields = true;
+                        break;
+                    case "File":
+                        hasIoFields = true;
+                        break;
+                    case "AtomicInteger":
+                    case "AtomicLong":
+                        hasAtomicFields = true;
+                        break;
+                    case "List<String>":
+                        hasUtilFields = true;
+                        break;
+                }
+            }
+        }
+        
+        context.put("fields", processedFields);
+        context.put("hasDateFields", hasDateFields);
+        context.put("hasBigIntegerFields", hasBigIntegerFields);
+        context.put("hasBigDecimalFields", hasBigDecimalFields);
+        context.put("hasCurrencyFields", hasCurrencyFields);
+        context.put("hasPathFields", hasPathFields);
+        context.put("hasNetFields", hasNetFields);
+        context.put("hasIoFields", hasIoFields);
+        context.put("hasAtomicFields", hasAtomicFields);
+        context.put("hasUtilFields", hasUtilFields);
     }
 }

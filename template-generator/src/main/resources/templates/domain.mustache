@@ -8,6 +8,42 @@ import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
 
+{{#hasDateFields}}
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
+import java.time.Instant;
+import java.time.Duration;
+import java.time.Period;
+{{/hasDateFields}}
+{{#hasBigIntegerFields}}
+import java.math.BigInteger;
+{{/hasBigIntegerFields}}
+{{#hasBigDecimalFields}}
+import java.math.BigDecimal;
+{{/hasBigDecimalFields}}
+{{#hasCurrencyFields}}
+import java.util.Currency;
+{{/hasCurrencyFields}}
+{{#hasPathFields}}
+import java.nio.file.Path;
+{{/hasPathFields}}
+{{#hasNetFields}}
+import java.net.URI;
+import java.net.URL;
+{{/hasNetFields}}
+{{#hasIoFields}}
+import java.io.File;
+{{/hasIoFields}}
+{{#hasAtomicFields}}
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+{{/hasAtomicFields}}
+{{#hasUtilFields}}
+import java.util.List;
+{{/hasUtilFields}}
+
 @Setter
 @Getter
 public class {{className}} extends BaseEntity {

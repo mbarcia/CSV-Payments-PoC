@@ -2,7 +2,13 @@
   import { onMount } from 'svelte';
 
   export let fields;
-  export let fieldTypes = [];
+  // Default to Java-centered types if no fieldTypes provided
+  export let fieldTypes = [
+    'String', 'Integer', 'Long', 'Double', 'Boolean', 
+    'UUID', 'BigDecimal', 'Currency', 'Path',
+    'List<String>', 'LocalDateTime', 'LocalDate', 'OffsetDateTime', 'ZonedDateTime', 'Instant', 'Duration', 'Period',
+    'URI', 'URL', 'File', 'BigInteger', 'AtomicInteger', 'AtomicLong', 'Enum'
+  ];
   export let type = 'input';
   export let title = '';
   export let visible = false;

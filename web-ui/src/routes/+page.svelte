@@ -40,18 +40,17 @@
     { value: 'SIDE_EFFECT', label: 'Side-effect' }
   ];
 
-  // Protobuf scalar types
-  const validProtoTypes = ['string', 'int32', 'int64', 'float', 'double', 'bool', 'bytes', 'Enum'];
   
-  // Field types for dropdowns (using Protobuf scalar types)
-  const fieldTypes = [
-    'string', 'int32', 'int64', 'float', 'double', 'bool', 'bytes', 'Enum'
-  ];
   
   // Function to check if a type is valid (scalar, Enum, or defined in previous steps)
   function isValidFieldType(type, currentStepIndex) {
-    // First check if it's a scalar or Enum
-    if (validProtoTypes.includes(type)) {
+    // First check if it's a Java scalar type
+    if (isJavaScalarType(type)) {
+      return true;
+    }
+    
+    // If not a scalar, check if it's Enum
+    if (type === 'Enum') {
       return true;
     }
     
@@ -68,8 +67,13 @@
   
   // Function to get all available field types including custom message types
   function getAvailableFieldTypes(currentStepIndex) {
-    // Start with basic scalar types and Enum
-    let allTypes = [...validProtoTypes];
+    // Start with basic Java scalar types and Enum
+    let allTypes = [
+      'String', 'Integer', 'Long', 'Double', 'Boolean', 
+      'UUID', 'BigDecimal', 'Currency', 'Path',
+      'List<String>', 'LocalDateTime', 'LocalDate', 'OffsetDateTime', 'ZonedDateTime', 'Instant', 'Duration', 'Period',
+      'URI', 'URL', 'File', 'BigInteger', 'AtomicInteger', 'AtomicLong', 'Enum'
+    ];
     
     // Add custom message types from previous steps
     if (config && config.steps && Array.isArray(config.steps)) {
@@ -148,8 +152,8 @@
     
     const newField = {
       name: `${type}Field${fields.length + 1}`,
-      type: 'string',  // Using protobuf type directly
-      protoType: 'string'
+      type: 'String',  // Using Java type
+      protoType: javaTypeToProtoType('String')
     };
     
     fields.push(newField);
@@ -236,9 +240,9 @@
     
     fields[fieldIndex][property] = value;
     
-    // Update protoType - now the type IS the proto type
+    // Update protoType based on Java type mapping
     if (property === 'type') {
-      fields[fieldIndex].protoType = value;
+      fields[fieldIndex].protoType = javaTypeToProtoType(value);
     }
     
     // Handle Side-Effect steps - keep input and output fields in sync
@@ -246,12 +250,12 @@
       if (type === 'input') {
         step.outputFields[fieldIndex][property] = value;
         if (property === 'type') {
-          step.outputFields[fieldIndex].protoType = value;
+          step.outputFields[fieldIndex].protoType = javaTypeToProtoType(value);
         }
       } else {
         step.inputFields[fieldIndex][property] = value;
         if (property === 'type') {
-          step.inputFields[fieldIndex].protoType = value;
+          step.inputFields[fieldIndex].protoType = javaTypeToProtoType(value);
         }
       }
     }
@@ -267,7 +271,7 @@
         if (nextStep && nextStep.inputFields && nextStep.inputFields[fieldIndex]) {
           nextStep.inputFields[fieldIndex][property] = value;
           if (property === 'type') {
-            nextStep.inputFields[fieldIndex].protoType = value;
+            nextStep.inputFields[fieldIndex].protoType = javaTypeToProtoType(value);
           }
           config.steps[stepIndex + 1] = { ...nextStep };
         }
@@ -278,7 +282,7 @@
       if (prevStep && prevStep.outputFields && prevStep.outputFields[fieldIndex]) {
         prevStep.outputFields[fieldIndex][property] = value;
         if (property === 'type') {
-          prevStep.outputFields[fieldIndex].protoType = value;
+          prevStep.outputFields[fieldIndex].protoType = javaTypeToProtoType(value);
         }
         config.steps[stepIndex - 1] = { ...prevStep };
       }
@@ -287,11 +291,71 @@
     config = { ...config };
   }
 
-  // Get the corresponding proto type - now we're using proto types directly
-  function getProtoType(protoType) {
-    // Validate that it's a valid proto type
-    const validTypes = ['string', 'int32', 'int64', 'float', 'double', 'bool', 'bytes', 'Enum'];
-    return validTypes.includes(protoType) ? protoType : 'string';
+  // Check if a type is a Java scalar type (needs protobuf mapping)
+  function isJavaScalarType(javaType) {
+    const scalarTypes = [
+      'string', 'integer', 'int', 'long', 'double', 'boolean', 
+      'uuid', 'bigdecimal', 'currency', 'path',
+      'list<string>', 'localdatetime', 'localdate', 'offsetdatetime', 'zoneddatetime', 'instant', 'duration', 'period',
+      'uri', 'url', 'file', 'biginteger', 'atomicinteger', 'atomic_int', 'atomiclong', 'atomic_long'
+    ];
+    return scalarTypes.includes(javaType.toLowerCase());
+  }
+
+  // Java to protobuf type mapping - only for scalar types
+  function javaTypeToProtoType(javaType) {
+    if (!isJavaScalarType(javaType)) {
+      // For non-scalar types (custom message types), return as-is
+      return javaType;
+    }
+    
+    // Only map Java scalar types to protobuf types
+    switch (javaType.toLowerCase()) {
+      case 'string':
+        return 'string';
+      case 'integer':
+      case 'int':
+        return 'int32';
+      case 'long':
+        return 'int64';
+      case 'double':
+        return 'double';
+      case 'boolean':
+        return 'bool';
+      case 'uuid':
+      case 'currency':
+      case 'path':
+      case 'list<string>':
+      case 'localdate':
+      case 'localdatetime':
+      case 'offsetdatetime':
+      case 'zoneddatetime':
+      case 'period':
+      case 'uri':
+      case 'url':
+      case 'file':
+      case 'bigdecimal':
+      case 'biginteger':
+        return 'string';
+      case 'instant':
+        return 'int64';
+      case 'duration':
+        return 'int64';
+      case 'atomicinteger':
+      case 'atomic_int':
+        return 'int32';
+      case 'atomiclong':
+      case 'atomic_long':
+        return 'int64';
+      default:
+        // Default to string for any other scalar type
+        return 'string';
+    }
+  }
+
+  // Get the corresponding proto type - now we're using Java types with automatic mapping to protobuf
+  function getProtoType(javaType) {
+    return javaTypeToProtoType(javaType);
   }
 
   // Generate YAML and download
@@ -377,9 +441,9 @@
             if (!field.name || !field.type || !field.protoType) {
               throw new Error(`Invalid configuration file: input field ${j+1} in step ${i+1} is missing required properties (name, type, protoType)`);
             }
-            // Validate that field.type is a valid protobuf type or custom message type from a previous step
+            // Validate that field.type is a valid Java scalar type or custom message type from a previous step
             if (!isValidFieldType(field.type, i)) {
-              throw new Error(`Invalid configuration file: input field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are: ${validProtoTypes.join(', ')}, or custom message types defined in previous steps.`);
+              throw new Error(`Invalid configuration file: input field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are Java scalar types or custom message types defined in previous steps.`);
             }
           }
           
@@ -388,9 +452,9 @@
             if (!field.name || !field.type || !field.protoType) {
               throw new Error(`Invalid configuration file: output field ${j+1} in step ${i+1} is missing required properties (name, type, protoType)`);
             }
-            // Validate that field.type is a valid protobuf type or custom message type from a previous step
+            // Validate that field.type is a valid Java scalar type or custom message type from a previous step
             if (!isValidFieldType(field.type, i)) {
-              throw new Error(`Invalid configuration file: output field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are: ${validProtoTypes.join(', ')}, or custom message types defined in previous steps.`);
+              throw new Error(`Invalid configuration file: output field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are Java scalar types or custom message types defined in previous steps.`);
             }
           }
           

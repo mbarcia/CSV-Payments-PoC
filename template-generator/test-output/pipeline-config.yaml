@@ -1,0 +1,32 @@
+---
+appName: "TestApp"
+basePackage: "test.package"
+steps:
+- stepType: "StepOneToOne"
+  serviceNameCamel: "testStep"
+  serviceName: "test-step-svc"
+  cardinality: "ONE_TO_ONE"
+  inputFields:
+  - protoType: "string"
+    name: "name"
+    type: "String"
+  - protoType: "string"
+    name: "createdAt"
+    type: "LocalDateTime"
+  - protoType: "int32"
+    name: "count"
+    type: "AtomicInteger"
+  outputFields:
+  - protoType: "string"
+    name: "token"
+    type: "UUID"
+  - protoType: "string"
+    name: "values"
+    type: "List<String>"
+  outputTypeName: "TestOutput"
+  inputTypeName: "TestInput"
+  outputTypeSimpleName: "TestOutput"
+  grpcClientName: "TestStepSvc"
+  name: "Test Step"
+  inputTypeSimpleName: "TestInput"
+  order: 1

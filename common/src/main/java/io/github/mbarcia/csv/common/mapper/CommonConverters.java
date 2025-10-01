@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -72,6 +72,6 @@ public class CommonConverters {
 
   @Named("stringToPath")
   public Path stringToPath(String path) {
-    return Path.of(path);
+    return path != null ? Path.of(path) : null;
   }
 }

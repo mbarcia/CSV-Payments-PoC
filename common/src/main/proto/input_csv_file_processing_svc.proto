@@ -21,11 +21,6 @@ message CsvPaymentsInputStream {
   string source = 1;
 }
 
-message CsvFolder {
-  string id = 1;
-  string folderPath = 2;
-}
-
 service ProcessCsvPaymentsInputFileService {
   rpc remoteProcess(CsvPaymentsInputFile) returns (stream PaymentRecord);
 }

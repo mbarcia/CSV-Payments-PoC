@@ -47,3 +47,6 @@ docker-compose.orchestrator.local.yml
 
 # VitePress build output
 docs/.vitepress/dist/
+
+# Web UI build output
+web-ui/build/

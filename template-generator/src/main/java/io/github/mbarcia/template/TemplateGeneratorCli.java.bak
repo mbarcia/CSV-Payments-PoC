@@ -79,8 +79,8 @@ public class TemplateGeneratorCli implements Callable<Integer> {
                 String stepName = (String) rawStep.get("name");
                 processedStep.put("serviceName", stepName.replaceAll("[^a-zA-Z0-9]", "-").toLowerCase() + "-svc");
                 processedStep.put("serviceNameCamel", toCamelCase(stepName.replaceAll("[^a-zA-Z0-9]", " ")));
-                processedStep.put("inputTypeSimpleName", ((String)rawStep.get("inputTypeName")).replaceAll(".*\\.", ""));
-                processedStep.put("outputTypeSimpleName", ((String)rawStep.get("outputTypeName")).replaceAll(".*\\.", ""));
+                processedStep.put("inputTypeSimpleName", ((String)rawStep.get("inputTypeName")).replaceAll(".*\.", ""));
+                processedStep.put("outputTypeSimpleName", ((String)rawStep.get("outputTypeName")).replaceAll(".*\.", ""));
                 processedStep.put("order", i + 1);
                 processedStep.put("grpcClientName", stepName.replaceAll("[^a-zA-Z0-9]", "") + "Svc");
                 
@@ -124,10 +124,19 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         MustacheTemplateEngine engine = new MustacheTemplateEngine();
         engine.generateApplication(appName, basePackage, steps, outputPath);
         
-        System.out.println("\nApplication generated successfully in: " + outputDir);
+        System.out.println("\
+Application generated successfully in: " + outputDir);
         System.out.println("Run 'cd " + outputDir + " && ./mvnw clean compile' to verify the generated application.");
         
         return 0;
+    }
+
+    
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> loadConfigFromFile(Path configPath) throws IOException {
+        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        Map<String, Object> config = mapper.readValue(configPath.toFile(), Map.class);
+        return config;
     }
     
     private List<Map<String, Object>> collectSteps(Scanner scanner) {
@@ -135,7 +144,8 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         int stepNumber = 1;
         
         while (true) {
-            System.out.println("\nStep " + stepNumber + ":");
+            System.out.println("
+Step " + stepNumber + ":");
             System.out.print("Enter step name (or press Enter to finish): ");
             String stepName = scanner.nextLine().trim();
             
@@ -178,30 +188,12 @@ public class TemplateGeneratorCli implements Callable<Integer> {
                     break;
             }
             
-            // Determine input type based on previous step
-            String inputTypeName;
-            String inputTypeSimpleName;
-            List<Map<String, String>> inputFields;
+            System.out.print("Enter input type name (plural if reduction): ");
+            String inputTypeName = scanner.nextLine().trim();
             
-            if (stepNumber == 1) {
-                // First step - user defines input type
-                System.out.print("Enter input type name: ");
-                inputTypeName = scanner.nextLine().trim();
-                inputTypeSimpleName = inputTypeName.replaceAll(".*\\.", "");
-                
-                // Collect input fields
-                inputFields = collectFields(scanner, "input");
-            } else {
-                // Subsequent steps - input is the output of the previous step
-                Map<String, Object> previousStep = steps.get(stepNumber - 2); // Get previous step (0-indexed)
-                inputTypeName = (String) previousStep.get("outputTypeName");
-                inputTypeSimpleName = (String) previousStep.get("outputTypeSimpleName");
-                inputFields = (List<Map<String, String>>) previousStep.get("outputFields");
-                
-                System.out.println("Input type for step '" + stepName + "' will be '" + inputTypeName + "' from previous step");
-            }
+            // Collect input fields
+            List<Map<String, String>> inputFields = collectFields(scanner, "input");
             
-            // User defines output type
             System.out.print("Enter output type name (plural if expansion): ");
             String outputTypeName = scanner.nextLine().trim();
             
@@ -216,10 +208,10 @@ public class TemplateGeneratorCli implements Callable<Integer> {
             step.put("cardinality", cardinality);
             step.put("stepType", stepType);
             step.put("inputTypeName", inputTypeName);
-            step.put("inputTypeSimpleName", inputTypeSimpleName);
+            step.put("inputTypeSimpleName", inputTypeName.replaceAll(".*\.", ""));
             step.put("inputFields", inputFields);
             step.put("outputTypeName", outputTypeName);
-            step.put("outputTypeSimpleName", outputTypeName.replaceAll(".*\\.", ""));
+            step.put("outputTypeSimpleName", outputTypeName.replaceAll(".*\.", ""));
             step.put("outputFields", outputFields);
             step.put("order", stepNumber);
             step.put("grpcClientName", stepName.replaceAll("[^a-zA-Z0-9]", "") + "Svc");
@@ -229,20 +221,6 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         }
         
         return steps;
-    }
-    
-    private String getStepTypeForCardinality(String cardinality) {
-        switch (cardinality) {
-            case "ONE_TO_ONE":
-            case "SIDE_EFFECT":
-                return "StepOneToOne";
-            case "EXPANSION":
-                return "StepOneToMany";
-            case "REDUCTION":
-                return "StepManyToOne";
-            default:
-                return "StepOneToOne"; // default
-        }
     }
     
     private void generateIntermediateConfig(String appName, String basePackage, List<Map<String, Object>> steps) throws IOException {
@@ -264,13 +242,6 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         System.out.println("Intermediate configuration saved to: " + configPath);
     }
     
-    @SuppressWarnings("unchecked")
-    private Map<String, Object> loadConfigFromFile(Path configPath) throws IOException {
-        ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        Map<String, Object> config = mapper.readValue(configPath.toFile(), Map.class);
-        return config;
-    }
-    
     private void generateSampleConfig() throws IOException {
         Map<String, Object> config = new HashMap<>();
         config.put("appName", "Sample Pipeline App");
@@ -278,7 +249,7 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         
         List<Map<String, Object>> steps = new ArrayList<>();
         
-        // Sample step 1: Process Customer (first step defines its own input)
+        // Sample step 1: Process Customer
         Map<String, Object> step1 = new HashMap<>();
         step1.put("name", "Process Customer");
         step1.put("serviceName", "process-customer-svc");
@@ -341,29 +312,42 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         step1.put("grpcClientName", "ProcessCustomerSvc");
         steps.add(step1);
         
-        // Sample step 2: Validate Order (input is output from previous step)
+        // Sample step 2: Validate Order
         Map<String, Object> step2 = new HashMap<>();
         step2.put("name", "Validate Order");
         step2.put("serviceName", "validate-order-svc");
         step2.put("serviceNameCamel", "validateOrder");
-        step2.put("cardinality", "ONE_TO_ONE");
-        step2.put("stepType", "StepOneToOne");
-        step2.put("inputTypeName", "CustomerOutput"); // Same as output of step 1
-        step2.put("inputTypeSimpleName", "CustomerOutput");
-        step2.put("inputFields", outputFields1); // Same as output fields of step 1
+        step2.put("cardinality", "EXPANSION");
+        step2.put("stepType", "StepOneToMany");
+        step2.put("inputTypeName", "OrderInput");
+        step2.put("inputTypeSimpleName", "OrderInput");
         
-        step2.put("outputTypeName", "ValidationOutput");
-        step2.put("outputTypeSimpleName", "ValidationOutput");
+        List<Map<String, String>> inputFields2 = new ArrayList<>();
+        Map<String, String> inputField4 = new HashMap<>();
+        inputField4.put("name", "orderId");
+        inputField4.put("type", "String");
+        inputField4.put("protoType", "string");
+        inputFields2.add(inputField4);
+        
+        Map<String, String> inputField5 = new HashMap<>();
+        inputField5.put("name", "items");
+        inputField5.put("type", "String");
+        inputField5.put("protoType", "string");
+        inputFields2.add(inputField5);
+        
+        step2.put("inputFields", inputFields2);
+        step2.put("outputTypeName", "OrderItem");
+        step2.put("outputTypeSimpleName", "OrderItem");
         
         List<Map<String, String>> outputFields2 = new ArrayList<>();
         Map<String, String> outputField5 = new HashMap<>();
-        outputField5.put("name", "id");
-        outputField5.put("type", "UUID");
+        outputField5.put("name", "itemId");
+        outputField5.put("type", "String");
         outputField5.put("protoType", "string");
         outputFields2.add(outputField5);
         
         Map<String, String> outputField6 = new HashMap<>();
-        outputField6.put("name", "isValid");
+        outputField6.put("name", "valid");
         outputField6.put("type", "Boolean");
         outputField6.put("protoType", "bool");
         outputFields2.add(outputField6);
@@ -449,7 +433,7 @@ public class TemplateGeneratorCli implements Callable<Integer> {
     }
     
     private String toCamelCase(String input) {
-        String[] parts = input.trim().split("\\s+");
+        String[] parts = input.trim().split("\s+");
         StringBuilder result = new StringBuilder();
         
         for (int i = 0; i < parts.length; i++) {
@@ -465,6 +449,23 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         }
         
         return result.toString();
+    }
+    
+    private String getStepTypeForCardinality(String cardinality) {
+        if (cardinality == null) {
+            return "StepOneToOne"; // default
+        }
+        
+        switch (cardinality) {
+            case "EXPANSION":
+                return "StepOneToMany";
+            case "REDUCTION":
+                return "StepManyToOne";
+            case "SIDE_EFFECT":
+            case "ONE_TO_ONE":
+            default:
+                return "StepOneToOne";
+        }
     }
     
     public static void main(String[] args) {

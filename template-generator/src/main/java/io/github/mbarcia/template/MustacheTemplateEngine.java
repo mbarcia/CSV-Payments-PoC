@@ -55,6 +55,9 @@ public class MustacheTemplateEngine {
         // Generate mvnw files
         generateMvNWFiles(mf, outputPath);
         
+        // Generate Maven wrapper files
+        generateMavenWrapperFiles(outputPath);
+        
         // Generate other files
         generateOtherFiles(mf, appName, outputPath);
     }
@@ -119,6 +122,21 @@ public class MustacheTemplateEngine {
     }
     
     private void generateProtoFile(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath) throws IOException {
+        // Process input fields to add field numbers
+        @SuppressWarnings("unchecked")
+        List<Map<String, String>> inputFields = (List<Map<String, String>>) step.get("inputFields");
+        for (int i = 0; i < inputFields.size(); i++) {
+            inputFields.get(i).put("fieldNumber", String.valueOf(i + 1));
+        }
+        
+        // Process output fields to add field numbers starting after input fields
+        @SuppressWarnings("unchecked")
+        List<Map<String, String>> outputFields = (List<Map<String, String>>) step.get("outputFields");
+        int outputStartNumber = inputFields.size() + 1;
+        for (int i = 0; i < outputFields.size(); i++) {
+            outputFields.get(i).put("fieldNumber", String.valueOf(outputStartNumber + i));
+        }
+        
         Map<String, Object> context = new HashMap<>(step);
         context.put("basePackage", basePackage);
         context.put("isExpansion", "EXPANSION".equals(step.get("cardinality")));
@@ -471,6 +489,21 @@ public class MustacheTemplateEngine {
         mustache.execute(stringWriter, new HashMap<>());
         stringWriter.flush();
         Files.write(outputPath.resolve("mvnw.cmd"), stringWriter.toString().getBytes());
+    }
+    
+    private void generateMavenWrapperFiles(Path outputPath) throws IOException {
+        // Create .mvn/wrapper directory
+        Path wrapperDir = outputPath.resolve(".mvn/wrapper");
+        Files.createDirectories(wrapperDir);
+        
+        // Copy maven-wrapper.properties
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("templates/.mvn/wrapper/maven-wrapper.properties")) {
+            if (is != null) {
+                Files.copy(is, wrapperDir.resolve("maven-wrapper.properties"));
+            }
+        }
+        
+        // Note: We don't copy maven-wrapper.jar - the mvnw script will download it automatically when needed
     }
     
     private void generateOtherFiles(MustacheFactory mf, String appName, Path outputPath) throws IOException {

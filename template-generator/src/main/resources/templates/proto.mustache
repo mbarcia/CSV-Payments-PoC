@@ -4,13 +4,13 @@ option java_package = "{{basePackage}}.grpc";
 
 message {{inputTypeName}} {
 {{#inputFields}}
-  {{protoType}} {{name}} = {{#indexPlusOne @index}}1{{/indexPlusOne}};
+  {{protoType}} {{name}} = {{fieldNumber}};
 {{/inputFields}}
 }
 
 message {{outputTypeName}} {
 {{#outputFields}}
-  {{protoType}} {{name}} = {{#indexPlusOne @index}}{{#inputFields.length}}{{/inputFields.length}}{{^inputFields.length}}1{{/inputFields.length}}{{/indexPlusOne}};
+  {{protoType}} {{name}} = {{fieldNumber}};
 {{/outputFields}}
 }
 

@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
     order = 1,
     inputType = TestInput.class,
     outputType = TestOutput.class,
-    stepType = StepOneToOne.class,
+    stepType = io.github.mbarcia.pipeline.step.StepOneToOne.class,
     backendType = GenericGrpcServiceUnaryAdapter.class,
     grpcStub = MutinyProcessTest StepServiceGrpc.MutinyProcessTest StepServiceStub.class,
     grpcImpl = MutinyProcessTest StepServiceGrpc.ProcessTest StepServiceImplBase.class,

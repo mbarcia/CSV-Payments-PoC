@@ -197,11 +197,6 @@
                         <goals>
                             <goal>jandex</goal>
                         </goals>
-                        <configuration>
-                            <includes>
-                                <include>**/*MapperImpl.class</include>
-                            </includes>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

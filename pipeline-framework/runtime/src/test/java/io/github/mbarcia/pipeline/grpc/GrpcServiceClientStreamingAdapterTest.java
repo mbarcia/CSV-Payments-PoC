@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -249,7 +249,8 @@ class GrpcServiceClientStreamingAdapterTest {
                         // Return a service that will process the transformed stream
                         // When the stream is processed, it will trigger the fromGrpc transformation
                         return inputStream -> {
-                            // Simulate what would happen in a real service - collect the stream
+                            // Simulate what would happen in a real service - collect the
+                            // stream
                             return inputStream
                                     .collect()
                                     .asList()

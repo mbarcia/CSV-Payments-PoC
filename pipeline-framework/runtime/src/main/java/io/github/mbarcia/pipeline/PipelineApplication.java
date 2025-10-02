@@ -34,10 +34,11 @@ import org.slf4j.LoggerFactory;
  * Generic pipeline application that can be extended with specific steps.
  * This class serves as a base for generated pipeline applications that include
  * all the required step implementations.
- * 
+ * <p>
  * This class does not have @QuarkusMain, main() method or implement QuarkusApplication
  * to avoid being treated as an application by services that only use it as a library.
  */
+@SuppressWarnings("unused")
 public abstract class PipelineApplication {
 
   protected static final Logger LOG = LoggerFactory.getLogger(PipelineApplication.class);
@@ -47,13 +48,6 @@ public abstract class PipelineApplication {
 
   @Inject
   protected PipelineRunner pipelineRunner;
-
-  /**
-   * Process the pipeline with the given input - exposed for testing and implementation
-   *
-   * @param input the input to the pipeline
-   */
-  public abstract void processPipeline(String input);
 
   /**
    * Execute the pipeline with the provided steps
@@ -84,7 +78,7 @@ public abstract class PipelineApplication {
       } else if (result instanceof Uni) {
         multiResult = ((Uni<?>) result).toMulti();
       } else {
-        throw new IllegalStateException("PipelineRunner returned unexpected type: " + result.getClass());
+        throw new IllegalStateException(MessageFormat.format("PipelineRunner returned unexpected type: {0}", result.getClass()));
       }
 
       multiResult

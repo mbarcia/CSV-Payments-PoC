@@ -25,9 +25,11 @@ import io.quarkus.arc.Unremovable;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 
 @ApplicationScoped
@@ -40,26 +42,74 @@ public class PipelineRunner implements AutoCloseable {
     @Inject
     PipelineConfig pipelineConfig;
 
+    @Inject
+    Instance<StepsRegistry> stepsRegistryInstance;
+
     private final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
-     * Run a pipeline: input Multi through the list of steps.
+     * Run a pipeline: input Multi through the list of steps from the registry.
      */
+    public Object run(Multi<?> input) {
+        List<Object> steps;
+        if (stepsRegistryInstance.isResolvable()) {
+            StepsRegistry registry = stepsRegistryInstance.get();
+            System.out.println("StepsRegistry injected successfully: " + registry.getClass().getName());
+            List<Object> allSteps = registry.getSteps();
+            System.out.println("Total steps from registry: " + allSteps.size());
+            
+            // Filter out any null steps that may have been injected
+            steps = allSteps.stream()
+                .filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.toList());
+            
+            System.out.println("Non-null steps: " + steps.size());
+            int nullCount = allSteps.size() - steps.size();
+            if (nullCount > 0) {
+                System.out.println("Found " + nullCount + " null steps in registry");
+            }
+        } else {
+            System.out.println("StepsRegistry is not resolvable, using empty list");
+            steps = java.util.Collections.emptyList();
+        }
+        
+        if (steps.isEmpty()) {
+            System.out.println("No steps available to execute - pipeline will not process data");
+        }
+        
+        return run(input, steps);
+    }
+    
+    /**
+     * Run a pipeline: input Multi through the provided list of steps.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
     public Object run(Multi<?> input, List<Object> steps) {
         Object current = input;
 
         for (Object step : steps) {
+            if (step == null) {
+                System.err.println("Warning: Found null step in registry, skipping...");
+                continue;
+            }
+            
             if (step instanceof Configurable c) {
                 LiveStepConfig live = configFactory.buildLiveConfig(step.getClass(), pipelineConfig);
                 c.initialiseWithConfig(live);
             }
 
+            Class<?> clazz = step.getClass();
+            System.out.println("Step class: " + clazz.getName());
+            for (Class<?> iface : clazz.getInterfaces()) {
+                System.out.println("Implements: " + iface.getName());
+            }
+
             switch (step) {
-                case StepOneToOne<?, ?> stepOneToOne -> current = applyOneToOneUnchecked(stepOneToOne, current);
-                case StepOneToMany<?, ?> stepOneToMany -> current = applyOneToManyUnchecked(stepOneToMany, current);
-                case ManyToOne<?, ?> manyToOne -> current = applyManyToOneUnchecked(manyToOne, current);
-                case ManyToMany<?, ?> manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
-                case null, default -> System.err.println("Step not recognised");
+                case StepOneToOne stepOneToOne -> current = applyOneToOneUnchecked(stepOneToOne, current);
+                case StepOneToMany stepOneToMany -> current = applyOneToManyUnchecked(stepOneToMany, current);
+                case ManyToOne manyToOne -> current = applyManyToOneUnchecked(manyToOne, current);
+                case ManyToMany manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
+                default -> System.err.println("Step not recognised: " + step.getClass().getName());
             }
         }
 

@@ -24,7 +24,6 @@ import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import java.text.MessageFormat;
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;
 import org.slf4j.Logger;
@@ -49,13 +48,15 @@ public abstract class PipelineApplication {
   @Inject
   protected PipelineRunner pipelineRunner;
 
+  @Inject
+  protected StepsRegistry stepsRegistry;
+
   /**
-   * Execute the pipeline with the provided steps
+   * Execute the pipeline with steps from the registry
    *
    * @param input the input Multi for the pipeline
-   * @param steps the list of steps to execute
    */
-  protected void executePipeline(Multi<?> input, List<Object> steps) {
+  protected void executePipeline(Multi<?> input) {
     LOG.info("PIPELINE BEGINS processing");
 
     StopWatch watch = new StopWatch();
@@ -67,10 +68,7 @@ public abstract class PipelineApplication {
     pipelineConfig.profile("prod", new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)));
 
     try {
-      Object result = pipelineRunner.run(
-              input,
-              steps
-      );
+      Object result = pipelineRunner.run(input);
 
       Multi<?> multiResult;
       if (result instanceof Multi) {

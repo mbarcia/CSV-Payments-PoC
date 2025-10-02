@@ -63,3 +63,4 @@ ui-dashboard/node_modules/
 
 # Vite cache
 web-ui/node_modules/.vite/
+ANNOTATION_BASED_ADAPTERS.md

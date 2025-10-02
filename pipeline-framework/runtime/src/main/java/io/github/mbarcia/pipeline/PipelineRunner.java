@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.*;
 import io.github.mbarcia.pipeline.step.functional.ManyToMany;
 import io.github.mbarcia.pipeline.step.functional.ManyToOne;
+import io.quarkus.arc.Unremovable;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 
 @ApplicationScoped
+@Unremovable
 public class PipelineRunner implements AutoCloseable {
 
     @Inject

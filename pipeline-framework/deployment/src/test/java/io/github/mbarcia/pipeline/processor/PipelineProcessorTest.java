@@ -264,7 +264,7 @@ public class PipelineProcessorTest {
             order = 1,
             inputType = String.class,
             outputType = Integer.class,
-            stepType = StepOneToOne.class,
+            stepType = io.github.mbarcia.pipeline.step.StepOneToOne.class,
             backendType = GenericGrpcReactiveServiceAdapter.class,
             grpcStub = TestGrpcStub.class,
             grpcImpl = TestGrpcImpl.class,
@@ -285,7 +285,7 @@ public class PipelineProcessorTest {
             order = 2,
             inputType = String.class,
             outputType = Integer.class,
-            stepType = StepOneToMany.class,
+            stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
             backendType = GenericGrpcReactiveServiceAdapter.class,
             grpcStub = TestGrpcStub.class,
             grpcImpl = TestGrpcImpl.class,
@@ -308,7 +308,7 @@ public class PipelineProcessorTest {
             order = 1,
             inputType = String.class,
             outputType = Integer.class,
-            stepType = StepOneToMany.class,
+            stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
             backendType =
                     GenericGrpcReactiveServiceAdapter.class, // This won't be used for local steps
             // No gRPC stub for local steps

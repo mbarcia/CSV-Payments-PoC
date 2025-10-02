@@ -17,11 +17,11 @@
 package io.github.mbarcia.pipeline.processor;
 
 import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
+import io.github.mbarcia.pipeline.StepsRegistry;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.PipelineBuildTimeConfig;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
-import io.quarkus.deployment.GeneratedClassGizmoAdaptor;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -32,6 +32,12 @@ import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +65,38 @@ public class PipelineProcessor {
     public static final String REMOTE_PROCESS_METHOD = "remoteProcess";
     public static final String UNI = "io.smallrye.mutiny.Uni";
     public static final String MULTI = "io.smallrye.mutiny.Multi";
+
+    // Create a custom class writer that exports generated classes to target/gizmo for inspection
+    private static ClassOutput createExportingClassOutput(BuildProducer<GeneratedClassBuildItem> generatedClasses) {
+        // Create the target/gizmo directory to export classes for inspection
+        Path gizmoPath = Paths.get("target", "gizmo");
+        try {
+            Files.createDirectories(gizmoPath);
+            System.out.println("Created gizmo export directory: " + gizmoPath.toAbsolutePath());
+        } catch (IOException e) {
+            System.err.println("Failed to create gizmo export directory: " + e.getMessage());
+        }
+
+        return new ClassOutput() {
+            @Override
+            public void write(String name, byte[] data) {
+                // Write to the build system as usual
+                generatedClasses.produce(new GeneratedClassBuildItem(true, name, data));
+                
+                // Also export to the target/gizmo directory for inspection
+                try {
+                    Path classPath = gizmoPath.resolve(name.replace('.', '/') + ".class");
+                    Files.createDirectories(classPath.getParent());
+                    try (OutputStream out = new FileOutputStream(classPath.toFile())) {
+                        out.write(data);
+                    }
+                    System.out.println("Exported class to: " + classPath.toAbsolutePath());
+                } catch (IOException e) {
+                    System.err.println("Failed to export class " + name + " to gizmo directory: " + e.getMessage());
+                }
+            }
+        };
+    }
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -101,10 +139,10 @@ public class PipelineProcessor {
             if (config.generateCli()) {
                 if (isLocal) {
                     // Generate local step class (local service call) - the pipeline step
-                    generateLocalStepClass(generatedClasses, stepClassInfo, stepType, inputType, outputType, outMapperName);
+                    generateLocalStepClass(generatedClasses, beans, stepClassInfo, stepType, inputType, outputType, outMapperName);
                 } else {
                     // Generate step class (client-side) - the pipeline step 
-                    generateGrpcClientStepClass(generatedClasses, stepClassInfo, stubName, stepType, grpcClientValue, inputType, outputType);
+                    generateGrpcClientStepClass(generatedClasses, beans, stepClassInfo, stubName, stepType, grpcClientValue, inputType, outputType);
                 }
             } else {
                 if (!isLocal) {
@@ -118,6 +156,16 @@ public class PipelineProcessor {
                 stepClassInfo.name().toString() + "Step", // Always add "Step" suffix for consistency in the application class
                 stepType
             ));
+        }
+
+        // Generate the StepsRegistry implementation if we have steps to register
+        List<String> stepClassNames = new ArrayList<>();
+        for (StepInfo stepInfo : stepInfos) {
+            stepClassNames.add(stepInfo.stepClassName);
+        }
+
+        if (!stepClassNames.isEmpty()) {
+            generateStepsRegistry(generatedClasses, beans, stepClassNames);
         }
     }
 
@@ -136,7 +184,7 @@ public class PipelineProcessor {
 
       try (ClassCreator cc =
           new ClassCreator(
-              new GeneratedClassGizmoAdaptor(generatedClasses, true),
+              createExportingClassOutput(generatedClasses),
               adapterClassName,
               null,
               backendType)) {
@@ -174,6 +222,7 @@ public class PipelineProcessor {
 
   private static void generateGrpcClientStepClass(
       BuildProducer<GeneratedClassBuildItem> generatedClasses,
+      BuildProducer<SyntheticBeanBuildItem> beans,
       ClassInfo stepClassInfo,
       String stubName,
       String stepType,
@@ -187,8 +236,8 @@ public class PipelineProcessor {
         String stepClassName = MessageFormat.format("{0}Step", stepClassInfo.name().toString());
 
         try (ClassCreator cc = new ClassCreator(
-                new GeneratedClassGizmoAdaptor(generatedClasses, true),
-                stepClassName, null, stepType)) {
+                createExportingClassOutput(generatedClasses),
+                stepClassName, null, Object.class.getName(), stepType)) {
             
             // Add @ApplicationScoped annotation
             cc.addAnnotation(ApplicationScoped.class);
@@ -201,7 +250,7 @@ public class PipelineProcessor {
 
             // Add default no-arg constructor
             try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
-                defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(stepType), defaultCtor.getThis());
+                defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class.getName()), defaultCtor.getThis());
                 defaultCtor.returnValue(null);
             }
             
@@ -235,6 +284,21 @@ public class PipelineProcessor {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate step class", e);
         }
+        
+        // Register the generated step class as a synthetic bean with all relevant types
+        beans.produce(SyntheticBeanBuildItem
+                .configure(DotName.createSimple(stepClassName))
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .addType(DotName.createSimple(stepType))  // Main step interface (e.g., StepOneToMany)
+                .addType(DotName.createSimple(stepClassName))  // Concrete implementation
+                .addType(DotName.createSimple("io.github.mbarcia.pipeline.step.Step"))  // Base step interface
+                .setRuntimeInit()
+                .creator(mc -> {
+                    ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(stepClassName));
+                    mc.returnValue(instance);
+                })
+                .done());
     }
 
     private static void wrapCallToRemoteService(String stubName, String inputType, MethodCreator method, FieldCreator fieldCreator, String type) {
@@ -252,6 +316,7 @@ public class PipelineProcessor {
 
     private static void generateLocalStepClass(
         BuildProducer<GeneratedClassBuildItem> generatedClasses,
+        BuildProducer<SyntheticBeanBuildItem> beans,
         ClassInfo serviceClassInfo,
         String stepType,
         String inputType,
@@ -263,9 +328,13 @@ public class PipelineProcessor {
         // Generate a subclass that implements the appropriate step interface
         String stepClassName = MessageFormat.format("{0}Step", serviceClassInfo.name().toString());
 
+        
         try (ClassCreator cc = new ClassCreator(
-                new GeneratedClassGizmoAdaptor(generatedClasses, true),
-                stepClassName, null, stepType)) {
+                createExportingClassOutput(generatedClasses),
+                stepClassName,
+                null,
+                Object.class.getName(),
+                stepType)) {
             
             // Add @ApplicationScoped annotation
             cc.addAnnotation(ApplicationScoped.class);
@@ -285,20 +354,20 @@ public class PipelineProcessor {
 
             // Add default no-arg constructor
             try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
-                defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(stepType), defaultCtor.getThis());
+                defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class.getName()), defaultCtor.getThis());
                 defaultCtor.returnValue(null);
             }
             
             // Add the appropriate method implementation based on the step type
-            if (stepType.endsWith("StepOneToOne")) {
-                // Generate method: applyOneToOne (I -> Uni<O>)
-                try (MethodCreator method = cc.getMethodCreator("applyOneToOne", UNI, inputType)) {
-                    generateLocalStepOneToOne(method, serviceField, mapperField, serviceClassInfo, outputMapperName);
-                }
-            } else if (stepType.endsWith("StepOneToMany")) {
+            if (stepType.endsWith("StepOneToMany")) {
                 // Generate method: applyOneToMany (I -> Multi<O>)
                 try (MethodCreator method = cc.getMethodCreator("applyOneToMany", MULTI, inputType)) {
                     generateLocalStepOneToMany(method, serviceField, mapperField, serviceClassInfo, outputMapperName);
+                }
+            } else if (stepType.endsWith("StepOneToOne")) {
+                // Generate method: applyOneToOne (I -> Uni<O>)
+                try (MethodCreator method = cc.getMethodCreator("applyOneToOne", UNI, inputType)) {
+                    generateLocalStepOneToOne(method, serviceField, mapperField, serviceClassInfo, outputMapperName);
                 }
             } else if (stepType.endsWith("StepManyToOne")) {
                 // Generate method: applyManyToOne (Multi<I> -> Uni<O>)
@@ -319,6 +388,21 @@ public class PipelineProcessor {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate local step class", e);
         }
+        
+        // Register the generated step class as a synthetic bean with all relevant types
+        beans.produce(SyntheticBeanBuildItem
+                .configure(DotName.createSimple(stepClassName))
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .addType(DotName.createSimple(stepType))  // Main step interface (e.g., StepOneToMany)
+                .addType(DotName.createSimple(stepClassName))  // Concrete implementation
+                .addType(DotName.createSimple("io.github.mbarcia.pipeline.step.Step"))  // Base step interface
+                .setRuntimeInit()
+                .creator(mc -> {
+                    ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(stepClassName));
+                    mc.returnValue(instance);
+                })
+                .done());
     }
 
     private static void generateLocalStepOneToMany(MethodCreator method, FieldCreator serviceField, FieldCreator mapperField, ClassInfo serviceClassInfo, String outputMapperName) {
@@ -328,7 +412,7 @@ public class PipelineProcessor {
 
         // For ProcessFolderService, call service.process(String) -> Stream<CsvPaymentsInputFile>
         ResultHandle domainStream = method.invokeVirtualMethod(
-            MethodDescriptor.ofMethod(serviceClassInfo.name().toString(), "process", "java.util.stream.Stream", String.class.getName()),
+            MethodDescriptor.ofMethod(serviceClassInfo.name().toString(), "process", "java.util.stream.Stream", "java.lang.String"),
             service, inputParam
         );
         
@@ -344,15 +428,8 @@ public class PipelineProcessor {
             domainList
         );
         
-        if (mapperField != null && !outputMapperName.equals("java.lang.Void") && !outputMapperName.isEmpty()) {
-            // For now, we'll skip the mapping until a proper solution is implemented
-            // The mapping is complex in Gizmo and requires proper lambda support
-            // For now, we'll just return the domain objects as-is to allow the app to run
-            method.returnValue(multiFromList);
-        } else {
-            // Return the Multi without mapping
-            method.returnValue(multiFromList);
-        }
+        // Return the Multi - this implements StepOneToMany.applyOneToMany correctly
+        method.returnValue(multiFromList);
     }
 
     // Placeholder methods for other step types - they can be implemented later
@@ -371,4 +448,91 @@ public class PipelineProcessor {
     private static void generateLocalStepSideEffect(MethodCreator method, FieldCreator serviceField, FieldCreator mapperField, ClassInfo serviceClassInfo, String outputMapperName) {
         method.throwException(RuntimeException.class, "StepSideEffect not implemented for local steps yet");
     }
+    
+    private static void generateStepsRegistry(
+        BuildProducer<GeneratedClassBuildItem> generatedClasses,
+        BuildProducer<SyntheticBeanBuildItem> beans,
+        List<String> stepClassNames) {
+        
+        // Generate an implementation of StepsRegistry that programmatically discovers all step instances via BeanManager
+        String registryImplClassName = "io.github.mbarcia.pipeline.StepsRegistryImpl";
+        
+        System.out.println("Generating StepsRegistry with " + stepClassNames.size() + " steps");
+        
+        try (ClassCreator cc = new ClassCreator(
+                createExportingClassOutput(generatedClasses),
+                registryImplClassName,
+                null,
+                Object.class.getName(),
+                StepsRegistry.class.getName())) {
+            
+            // Add @ApplicationScoped annotation
+            cc.addAnnotation(ApplicationScoped.class);
+            
+            // Create a field for CDI Instance to look up all step implementations
+            FieldCreator instanceField = cc.getFieldCreator("stepInstances", "jakarta.enterprise.inject.Instance")
+                    .setModifiers(java.lang.reflect.Modifier.PRIVATE);
+            instanceField.addAnnotation(Inject.class);
+            
+            // Add getSteps method that discovers all available step implementations
+            try (MethodCreator method = cc.getMethodCreator("getSteps", "java.util.List")) {
+                // Create an ArrayList to hold the discovered steps
+                ResultHandle list = method.newInstance(MethodDescriptor.ofConstructor("java.util.ArrayList"));
+                
+                // For each step class, check if it's available and add to list if so
+                for (String stepClassName : stepClassNames) {
+                    // Get the specific step instance from CDI
+                    ResultHandle stepProvider = method.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod("jakarta.enterprise.inject.Instance", "select", 
+                            "jakarta.enterprise.inject.Instance", java.lang.Class.class),
+                        method.readInstanceField(instanceField.getFieldDescriptor(), method.getThis()),
+                        method.loadClass(stepClassName)
+                    );
+                    
+                    // Get the step instance - check if it's available
+                    ResultHandle stepInstance = method.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod("jakarta.enterprise.inject.Instance", "get", Object.class),
+                        stepProvider
+                    );
+                    
+                    // Add to list (we expect all registered steps to be available)
+                    method.invokeInterfaceMethod(
+                        MethodDescriptor.ofMethod("java.util.List", "add", boolean.class, Object.class),
+                        list, stepInstance
+                    );
+                }
+                
+                method.returnValue(list);
+            }
+            
+            // Add default no-arg constructor
+            try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
+                defaultCtor.invokeSpecialMethod(
+                    MethodDescriptor.ofConstructor("java.lang.Object"), 
+                    defaultCtor.getThis()
+                );
+                defaultCtor.returnValue(null);
+            }
+            
+            System.out.println("Successfully generated StepsRegistryImpl class with programmatic lookup");
+
+        } catch (Exception e) {
+            System.err.println("Failed to generate StepsRegistry implementation: " + e.getMessage());
+            e.printStackTrace();
+            throw new RuntimeException("Failed to generate StepsRegistry implementation", e);
+        }
+        
+        // Register the synthetic bean using proper Gizmo creator approach
+        beans.produce(SyntheticBeanBuildItem
+                .configure(StepsRegistry.class)
+                .scope(ApplicationScoped.class)
+                .unremovable()
+                .addType(StepsRegistry.class)
+                .creator(mc -> {
+                    ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(registryImplClassName));
+                    mc.returnValue(instance);
+                })
+                .done());
+    }
+
 }

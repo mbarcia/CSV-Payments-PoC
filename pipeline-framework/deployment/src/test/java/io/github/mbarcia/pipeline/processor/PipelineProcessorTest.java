@@ -107,12 +107,12 @@ public class PipelineProcessorTest {
         DummyGeneratedClassBuildProducer generatedClassesProducer =
                 getDummyGeneratedClassBuildProducer(index, true);
 
-        // Should generate step class (when isOrchestrator() == true)
-        // With 1 service: 1 step = 1 class
+        // Should generate step class and StepsRegistryImpl (when generateCli() == true)
+        // With 1 service: 1 step + 1 StepsRegistryImpl = 2 classes
         assertEquals(
-                1,
+                2,
                 generatedClassesProducer.items.size(),
-                "Should generate step class for single service");
+                "Should generate step class and StepsRegistryImpl for single service");
     }
 
     @Test
@@ -254,7 +254,14 @@ public class PipelineProcessorTest {
 
         // Execute both build steps
         PipelineProcessor processor = new PipelineProcessor();
-        processor.generateAdapters(indexBuildItem, config, beansProducer, generatedClassesProducer);
+        DummyGeneratedJandexIndexBuildProducer jandexIndexProducer =
+                new DummyGeneratedJandexIndexBuildProducer();
+        processor.generateAdapters(
+                indexBuildItem,
+                config,
+                beansProducer,
+                generatedClassesProducer,
+                jandexIndexProducer);
 
         return generatedClassesProducer;
     }
@@ -417,6 +424,20 @@ public class PipelineProcessorTest {
 
         @Override
         public void produce(io.quarkus.deployment.builditem.GeneratedClassBuildItem item) {
+            items.add(item);
+        }
+    }
+
+    // Dummy implementation for GeneratedJandexIndexBuildItem
+    static class DummyGeneratedJandexIndexBuildProducer
+            implements io.quarkus.deployment.annotations.BuildProducer<
+                    io.github.mbarcia.pipeline.processor.GeneratedJandexIndexBuildItem> {
+        final java.util.List<io.github.mbarcia.pipeline.processor.GeneratedJandexIndexBuildItem>
+                items = new java.util.ArrayList<>();
+
+        @Override
+        public void produce(
+                io.github.mbarcia.pipeline.processor.GeneratedJandexIndexBuildItem item) {
             items.add(item);
         }
     }

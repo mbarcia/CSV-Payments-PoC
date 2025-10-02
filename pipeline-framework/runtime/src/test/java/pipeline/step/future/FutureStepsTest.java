@@ -19,29 +19,38 @@ package pipeline.step.future;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.PipelineRunner;
+import io.github.mbarcia.pipeline.config.LiveStepConfig;
+import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
+import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
+import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+@QuarkusTest
 public class FutureStepsTest {
 
-    PipelineRunner pipelineRunner = new PipelineRunner();
+    @Inject PipelineRunner pipelineRunner;
 
     @Test
     void testCompletableFutureStep() {
         // Given: Create test data
         Multi<String> input = Multi.createFrom().items("Payment1", "Payment2", "Payment3");
 
-        // Create steps
+        // Create steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        validateStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig validateConfig = new LiveStepConfig(new PipelineConfig());
+        validateConfig.overrides().autoPersist(false);
+        validateStep.initialiseWithConfig(validateConfig);
 
         ProcessPaymentFutureStep processStep = new ProcessPaymentFutureStep();
-        processStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig processConfig = new LiveStepConfig(new PipelineConfig());
+        processConfig.overrides().autoPersist(false);
+        processStep.initialiseWithConfig(processConfig);
 
         // When: Run pipeline
         Multi<String> result =
@@ -83,13 +92,29 @@ public class FutureStepsTest {
         }
 
         @Override
-        public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
-            return new io.github.mbarcia.pipeline.config.StepConfig();
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            super.initialiseWithConfig(config);
+        }
+    }
+
+    // Helper step for processing payments with CompletableFuture
+    public static class ProcessPaymentFutureStep extends ConfigurableStep
+            implements StepOneToOneBlocking<String, String> {
+
+        @Override
+        public io.smallrye.mutiny.Uni<String> apply(String input) {
+            // Simulate async processing using CompletableFuture
+            return io.smallrye.mutiny.Uni.createFrom().item("Processed: " + input);
+        }
+
+        @Override
+        public io.smallrye.mutiny.Uni<String> applyOneToOne(String input) {
+            return apply(input);
         }
 
         @Override
         public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
-            // Use the config provided
+            super.initialiseWithConfig(config);
         }
     }
 }

@@ -19,29 +19,40 @@ package pipeline.step.collection;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.PipelineRunner;
+import io.github.mbarcia.pipeline.config.LiveStepConfig;
+import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
-import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
+import io.github.mbarcia.pipeline.step.StepOneToMany;
+import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
+import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+@QuarkusTest
 public class CollectionStepsTest {
 
-    PipelineRunner pipelineRunner = new PipelineRunner();
+    @Inject PipelineRunner pipelineRunner;
 
     @Test
     void testOneToManyCollectionStep() {
         // Given: Create test data
         Multi<String> input = Multi.createFrom().items("Payment1", "Payment2");
 
-        // Create steps
+        // Create steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        validateStep.liveConfig().overrides().autoPersist(false);
+        // Configure step without calling liveConfig() directly
+        LiveStepConfig validateConfig = new LiveStepConfig(new PipelineConfig());
+        validateConfig.overrides().autoPersist(false);
+        validateStep.initialiseWithConfig(validateConfig);
 
+        // Create ExpandPaymentCollectionStep using the same pattern
         ExpandPaymentCollectionStep expandStep = new ExpandPaymentCollectionStep();
-        expandStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig expandConfig = new LiveStepConfig(new PipelineConfig());
+        expandConfig.overrides().autoPersist(false);
+        expandStep.initialiseWithConfig(expandConfig);
 
         // When: Run pipeline
         Multi<String> result =
@@ -65,35 +76,44 @@ public class CollectionStepsTest {
         assertTrue(results.contains("TXN-003-Validated: Payment2"));
     }
 
-    // Helper step for validating payments
+    // Helper step for validating payments - this should be a OneToOne step
     public static class ValidatePaymentStepBlocking extends ConfigurableStep
-            implements StepOneToOneBlocking<String, String> {
+            implements io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking<
+                    String, String> {
 
         @Override
-        public io.smallrye.mutiny.Uni<String> apply(String payment) {
-            // Simulate some processing time
-            try {
-                Thread.sleep(50);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            return io.smallrye.mutiny.Uni.createFrom().item("Validated: " + payment);
+        public io.smallrye.mutiny.Uni<String> apply(String input) {
+            // Apply validation to the input
+            return io.smallrye.mutiny.Uni.createFrom().item("Validated: " + input);
         }
 
         @Override
         public io.smallrye.mutiny.Uni<String> applyOneToOne(String input) {
+            // Apply validation to the input
             return apply(input);
         }
 
         @Override
-        public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
-            return new io.github.mbarcia.pipeline.config.StepConfig();
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            super.initialiseWithConfig(config);
+        }
+    }
+
+    // Helper step for expanding payments to multiple transactions - this should expand each input
+    // to multiple outputs
+    public static class ExpandPaymentCollectionStep extends ConfigurableStep
+            implements StepOneToMany<String, String> {
+
+        @Override
+        public Multi<String> applyOneToMany(String input) {
+            // For each input (like "Validated: Payment1"), create 3 transaction items
+            return Multi.createFrom()
+                    .items("TXN-001-" + input, "TXN-002-" + input, "TXN-003-" + input);
         }
 
         @Override
         public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
-            // Use the config provided
+            super.initialiseWithConfig(config);
         }
     }
 }

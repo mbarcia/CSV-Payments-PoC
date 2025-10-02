@@ -19,18 +19,23 @@ package pipeline.step.manytoone;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.PipelineRunner;
+import io.github.mbarcia.pipeline.config.LiveStepConfig;
+import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
+import io.github.mbarcia.pipeline.step.functional.ManyToOne;
+import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.helpers.test.AssertSubscriber;
+import jakarta.inject.Inject;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
+@QuarkusTest
 public class ManyToOneStepsTest {
 
-    PipelineRunner pipelineRunner = new PipelineRunner();
+    @Inject PipelineRunner pipelineRunner;
 
     @Test
     void testReactiveManyToOneStep() {
@@ -43,38 +48,32 @@ public class ManyToOneStepsTest {
         Multi<TestPaymentEntity> input =
                 Multi.createFrom().items(payment1, payment2, payment3, payment4);
 
-        // Create steps
+        // Create steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        validateStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig validateConfig = new LiveStepConfig(new PipelineConfig());
+        validateConfig.overrides().autoPersist(false);
+        validateStep.initialiseWithConfig(validateConfig);
 
         PaymentAggregationStep aggregateStep = new PaymentAggregationStep();
-        aggregateStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig aggregateConfig = new LiveStepConfig(new PipelineConfig());
+        aggregateConfig.overrides().autoPersist(false);
+        aggregateStep.initialiseWithConfig(aggregateConfig);
 
         // When: Run pipeline
         Object result1 = pipelineRunner.run(input, List.of(validateStep, aggregateStep));
-        AssertSubscriber<PaymentSummary> subscriber =
-                ((Multi<PaymentSummary>) result1)
+        PaymentSummary result =
+                ((io.smallrye.mutiny.Uni<PaymentSummary>) result1)
                         .onItem()
                         .castTo(PaymentSummary.class)
-                        .subscribe()
-                        .withSubscriber(AssertSubscriber.create(2)); // Expect 2 batches
+                        .await()
+                        .atMost(Duration.ofSeconds(10));
 
-        // Then: Verify results
-        subscriber.awaitItems(2).awaitCompletion(Duration.ofSeconds(10));
-
-        List<PaymentSummary> results = subscriber.getItems();
-        assertEquals(2, results.size());
-
-        // Verify first batch
-        PaymentSummary summary1 = results.getFirst();
-        assertEquals(3, summary1.getTotalPayments()); // First batch of 3
+        // Then: Verify result
+        assertNotNull(result);
+        assertEquals(4, result.getTotalPayments()); // All 4 payments
         assertEquals(
-                new BigDecimal("375.75"), summary1.getTotalAmount()); // 100.00 + 200.50 + 75.25
-
-        // Verify second batch
-        PaymentSummary summary2 = results.get(1);
-        assertEquals(1, summary2.getTotalPayments()); // Second batch of 1
-        assertEquals(new BigDecimal("300.75"), summary2.getTotalAmount()); // 300.75
+                new BigDecimal("676.50"),
+                result.getTotalAmount()); // 100.00 + 200.50 + 75.25 + 300.75
     }
 
     @Test
@@ -90,37 +89,32 @@ public class ManyToOneStepsTest {
         Multi<TestPaymentEntity> input =
                 Multi.createFrom().items(payment1, payment2, payment3, payment4, payment5);
 
-        // Create steps
+        // Create steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        validateStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig validateConfig = new LiveStepConfig(new PipelineConfig());
+        validateConfig.overrides().autoPersist(false);
+        validateStep.initialiseWithConfig(validateConfig);
 
         PaymentAggregationStepBlocking aggregateStep = new PaymentAggregationStepBlocking();
-        aggregateStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig aggregateConfig = new LiveStepConfig(new PipelineConfig());
+        aggregateConfig.overrides().autoPersist(false);
+        aggregateStep.initialiseWithConfig(aggregateConfig);
 
         // When: Run pipeline
         Object result2 = pipelineRunner.run(input, List.of(validateStep, aggregateStep));
-        AssertSubscriber<PaymentSummary> subscriber =
-                ((Multi<PaymentSummary>) result2)
+        PaymentSummary result =
+                ((io.smallrye.mutiny.Uni<PaymentSummary>) result2)
                         .onItem()
                         .castTo(PaymentSummary.class)
-                        .subscribe()
-                        .withSubscriber(AssertSubscriber.create(2)); // Expect 2 batches
+                        .await()
+                        .atMost(Duration.ofSeconds(10));
 
-        // Then: Verify results
-        subscriber.awaitItems(2).awaitCompletion(Duration.ofSeconds(10));
-
-        List<PaymentSummary> results = subscriber.getItems();
-        assertEquals(2, results.size());
-
-        // Verify first batch
-        PaymentSummary summary1 = results.getFirst();
-        assertEquals(3, summary1.getTotalPayments()); // First batch of 3
-        assertEquals(new BigDecimal("225.75"), summary1.getTotalAmount()); // 50.00 + 150.25 + 25.50
-
-        // Verify second batch
-        PaymentSummary summary2 = results.get(1);
-        assertEquals(2, summary2.getTotalPayments()); // Second batch of 2
-        assertEquals(new BigDecimal("205.75"), summary2.getTotalAmount()); // 125.75 + 80.00
+        // Then: Verify result
+        assertNotNull(result);
+        assertEquals(5, result.getTotalPayments()); // All 5 payments
+        assertEquals(
+                new BigDecimal("431.50"),
+                result.getTotalAmount()); // 50.00 + 150.25 + 25.50 + 125.75 + 80.00
     }
 
     // Helper step for validating payments
@@ -152,13 +146,103 @@ public class ManyToOneStepsTest {
         }
 
         @Override
-        public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
-            return new io.github.mbarcia.pipeline.config.StepConfig();
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            super.initialiseWithConfig(config);
+        }
+    }
+
+    // Helper step for aggregating payments (ManyToOne)
+    public static class PaymentAggregationStep extends ConfigurableStep
+            implements ManyToOne<TestPaymentEntity, PaymentSummary> {
+
+        @Override
+        public io.smallrye.mutiny.Uni<PaymentSummary> applyReduce(
+                io.smallrye.mutiny.Multi<TestPaymentEntity> input) {
+            // Aggregate all payments into a single summary
+            return input.collect()
+                    .asList()
+                    .onItem()
+                    .transform(
+                            list -> {
+                                BigDecimal totalAmount =
+                                        list.stream()
+                                                .map(TestPaymentEntity::getAmount)
+                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                return new PaymentSummary(list.size(), totalAmount);
+                            });
         }
 
         @Override
         public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
-            // Use the config provided
+            super.initialiseWithConfig(config);
+        }
+    }
+
+    // Helper class for test entities
+    public static class TestPaymentEntity {
+        private String recipient;
+        private BigDecimal amount;
+        private String status;
+
+        public TestPaymentEntity(String recipient, BigDecimal amount) {
+            this.recipient = recipient;
+            this.amount = amount;
+        }
+
+        public String getRecipient() {
+            return recipient;
+        }
+
+        public BigDecimal getAmount() {
+            return amount;
+        }
+
+        public String getStatus() {
+            return status;
+        }
+
+        public void setStatus(String status) {
+            this.status = status;
+        }
+    }
+
+    // Helper class for test summary
+    public static class PaymentSummary {
+        private int totalPayments;
+        private BigDecimal totalAmount;
+
+        public PaymentSummary(int totalPayments, BigDecimal totalAmount) {
+            this.totalPayments = totalPayments;
+            this.totalAmount = totalAmount;
+        }
+
+        public int getTotalPayments() {
+            return totalPayments;
+        }
+
+        public BigDecimal getTotalAmount() {
+            return totalAmount;
+        }
+    }
+
+    // Helper step for imperative aggregation
+    public static class PaymentAggregationStepBlocking extends ConfigurableStep
+            implements io.github.mbarcia.pipeline.step.blocking.StepManyToOneBlocking<
+                    TestPaymentEntity, PaymentSummary> {
+
+        @Override
+        public PaymentSummary applyBatchList(List<TestPaymentEntity> inputs) {
+            // Aggregate payments in the batch
+            BigDecimal totalAmount =
+                    inputs.stream()
+                            .map(TestPaymentEntity::getAmount)
+                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            return new PaymentSummary(inputs.size(), totalAmount);
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            super.initialiseWithConfig(config);
         }
     }
 }

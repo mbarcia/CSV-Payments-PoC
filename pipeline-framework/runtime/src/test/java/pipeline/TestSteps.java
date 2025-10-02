@@ -85,9 +85,8 @@ public class TestSteps {
 
         public FailingStepBlocking(boolean shouldRecover) {
             this.shouldRecover = shouldRecover;
-            if (shouldRecover) {
-                liveConfig().overrides().recoverOnFailure(true);
-            }
+            // Don't call liveConfig() here as the step isn't fully initialized yet
+            // The configuration will be applied externally when the step is used in a pipeline
         }
 
         @Override
@@ -104,6 +103,10 @@ public class TestSteps {
         @Override
         public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
             super.initialiseWithConfig(config);
+            // Apply the recovery setting after the config is properly set up
+            if (shouldRecover && config != null) {
+                config.overrides().recoverOnFailure(true);
+            }
         }
 
         public Uni<String> applyOneToOne(String input) {

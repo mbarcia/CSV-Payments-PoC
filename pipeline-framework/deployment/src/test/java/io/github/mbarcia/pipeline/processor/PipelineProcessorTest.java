@@ -65,8 +65,8 @@ public class PipelineProcessorTest {
                 getDummyGeneratedClassBuildProducer(index, false);
 
         // Verify that generated gRPC adapter classes were produced when generateCli is false
-        assertTrue(
-                generatedClassesProducer.items.size() >= 1,
+        assertFalse(
+                generatedClassesProducer.items.isEmpty(),
                 "Should generate gRPC adapter when generateCli is false");
     }
 
@@ -109,8 +109,9 @@ public class PipelineProcessorTest {
 
         // Should generate step class (when isOrchestrator() == true)
         // With 1 service: 1 step = 1 class
-        assertTrue(
-                generatedClassesProducer.items.size() == 1,
+        assertEquals(
+                1,
+                generatedClassesProducer.items.size(),
                 "Should generate step class for single service");
     }
 
@@ -159,8 +160,8 @@ public class PipelineProcessorTest {
                 getDummyGeneratedClassBuildProducer(index, true);
 
         // Should generate local step class when generateCli=true and local=true
-        assertTrue(
-                generatedClassesProducer.items.size() >= 1,
+        assertFalse(
+                generatedClassesProducer.items.isEmpty(),
                 "Should generate local step class when generateCli is true and step is local");
 
         // Check that a step class was generated (it should have "Step" in the name)
@@ -310,11 +311,11 @@ public class PipelineProcessorTest {
             stepType = StepOneToMany.class,
             backendType =
                     GenericGrpcReactiveServiceAdapter.class, // This won't be used for local steps
-            grpcStub = Void.class, // No gRPC stub for local steps
+            // No gRPC stub for local steps
             grpcImpl = Void.class, // No gRPC impl for local steps
             inboundMapper = TestMapper.class,
             outboundMapper = TestOutboundMapper.class,
-            grpcClient = "", // No gRPC client for local steps
+            // No gRPC client for local steps
             local = true) // This is the key difference - local step
     @ApplicationScoped
     public static class TestLocalReactiveService implements ReactiveService<String, Integer> {
@@ -325,11 +326,7 @@ public class PipelineProcessorTest {
     }
 
     // Supporting mock classes
-    public static class TestGrpcStub {
-        public Uni<Integer> remoteProcess(String input) {
-            return Uni.createFrom().item(input.length());
-        }
-    }
+    public static class TestGrpcStub {}
 
     public static class TestGrpcImpl {
         // Placeholder gRPC implementation class

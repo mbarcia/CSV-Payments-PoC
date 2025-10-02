@@ -22,7 +22,6 @@ import io.github.mbarcia.csv.grpc.MutinyProcessAckPaymentSentServiceGrpc;
 import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveService;
-import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -34,7 +33,7 @@ import org.slf4j.LoggerFactory;
         order = 3,
         inputType = AckPaymentSent.class,
         outputType = PaymentStatus.class,
-        stepType = StepOneToOne.class,
+        stepType = io.github.mbarcia.pipeline.step.StepOneToOne.class,
         backendType = GenericGrpcReactiveServiceAdapter.class,
         grpcStub = MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase.class,
         grpcImpl = MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase.class,

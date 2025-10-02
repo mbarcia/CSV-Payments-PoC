@@ -26,7 +26,6 @@ import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputStreamServiceGrpc
 import io.github.mbarcia.pipeline.GenericGrpcServiceStreamingAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingService;
-import io.github.mbarcia.pipeline.step.StepOneToMany;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -49,7 +48,7 @@ import org.slf4j.MDC;
     recoverOnFailure = true,
     inputType = CsvPaymentsInputStream.class,
     outputType = InputCsvFileProcessingSvc.PaymentRecord.class,
-    stepType = StepOneToMany.class,
+    stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
     backendType = GenericGrpcServiceStreamingAdapter.class,
     grpcStub = MutinyProcessCsvPaymentsInputStreamServiceGrpc.MutinyProcessCsvPaymentsInputStreamServiceStub.class,
     grpcImpl = MutinyProcessCsvPaymentsInputStreamServiceGrpc.ProcessCsvPaymentsInputStreamServiceImplBase.class,

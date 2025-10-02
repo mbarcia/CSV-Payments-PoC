@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
     order = 1,
     inputType = String.class,
     outputType = InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
-    stepType = StepOneToMany.class,
+    stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
     grpcImpl = Void.class, // Not used for local steps
     inboundMapper = Void.class, // Not used for local steps
     outboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class, // For mapping domain to gRPC

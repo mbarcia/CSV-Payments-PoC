@@ -22,6 +22,7 @@ import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.PipelineBuildTimeConfig;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
@@ -32,18 +33,13 @@ import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
+import org.jboss.jandex.Index;
 import org.jboss.jandex.IndexView;
 
 // Helper class to store step information
@@ -66,34 +62,18 @@ public class PipelineProcessor {
     public static final String UNI = "io.smallrye.mutiny.Uni";
     public static final String MULTI = "io.smallrye.mutiny.Multi";
 
-    // Create a custom class writer that exports generated classes to target/gizmo for inspection
-    private static ClassOutput createExportingClassOutput(BuildProducer<GeneratedClassBuildItem> generatedClasses) {
-        // Create the target/gizmo directory to export classes for inspection
-        Path gizmoPath = Paths.get("target", "gizmo");
-        try {
-            Files.createDirectories(gizmoPath);
-            System.out.println("Created gizmo export directory: " + gizmoPath.toAbsolutePath());
-        } catch (IOException e) {
-            System.err.println("Failed to create gizmo export directory: " + e.getMessage());
-        }
+    // Create a ClassOutput that also adds classes to the Jandex index
+    private static ClassOutput createClassOutputForIndexing(BuildProducer<GeneratedClassBuildItem> generatedClasses, org.jboss.jandex.Indexer jandexIndexer) {
+        return (name, data) -> {
+            // Write to the build system as usual - this goes to target/classes
+            generatedClasses.produce(new GeneratedClassBuildItem(true, name, data));
 
-        return new ClassOutput() {
-            @Override
-            public void write(String name, byte[] data) {
-                // Write to the build system as usual
-                generatedClasses.produce(new GeneratedClassBuildItem(true, name, data));
-                
-                // Also export to the target/gizmo directory for inspection
-                try {
-                    Path classPath = gizmoPath.resolve(name.replace('.', '/') + ".class");
-                    Files.createDirectories(classPath.getParent());
-                    try (OutputStream out = new FileOutputStream(classPath.toFile())) {
-                        out.write(data);
-                    }
-                    System.out.println("Exported class to: " + classPath.toAbsolutePath());
-                } catch (IOException e) {
-                    System.err.println("Failed to export class " + name + " to gizmo directory: " + e.getMessage());
-                }
+            // Also index the class with Jandex
+            try {
+                java.io.ByteArrayInputStream byteStream = new java.io.ByteArrayInputStream(data);
+                jandexIndexer.index(byteStream);
+            } catch (Exception e) {
+                System.out.println("Could not index generated class " + name + ": " + e.getMessage());
             }
         };
     }
@@ -104,12 +84,23 @@ public class PipelineProcessor {
     }
 
     @BuildStep
-    void generateAdapters(CombinedIndexBuildItem index,
+    void generateAdapters(CombinedIndexBuildItem combinedIndex,
                           PipelineBuildTimeConfig config,
                           BuildProducer<SyntheticBeanBuildItem> beans,
-                          BuildProducer<GeneratedClassBuildItem> generatedClasses) {
+                          BuildProducer<UnremovableBeanBuildItem> unremovable,
+                          BuildProducer<GeneratedClassBuildItem> generatedClasses,
+                          BuildProducer<GeneratedJandexIndexBuildItem> jandexIndexProducer) {
 
-        IndexView view = index.getIndex();
+        IndexView view = combinedIndex.getIndex();
+        
+        // Create a separate indexer to index the generated classes directly with Jandex
+        org.jboss.jandex.Indexer jandexIndexer = new org.jboss.jandex.Indexer();
+        // Index the PipelineStep annotation for the indexer so we can build a complete index
+        try {
+            jandexIndexer.indexClass(PipelineStep.class);
+        } catch (Exception e) {
+            System.out.println("Could not index PipelineStep annotation: " + e.getMessage());
+        }
 
         // Collect all step classes for application generation
         List<StepInfo> stepInfos = new ArrayList<>();
@@ -126,10 +117,12 @@ public class PipelineProcessor {
             String grpcClientValue = ann.value("grpcClient") != null ? ann.value("grpcClient").asString() : "";
             String stepType = ann.value("stepType") != null ? ann.value("stepType").asClass().name().toString() : "";
             String inputType = ann.value("inputType") != null ? ann.value("inputType").asClass().name().toString() : "";
-            String outputType = ann.value("outputType") != null ? ann.value("outputType").asClass().name().toString() : "";
-            
+            if (ann.value("outputType") != null) {
+                ann.value("outputType").asClass().name();
+            }
+
             // Check if the step is local
-            boolean isLocal = ann.value("local") != null ? ann.value("local").asBoolean() : false;
+            boolean isLocal = ann.value("local") != null && ann.value("local").asBoolean();
             
             // Get backend type, defaulting to GenericGrpcReactiveServiceAdapter
             String backendType = ann.value("backendType") != null ? 
@@ -139,15 +132,15 @@ public class PipelineProcessor {
             if (config.generateCli()) {
                 if (isLocal) {
                     // Generate local step class (local service call) - the pipeline step
-                    generateLocalStepClass(generatedClasses, beans, stepClassInfo, stepType, inputType, outputType, outMapperName);
+                    generateLocalStepClass(generatedClasses, stepClassInfo, stepType, inputType, outMapperName, jandexIndexer);
                 } else {
                     // Generate step class (client-side) - the pipeline step 
-                    generateGrpcClientStepClass(generatedClasses, beans, stepClassInfo, stubName, stepType, grpcClientValue, inputType, outputType);
+                    generateGrpcClientStepClass(generatedClasses, stepClassInfo, stubName, stepType, grpcClientValue, inputType, jandexIndexer);
                 }
             } else {
                 if (!isLocal) {
                     // Generate gRPC adapter class (server-side) - the service endpoint
-                    generateGrpcAdaptedServiceClass(generatedClasses, stepClassInfo, backendType, inMapperName, outMapperName, serviceName);
+                    generateGrpcAdaptedServiceClass(generatedClasses, stepClassInfo, backendType, inMapperName, outMapperName, serviceName, jandexIndexer);
                 }
                 // For local steps in server mode, we don't generate gRPC adapters
             }
@@ -164,9 +157,13 @@ public class PipelineProcessor {
             stepClassNames.add(stepInfo.stepClassName);
         }
 
-        if (!stepClassNames.isEmpty()) {
-            generateStepsRegistry(generatedClasses, beans, stepClassNames);
+        if (config.generateCli() && !stepClassNames.isEmpty()) {
+            generateStepsRegistry(generatedClasses, beans, unremovable, stepClassNames, jandexIndexer);
         }
+        
+        // Complete the Jandex index for the generated classes and produce it
+        Index finalIndex = jandexIndexer.complete();
+        jandexIndexProducer.produce(new GeneratedJandexIndexBuildItem(finalIndex));
     }
 
   private static void generateGrpcAdaptedServiceClass(
@@ -175,16 +172,18 @@ public class PipelineProcessor {
       String backendType,
       String inMapperName,
       String outMapperName,
-      String serviceName) {
+      String serviceName,
+      org.jboss.jandex.Indexer jandexIndexer) {
     // Generate a subclass of the specified backend adapter with @GrpcService
     String adapterClassName =
         MessageFormat.format("{0}GrpcService", stepClassInfo.name().toString());
 
     System.out.println("PipelineProcessor.generateGrpcAdaptedServiceClass: " + stepClassInfo.name());
 
+      ClassOutput classOutput = createClassOutputForIndexing(generatedClasses, jandexIndexer);
       try (ClassCreator cc =
           new ClassCreator(
-              createExportingClassOutput(generatedClasses),
+              classOutput,
               adapterClassName,
               null,
               backendType)) {
@@ -222,21 +221,21 @@ public class PipelineProcessor {
 
   private static void generateGrpcClientStepClass(
       BuildProducer<GeneratedClassBuildItem> generatedClasses,
-      BuildProducer<SyntheticBeanBuildItem> beans,
       ClassInfo stepClassInfo,
       String stubName,
       String stepType,
       String grpcClientValue,
       String inputType,
-      String outputType) {
+      org.jboss.jandex.Indexer jandexIndexer) {
 
         System.out.println("PipelineProcessor.generateGrpcClientStepClass: " + stepClassInfo.name());
 
         // Generate a subclass that implements the appropriate step interface
         String stepClassName = MessageFormat.format("{0}Step", stepClassInfo.name().toString());
 
+        ClassOutput classOutput = createClassOutputForIndexing(generatedClasses, jandexIndexer);
         try (ClassCreator cc = new ClassCreator(
-                createExportingClassOutput(generatedClasses),
+                classOutput,
                 stepClassName, null, Object.class.getName(), stepType)) {
             
             // Add @ApplicationScoped annotation
@@ -284,21 +283,6 @@ public class PipelineProcessor {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate step class", e);
         }
-        
-        // Register the generated step class as a synthetic bean with all relevant types
-        beans.produce(SyntheticBeanBuildItem
-                .configure(DotName.createSimple(stepClassName))
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .addType(DotName.createSimple(stepType))  // Main step interface (e.g., StepOneToMany)
-                .addType(DotName.createSimple(stepClassName))  // Concrete implementation
-                .addType(DotName.createSimple("io.github.mbarcia.pipeline.step.Step"))  // Base step interface
-                .setRuntimeInit()
-                .creator(mc -> {
-                    ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(stepClassName));
-                    mc.returnValue(instance);
-                })
-                .done());
     }
 
     private static void wrapCallToRemoteService(String stubName, String inputType, MethodCreator method, FieldCreator fieldCreator, String type) {
@@ -316,12 +300,11 @@ public class PipelineProcessor {
 
     private static void generateLocalStepClass(
         BuildProducer<GeneratedClassBuildItem> generatedClasses,
-        BuildProducer<SyntheticBeanBuildItem> beans,
         ClassInfo serviceClassInfo,
         String stepType,
         String inputType,
-        String outputType,
-        String outputMapperName) {
+        String outputMapperName,
+        org.jboss.jandex.Indexer jandexIndexer) {
 
         System.out.println("PipelineProcessor.generateLocalStepClass: " + serviceClassInfo.name());
 
@@ -329,8 +312,9 @@ public class PipelineProcessor {
         String stepClassName = MessageFormat.format("{0}Step", serviceClassInfo.name().toString());
 
         
+        ClassOutput classOutput = createClassOutputForIndexing(generatedClasses, jandexIndexer);
         try (ClassCreator cc = new ClassCreator(
-                createExportingClassOutput(generatedClasses),
+                classOutput,
                 stepClassName,
                 null,
                 Object.class.getName(),
@@ -362,7 +346,7 @@ public class PipelineProcessor {
             if (stepType.endsWith("StepOneToMany")) {
                 // Generate method: applyOneToMany (I -> Multi<O>)
                 try (MethodCreator method = cc.getMethodCreator("applyOneToMany", MULTI, inputType)) {
-                    generateLocalStepOneToMany(method, serviceField, mapperField, serviceClassInfo, outputMapperName);
+                    generateLocalStepOneToMany(method, serviceField, serviceClassInfo);
                 }
             } else if (stepType.endsWith("StepOneToOne")) {
                 // Generate method: applyOneToOne (I -> Uni<O>)
@@ -388,24 +372,9 @@ public class PipelineProcessor {
         } catch (Exception e) {
             throw new RuntimeException("Failed to generate local step class", e);
         }
-        
-        // Register the generated step class as a synthetic bean with all relevant types
-        beans.produce(SyntheticBeanBuildItem
-                .configure(DotName.createSimple(stepClassName))
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .addType(DotName.createSimple(stepType))  // Main step interface (e.g., StepOneToMany)
-                .addType(DotName.createSimple(stepClassName))  // Concrete implementation
-                .addType(DotName.createSimple("io.github.mbarcia.pipeline.step.Step"))  // Base step interface
-                .setRuntimeInit()
-                .creator(mc -> {
-                    ResultHandle instance = mc.newInstance(MethodDescriptor.ofConstructor(stepClassName));
-                    mc.returnValue(instance);
-                })
-                .done());
     }
 
-    private static void generateLocalStepOneToMany(MethodCreator method, FieldCreator serviceField, FieldCreator mapperField, ClassInfo serviceClassInfo, String outputMapperName) {
+    private static void generateLocalStepOneToMany(MethodCreator method, FieldCreator serviceField, ClassInfo serviceClassInfo) {
         // For StepOneToMany<String, OutputType>, call the service and convert results
         ResultHandle inputParam = method.getMethodParam(0);
         ResultHandle service = method.readInstanceField(serviceField.getFieldDescriptor(), method.getThis());
@@ -444,7 +413,7 @@ public class PipelineProcessor {
     private static void generateLocalStepManyToMany(MethodCreator method, FieldCreator serviceField, FieldCreator mapperField, ClassInfo serviceClassInfo, String outputMapperName) {
         method.throwException(RuntimeException.class, "StepManyToMany not implemented for local steps yet");
     }
-
+    
     private static void generateLocalStepSideEffect(MethodCreator method, FieldCreator serviceField, FieldCreator mapperField, ClassInfo serviceClassInfo, String outputMapperName) {
         method.throwException(RuntimeException.class, "StepSideEffect not implemented for local steps yet");
     }
@@ -452,15 +421,18 @@ public class PipelineProcessor {
     private static void generateStepsRegistry(
         BuildProducer<GeneratedClassBuildItem> generatedClasses,
         BuildProducer<SyntheticBeanBuildItem> beans,
-        List<String> stepClassNames) {
+        BuildProducer<UnremovableBeanBuildItem> unremovable,
+        List<String> stepClassNames,
+        org.jboss.jandex.Indexer jandexIndexer) {
         
-        // Generate an implementation of StepsRegistry that programmatically discovers all step instances via BeanManager
+        // Generate an implementation of StepsRegistry that returns the registered steps
         String registryImplClassName = "io.github.mbarcia.pipeline.StepsRegistryImpl";
         
         System.out.println("Generating StepsRegistry with " + stepClassNames.size() + " steps");
         
+        ClassOutput classOutput = createClassOutputForIndexing(generatedClasses, jandexIndexer);
         try (ClassCreator cc = new ClassCreator(
-                createExportingClassOutput(generatedClasses),
+                classOutput,
                 registryImplClassName,
                 null,
                 Object.class.getName(),
@@ -468,38 +440,58 @@ public class PipelineProcessor {
             
             // Add @ApplicationScoped annotation
             cc.addAnnotation(ApplicationScoped.class);
+
+
             
-            // Create a field for CDI Instance to look up all step implementations
-            FieldCreator instanceField = cc.getFieldCreator("stepInstances", "jakarta.enterprise.inject.Instance")
+            // Create a field for CDI Instance to look up all step implementations  
+            FieldCreator instancesField = cc.getFieldCreator("instances", "jakarta.enterprise.inject.Instance")
                     .setModifiers(java.lang.reflect.Modifier.PRIVATE);
-            instanceField.addAnnotation(Inject.class);
+            instancesField.addAnnotation(Inject.class);
             
-            // Add getSteps method that discovers all available step implementations
+            // Add getSteps method that discovers all step implementations with null safety
             try (MethodCreator method = cc.getMethodCreator("getSteps", "java.util.List")) {
                 // Create an ArrayList to hold the discovered steps
                 ResultHandle list = method.newInstance(MethodDescriptor.ofConstructor("java.util.ArrayList"));
                 
-                // For each step class, check if it's available and add to list if so
-                for (String stepClassName : stepClassNames) {
-                    // Get the specific step instance from CDI
-                    ResultHandle stepProvider = method.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod("jakarta.enterprise.inject.Instance", "select", 
-                            "jakarta.enterprise.inject.Instance", java.lang.Class.class),
-                        method.readInstanceField(instanceField.getFieldDescriptor(), method.getThis()),
-                        method.loadClass(stepClassName)
-                    );
-                    
-                    // Get the step instance - check if it's available
-                    ResultHandle stepInstance = method.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod("jakarta.enterprise.inject.Instance", "get", Object.class),
-                        stepProvider
-                    );
-                    
-                    // Add to list (we expect all registered steps to be available)
-                    method.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod("java.util.List", "add", boolean.class, Object.class),
-                        list, stepInstance
-                    );
+                // Check if the injected Instance field is null before using it
+                ResultHandle instancesFieldVal = method.readInstanceField(
+                    FieldDescriptor.of(registryImplClassName, "instances", "jakarta.enterprise.inject.Instance"),
+                    method.getThis()
+                );
+                
+                try (BytecodeCreator notNullBlock = method.ifNotNull(instancesFieldVal).trueBranch()) {
+                    // For each step class, look it up from the injected Instance (only if not null)
+                    for (String stepClassName : stepClassNames) {
+                        ResultHandle stepClass = notNullBlock.loadClass(stepClassName);
+                        
+                        // Get the specific step instance from the CDI Instance
+                        ResultHandle stepProvider = notNullBlock.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod("jakarta.enterprise.inject.Instance", "select", 
+                                "jakarta.enterprise.inject.Instance", "java.lang.Class", "[Ljava.lang.annotation.Annotation;"),
+                            instancesFieldVal,  // Use the field value that we already checked isn't null
+                            stepClass,
+                            notNullBlock.newArray("java.lang.annotation.Annotation", 0)
+                        );
+                        
+                        // Check if the provider is available before getting the instance
+                        ResultHandle isResolvable = notNullBlock.invokeInterfaceMethod(
+                            MethodDescriptor.ofMethod("jakarta.enterprise.inject.Instance", "isResolvable", boolean.class),
+                            stepProvider
+                        );
+                        
+                        // Only add the step if it's resolvable
+                        try (BytecodeCreator available = notNullBlock.ifTrue(isResolvable).trueBranch()) {
+                            ResultHandle stepInstance = available.invokeInterfaceMethod(
+                                MethodDescriptor.ofMethod("jakarta.enterprise.inject.Instance", "get", Object.class),
+                                stepProvider
+                            );
+                            
+                            available.invokeInterfaceMethod(
+                                MethodDescriptor.ofMethod("java.util.List", "add", boolean.class, Object.class),
+                                list, stepInstance
+                            );
+                        }
+                    }
                 }
                 
                 method.returnValue(list);
@@ -514,15 +506,15 @@ public class PipelineProcessor {
                 defaultCtor.returnValue(null);
             }
             
-            System.out.println("Successfully generated StepsRegistryImpl class with programmatic lookup");
+            System.out.println("Successfully generated StepsRegistryImpl class");
 
         } catch (Exception e) {
             System.err.println("Failed to generate StepsRegistry implementation: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Failed to generate StepsRegistry implementation", e);
         }
-        
-        // Register the synthetic bean using proper Gizmo creator approach
+
+        // Register the synthetic bean that provides the pre-computed steps list
         beans.produce(SyntheticBeanBuildItem
                 .configure(StepsRegistry.class)
                 .scope(ApplicationScoped.class)
@@ -533,6 +525,11 @@ public class PipelineProcessor {
                     mc.returnValue(instance);
                 })
                 .done());
+                
+        // Make sure the default StepsRegistry is not used when CLI is enabled
+        unremovable.produce(new UnremovableBeanBuildItem(
+            new UnremovableBeanBuildItem.BeanClassNameExclusion("io.github.mbarcia.pipeline.DefaultStepsRegistry")
+        ));
     }
 
 }

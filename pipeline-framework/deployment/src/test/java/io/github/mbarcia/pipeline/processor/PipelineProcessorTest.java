@@ -256,10 +256,13 @@ public class PipelineProcessorTest {
         PipelineProcessor processor = new PipelineProcessor();
         DummyGeneratedJandexIndexBuildProducer jandexIndexProducer =
                 new DummyGeneratedJandexIndexBuildProducer();
+        DummyUnremovableBeanBuildProducer unremovableProducer =
+                new DummyUnremovableBeanBuildProducer();
         processor.generateAdapters(
                 indexBuildItem,
                 config,
                 beansProducer,
+                unremovableProducer,
                 generatedClassesProducer,
                 jandexIndexProducer);
 
@@ -438,6 +441,19 @@ public class PipelineProcessorTest {
         @Override
         public void produce(
                 io.github.mbarcia.pipeline.processor.GeneratedJandexIndexBuildItem item) {
+            items.add(item);
+        }
+    }
+
+    // Dummy implementation for UnremovableBeanBuildItem
+    static class DummyUnremovableBeanBuildProducer
+            implements io.quarkus.deployment.annotations.BuildProducer<
+                    io.quarkus.arc.deployment.UnremovableBeanBuildItem> {
+        final java.util.List<io.quarkus.arc.deployment.UnremovableBeanBuildItem> items =
+                new java.util.ArrayList<>();
+
+        @Override
+        public void produce(io.quarkus.arc.deployment.UnremovableBeanBuildItem item) {
             items.add(item);
         }
     }

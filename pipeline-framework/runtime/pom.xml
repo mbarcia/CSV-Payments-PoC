@@ -47,6 +47,7 @@
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-picocli</artifactId>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>

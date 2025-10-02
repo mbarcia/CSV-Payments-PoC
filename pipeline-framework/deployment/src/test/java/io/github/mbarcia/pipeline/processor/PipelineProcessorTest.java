@@ -28,10 +28,12 @@ import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.Optional;
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.Test;
 
 /** Unit test for PipelineProcessor to validate annotation processing functionality and coverage. */
+@SuppressWarnings("removal")
 public class PipelineProcessorTest {
 
     @Test
@@ -98,27 +100,6 @@ public class PipelineProcessorTest {
     }
 
     @Test
-    public void testGeneratePipelineApplication() throws Exception {
-        // Create index with multiple services to trigger application generation
-        Index index = Index.of(TestReactiveService.class, TestOneToManyService.class);
-
-        DummyGeneratedClassBuildProducer generatedClassesProducer =
-                getDummyGeneratedClassBuildProducer(index, true);
-
-        // Should generate step classes, and the pipeline application (when generateCli=true)
-        // With 2 services: 2 steps + 1 application = 3 classes at minimum
-        assertTrue(
-                generatedClassesProducer.items.size() >= 3,
-                "Should generate step classes and pipeline application");
-
-        // Check that the GeneratedPipelineApplication class was created
-        boolean hasGeneratedApp =
-                generatedClassesProducer.items.stream()
-                        .anyMatch(item -> item.getName().contains("GeneratedPipelineApplication"));
-        assertTrue(hasGeneratedApp, "Should generate GeneratedPipelineApplication class");
-    }
-
-    @Test
     public void testGeneratePipelineApplicationWithSingleService() throws Exception {
         // Create index with single service
         Index index = Index.of(TestReactiveService.class);
@@ -126,19 +107,114 @@ public class PipelineProcessorTest {
         DummyGeneratedClassBuildProducer generatedClassesProducer =
                 getDummyGeneratedClassBuildProducer(index, true);
 
-        // Should generate step class and the pipeline application (when generateCli=true)
-        // With 1 service: 1 step + 1 application = 2 classes
+        // Should generate step class (when isOrchestrator() == true)
+        // With 1 service: 1 step = 1 class
+        assertTrue(
+                generatedClassesProducer.items.size() == 1,
+                "Should generate step class for single service");
+    }
+
+    @Test
+    public void testLocalPropertyDefault() {
+        // Validate that the local property defaults to false
+        PipelineStep annotation = TestReactiveService.class.getAnnotation(PipelineStep.class);
+        assertNotNull(annotation, "TestReactiveService should be annotated with @PipelineStep");
+
+        // By default, local should be false for backward compatibility
+        assertFalse(annotation.local(), "Local property should default to false");
+    }
+
+    @Test
+    public void testLocalPropertyTrue() {
+        // Validate that the local property can be set to true
+        PipelineStep annotation = TestLocalReactiveService.class.getAnnotation(PipelineStep.class);
+        assertNotNull(
+                annotation, "TestLocalReactiveService should be annotated with @PipelineStep");
+
+        // For local services, it should be true
+        assertTrue(annotation.local(), "Local property should be true when explicitly set");
+    }
+
+    @Test
+    public void testLocalStepAnnotationProcessing() {
+        // Validate that local service has all required properties
+        PipelineStep annotation = TestLocalReactiveService.class.getAnnotation(PipelineStep.class);
+        assertNotNull(
+                annotation, "TestLocalReactiveService should be annotated with @PipelineStep");
+
+        // Check that all required annotation parameters are set properly for local step
+        assertEquals(1, annotation.order(), "Order should be 1");
+        assertSame(annotation.stepType(), StepOneToMany.class, "Step type should be StepOneToMany");
+        assertTrue(annotation.local(), "Local property should be true");
+        assertSame(annotation.grpcImpl(), Void.class, "grpcImpl should be Void for local steps");
+    }
+
+    @Test
+    public void testLocalStepGenerationWhenGenerateCliIsTrue() throws Exception {
+        // Create index with local service
+        Index index = Index.of(TestLocalReactiveService.class);
+
+        // Generate when generateCli=true (for client-side generation)
+        DummyGeneratedClassBuildProducer generatedClassesProducer =
+                getDummyGeneratedClassBuildProducer(index, true);
+
+        // Should generate local step class when generateCli=true and local=true
+        assertTrue(
+                generatedClassesProducer.items.size() >= 1,
+                "Should generate local step class when generateCli is true and step is local");
+
+        // Check that a step class was generated (it should have "Step" in the name)
+        boolean hasStepClass =
+                generatedClassesProducer.items.stream()
+                        .anyMatch(item -> item.getName().contains("TestLocalReactiveServiceStep"));
+        assertTrue(hasStepClass, "Should generate step class for local service with proper naming");
+    }
+
+    @Test
+    public void testLocalStepDoesNotGenerateGrpcAdapterWhenGenerateCliIsFalse() throws Exception {
+        // Create index with local service
+        Index index = Index.of(TestLocalReactiveService.class);
+
+        // Generate when generateCli=false (for server-side generation)
+        DummyGeneratedClassBuildProducer generatedClassesProducer =
+                getDummyGeneratedClassBuildProducer(index, false);
+
+        // For local steps and generateCli=false, no gRPC adapter should be generated
+        // The test service has local=true, so no gRPC adapter should be created
+        // We expect fewer generated classes compared to non-local services
+        long grpcAdapterCount =
+                generatedClassesProducer.items.stream()
+                        .filter(item -> item.getName().contains("GrpcService"))
+                        .count();
+
+        // Local steps should not generate gRPC service adapters
+        assertEquals(0, grpcAdapterCount, "Local steps should not generate gRPC service adapters");
+    }
+
+    @Test
+    public void testMixedLocalAndRemoteSteps() throws Exception {
+        // Create index with both local and remote services
+        Index index = Index.of(TestReactiveService.class, TestLocalReactiveService.class);
+
+        // Generate when generateCli=true
+        DummyGeneratedClassBuildProducer generatedClassesProducer =
+                getDummyGeneratedClassBuildProducer(index, true);
+
+        // Should generate step classes for both local and remote services
         assertTrue(
                 generatedClassesProducer.items.size() >= 2,
-                "Should generate step class and pipeline application for single service");
+                "Should generate step classes for both local and remote services");
 
-        // Check that the GeneratedPipelineApplication class was created
-        boolean hasGeneratedApp =
+        // Check that both step classes were generated
+        boolean hasRemoteStep =
                 generatedClassesProducer.items.stream()
-                        .anyMatch(item -> item.getName().contains("GeneratedPipelineApplication"));
-        assertTrue(
-                hasGeneratedApp,
-                "Should generate GeneratedPipelineApplication class for single service");
+                        .anyMatch(item -> item.getName().contains("TestReactiveServiceStep"));
+        boolean hasLocalStep =
+                generatedClassesProducer.items.stream()
+                        .anyMatch(item -> item.getName().contains("TestLocalReactiveServiceStep"));
+
+        assertTrue(hasRemoteStep, "Should generate step class for remote service");
+        assertTrue(hasLocalStep, "Should generate step class for local service");
     }
 
     private static DummyGeneratedClassBuildProducer getDummyGeneratedClassBuildProducer(
@@ -158,14 +234,27 @@ public class PipelineProcessorTest {
                     public String version() {
                         return "";
                     }
+
+                    @Override
+                    public Optional<String> cliName() {
+                        return Optional.of("test-cli");
+                    }
+
+                    @Override
+                    public Optional<String> cliDescription() {
+                        return Optional.of("Test CLI application");
+                    }
+
+                    @Override
+                    public Optional<String> cliVersion() {
+                        return Optional.of("1.0.0");
+                    }
                 };
 
         // Execute both build steps
         PipelineProcessor processor = new PipelineProcessor();
         processor.generateAdapters(indexBuildItem, config, beansProducer, generatedClassesProducer);
 
-        // Also execute the CLI application generation step if needed
-        processor.generateCliApplication(indexBuildItem, config, generatedClassesProducer);
         return generatedClassesProducer;
     }
 
@@ -206,6 +295,29 @@ public class PipelineProcessorTest {
             debug = true)
     @ApplicationScoped
     public static class TestOneToManyService implements ReactiveService<String, Integer> {
+        @Override
+        public Uni<Integer> process(String input) {
+            return Uni.createFrom().item(input.length());
+        }
+    }
+
+    // Local service test class - this represents a service that runs locally without
+    // gRPC
+    @PipelineStep(
+            order = 1,
+            inputType = String.class,
+            outputType = Integer.class,
+            stepType = StepOneToMany.class,
+            backendType =
+                    GenericGrpcReactiveServiceAdapter.class, // This won't be used for local steps
+            grpcStub = Void.class, // No gRPC stub for local steps
+            grpcImpl = Void.class, // No gRPC impl for local steps
+            inboundMapper = TestMapper.class,
+            outboundMapper = TestOutboundMapper.class,
+            grpcClient = "", // No gRPC client for local steps
+            local = true) // This is the key difference - local step
+    @ApplicationScoped
+    public static class TestLocalReactiveService implements ReactiveService<String, Integer> {
         @Override
         public Uni<Integer> process(String input) {
             return Uni.createFrom().item(input.length());

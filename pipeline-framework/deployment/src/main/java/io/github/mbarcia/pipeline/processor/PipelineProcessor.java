@@ -44,7 +44,6 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 
 import java.io.IOException;
-import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -208,53 +207,72 @@ public class PipelineProcessor {
 
         String pkg = "io.github.mbarcia.pipeline.generated";
         String adapterClassName = MessageFormat.format("{0}.{1}GrpcService", pkg, stepClassInfo.simpleName());
+        String simpleClassName = MessageFormat.format("{0}GrpcService", stepClassInfo.simpleName());
 
-        ClassOutput classOutput = (name, data) -> {
-            generatedClasses.produce(new GeneratedClassBuildItem(true, name, data));
+        // Generate the source code as a string
+        String sourceCode = generateGrpcAdaptedServiceSourceCode(
+                pkg, 
+                simpleClassName, 
+                backendType, 
+                inMapperName, 
+                outMapperName, 
+                serviceName
+        );
 
-            Path out = Paths.get("target/generated-debug", name.replace('.', '/') + ".class");
-
-            try {
-                Files.createDirectories(out.getParent());
-                Files.write(out, data);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        };
-
-        try (ClassCreator cc = new ClassCreator(classOutput, adapterClassName, null, backendType)) {
-            // Add @GrpcService and a CDI scope
-            cc.addAnnotation(GrpcService.class);
-            cc.addAnnotation(ApplicationScoped.class);
-
-            // Add @Inject fields
-            cc.getFieldCreator("inboundMapper", inMapperName)
-                    .setModifiers(Modifier.PRIVATE)
-                    .addAnnotation(Inject.class);
-
-            cc.getFieldCreator("outboundMapper", outMapperName)
-                    .setModifiers(Modifier.PRIVATE)
-                    .addAnnotation(Inject.class);
-
-            cc.getFieldCreator("service", serviceName)
-                    .setModifiers(Modifier.PRIVATE)
-                    .addAnnotation(Inject.class);
-
-            cc.getFieldCreator("persistenceManager", PersistenceManager.class.getName())
-                    .setModifiers(Modifier.PRIVATE)
-                    .addAnnotation(Inject.class);
-
-            // Add default no-arg constructor that calls super()
-            try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
-                defaultCtor.invokeSpecialMethod(
-                        MethodDescriptor.ofConstructor(backendType),
-                        defaultCtor.getThis()
-                );
-                defaultCtor.returnValue(null);
-            }
+        // Write the source file to the generated sources directory
+        try {
+            Path sourceDir = Paths.get("target/generated-sources/annotations");
+            Path sourceFile = sourceDir.resolve(pkg.replace('.', '/') + "/" + simpleClassName + ".java");
+            
+            Files.createDirectories(sourceFile.getParent());
+            Files.write(sourceFile, sourceCode.getBytes("UTF-8"));
+            
+            System.out.println(MessageFormat.format("Generated gRPC service adapter source: {0}", sourceFile));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write generated source file", e);
         }
+    }
 
-        System.out.println(MessageFormat.format("Generated gRPC service adapter: {0}", adapterClassName));
+    private static String generateGrpcAdaptedServiceSourceCode(
+            String pkg,
+            String simpleClassName,
+            String backendType,
+            String inMapperName,
+            String outMapperName,
+            String serviceName) {
+        
+        StringBuilder source = new StringBuilder();
+        source.append("package ").append(pkg).append(";\n\n");
+        
+        // Add necessary imports
+        source.append("import ").append(backendType).append(";\n");
+        source.append("import ").append(GrpcService.class.getName()).append(";\n");
+        source.append("import ").append(ApplicationScoped.class.getName()).append(";\n");
+        source.append("import ").append(Inject.class.getName()).append(";\n");
+        source.append("import ").append(PersistenceManager.class.getName()).append(";\n\n");
+
+        source.append("@GrpcService\n");
+        source.append("@ApplicationScoped\n");
+        source.append("public class ").append(simpleClassName).append(" extends ").append(backendType.substring(backendType.lastIndexOf('.') + 1)).append(" {\n\n");
+        
+        source.append("    @Inject\n");
+        source.append("    private ").append(inMapperName).append(" inboundMapper;\n\n");
+        
+        source.append("    @Inject\n");
+        source.append("    private ").append(outMapperName).append(" outboundMapper;\n\n");
+        
+        source.append("    @Inject\n");
+        source.append("    private ").append(serviceName).append(" service;\n\n");
+        
+        source.append("    @Inject\n");
+        source.append("    private ").append(PersistenceManager.class.getName()).append(" persistenceManager;\n\n");
+        
+        source.append("    public ").append(simpleClassName).append("() {\n");
+        source.append("        super();\n");
+        source.append("    }\n");
+        source.append("}\n");
+
+        return source.toString();
     }
 
     private static void generateGrpcClientStepClass(
@@ -268,91 +286,106 @@ public class PipelineProcessor {
 
         System.out.println("PipelineProcessor.generateGrpcClientStepClass: " + stepClassInfo.name());
 
-        // Generate the client step class as bytecode (since it needs to be available for indexing)
         String pkg = "io.github.mbarcia.pipeline.generated";
         String simpleName = stepClassInfo.simpleName() + "Step";
         String fqcn = pkg + "." + simpleName;
 
-        ClassOutput classOutput = (name, data) -> {
-            generatedClasses.produce(new GeneratedClassBuildItem(true, name, data));
-        };
-        
-        try (ClassCreator cc = new ClassCreator(
-                classOutput,
-                fqcn, 
-                null, 
-                Object.class.getName(), 
-                stepType)) {
+        // Generate the source code as a string
+        String sourceCode = generateGrpcClientStepSourceCode(
+                pkg, 
+                simpleName, 
+                stepType, 
+                stubName, 
+                grpcClientValue, 
+                inputType
+        );
 
-            // Add @ApplicationScoped annotation
-            cc.addAnnotation(ApplicationScoped.class);
-
-            // Create field with @Inject and @GrpcClient annotations
-            FieldCreator fieldCreator = cc.getFieldCreator("grpcClient", stubName)
-                    .setModifiers(java.lang.reflect.Modifier.PRIVATE);
-            fieldCreator.addAnnotation(Inject.class);
+        // Write the source file to the generated sources directory
+        try {
+            Path sourceDir = Paths.get("target/generated-sources/annotations");
+            Path sourceFile = sourceDir.resolve(pkg.replace('.', '/') + "/" + simpleName + ".java");
             
-            // Add @GrpcClient annotation using Gizmo's approach
-            AnnotationCreator grpcClientAnnotation = fieldCreator.addAnnotation(GrpcClient.class);
-            grpcClientAnnotation.addValue("value", grpcClientValue);
-
-            // Add default no-arg constructor
-            try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
-                defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class.getName()), defaultCtor.getThis());
-                defaultCtor.returnValue(null);
-            }
-
-            // Add the appropriate method implementation based on the step type
-            if (stepType.endsWith("StepOneToOne")) {
-                try (MethodCreator method = cc.getMethodCreator("applyOneToOne", UNI, inputType)) {
-                    ResultHandle inputParam = method.getMethodParam(0);
-                    ResultHandle client = method.readInstanceField(FieldDescriptor.of(fqcn, "grpcClient", stubName), method.getThis());
-                    ResultHandle result = method.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(stubName, "remoteProcess", UNI, inputType),
-                            client, inputParam);
-                    method.returnValue(result);
-                }
-            } else if (stepType.endsWith("StepOneToMany")) {
-                try (MethodCreator method = cc.getMethodCreator("applyOneToMany", MULTI, inputType)) {
-                    ResultHandle inputParam = method.getMethodParam(0);
-                    ResultHandle client = method.readInstanceField(FieldDescriptor.of(fqcn, "grpcClient", stubName), method.getThis());
-                    ResultHandle result = method.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(stubName, "remoteProcess", MULTI, inputType),
-                            client, inputParam);
-                    method.returnValue(result);
-                }
-            } else if (stepType.endsWith("StepManyToOne")) {
-                try (MethodCreator method = cc.getMethodCreator("applyManyToOne", UNI, MULTI)) {
-                    ResultHandle inputParam = method.getMethodParam(0);
-                    ResultHandle client = method.readInstanceField(FieldDescriptor.of(fqcn, "grpcClient", stubName), method.getThis());
-                    ResultHandle result = method.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(stubName, "remoteProcess", UNI, MULTI),
-                            client, inputParam);
-                    method.returnValue(result);
-                }
-            } else if (stepType.endsWith("StepManyToMany")) {
-                try (MethodCreator method = cc.getMethodCreator("applyManyToMany", MULTI, MULTI)) {
-                    ResultHandle inputParam = method.getMethodParam(0);
-                    ResultHandle client = method.readInstanceField(FieldDescriptor.of(fqcn, "grpcClient", stubName), method.getThis());
-                    ResultHandle result = method.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(stubName, "remoteProcess", MULTI, MULTI),
-                            client, inputParam);
-                    method.returnValue(result);
-                }
-            } else if (stepType.endsWith("StepSideEffect")) {
-                try (MethodCreator method = cc.getMethodCreator("applySideEffect", UNI, inputType)) {
-                    ResultHandle inputParam = method.getMethodParam(0);
-                    ResultHandle client = method.readInstanceField(FieldDescriptor.of(fqcn, "grpcClient", stubName), method.getThis());
-                    ResultHandle result = method.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(stubName, "remoteProcess", UNI, inputType),
-                            client, inputParam);
-                    method.returnValue(result);
-                }
-            }
-
-            // Make the generated class an additional unremovable bean to ensure it's properly indexed
-            additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(fqcn));
+            Files.createDirectories(sourceFile.getParent());
+            Files.write(sourceFile, sourceCode.getBytes("UTF-8"));
+            
+            System.out.println(MessageFormat.format("Generated gRPC client step source: {0}", sourceFile));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write generated source file", e);
         }
+
+        // Make the generated class an additional unremovable bean to ensure it's properly indexed
+        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(fqcn));
+    }
+
+    private static String generateGrpcClientStepSourceCode(
+            String pkg,
+            String simpleName,
+            String stepType,
+            String stubName,
+            String grpcClientValue,
+            String inputType) {
+        
+        StringBuilder source = new StringBuilder();
+        source.append("package ").append(pkg).append(";\n\n");
+        
+        // Add necessary imports
+        source.append("import ").append(stepType).append(";\n");
+        source.append("import ").append(ApplicationScoped.class.getName()).append(";\n");
+        source.append("import ").append(Inject.class.getName()).append(";\n");
+        source.append("import ").append(GrpcClient.class.getName()).append(";\n");
+        source.append("import ").append(UNI).append(";\n");
+        source.append("import ").append(MULTI).append(";\n\n");
+
+        source.append("@ApplicationScoped\n");
+        source.append("public class ").append(simpleName).append(" implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append(" {\n\n");
+        
+        source.append("    @Inject\n");
+        source.append("    @GrpcClient(\"").append(grpcClientValue).append("\")\n");
+        source.append("    private ").append(stubName).append(" grpcClient;\n\n");
+        
+        source.append("    public ").append(simpleName).append("() {\n");
+        source.append("    }\n\n");
+        
+        // Add the appropriate method implementation based on the step type
+        if (stepType.endsWith("StepOneToOne")) {
+            source.append("    @Override\n");
+            source.append("    public Uni<").append(extractGenericType(inputType)).append("> applyOneToOne(").append(inputType).append(" input) {\n");
+            source.append("        return grpcClient.remoteProcess(input);\n");
+            source.append("    }\n");
+        } else if (stepType.endsWith("StepOneToMany")) {
+            source.append("    @Override\n");
+            source.append("    public Multi<").append(extractGenericType(inputType)).append("> applyOneToMany(").append(inputType).append(" input) {\n");
+            source.append("        return grpcClient.remoteProcess(input);\n");
+            source.append("    }\n");
+        } else if (stepType.endsWith("StepManyToOne")) {
+            source.append("    @Override\n");
+            source.append("    public Uni<").append(extractGenericType(inputType)).append("> applyManyToOne(Multi<").append(extractGenericType(inputType)).append("> input) {\n");
+            source.append("        return grpcClient.remoteProcess(input);\n");
+            source.append("    }\n");
+        } else if (stepType.endsWith("StepManyToMany")) {
+            source.append("    @Override\n");
+            source.append("    public Multi<").append(extractGenericType(inputType)).append("> applyManyToMany(Multi<").append(extractGenericType(inputType)).append("> input) {\n");
+            source.append("        return grpcClient.remoteProcess(input);\n");
+            source.append("    }\n");
+        } else if (stepType.endsWith("StepSideEffect")) {
+            source.append("    @Override\n");
+            source.append("    public Uni<").append(extractGenericType(inputType)).append("> applySideEffect(").append(inputType).append(" input) {\n");
+            source.append("        return grpcClient.remoteProcess(input);\n");
+            source.append("    }\n");
+        }
+        
+        source.append("}\n");
+
+        return source.toString();
+    }
+
+    private static String extractGenericType(String fullTypeName) {
+        int genericStart = fullTypeName.indexOf('<');
+        if (genericStart != -1) {
+            return fullTypeName.substring(genericStart + 1, fullTypeName.length() - 1);
+        }
+        // If it's a simple type like String, just return as-is
+        return fullTypeName;
     }
 
     private static void generateLocalStepClass(
@@ -362,156 +395,106 @@ public class PipelineProcessor {
             String inputType,
             String outputMapperName, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        // Generate a subclass that implements the appropriate step interface
-        // Use the same generated package as gRPC client steps to avoid conflicts and match registry expectations
         String pkg = "io.github.mbarcia.pipeline.generated";
         String simpleName = serviceClassInfo.simpleName() + "Step";
         String stepClassName = pkg + "." + simpleName;
 
-        ClassOutput classOutput = (name, data) -> {
-            generatedClasses.produce(new GeneratedClassBuildItem(true, name, data));
-        };
+        // Generate the source code as a string
+        String sourceCode = generateLocalStepSourceCode(
+                pkg, 
+                simpleName, 
+                stepType, 
+                serviceClassInfo.name().toString(), 
+                inputType, 
+                outputMapperName
+        );
 
-        try (ClassCreator cc = new ClassCreator(
-                classOutput,
-                stepClassName,
-                null,
-                Object.class.getName(),
-                stepType)) {
-
-            // Add @ApplicationScoped annotation
-            cc.addAnnotation(ApplicationScoped.class);
-
-            // Create field for the local service
-            FieldCreator serviceField = cc.getFieldCreator("service", serviceClassInfo.name().toString())
-                    .setModifiers(java.lang.reflect.Modifier.PRIVATE);
-            serviceField.addAnnotation(Inject.class);
-
-            // Create field for the output mapper if specified and not Void
-            FieldCreator mapperField = null;
-            if (!outputMapperName.equals("java.lang.Void") && !outputMapperName.isEmpty()) {
-                mapperField = cc.getFieldCreator("mapper", outputMapperName)
-                        .setModifiers(java.lang.reflect.Modifier.PRIVATE);
-                mapperField.addAnnotation(Inject.class);
-            }
-
-            // Add default no-arg constructor
-            try (MethodCreator defaultCtor = cc.getMethodCreator("<init>", void.class)) {
-                defaultCtor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class.getName()), defaultCtor.getThis());
-                defaultCtor.returnValue(null);
-            }
-
-            // Add the appropriate method implementation based on the step type
-            if (stepType.endsWith("StepOneToMany")) {
-                // Generate method: applyOneToMany (I -> Multi<O>)
-                try (MethodCreator method = cc.getMethodCreator("applyOneToMany", MULTI, inputType)) {
-                    generateLocalStepOneToMany(method, serviceField, serviceClassInfo);
-                }
-            } else if (stepType.endsWith("StepOneToOne")) {
-                // Generate method: applyOneToOne (I -> Uni<O>)
-                try (MethodCreator method = cc.getMethodCreator("applyOneToOne", UNI, inputType)) {
-                    generateLocalStepOneToOne(method, serviceField, mapperField, serviceClassInfo, outputMapperName);
-                }
-            } else if (stepType.endsWith("StepManyToOne")) {
-                // Generate method: applyManyToOne (Multi<I> -> Uni<O>)
-                try (MethodCreator method = cc.getMethodCreator("applyManyToOne", UNI, MULTI)) {
-                    generateLocalStepManyToOne(method, serviceField, mapperField, serviceClassInfo, outputMapperName);
-                }
-            } else if (stepType.endsWith("StepManyToMany")) {
-                // Generate method: applyManyToMany (Multi<I> -> Multi<O>)
-                try (MethodCreator method = cc.getMethodCreator("applyManyToMany", MULTI, MULTI)) {
-                    generateLocalStepManyToMany(method, serviceField, mapperField, serviceClassInfo, outputMapperName);
-                }
-            } else if (stepType.endsWith("StepSideEffect")) {
-                // Generate method: applySideEffect (I -> Uni<O>)
-                try (MethodCreator method = cc.getMethodCreator("applySideEffect", UNI, inputType)) {
-                    generateLocalStepSideEffect(method, serviceField, mapperField, serviceClassInfo, outputMapperName);
-                }
-            }
+        // Write the source file to the generated sources directory
+        try {
+            Path sourceDir = Paths.get("target/generated-sources/annotations");
+            Path sourceFile = sourceDir.resolve(pkg.replace('.', '/') + "/" + simpleName + ".java");
+            
+            Files.createDirectories(sourceFile.getParent());
+            Files.write(sourceFile, sourceCode.getBytes("UTF-8"));
+            
+            System.out.println(MessageFormat.format("Generated local step source: {0}", sourceFile));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write generated source file", e);
         }
-        System.out.println("PipelineProcessor.generateLocalStepClass: " + stepClassName);
-        
+
         // Make the generated class an additional unremovable bean to ensure it's properly indexed
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(stepClassName));
     }
 
-    private static void generateLocalStepOneToMany(MethodCreator method, FieldCreator serviceField, ClassInfo serviceClassInfo) {
-        // For StepOneToMany<String, OutputType>, call the service and convert results
-        ResultHandle inputParam = method.getMethodParam(0);
-        ResultHandle service = method.readInstanceField(serviceField.getFieldDescriptor(), method.getThis());
-
-        // For ProcessFolderService, call service.process(String) -> Stream<CsvPaymentsInputFile>
-        ResultHandle domainStream = method.invokeVirtualMethod(
-            MethodDescriptor.ofMethod(serviceClassInfo.name().toString(), "process", "java.util.stream.Stream", "java.lang.String"),
-            service, inputParam
-        );
-
-        // Convert Stream to List first, then to Multi
-        ResultHandle domainList = method.invokeVirtualMethod(
-            MethodDescriptor.ofMethod("java.util.stream.Stream", "toList", "java.util.List"),
-            domainStream
-        );
-
-        // Create Multi from the list
-        ResultHandle multiFromList = method.invokeStaticMethod(
-            MethodDescriptor.ofMethod("io.smallrye.mutiny.Multi", "createFrom", "io.smallrye.mutiny.Multi", "java.util.List"),
-            domainList
-        );
-
-        // Return the Multi - this implements StepOneToMany.applyOneToMany correctly
-        method.returnValue(multiFromList);
-    }
-
-    private static void generateLocalStepOneToOne(MethodCreator method, FieldCreator serviceField, FieldCreator mapperField, ClassInfo serviceClassInfo, String outputMapperName) {
-        // For StepOneToOne<I, O>, call the service and return the result
-        ResultHandle inputParam = method.getMethodParam(0);
-        ResultHandle service = method.readInstanceField(serviceField.getFieldDescriptor(), method.getThis());
-
-        // Call service.process(input) - assume the service implements ReactiveService with the right signature
-        // Use reflection to find the actual method name and signature from the service class
-        ResultHandle serviceResult = method.invokeVirtualMethod(
-            MethodDescriptor.ofMethod(serviceClassInfo.name().toString(), "process", UNI, "java.lang.Object"),
-            service, inputParam
-        );
-
-        method.returnValue(serviceResult);
-    }
-
-    private static void generateLocalStepManyToOne(MethodCreator method, FieldCreator serviceField, FieldCreator mapperField, ClassInfo serviceClassInfo, String outputMapperName) {
-        // For StepManyToOne<Multi<I>, O>, collect the Multi, process and return Uni<O>
-        ResultHandle inputParam = method.getMethodParam(0);
-
-        // For a local StepManyToOne, we'd need to have a service that can handle collections
-        // Since this is complex and may not be the default pattern, throw an exception for now
-        // to indicate this step type is not supported for local steps
-        method.throwException(RuntimeException.class, "StepManyToOne not supported for local steps - implement specific logic if needed");
-    }
-
-    private static void generateLocalStepManyToMany(MethodCreator method, FieldCreator serviceField, FieldCreator mapperField, ClassInfo serviceClassInfo, String outputMapperName) {
-        // For StepManyToMany<Multi<I>, Multi<O>>, map each item in the Multi to another Multi
-        ResultHandle inputParam = method.getMethodParam(0);
+    private static String generateLocalStepSourceCode(
+            String pkg,
+            String simpleName,
+            String stepType,
+            String serviceClassName,
+            String inputType,
+            String outputMapperName) {
         
-        // A common pattern would be to flatMap each input item to a Multi output
-        // For example: input Multi<String> -> service processes each and returns Multi<Output>
+        StringBuilder source = new StringBuilder();
+        source.append("package ").append(pkg).append(";\n\n");
         
-        // Create a lambda function that processes each item
-        // This would require more complex Gizmo code to create a lambda/functional interface
-        method.throwException(RuntimeException.class, "StepManyToMany not supported for local steps - implement specific logic if needed");
+        // Add necessary imports
+        source.append("import ").append(stepType).append(";\n");
+        source.append("import ").append(ApplicationScoped.class.getName()).append(";\n");
+        source.append("import ").append(Inject.class.getName()).append(";\n");
+        source.append("import ").append(UNI).append(";\n");
+        source.append("import ").append(MULTI).append(";\n\n");
+
+        source.append("@ApplicationScoped\n");
+        source.append("public class ").append(simpleName).append(" implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append(" {\n\n");
+        
+        source.append("    @Inject\n");
+        source.append("    private ").append(serviceClassName).append(" service;\n\n");
+        
+        // Create field for the output mapper if specified and not Void
+        if (!outputMapperName.equals("java.lang.Void") && !outputMapperName.isEmpty() && !outputMapperName.isEmpty()) {
+            source.append("    @Inject\n");
+            source.append("    private ").append(outputMapperName).append(" mapper;\n\n");
+        }
+
+        source.append("    public ").append(simpleName).append("() {\n");
+        source.append("    }\n\n");
+        
+        // Add the appropriate method implementation based on the step type
+        if (stepType.endsWith("StepOneToMany")) {
+            source.append("    @Override\n");
+            source.append("    public Multi<").append(extractGenericType(inputType)).append("> applyOneToMany(").append(inputType).append(" input) {\n");
+            source.append("        java.util.stream.Stream<").append(extractGenericType(inputType)).append("> domainStream = service.process(input);\n");
+            source.append("        java.util.List<").append(extractGenericType(inputType)).append("> domainList = domainStream.toList();\n");
+            source.append("        return io.smallrye.mutiny.Multi.createFrom().items(domainList);\n");
+            source.append("    }\n");
+        } else if (stepType.endsWith("StepOneToOne")) {
+            source.append("    @Override\n");
+            source.append("    public Uni<").append(extractGenericType(inputType)).append("> applyOneToOne(").append(inputType).append(" input) {\n");
+            source.append("        return service.process(input);\n");
+            source.append("    }\n");
+        } else if (stepType.endsWith("StepManyToOne")) {
+            source.append("    @Override\n");
+            source.append("    public Uni<").append(extractGenericType(inputType)).append("> applyManyToOne(Multi<").append(extractGenericType(inputType)).append("> input) {\n");
+            source.append("        throw new RuntimeException(\"StepManyToOne not supported for local steps - implement specific logic if needed\");\n");
+            source.append("    }\n");
+        } else if (stepType.endsWith("StepManyToMany")) {
+            source.append("    @Override\n");
+            source.append("    public Multi<").append(extractGenericType(inputType)).append("> applyManyToMany(Multi<").append(extractGenericType(inputType)).append("> input) {\n");
+            source.append("        throw new RuntimeException(\"StepManyToMany not supported for local steps - implement specific logic if needed\");\n");
+            source.append("    }\n");
+        } else if (stepType.endsWith("StepSideEffect")) {
+            source.append("    @Override\n");
+            source.append("    public Uni<").append(extractGenericType(inputType)).append("> applySideEffect(").append(inputType).append(" input) {\n");
+            source.append("        return service.process(input);\n");
+            source.append("    }\n");
+        }
+        
+        source.append("}\n");
+
+        return source.toString();
     }
 
-    private static void generateLocalStepSideEffect(MethodCreator method, FieldCreator serviceField, FieldCreator mapperField, ClassInfo serviceClassInfo, String outputMapperName) {
-        // For StepSideEffect<I>, call the service and return Uni<Void>
-        ResultHandle inputParam = method.getMethodParam(0);
-        ResultHandle service = method.readInstanceField(serviceField.getFieldDescriptor(), method.getThis());
 
-        // Call service.process(input) 
-        ResultHandle serviceResult = method.invokeVirtualMethod(
-            MethodDescriptor.ofMethod(serviceClassInfo.name().toString(), "process", UNI, "java.lang.Object"),
-            service, inputParam
-        );
-
-        method.returnValue(serviceResult);
-    }
     
     private static void generateStepsRegistry(
             BuildProducer<GeneratedClassBuildItem> generatedClasses,
@@ -519,107 +502,29 @@ public class PipelineProcessor {
             BuildProducer<UnremovableBeanBuildItem> unremovable,
             List<String> stepClassNames, BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         
-        // Generate an implementation of StepsRegistry that returns the registered steps as bytecode using Gizmo
         String registryImplClassName = "io.github.mbarcia.pipeline.generated.StepsRegistryImpl";
+        String pkg = "io.github.mbarcia.pipeline.generated";
+        String simpleClassName = "StepsRegistryImpl";
 
-        ClassOutput classOutput = (name, data) -> {
-            generatedClasses.produce(new GeneratedClassBuildItem(true, name, data));
-        };
-        
-        try (ClassCreator cc = ClassCreator.builder()
-                .classOutput(classOutput)
-                .className(registryImplClassName)
-                .interfaces("io.github.mbarcia.pipeline.StepsRegistry")
-                .build()) {
+        // Generate the source code as a string
+        String sourceCode = generateStepsRegistrySourceCode(
+                pkg, 
+                simpleClassName, 
+                stepClassNames
+        );
 
-            // Add @ApplicationScoped annotation
-            cc.addAnnotation(ApplicationScoped.class);
-
-            // Add field for CDI instances
-            FieldCreator instancesField = cc.getFieldCreator("instances", "jakarta.enterprise.inject.Instance")
-                    .setModifiers(java.lang.reflect.Modifier.PRIVATE);
-            instancesField.addAnnotation(Inject.class);
-
-            // Add default no-arg constructor
-            try (MethodCreator ctor = cc.getMethodCreator("<init>", void.class)) {
-                ctor.invokeSpecialMethod(MethodDescriptor.ofConstructor(Object.class), ctor.getThis());
-                ctor.returnValue(null);
-            }
-
-            // Implement the getSteps method
-            try (MethodCreator getStepsMethod = cc.getMethodCreator("getSteps", "java.util.List")) {
-                // Create the list to return
-                ResultHandle stepsList = getStepsMethod.newInstance(
-                        MethodDescriptor.ofConstructor("java.util.ArrayList"),
-                        new ResultHandle[0]
-                );
-
-                if (!stepClassNames.isEmpty()) {
-                    // Check if instances is not null before proceeding
-                    ResultHandle instances = getStepsMethod.readInstanceField(
-                            instancesField.getFieldDescriptor(), 
-                            getStepsMethod.getThis()
-                    );
-                    
-                    // Create conditional block to check if instances is not null
-                    BytecodeCreator ifInstancesNotNull = getStepsMethod.ifNotNull(instances).trueBranch();
-                    
-                    // Loop through each step class name and add to list
-                    for (String stepClassName : stepClassNames) {
-                        // Create Instance<StepClass> stepProvider = instances.select(StepClass.class);
-                        ResultHandle stepClass = ifInstancesNotNull.loadClass(stepClassName);
-                        ResultHandle stepProvider = ifInstancesNotNull.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(
-                                        "jakarta.enterprise.inject.Instance", 
-                                        "select", 
-                                        "jakarta.enterprise.inject.Instance", 
-                                        "java.lang.Class"
-                                ),
-                                instances, 
-                                stepClass
-                        );
-                        
-                        // Check if the step provider is resolvable
-                        ResultHandle isResolvable = ifInstancesNotNull.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(
-                                        "jakarta.enterprise.inject.Instance", 
-                                        "isResolvable", 
-                                        boolean.class
-                                ),
-                                stepProvider
-                        );
-                        
-                        // Create conditional block for resolvable check
-                        BytecodeCreator ifResolvable = ifInstancesNotNull.ifNonZero(isResolvable).trueBranch();
-                        
-                        // Get the step instance and add to list
-                        ResultHandle stepInstance = ifResolvable.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(
-                                        "jakarta.enterprise.inject.Instance", 
-                                        "get", 
-                                        Object.class
-                                ),
-                                stepProvider
-                        );
-                        
-                        ifResolvable.invokeInterfaceMethod(
-                                MethodDescriptor.ofMethod(
-                                        "java.util.List", 
-                                        "add", 
-                                        boolean.class, 
-                                        Object.class
-                                ),
-                                stepsList, 
-                                stepInstance
-                        );
-                    }
-                }
-
-                getStepsMethod.returnValue(stepsList);
-            }
+        // Write the source file to the generated sources directory
+        try {
+            Path sourceDir = Paths.get("target/generated-sources/annotations");
+            Path sourceFile = sourceDir.resolve(pkg.replace('.', '/') + "/" + simpleClassName + ".java");
+            
+            Files.createDirectories(sourceFile.getParent());
+            Files.write(sourceFile, sourceCode.getBytes("UTF-8"));
+            
+            System.out.println(MessageFormat.format("Generated StepsRegistry source: {0}", sourceFile));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to write generated source file", e);
         }
-
-        System.out.println("Successfully generated StepsRegistryImpl class");
 
         // Register the synthetic bean that provides the pre-computed steps list
         beans.produce(SyntheticBeanBuildItem
@@ -643,6 +548,54 @@ public class PipelineProcessor {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(registryImplClassName));
 
         System.out.println("Generated StepsRegistry with " + stepClassNames.size() + " steps");
+    }
+
+    private static String generateStepsRegistrySourceCode(
+            String pkg,
+            String simpleClassName,
+            List<String> stepClassNames) {
+        
+        StringBuilder source = new StringBuilder();
+        source.append("package ").append(pkg).append(";\n\n");
+        
+        // Add necessary imports
+        source.append("import ").append("io.github.mbarcia.pipeline.StepsRegistry;\n");
+        source.append("import ").append(ApplicationScoped.class.getName()).append(";\n");
+        source.append("import ").append(Inject.class.getName()).append(";\n");
+        source.append("import ").append("jakarta.enterprise.inject.Instance;\n");
+        source.append("import ").append("java.util.List;\n");
+        source.append("import ").append("java.util.ArrayList;\n\n");
+
+        source.append("@ApplicationScoped\n");
+        source.append("public class ").append(simpleClassName).append(" implements ").append("StepsRegistry {\n\n");
+        
+        source.append("    @Inject\n");
+        source.append("    private Instance<Object> instances;\n\n");
+        
+        source.append("    public ").append(simpleClassName).append("() {\n");
+        source.append("    }\n\n");
+        
+        source.append("    @Override\n");
+        source.append("    public List<Object> getSteps() {\n");
+        source.append("        List<Object> stepsList = new ArrayList<>();\n\n");
+        
+        if (!stepClassNames.isEmpty()) {
+            source.append("        if (instances != null) {\n");
+            for (String stepClassName : stepClassNames) {
+                String stepSimpleClassName = stepClassName.substring(stepClassName.lastIndexOf('.') + 1);
+                source.append("            Instance<").append(stepSimpleClassName).append("> stepProvider = instances.select(").append(stepSimpleClassName).append(".class);\n");
+                source.append("            if (stepProvider.isResolvable()) {\n");
+                source.append("                stepsList.add(stepProvider.get());\n");
+                source.append("            }\n");
+            }
+            source.append("        }\n");
+        }
+        
+        source.append("        return stepsList;\n");
+        source.append("    }\n");
+        source.append("}\n");
+
+        return source.toString();
     }
 
 }

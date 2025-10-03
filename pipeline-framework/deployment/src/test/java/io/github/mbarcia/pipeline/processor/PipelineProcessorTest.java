@@ -25,12 +25,21 @@ import io.github.mbarcia.pipeline.mapper.Mapper;
 import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
+import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.smallrye.mutiny.Uni;
+
 import jakarta.enterprise.context.ApplicationScoped;
-import java.util.Optional;
+
 import org.jboss.jandex.Index;
 import org.junit.jupiter.api.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 /** Unit test for PipelineProcessor to validate annotation processing functionality and coverage. */
 @SuppressWarnings("removal")
@@ -61,10 +70,63 @@ public class PipelineProcessorTest {
                         TestMapper.class,
                         TestOutboundMapper.class);
 
+        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
+        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
-                getDummyGeneratedClassBuildProducer(index, false);
+                new DummyGeneratedClassBuildProducer();
+        DummyAdditionalBeanBuildProducer additionalBeanBuildProducer =
+                new DummyAdditionalBeanBuildProducer();
+        DummyGeneratedResourceBuildProducer generatedResourceBuildProducer =
+                new DummyGeneratedResourceBuildProducer();
+
+        PipelineBuildTimeConfig config =
+                new PipelineBuildTimeConfig() {
+                    @Override
+                    public Boolean generateCli() {
+                        return false; // generateCli is false
+                    }
+
+                    @Override
+                    public String version() {
+                        return "";
+                    }
+
+                    @Override
+                    public Optional<String> cliName() {
+                        return Optional.of("test-cli");
+                    }
+
+                    @Override
+                    public Optional<String> cliDescription() {
+                        return Optional.of("Test CLI application");
+                    }
+
+                    @Override
+                    public Optional<String> cliVersion() {
+                        return Optional.of("1.0.0");
+                    }
+                };
+
+        // Execute both build steps
+        PipelineProcessor processor = new PipelineProcessor();
+        DummyUnremovableBeanBuildProducer unremovableProducer =
+                new DummyUnremovableBeanBuildProducer();
+        BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
+                new DummyReflectiveClassBuildItemBuildProducer();
+        BuildProducer<GeneratedStepsBuildItem> generatedStepClassNames =
+                new DummyGeneratedStepsBuildItemBuildProducer();
+
+        processor.generateAdapters(
+                indexBuildItem,
+                config,
+                beansProducer,
+                unremovableProducer,
+                generatedClassesProducer,
+                additionalBeanBuildProducer,
+                generatedStepClassNames);
 
         // Verify that generated gRPC adapter classes were produced when generateCli is false
+        // Should generate gRPC service adapters as generated classes
         assertFalse(
                 generatedClassesProducer.items.isEmpty(),
                 "Should generate gRPC adapter when generateCli is false");
@@ -75,8 +137,60 @@ public class PipelineProcessorTest {
         // Create index with multiple services
         Index index = Index.of(TestReactiveService.class, TestOneToManyService.class);
 
+        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
+        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
-                getDummyGeneratedClassBuildProducer(index, false);
+                new DummyGeneratedClassBuildProducer();
+        DummyAdditionalBeanBuildProducer additionalBeanBuildProducer =
+                new DummyAdditionalBeanBuildProducer();
+        DummyGeneratedResourceBuildProducer generatedResourceBuildProducer =
+                new DummyGeneratedResourceBuildProducer();
+
+        PipelineBuildTimeConfig config =
+                new PipelineBuildTimeConfig() {
+                    @Override
+                    public Boolean generateCli() {
+                        return false; // generateCli is false
+                    }
+
+                    @Override
+                    public String version() {
+                        return "";
+                    }
+
+                    @Override
+                    public Optional<String> cliName() {
+                        return Optional.of("test-cli");
+                    }
+
+                    @Override
+                    public Optional<String> cliDescription() {
+                        return Optional.of("Test CLI application");
+                    }
+
+                    @Override
+                    public Optional<String> cliVersion() {
+                        return Optional.of("1.0.0");
+                    }
+                };
+
+        // Execute both build steps
+        PipelineProcessor processor = new PipelineProcessor();
+        DummyUnremovableBeanBuildProducer unremovableProducer =
+                new DummyUnremovableBeanBuildProducer();
+        BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
+                new DummyReflectiveClassBuildItemBuildProducer();
+        BuildProducer<GeneratedStepsBuildItem> generatedStepClassNames =
+                new DummyGeneratedStepsBuildItemBuildProducer();
+
+        processor.generateAdapters(
+                indexBuildItem,
+                config,
+                beansProducer,
+                unremovableProducer,
+                generatedClassesProducer,
+                additionalBeanBuildProducer,
+                generatedStepClassNames);
 
         // Should generate 2 gRPC adapter classes: 2 services * 1 adapter = 2
         assertTrue(
@@ -89,8 +203,60 @@ public class PipelineProcessorTest {
         // Create index without any @PipelineStep annotations
         Index index = Index.of(TestGrpcStub.class); // Only include classes without @PipelineStep
 
+        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
+        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
-                getDummyGeneratedClassBuildProducer(index, false);
+                new DummyGeneratedClassBuildProducer();
+        DummyAdditionalBeanBuildProducer additionalBeanBuildProducer =
+                new DummyAdditionalBeanBuildProducer();
+        DummyGeneratedResourceBuildProducer generatedResourceBuildProducer =
+                new DummyGeneratedResourceBuildProducer();
+
+        PipelineBuildTimeConfig config =
+                new PipelineBuildTimeConfig() {
+                    @Override
+                    public Boolean generateCli() {
+                        return false; // generateCli is false
+                    }
+
+                    @Override
+                    public String version() {
+                        return "";
+                    }
+
+                    @Override
+                    public Optional<String> cliName() {
+                        return Optional.of("test-cli");
+                    }
+
+                    @Override
+                    public Optional<String> cliDescription() {
+                        return Optional.of("Test CLI application");
+                    }
+
+                    @Override
+                    public Optional<String> cliVersion() {
+                        return Optional.of("1.0.0");
+                    }
+                };
+
+        // Execute both build steps
+        PipelineProcessor processor = new PipelineProcessor();
+        DummyUnremovableBeanBuildProducer unremovableProducer =
+                new DummyUnremovableBeanBuildProducer();
+        BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
+                new DummyReflectiveClassBuildItemBuildProducer();
+        BuildProducer<GeneratedStepsBuildItem> generatedStepClassNames =
+                new DummyGeneratedStepsBuildItemBuildProducer();
+
+        processor.generateAdapters(
+                indexBuildItem,
+                config,
+                beansProducer,
+                unremovableProducer,
+                generatedClassesProducer,
+                additionalBeanBuildProducer,
+                generatedStepClassNames);
 
         // Should not generate any classes since there are no @PipelineStep annotations
         assertEquals(
@@ -104,15 +270,73 @@ public class PipelineProcessorTest {
         // Create index with single service
         Index index = Index.of(TestReactiveService.class);
 
+        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
+        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
-                getDummyGeneratedClassBuildProducer(index, true);
+                new DummyGeneratedClassBuildProducer();
+        DummyAdditionalBeanBuildProducer additionalBeanBuildProducer =
+                new DummyAdditionalBeanBuildProducer();
+        DummyGeneratedResourceBuildProducer generatedResourceBuildProducer =
+                new DummyGeneratedResourceBuildProducer();
 
-        // Should generate step class and StepsRegistryImpl (when generateCli() == true)
-        // With 1 service: 1 step + 1 StepsRegistryImpl = 2 classes
-        assertEquals(
-                2,
-                generatedClassesProducer.items.size(),
-                "Should generate step class and StepsRegistryImpl for single service");
+        PipelineBuildTimeConfig config =
+                new PipelineBuildTimeConfig() {
+                    @Override
+                    public Boolean generateCli() {
+                        return true; // generateCli is true
+                    }
+
+                    @Override
+                    public String version() {
+                        return "";
+                    }
+
+                    @Override
+                    public Optional<String> cliName() {
+                        return Optional.of("test-cli");
+                    }
+
+                    @Override
+                    public Optional<String> cliDescription() {
+                        return Optional.of("Test CLI application");
+                    }
+
+                    @Override
+                    public Optional<String> cliVersion() {
+                        return Optional.of("1.0.0");
+                    }
+                };
+
+        // Execute both build steps
+        PipelineProcessor processor = new PipelineProcessor();
+        DummyUnremovableBeanBuildProducer unremovableProducer =
+                new DummyUnremovableBeanBuildProducer();
+        BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
+                new DummyReflectiveClassBuildItemBuildProducer();
+        BuildProducer<GeneratedStepsBuildItem> generatedStepClassNames =
+                new DummyGeneratedStepsBuildItemBuildProducer();
+
+        processor.generateAdapters(
+                indexBuildItem,
+                config,
+                beansProducer,
+                unremovableProducer,
+                generatedClassesProducer,
+                additionalBeanBuildProducer,
+                generatedStepClassNames);
+
+        // Should generate step class (as class) and StepsRegistryImpl (as class) when
+        // generateCli() == true
+        // With 1 remote service: 1 step as class + 1 StepsRegistryImpl as class = 2 classes
+        boolean hasStepsRegistry =
+                generatedClassesProducer.items.stream()
+                        .anyMatch(item -> item.getName().contains("StepsRegistryImpl"));
+        boolean hasStepClass =
+                generatedClassesProducer.items.stream()
+                        .anyMatch(item -> item.getName().contains("TestReactiveServiceStep"));
+
+        assertTrue(hasStepsRegistry, "Should generate StepsRegistryImpl class");
+        assertTrue(hasStepClass, "Should generate step class for remote service");
     }
 
     @Test
@@ -155,80 +379,20 @@ public class PipelineProcessorTest {
         // Create index with local service
         Index index = Index.of(TestLocalReactiveService.class);
 
-        // Generate when generateCli=true (for client-side generation)
-        DummyGeneratedClassBuildProducer generatedClassesProducer =
-                getDummyGeneratedClassBuildProducer(index, true);
-
-        // Should generate local step class when generateCli=true and local=true
-        assertFalse(
-                generatedClassesProducer.items.isEmpty(),
-                "Should generate local step class when generateCli is true and step is local");
-
-        // Check that a step class was generated (it should have "Step" in the name)
-        boolean hasStepClass =
-                generatedClassesProducer.items.stream()
-                        .anyMatch(item -> item.getName().contains("TestLocalReactiveServiceStep"));
-        assertTrue(hasStepClass, "Should generate step class for local service with proper naming");
-    }
-
-    @Test
-    public void testLocalStepDoesNotGenerateGrpcAdapterWhenGenerateCliIsFalse() throws Exception {
-        // Create index with local service
-        Index index = Index.of(TestLocalReactiveService.class);
-
-        // Generate when generateCli=false (for server-side generation)
-        DummyGeneratedClassBuildProducer generatedClassesProducer =
-                getDummyGeneratedClassBuildProducer(index, false);
-
-        // For local steps and generateCli=false, no gRPC adapter should be generated
-        // The test service has local=true, so no gRPC adapter should be created
-        // We expect fewer generated classes compared to non-local services
-        long grpcAdapterCount =
-                generatedClassesProducer.items.stream()
-                        .filter(item -> item.getName().contains("GrpcService"))
-                        .count();
-
-        // Local steps should not generate gRPC service adapters
-        assertEquals(0, grpcAdapterCount, "Local steps should not generate gRPC service adapters");
-    }
-
-    @Test
-    public void testMixedLocalAndRemoteSteps() throws Exception {
-        // Create index with both local and remote services
-        Index index = Index.of(TestReactiveService.class, TestLocalReactiveService.class);
-
-        // Generate when generateCli=true
-        DummyGeneratedClassBuildProducer generatedClassesProducer =
-                getDummyGeneratedClassBuildProducer(index, true);
-
-        // Should generate step classes for both local and remote services
-        assertTrue(
-                generatedClassesProducer.items.size() >= 2,
-                "Should generate step classes for both local and remote services");
-
-        // Check that both step classes were generated
-        boolean hasRemoteStep =
-                generatedClassesProducer.items.stream()
-                        .anyMatch(item -> item.getName().contains("TestReactiveServiceStep"));
-        boolean hasLocalStep =
-                generatedClassesProducer.items.stream()
-                        .anyMatch(item -> item.getName().contains("TestLocalReactiveServiceStep"));
-
-        assertTrue(hasRemoteStep, "Should generate step class for remote service");
-        assertTrue(hasLocalStep, "Should generate step class for local service");
-    }
-
-    private static DummyGeneratedClassBuildProducer getDummyGeneratedClassBuildProducer(
-            Index index, boolean x) {
         CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
         DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
         DummyGeneratedClassBuildProducer generatedClassesProducer =
                 new DummyGeneratedClassBuildProducer();
+        DummyAdditionalBeanBuildProducer additionalBeanBuildProducer =
+                new DummyAdditionalBeanBuildProducer();
+        DummyGeneratedResourceBuildProducer generatedResourceBuildProducer =
+                new DummyGeneratedResourceBuildProducer();
+
         PipelineBuildTimeConfig config =
                 new PipelineBuildTimeConfig() {
                     @Override
                     public Boolean generateCli() {
-                        return x;
+                        return true; // generateCli is true
                     }
 
                     @Override
@@ -254,19 +418,182 @@ public class PipelineProcessorTest {
 
         // Execute both build steps
         PipelineProcessor processor = new PipelineProcessor();
-        DummyGeneratedJandexIndexBuildProducer jandexIndexProducer =
-                new DummyGeneratedJandexIndexBuildProducer();
         DummyUnremovableBeanBuildProducer unremovableProducer =
                 new DummyUnremovableBeanBuildProducer();
+        BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
+                new DummyReflectiveClassBuildItemBuildProducer();
+        BuildProducer<GeneratedStepsBuildItem> generatedStepClassNames =
+                new DummyGeneratedStepsBuildItemBuildProducer();
+
         processor.generateAdapters(
                 indexBuildItem,
                 config,
                 beansProducer,
                 unremovableProducer,
                 generatedClassesProducer,
-                jandexIndexProducer);
+                additionalBeanBuildProducer,
+                generatedStepClassNames);
 
-        return generatedClassesProducer;
+        // Should generate local step class when generateCli=true and local=true
+        assertFalse(
+                generatedClassesProducer.items.isEmpty(),
+                "Should generate local step class when generateCli is true and step is local");
+
+        // Check that a step class was generated (it should have "Step" in the name)
+        boolean hasStepClass =
+                generatedClassesProducer.items.stream()
+                        .anyMatch(item -> item.getName().contains("TestLocalReactiveServiceStep"));
+        assertTrue(hasStepClass, "Should generate step class for local service with proper naming");
+    }
+
+    @Test
+    public void testLocalStepDoesNotGenerateGrpcAdapterWhenGenerateCliIsFalse() throws Exception {
+        // Create index with local service
+        Index index = Index.of(TestLocalReactiveService.class);
+
+        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
+        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
+        DummyGeneratedClassBuildProducer generatedClassesProducer =
+                new DummyGeneratedClassBuildProducer();
+        DummyAdditionalBeanBuildProducer additionalBeanBuildProducer =
+                new DummyAdditionalBeanBuildProducer();
+        DummyGeneratedResourceBuildProducer generatedResourceBuildProducer =
+                new DummyGeneratedResourceBuildProducer();
+
+        PipelineBuildTimeConfig config =
+                new PipelineBuildTimeConfig() {
+                    @Override
+                    public Boolean generateCli() {
+                        return false; // generateCli is false
+                    }
+
+                    @Override
+                    public String version() {
+                        return "";
+                    }
+
+                    @Override
+                    public Optional<String> cliName() {
+                        return Optional.of("test-cli");
+                    }
+
+                    @Override
+                    public Optional<String> cliDescription() {
+                        return Optional.of("Test CLI application");
+                    }
+
+                    @Override
+                    public Optional<String> cliVersion() {
+                        return Optional.of("1.0.0");
+                    }
+                };
+
+        // Execute both build steps
+        PipelineProcessor processor = new PipelineProcessor();
+        DummyUnremovableBeanBuildProducer unremovableProducer =
+                new DummyUnremovableBeanBuildProducer();
+        BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
+                new DummyReflectiveClassBuildItemBuildProducer();
+        BuildProducer<GeneratedStepsBuildItem> generatedStepClassNames =
+                new DummyGeneratedStepsBuildItemBuildProducer();
+
+        processor.generateAdapters(
+                indexBuildItem,
+                config,
+                beansProducer,
+                unremovableProducer,
+                generatedClassesProducer,
+                additionalBeanBuildProducer,
+                generatedStepClassNames);
+
+        // For local steps and generateCli=false, no gRPC adapter should be generated
+        // The test service has local=true, so no gRPC adapter should be created
+        // We expect fewer generated classes compared to non-local services
+        long grpcAdapterCount =
+                generatedClassesProducer.items.stream()
+                        .filter(item -> item.getName().contains("GrpcService"))
+                        .count();
+
+        // Local steps should not generate gRPC service adapters
+        assertEquals(0, grpcAdapterCount, "Local steps should not generate gRPC service adapters");
+    }
+
+    @Test
+    public void testMixedLocalAndRemoteSteps() throws Exception {
+        // Create index with both local and remote services
+        Index index = Index.of(TestReactiveService.class, TestLocalReactiveService.class);
+
+        CombinedIndexBuildItem indexBuildItem = new CombinedIndexBuildItem(index, index);
+        DummySyntheticBeanBuildProducer beansProducer = new DummySyntheticBeanBuildProducer();
+        DummyGeneratedClassBuildProducer generatedClassesProducer =
+                new DummyGeneratedClassBuildProducer();
+        DummyAdditionalBeanBuildProducer additionalBeanBuildProducer =
+                new DummyAdditionalBeanBuildProducer();
+        DummyGeneratedResourceBuildProducer generatedResourceBuildProducer =
+                new DummyGeneratedResourceBuildProducer();
+
+        PipelineBuildTimeConfig config =
+                new PipelineBuildTimeConfig() {
+                    @Override
+                    public Boolean generateCli() {
+                        return true; // generateCli is true
+                    }
+
+                    @Override
+                    public String version() {
+                        return "";
+                    }
+
+                    @Override
+                    public Optional<String> cliName() {
+                        return Optional.of("test-cli");
+                    }
+
+                    @Override
+                    public Optional<String> cliDescription() {
+                        return Optional.of("Test CLI application");
+                    }
+
+                    @Override
+                    public Optional<String> cliVersion() {
+                        return Optional.of("1.0.0");
+                    }
+                };
+
+        // Execute both build steps
+        PipelineProcessor processor = new PipelineProcessor();
+        DummyUnremovableBeanBuildProducer unremovableProducer =
+                new DummyUnremovableBeanBuildProducer();
+        BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
+                new DummyReflectiveClassBuildItemBuildProducer();
+        BuildProducer<GeneratedStepsBuildItem> generatedStepClassNames =
+                new DummyGeneratedStepsBuildItemBuildProducer();
+
+        processor.generateAdapters(
+                indexBuildItem,
+                config,
+                beansProducer,
+                unremovableProducer,
+                generatedClassesProducer,
+                additionalBeanBuildProducer,
+                generatedStepClassNames);
+
+        // Should generate step for remote service (as class) and local service + StepsRegistry
+        // (as classes)
+        // Check that both step implementations were generated as classes
+        boolean hasRemoteStep =
+                generatedClassesProducer.items.stream()
+                        .anyMatch(item -> item.getName().contains("TestReactiveServiceStep"));
+        boolean hasLocalStep =
+                generatedClassesProducer.items.stream()
+                        .anyMatch(item -> item.getName().contains("TestLocalReactiveServiceStep"));
+        boolean hasStepsRegistry =
+                generatedClassesProducer.items.stream()
+                        .anyMatch(item -> item.getName().contains("StepsRegistryImpl"));
+
+        assertTrue(hasRemoteStep, "Should generate step class for remote service");
+        assertTrue(hasLocalStep, "Should generate step class for local service");
+        assertTrue(hasStepsRegistry, "Should generate StepsRegistryImpl class");
     }
 
     // Test classes
@@ -407,6 +734,16 @@ public class PipelineProcessorTest {
     }
 
     // Specific dummy implementations for testing
+    static class DummyAdditionalBeanBuildProducer
+            implements io.quarkus.deployment.annotations.BuildProducer<AdditionalBeanBuildItem> {
+        final java.util.List<AdditionalBeanBuildItem> items = new java.util.ArrayList<>();
+
+        @Override
+        public void produce(AdditionalBeanBuildItem item) {
+            items.add(item);
+        }
+    }
+
     static class DummySyntheticBeanBuildProducer
             implements io.quarkus.deployment.annotations.BuildProducer<
                     io.quarkus.arc.deployment.SyntheticBeanBuildItem> {
@@ -431,20 +768,6 @@ public class PipelineProcessorTest {
         }
     }
 
-    // Dummy implementation for GeneratedJandexIndexBuildItem
-    static class DummyGeneratedJandexIndexBuildProducer
-            implements io.quarkus.deployment.annotations.BuildProducer<
-                    io.github.mbarcia.pipeline.processor.GeneratedJandexIndexBuildItem> {
-        final java.util.List<io.github.mbarcia.pipeline.processor.GeneratedJandexIndexBuildItem>
-                items = new java.util.ArrayList<>();
-
-        @Override
-        public void produce(
-                io.github.mbarcia.pipeline.processor.GeneratedJandexIndexBuildItem item) {
-            items.add(item);
-        }
-    }
-
     // Dummy implementation for UnremovableBeanBuildItem
     static class DummyUnremovableBeanBuildProducer
             implements io.quarkus.deployment.annotations.BuildProducer<
@@ -454,6 +777,36 @@ public class PipelineProcessorTest {
 
         @Override
         public void produce(io.quarkus.arc.deployment.UnremovableBeanBuildItem item) {
+            items.add(item);
+        }
+    }
+
+    static class DummyGeneratedResourceBuildProducer
+            implements io.quarkus.deployment.annotations.BuildProducer<GeneratedResourceBuildItem> {
+        final List<GeneratedResourceBuildItem> items = new ArrayList<>();
+
+        @Override
+        public void produce(GeneratedResourceBuildItem item) {
+            items.add(item);
+        }
+    }
+
+    static class DummyReflectiveClassBuildItemBuildProducer
+            implements BuildProducer<ReflectiveClassBuildItem> {
+        private final List<ReflectiveClassBuildItem> items = new ArrayList<>();
+
+        @Override
+        public void produce(ReflectiveClassBuildItem item) {
+            items.add(item);
+        }
+    }
+
+    private static class DummyGeneratedStepsBuildItemBuildProducer
+            implements BuildProducer<GeneratedStepsBuildItem> {
+        private final List<GeneratedStepsBuildItem> items = new ArrayList<>();
+
+        @Override
+        public void produce(GeneratedStepsBuildItem item) {
             items.add(item);
         }
     }

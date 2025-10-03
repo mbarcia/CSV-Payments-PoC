@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv.orchestrator.service;
 
 import io.quarkus.test.junit.QuarkusTest;
+
 import org.mockito.*;
 
 @QuarkusTest

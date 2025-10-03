@@ -17,25 +17,24 @@
 package io.github.mbarcia.csv.service;
 
 import com.opencsv.bean.CsvToBeanBuilder;
+
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputStream;
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
-import io.github.mbarcia.csv.common.mapper.CsvPaymentsInputStreamMapper;
-import io.github.mbarcia.csv.common.mapper.PaymentRecordMapper;
-import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
-import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputStreamServiceGrpc;
-import io.github.mbarcia.pipeline.GenericGrpcServiceStreamingAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.unchecked.Unchecked;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-import java.util.Iterator;
-import java.util.concurrent.Executor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+
+import java.util.Iterator;
+import java.util.concurrent.Executor;
 
 /**
  * Service that processes CSV payments input and produces a stream of payment records.
@@ -46,26 +45,24 @@ import org.slf4j.MDC;
     autoPersist = true,
     debug = true,
     recoverOnFailure = true,
-    inputType = CsvPaymentsInputStream.class,
-    outputType = InputCsvFileProcessingSvc.PaymentRecord.class,
+    inputType = io.github.mbarcia.csv.common.domain.CsvPaymentsInputStream.class,
+    outputType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.PaymentRecord.class,
     stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
-    backendType = GenericGrpcServiceStreamingAdapter.class,
-    grpcStub = MutinyProcessCsvPaymentsInputStreamServiceGrpc.MutinyProcessCsvPaymentsInputStreamServiceStub.class,
-    grpcImpl = MutinyProcessCsvPaymentsInputStreamServiceGrpc.ProcessCsvPaymentsInputStreamServiceImplBase.class,
-    inboundMapper = CsvPaymentsInputStreamMapper.class,
+    backendType = io.github.mbarcia.pipeline.GenericGrpcServiceStreamingAdapter.class,
+    grpcStub = io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputStreamServiceGrpc.MutinyProcessCsvPaymentsInputStreamServiceStub.class,
+    grpcImpl = io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputStreamServiceGrpc.ProcessCsvPaymentsInputStreamServiceImplBase.class,
+    inboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputStreamMapper.class,
     outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordMapper.class,
     grpcClient = "process-csv-payments-input-stream"
 )
 @ApplicationScoped
-public class ProcessCsvPaymentsInputService
+public class ProcessCsvPaymentsInputStreamService
     implements ReactiveStreamingService<CsvPaymentsInputStream, PaymentRecord> {
 
   Executor executor;
-  
-  PaymentRecordMapper paymentRecordMapper = PaymentRecordMapper.INSTANCE;
 
-  @Inject
-  public ProcessCsvPaymentsInputService(@Named("virtualExecutor") Executor executor) {
+    @Inject
+  public ProcessCsvPaymentsInputStreamService(@Named("virtualExecutor") Executor executor) {
     this.executor = executor;
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.service;
+package io.github.mbarcia.csv.orchestrator.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.util.HybridResourceLoader;
-import java.io.File;
-import java.net.URL;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+
 import lombok.SneakyThrows;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+
+import java.io.File;
+import java.net.URL;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ProcessFolderServiceTest {
 

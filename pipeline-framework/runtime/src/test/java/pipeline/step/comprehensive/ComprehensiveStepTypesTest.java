@@ -26,16 +26,12 @@ import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
-
 import jakarta.inject.Inject;
-
-import org.junit.jupiter.api.Test;
-
-import pipeline.step.collection.example.ExpandPaymentCollectionStep;
-import pipeline.step.future.example.ProcessPaymentFutureStep;
-
 import java.time.Duration;
 import java.util.List;
+import org.junit.jupiter.api.Test;
+import pipeline.step.collection.example.ExpandPaymentCollectionStep;
+import pipeline.step.future.example.ProcessPaymentFutureStep;
 
 @QuarkusTest
 public class ComprehensiveStepTypesTest {

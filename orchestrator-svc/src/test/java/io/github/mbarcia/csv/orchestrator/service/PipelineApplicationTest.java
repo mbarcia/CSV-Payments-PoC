@@ -17,7 +17,6 @@
 package io.github.mbarcia.csv.orchestrator.service;
 
 import io.quarkus.test.junit.QuarkusTest;
-
 import org.mockito.*;
 
 @QuarkusTest

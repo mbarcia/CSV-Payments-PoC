@@ -30,16 +30,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
-//@PipelineStep(
-//    order = 0,
-//    inputType = java.lang.String.class,
-//    outputType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
-//    stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
-//    grpcImpl = java.lang.Void.class, // Not used for local steps
-//    inboundMapper = java.lang.Void.class, // Not used for local steps
-//    outboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class, // For mapping domain to gRPC
-//    local = true
-//)
+@PipelineStep(
+    order = 0,
+    inputType = java.lang.String.class,
+    outputType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
+    stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
+    grpcImpl = java.lang.Void.class, // Not used for local steps
+    inboundMapper = java.lang.Void.class, // Not used for local steps
+    outboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class, // For mapping domain to gRPC
+    local = true
+)
 public class ProcessFolderService {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessFolderService.class);

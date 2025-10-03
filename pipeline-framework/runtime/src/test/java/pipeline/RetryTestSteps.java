@@ -19,7 +19,6 @@ package pipeline;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.smallrye.mutiny.Uni;
-
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RetryTestSteps {

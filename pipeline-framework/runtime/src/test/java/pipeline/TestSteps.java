@@ -23,7 +23,6 @@ import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped

@@ -17,15 +17,11 @@
 package io.github.mbarcia.pipeline;
 
 import io.github.mbarcia.pipeline.config.PipelineConfig;
-import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.step.*;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
+
 import jakarta.inject.Inject;
-import java.text.MessageFormat;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.commons.lang3.time.StopWatch;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,58 +47,32 @@ public abstract class PipelineApplication {
   @Inject
   protected StepsRegistry stepsRegistry;
 
+  @Inject
+  protected PipelineExecutionService pipelineExecutionService;
+
   /**
    * Execute the pipeline with steps from the registry
    *
    * @param input the input Multi for the pipeline
    */
   protected void executePipeline(Multi<?> input) {
-    LOG.info("PIPELINE BEGINS processing");
-
-    StopWatch watch = new StopWatch();
-    watch.start();
-
-    // Configure profiles
-    pipelineConfig.defaults().retryLimit(3).debug(false);
-    pipelineConfig.profile("dev", new StepConfig().retryLimit(1).debug(true));
-    pipelineConfig.profile("prod", new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)));
-
-    try {
-      Object result = pipelineRunner.run(input);
-
-      Multi<?> multiResult;
-      if (result instanceof Multi) {
-        multiResult = (Multi<?>) result;
-      } else if (result instanceof Uni) {
-        multiResult = ((Uni<?>) result).toMulti();
-      } else {
-        throw new IllegalStateException(MessageFormat.format("PipelineRunner returned unexpected type: {0}", result.getClass()));
-      }
-
-      multiResult
-          .subscribe()
-          .with(item -> {
-                LOG.info("Processing completed.");
-                watch.stop();
-                LOG.info(
-                    "✅ PIPELINE FINISHED processing in {} seconds",
-                    watch.getTime(TimeUnit.SECONDS));
-              },
-              failure -> {
-                LOG.error(MessageFormat.format("Error: {0}", failure.getMessage()));
-                watch.stop();
-                LOG.error(
-                    "❌ PIPELINE FAILED after {} seconds",
-                    watch.getTime(TimeUnit.SECONDS),
-                    failure);
-              });
-
-    } catch (Exception e) {
-      watch.stop();
-      LOG.error(
-          "❌ PIPELINE ABORTED after {} seconds",
-          watch.getTime(TimeUnit.SECONDS),
-          e);
-    }
+    pipelineExecutionService.executePipeline(input);
+  }
+  
+  /**
+   * Public method to execute the pipeline with a given input.
+   * This method is intended to be called from external components like CLI.
+   * 
+   * @param input the input string for the pipeline
+   */
+  public void executePipelineWithInput(String input) {
+      LOG.info("Processing input: " + input);
+      
+      // Create input Multi from the input parameter
+      Multi<String> inputMulti = Multi.createFrom().item(input);
+      
+      // Execute the pipeline with the processed input using shared service
+      pipelineExecutionService.executePipeline(inputMulti);
+      LOG.info("Pipeline execution completed");
   }
 }

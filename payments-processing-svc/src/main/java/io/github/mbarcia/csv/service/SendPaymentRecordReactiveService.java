@@ -20,7 +20,6 @@ import io.github.mbarcia.csv.common.domain.AckPaymentSent;
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
 import io.github.mbarcia.csv.common.mapper.SendPaymentRequestMapper;
 import io.github.mbarcia.csv.grpc.MutinySendPaymentRecordServiceGrpc;
-import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.smallrye.mutiny.Uni;
@@ -33,15 +32,15 @@ import org.slf4j.MDC;
 
 @PipelineStep(
   order = 2,
-  inputType = PaymentRecord.class,
-  outputType = AckPaymentSent.class,
+  inputType = io.github.mbarcia.csv.common.domain.PaymentRecord.class,
+  outputType = io.github.mbarcia.csv.common.domain.AckPaymentSent.class,
   stepType = io.github.mbarcia.pipeline.step.StepOneToOne.class,
-  backendType = GenericGrpcReactiveServiceAdapter.class,
+  backendType = io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter.class,
   grpcStub = MutinySendPaymentRecordServiceGrpc.MutinySendPaymentRecordServiceStub.class,
   grpcImpl = MutinySendPaymentRecordServiceGrpc.SendPaymentRecordServiceImplBase.class,
-  inboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class,
-  outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordMapper.class,
-  grpcClient = "process-csv-payments-input-file",
+  inboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordMapper.class,
+  outboundMapper = io.github.mbarcia.csv.common.mapper.AckPaymentSentMapper.class,
+  grpcClient = "send-payment-record",
   autoPersist = true,
   debug = true
 )

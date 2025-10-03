@@ -35,9 +35,7 @@ import org.slf4j.LoggerFactory;
     inputType = java.lang.String.class,
     outputType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
     stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
-    grpcImpl = java.lang.Void.class, // Not used for local steps
-    inboundMapper = java.lang.Void.class, // Not used for local steps
-    outboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class, // For mapping domain to gRPC
+    outboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class,
     local = true
 )
 public class ProcessFolderService {

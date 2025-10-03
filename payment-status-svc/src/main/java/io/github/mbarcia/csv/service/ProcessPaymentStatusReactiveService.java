@@ -19,7 +19,6 @@ package io.github.mbarcia.csv.service;
 import io.github.mbarcia.csv.common.domain.*;
 import io.github.mbarcia.csv.common.dto.PaymentOutputDto;
 import io.github.mbarcia.csv.common.mapper.PaymentOutputMapper;
-import io.github.mbarcia.csv.grpc.MutinyProcessPaymentStatusServiceGrpc;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.smallrye.mutiny.Uni;
@@ -35,8 +34,8 @@ import org.slf4j.MDC;
     outputType = io.github.mbarcia.csv.common.domain.PaymentOutput.class,
     stepType = io.github.mbarcia.pipeline.step.StepOneToOne.class,
     backendType = io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter.class,
-    grpcStub = MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub.class,
-    grpcImpl = MutinyProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceImplBase.class,
+    grpcStub = io.github.mbarcia.csv.grpc.MutinyProcessPaymentStatusServiceGrpc.MutinyProcessPaymentStatusServiceStub.class,
+    grpcImpl = io.github.mbarcia.csv.grpc.MutinyProcessPaymentStatusServiceGrpc.ProcessPaymentStatusServiceImplBase.class,
     inboundMapper = io.github.mbarcia.csv.common.mapper.PaymentStatusMapper.class,
     outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentOutputMapper.class,
     grpcClient = "process-payment-status",

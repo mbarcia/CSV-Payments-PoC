@@ -17,8 +17,6 @@
 package io.github.mbarcia.csv.service;
 
 import io.github.mbarcia.csv.common.domain.*;
-import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc;
-import io.github.mbarcia.pipeline.GenericGrpcServiceClientStreamingAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingClientService;
 import io.smallrye.mutiny.Multi;
@@ -46,12 +44,12 @@ import org.slf4j.MDC;
  */
 @PipelineStep(
   order = 6,
-  inputType = PaymentOutput.class,
-  outputType = CsvPaymentsOutputFile.class,
+  inputType = io.github.mbarcia.csv.common.domain.PaymentOutput.class,
+  outputType = io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile.class,
   stepType = io.github.mbarcia.pipeline.step.StepManyToOne.class,
-  backendType = GenericGrpcServiceClientStreamingAdapter.class,
-  grpcStub = MutinyProcessCsvPaymentsOutputFileServiceGrpc.MutinyProcessCsvPaymentsOutputFileServiceStub.class,
-  grpcImpl = MutinyProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceImplBase.class,
+  backendType = io.github.mbarcia.pipeline.GenericGrpcServiceClientStreamingAdapter.class,
+  grpcStub = io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc.MutinyProcessCsvPaymentsOutputFileServiceStub.class,
+  grpcImpl = io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceImplBase.class,
   inboundMapper = io.github.mbarcia.csv.common.mapper.PaymentOutputMapper.class,
   outboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsOutputFileMapper.class,
   grpcClient = "process-csv-payments-output-file",

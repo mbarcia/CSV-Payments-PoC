@@ -17,39 +17,33 @@
 package io.github.mbarcia.csv.service;
 
 import com.opencsv.bean.CsvToBeanBuilder;
-
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInput;
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
-import io.github.mbarcia.pipeline.GenericGrpcServiceStreamingAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.unchecked.Unchecked;
-
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.inject.Named;
-
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.concurrent.Executor;
 import lombok.Getter;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.concurrent.Executor;
-
 @PipelineStep(
     order = 1,
-    inputType = CsvPaymentsInput.class,
-    outputType = PaymentRecord.class,
-    stepType = io.github.mbarcia.pipeline.step.StepManyToOne.class,
-    backendType = GenericGrpcServiceStreamingAdapter.class,
+    inputType = io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile.class,
+    outputType = io.github.mbarcia.csv.common.domain.PaymentRecord.class,
+    stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
+    backendType = io.github.mbarcia.pipeline.GenericGrpcServiceStreamingAdapter.class,
     grpcStub = MutinyProcessCsvPaymentsInputFileServiceGrpc.MutinyProcessCsvPaymentsInputFileServiceStub.class,
     grpcImpl = MutinyProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase.class,
-    inboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputStreamMapper.class,
+    inboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class,
     outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordMapper.class,
     grpcClient = "process-csv-payments-input-file",
     autoPersist = true,

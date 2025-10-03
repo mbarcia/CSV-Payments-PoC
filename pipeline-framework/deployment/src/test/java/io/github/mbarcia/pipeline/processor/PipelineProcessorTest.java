@@ -30,6 +30,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
+import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
@@ -41,6 +42,11 @@ import org.junit.jupiter.api.Test;
 /** Unit test for PipelineProcessor to validate annotation processing functionality and coverage. */
 @SuppressWarnings("removal")
 public class PipelineProcessorTest {
+
+    private BuildSystemTargetBuildItem createBuildTarget() {
+        java.nio.file.Path targetPath = java.nio.file.Paths.get("target");
+        return new BuildSystemTargetBuildItem(targetPath, "test", false, null);
+    }
 
     @Test
     public void testPipelineStepAnnotationProcessing() {
@@ -116,7 +122,8 @@ public class PipelineProcessorTest {
                 config,
                 beansProducer,
                 unremovableProducer,
-                additionalBeanBuildProducer);
+                additionalBeanBuildProducer,
+                createBuildTarget());
 
         // Verify that generated gRPC adapter classes were produced when generateCli is false
         // Should generate gRPC service adapters as generated classes
@@ -179,7 +186,8 @@ public class PipelineProcessorTest {
                 config,
                 beansProducer,
                 unremovableProducer,
-                additionalBeanBuildProducer);
+                additionalBeanBuildProducer,
+                createBuildTarget());
 
         // Should generate 2 gRPC adapter classes: 2 services * 1 adapter = 2
         assertTrue(
@@ -241,7 +249,8 @@ public class PipelineProcessorTest {
                 config,
                 beansProducer,
                 unremovableProducer,
-                additionalBeanBuildProducer);
+                additionalBeanBuildProducer,
+                createBuildTarget());
 
         // Should not generate any classes since there are no @PipelineStep annotations
         assertEquals(
@@ -304,7 +313,8 @@ public class PipelineProcessorTest {
                 config,
                 beansProducer,
                 unremovableProducer,
-                additionalBeanBuildProducer);
+                additionalBeanBuildProducer,
+                createBuildTarget());
 
         // Should generate step class (as class) and StepsRegistryImpl (as class) when
         // generateCli() == true
@@ -409,7 +419,8 @@ public class PipelineProcessorTest {
                 config,
                 beansProducer,
                 unremovableProducer,
-                additionalBeanBuildProducer);
+                additionalBeanBuildProducer,
+                createBuildTarget());
 
         // Should generate local step class when generateCli=true and local=true
         assertFalse(
@@ -477,7 +488,8 @@ public class PipelineProcessorTest {
                 config,
                 beansProducer,
                 unremovableProducer,
-                additionalBeanBuildProducer);
+                additionalBeanBuildProducer,
+                createBuildTarget());
 
         // For local steps and generateCli=false, no gRPC adapter should be generated
         // The test service has local=true, so no gRPC adapter should be created
@@ -545,7 +557,8 @@ public class PipelineProcessorTest {
                 config,
                 beansProducer,
                 unremovableProducer,
-                additionalBeanBuildProducer);
+                additionalBeanBuildProducer,
+                createBuildTarget());
 
         // Should generate step for remote service (as class) and local service + StepsRegistry
         // (as classes)

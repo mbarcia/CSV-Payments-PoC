@@ -16,12 +16,10 @@
 
 package io.github.mbarcia.pipeline;
 
-import io.github.mbarcia.pipeline.annotation.StepConfigProvider;
 import io.github.mbarcia.pipeline.mapper.Mapper;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
-import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,36 +32,14 @@ import org.slf4j.LoggerFactory;
  * @param <DomainOut> the domain output type
  * @param <GRpcOut>   the gRPC output type
  */
-public class GenericGrpcReactiveServiceAdapter<GRpcIn, DomainIn, DomainOut, GRpcOut> {
+public abstract class GenericGrpcReactiveServiceAdapter<GRpcIn, DomainIn, DomainOut, GRpcOut> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GenericGrpcReactiveServiceAdapter.class);
 
-    private final Mapper<GRpcIn, ?, DomainIn> inboundMapper;
-    private final Mapper<GRpcOut, ?, DomainOut> outboundMapper;
-    private final ReactiveService<DomainIn, DomainOut> service;
-    private final PersistenceManager persistenceManager;
-    private final Class<? extends ConfigurableStep> stepClass; // The step class this adapter is for
-
-    /**
-     * Constructs a GenericGrpcReactiveServiceAdapter with the specified mappers and services.
-     *
-     * @param inboundMapper  the inbound mapper
-     * @param outboundMapper the outbound mapper
-     * @param service        the service
-     * @param persistenceManager the persistence manager
-     * @param stepClass corresponding Step subclass
-     */
-    public GenericGrpcReactiveServiceAdapter(Mapper<GRpcIn, ?, DomainIn> inboundMapper,
-                                             Mapper<GRpcOut, ? , DomainOut> outboundMapper,
-                                             ReactiveService<DomainIn, DomainOut> service,
-                                             PersistenceManager persistenceManager,
-                                             Class<? extends ConfigurableStep> stepClass) {
-        this.inboundMapper = inboundMapper;
-        this.outboundMapper = outboundMapper;
-        this.service = service;
-        this.persistenceManager = persistenceManager;
-        this.stepClass = stepClass;
-    }
+    public abstract Mapper<GRpcIn, ?, DomainIn> getInboundMapper();
+    public abstract Mapper<GRpcOut, ?, DomainOut> getOutboundMapper() ;
+    public abstract ReactiveService<DomainIn, DomainOut> getService();
+    public abstract PersistenceManager getPersistenceManager();
 
     /**
      * Determines whether entities should be automatically persisted before processing.
@@ -71,20 +47,18 @@ public class GenericGrpcReactiveServiceAdapter<GRpcIn, DomainIn, DomainOut, GRpc
      *
      * @return true if entities should be auto-persisted, false otherwise
      */
-    protected boolean isAutoPersistenceEnabled() {
-        return StepConfigProvider.isAutoPersistenceEnabled(stepClass);
-    }
+    protected abstract boolean isAutoPersistenceEnabled();
 
     public Uni<GRpcOut> remoteProcess(GRpcIn grpcRequest) {
-        DomainIn entity = inboundMapper.fromGrpcFromDto(grpcRequest);
+        DomainIn entity = getInboundMapper().fromGrpcFromDto(grpcRequest);
 
         Uni<DomainIn> persistenceUni = getPersistedUni(entity);
 
         return persistenceUni
-            .onItem().transformToUni(persistedEntity -> service
+            .onItem().transformToUni(persistedEntity -> getService()
                 .process(persistedEntity)
                 .onItem()
-                .transform(outboundMapper::toDtoToGrpc)
+                .transform(getOutboundMapper()::toDtoToGrpc)
                 .onFailure()
                 .transform(new throwStatusRuntimeExceptionFunction())
             );
@@ -93,7 +67,7 @@ public class GenericGrpcReactiveServiceAdapter<GRpcIn, DomainIn, DomainOut, GRpc
     private Uni<DomainIn> getPersistedUni(DomainIn entity) {
         if (isAutoPersistenceEnabled()) {
             LOG.debug("Auto-persistence is enabled");
-            return persistenceManager.persist(entity);
+            return getPersistenceManager().persist(entity);
         }
         else {
             LOG.debug("Auto-persistence is disabled");

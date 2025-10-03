@@ -16,12 +16,10 @@
 
 package io.github.mbarcia.pipeline;
 
-import io.github.mbarcia.pipeline.annotation.StepConfigProvider;
 import io.github.mbarcia.pipeline.mapper.Mapper;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingClientService;
 import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
-import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
@@ -35,46 +33,24 @@ import org.slf4j.LoggerFactory;
  * @param <DomainOut> the domain output type
  * @param <GRpcOut>   the gRPC output type
  */
-public class GenericGrpcServiceClientStreamingAdapter<GRpcIn, DomainIn, DomainOut, GRpcOut> {
+public abstract class GenericGrpcServiceClientStreamingAdapter<GRpcIn, DomainIn, DomainOut, GRpcOut> {
 
     private static final Logger LOG = LoggerFactory.getLogger(GenericGrpcServiceClientStreamingAdapter.class);
 
-    private final Mapper<GRpcIn, ?, DomainIn> inboundMapper;
-    private final Mapper<GRpcOut, ?, DomainOut> outboundMapper;
-    private final ReactiveStreamingClientService<DomainIn, DomainOut> service;
-    private final PersistenceManager persistenceManager;
-    private final Class<? extends ConfigurableStep> stepClass; // The step class this adapter is for
-
-    /**
-     * Constructs a GenericGrpcServiceClientStreamingAdapter with the specified mappers and services.
-     *
-     * @param inboundMapper  the inbound mapper
-     * @param outboundMapper the outbound mapper
-     * @param service        the service
-     * @param persistenceManager the persistence manager
-     * @param stepClass corresponding Step subclass
-     */
-    public GenericGrpcServiceClientStreamingAdapter(Mapper<GRpcIn, ?, DomainIn> inboundMapper,
-                                                    Mapper<GRpcOut, ? , DomainOut> outboundMapper,
-                                                    ReactiveStreamingClientService<DomainIn, DomainOut> service,
-                                                    PersistenceManager persistenceManager,
-                                                    Class<? extends ConfigurableStep> stepClass) {
-        this.inboundMapper = inboundMapper;
-        this.outboundMapper = outboundMapper;
-        this.service = service;
-        this.persistenceManager = persistenceManager;
-        this.stepClass = stepClass;
-    }
-
+    public abstract Mapper<GRpcIn, ?, DomainIn> getInboundMapper();
+    public abstract Mapper<GRpcOut, ?, DomainOut> getOutboundMapper();
+    public abstract ReactiveStreamingClientService<DomainIn, DomainOut> getService();
+    public abstract PersistenceManager getPersistenceManager();
+    
     public Uni<GRpcOut> remoteProcess(Multi<GRpcIn> requestStream) {
-        Multi<DomainIn> domainStream = requestStream.onItem().transform(inboundMapper::fromGrpcFromDto);
+        Multi<DomainIn> domainStream = requestStream.onItem().transform(getInboundMapper()::fromGrpcFromDto);
 
         Multi<DomainIn> persistentStream = getPersistedStream(domainStream);
 
-        return service
+        return getService()
             .process(persistentStream) // Multi<DomainIn> → Uni<DomainOut>
             .onItem()
-            .transform(outboundMapper::toDtoToGrpc) // Uni<GrpcOut>
+            .transform(getOutboundMapper()::toDtoToGrpc) // Uni<GrpcOut>
             .onFailure()
             .transform(new throwStatusRuntimeExceptionFunction());
     }
@@ -85,14 +61,12 @@ public class GenericGrpcServiceClientStreamingAdapter<GRpcIn, DomainIn, DomainOu
      *
      * @return true if entities should be auto-persisted, false otherwise
      */
-    protected boolean isAutoPersistenceEnabled() {
-        return StepConfigProvider.isAutoPersistenceEnabled(stepClass);
-    }
+    protected abstract boolean isAutoPersistenceEnabled();
 
     private Multi<DomainIn> getPersistedStream(Multi<DomainIn> domainStream) {
         if (isAutoPersistenceEnabled()) {
             LOG.debug("Auto-persistance is enabled");
-            return domainStream.onItem().transformToUniAndMerge(persistenceManager::persist);
+            return domainStream.onItem().transformToUniAndMerge(getPersistenceManager()::persist);
         } else {
             LOG.debug("Auto-persistance is disabled");
         }

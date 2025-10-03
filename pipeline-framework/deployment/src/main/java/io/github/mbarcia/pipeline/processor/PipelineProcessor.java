@@ -181,7 +181,6 @@ public class PipelineProcessor {
                 inMapperName, 
                 outMapperName, 
                 serviceName,
-                stepClassInfo,
                 autoPersistenceEnabled);  // The corresponding step class name and auto-persistence setting
 
         writeSourceFile(pkg, simpleClassName, sourceCode, genDir);
@@ -208,7 +207,6 @@ public class PipelineProcessor {
             String inMapperName,
             String outMapperName,
             String serviceName,
-            ClassInfo stepClassInfo,
             boolean autoPersistenceEnabled) {
 
         return "package " + pkg + ";\n\n" +
@@ -289,6 +287,7 @@ public class PipelineProcessor {
         source.append("package ").append(pkg).append(";\n\n");
         
         // Add necessary imports
+        source.append("import io.github.mbarcia.pipeline.step.ConfigurableStep;\n");
         source.append("import ").append(stepType).append(";\n");
         source.append("import ").append(ApplicationScoped.class.getName()).append(";\n");
         source.append("import ").append(Inject.class.getName()).append(";\n");
@@ -296,8 +295,12 @@ public class PipelineProcessor {
         source.append("import ").append(UNI).append(";\n");
         source.append("import ").append(MULTI).append(";\n\n");
 
+        // Determine the gRPC input and output types for the interface
+        String grpcInputType = inputType;
+        String grpcOutputType = outputType.isEmpty() ? extractGenericType(inputType) : outputType;
+        
         source.append("@ApplicationScoped\n");
-        source.append("public class ").append(simpleName).append(" implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append(" {\n\n");
+        source.append("public class ").append(simpleName).append(" extends ConfigurableStep implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append("<").append(grpcInputType).append(", ").append(grpcOutputType).append("> {\n\n");
         
         source.append("    @Inject\n");
         source.append("    @GrpcClient(\"").append(grpcClientValue).append("\")\n");
@@ -306,33 +309,30 @@ public class PipelineProcessor {
         source.append("    public ").append(simpleName).append("() {\n");
         source.append("    }\n\n");
         
-        // Determine the output type to use - if outputType is provided and not empty, use it, else try to extract from input
-        String returnType = outputType.isEmpty() ? extractGenericType(inputType) : outputType;
-        
         // Add the appropriate method implementation based on the step type
         if (stepType.endsWith("StepOneToOne")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(returnType).append("> applyOneToOne(").append(inputType).append(" input) {\n");
+            source.append("    public Uni<").append(grpcOutputType).append("> applyOneToOne(").append(grpcInputType).append(" input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepOneToMany")) {
             source.append("    @Override\n");
-            source.append("    public Multi<").append(returnType).append("> applyOneToMany(").append(inputType).append(" input) {\n");
+            source.append("    public Multi<").append(grpcOutputType).append("> applyOneToMany(").append(grpcInputType).append(" input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepManyToOne")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(returnType).append("> applyManyToOne(Multi<").append(extractGenericType(inputType)).append("> input) {\n");
+            source.append("    public Uni<").append(grpcOutputType).append("> applyManyToOne(Multi<").append(grpcInputType).append("> input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepManyToMany")) {
             source.append("    @Override\n");
-            source.append("    public Multi<").append(returnType).append("> applyManyToMany(Multi<").append(extractGenericType(inputType)).append("> input) {\n");
+            source.append("    public Multi<").append(grpcOutputType).append("> applyManyToMany(Multi<").append(grpcInputType).append("> input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepSideEffect")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(returnType).append("> applySideEffect(").append(inputType).append(" input) {\n");
+            source.append("    public Uni<").append(grpcOutputType).append("> applySideEffect(").append(grpcInputType).append(" input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         }

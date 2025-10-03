@@ -23,6 +23,7 @@ import io.github.mbarcia.pipeline.step.StepOneToOne;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 @ApplicationScoped
@@ -30,6 +31,11 @@ public class TestSteps {
 
     public static class TestStepOneToOneBlocking extends ConfigurableStep
             implements StepOneToOneBlocking<String, String> {
+        private boolean hasManualConfig = false;
+        private int manualRetryLimit = -1;
+        private java.time.Duration manualRetryWait = null;
+        private boolean manualDebug = false;
+
         @Override
         public Uni<String> apply(String input) {
             // This is a blocking operation that simulates processing
@@ -43,7 +49,54 @@ public class TestSteps {
 
         @Override
         public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
-            super.initialiseWithConfig(config);
+            // Check if this is the first time being configured with non-default values
+            // If so, preserve these as manual configuration
+            if (!hasManualConfig && config != null) {
+                // Check if the incoming config has custom values
+                if (config.retryLimit()
+                                != new io.github.mbarcia.pipeline.config.StepConfig().retryLimit()
+                        || config.retryWait()
+                                != new io.github.mbarcia.pipeline.config.StepConfig().retryWait()
+                        || config.debug()
+                                != new io.github.mbarcia.pipeline.config.StepConfig().debug()) {
+                    // This looks like manual configuration - save the values
+                    setManualConfig(config.retryLimit(), config.retryWait(), config.debug());
+                }
+            }
+
+            if (hasManualConfig) {
+                // If we have manual config, apply it on top of the new config
+                super.initialiseWithConfig(config);
+                // Apply the manual overrides
+                if (config != null) {
+                    config.overrides()
+                            .retryLimit(manualRetryLimit)
+                            .retryWait(manualRetryWait)
+                            .debug(manualDebug);
+                }
+            } else {
+                super.initialiseWithConfig(config);
+            }
+        }
+
+        // Method to mark that manual config has been set
+        public void setManualConfig(int retryLimit, java.time.Duration retryWait, boolean debug) {
+            this.hasManualConfig = true;
+            this.manualRetryLimit = retryLimit;
+            this.manualRetryWait = retryWait;
+            this.manualDebug = debug;
+        }
+
+        public int retryLimit() {
+            return effectiveConfig().retryLimit();
+        }
+
+        public java.time.Duration retryWait() {
+            return effectiveConfig().retryWait();
+        }
+
+        public boolean debug() {
+            return effectiveConfig().debug();
         }
 
         public Uni<String> applyOneToOne(String input) {
@@ -85,8 +138,6 @@ public class TestSteps {
 
         public FailingStepBlocking(boolean shouldRecover) {
             this.shouldRecover = shouldRecover;
-            // Don't call liveConfig() here as the step isn't fully initialized yet
-            // The configuration will be applied externally when the step is used in a pipeline
         }
 
         @Override
@@ -97,7 +148,8 @@ public class TestSteps {
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
             System.out.println("Dead letter handled for: " + failedItem.toString());
-            return Uni.createFrom().nullItem();
+            // Return the original input value when recovery is enabled
+            return failedItem.onItem().transform(item -> item);
         }
 
         @Override

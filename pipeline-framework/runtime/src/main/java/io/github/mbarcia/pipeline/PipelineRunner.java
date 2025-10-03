@@ -24,9 +24,11 @@ import io.github.mbarcia.pipeline.step.functional.ManyToOne;
 import io.quarkus.arc.Unremovable;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
+
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
@@ -107,6 +109,8 @@ public class PipelineRunner implements AutoCloseable {
             switch (step) {
                 case StepOneToOne stepOneToOne -> current = applyOneToOneUnchecked(stepOneToOne, current);
                 case StepOneToMany stepOneToMany -> current = applyOneToManyUnchecked(stepOneToMany, current);
+                case io.github.mbarcia.pipeline.step.blocking.StepOneToManyBlocking stepOneToManyBlocking -> current = applyOneToManyBlockingUnchecked(stepOneToManyBlocking, current);
+                case io.github.mbarcia.pipeline.step.future.StepOneToOneCompletableFuture stepFuture -> current = applyOneToOneFutureUnchecked(stepFuture, current);
                 case ManyToOne manyToOne -> current = applyManyToOneUnchecked(manyToOne, current);
                 case ManyToMany manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
                 default -> System.err.println("Step not recognised: " + step.getClass().getName());
@@ -121,14 +125,31 @@ public class PipelineRunner implements AutoCloseable {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {
-            // Apply the OneToOne step to each item in the Multi individually
+            // Apply the OneToOne step to each item in the Multi, using the apply method 
+            // which includes retry and recovery logic
             Multi<O> result = ((Multi<I>) current)
                 .onItem()
-                .transformToUni(step::applyOneToOne)
+                .transformToUni(item -> step.apply(Uni.createFrom().item(item)))
                 .concatenate();
             return result;
         } else {
             throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToOne: {0}", current));
+        }
+    }
+
+    @SuppressWarnings({"unchecked", "UnnecessaryLocalVariable"})
+    private static <I, O> Object applyOneToManyBlockingUnchecked(io.github.mbarcia.pipeline.step.blocking.StepOneToManyBlocking<I, O> step, Object current) {
+        if (current instanceof Uni<?>) {
+            return step.apply((Uni<I>) current);
+        } else if (current instanceof Multi<?>) {
+            // Apply the OneToMany blocking step to each item in the Multi, producing a Multi of Multi<O>,
+            // then flatten it to a single Multi<O>
+            Multi<O> result = ((Multi<I>) current)
+                .onItem()
+                .transformToMultiAndConcatenate(item -> step.apply(Uni.createFrom().item(item)));
+            return result;
+        } else {
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToManyBlocking: {0}", current));
         }
     }
 
@@ -158,6 +179,23 @@ public class PipelineRunner implements AutoCloseable {
             return step.applyReduce(((Uni<I>) current).toMulti());
         } else {
             throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for ManyToOne: {0}", current));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <I, O> Object applyOneToOneFutureUnchecked(io.github.mbarcia.pipeline.step.future.StepOneToOneCompletableFuture<I, O> step, Object current) {
+        if (current instanceof Uni<?>) {
+            return step.apply((Uni<I>) current);
+        } else if (current instanceof Multi<?>) {
+            // Apply the OneToOne step to each item in the Multi, using the apply method 
+            // which includes retry and recovery logic
+            Multi<O> result = ((Multi<I>) current)
+                .onItem()
+                .transformToUni(item -> step.apply(Uni.createFrom().item(item)))
+                .concatenate();
+            return result;
+        } else {
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToOneCompletableFuture: {0}", current));
         }
     }
 

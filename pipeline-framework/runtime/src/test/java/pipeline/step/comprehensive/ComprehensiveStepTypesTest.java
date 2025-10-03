@@ -19,34 +19,49 @@ package pipeline.step.comprehensive;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.PipelineRunner;
+import io.github.mbarcia.pipeline.config.LiveStepConfig;
+import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
+import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
-import java.time.Duration;
-import java.util.List;
+
+import jakarta.inject.Inject;
+
 import org.junit.jupiter.api.Test;
+
 import pipeline.step.collection.example.ExpandPaymentCollectionStep;
 import pipeline.step.future.example.ProcessPaymentFutureStep;
 
+import java.time.Duration;
+import java.util.List;
+
+@QuarkusTest
 public class ComprehensiveStepTypesTest {
 
-    PipelineRunner pipelineRunner = new PipelineRunner();
+    @Inject PipelineRunner pipelineRunner;
 
     @Test
     void testAllStepTypesWorkTogether() {
         // Given: Create test data
         Multi<String> input = Multi.createFrom().items("Payment1", "Payment2");
 
-        // Create different types of steps
+        // Create different types of steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        validateStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig validateConfig = new LiveStepConfig(new PipelineConfig());
+        validateConfig.overrides().autoPersist(false);
+        validateStep.initialiseWithConfig(validateConfig);
 
         ExpandPaymentCollectionStep expandStep = new ExpandPaymentCollectionStep();
-        expandStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig expandConfig = new LiveStepConfig(new PipelineConfig());
+        expandConfig.overrides().autoPersist(false);
+        expandStep.initialiseWithConfig(expandConfig);
 
         ProcessPaymentFutureStep processStep = new ProcessPaymentFutureStep();
-        processStep.liveConfig().overrides().autoPersist(false);
+        LiveStepConfig processConfig = new LiveStepConfig(new PipelineConfig());
+        processConfig.overrides().autoPersist(false);
+        processStep.initialiseWithConfig(processConfig);
 
         // When: Run pipeline with mixed step types
         Multi<String> result =
@@ -90,13 +105,8 @@ public class ComprehensiveStepTypesTest {
         }
 
         @Override
-        public io.github.mbarcia.pipeline.config.StepConfig effectiveConfig() {
-            return new io.github.mbarcia.pipeline.config.StepConfig();
-        }
-
-        @Override
         public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
-            // Use the config provided
+            super.initialiseWithConfig(config);
         }
     }
 }

@@ -18,59 +18,11 @@ package pipeline;
 
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
-import io.github.mbarcia.pipeline.step.blocking.StepOneToOneBlocking;
 import io.smallrye.mutiny.Uni;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RetryTestSteps {
-
-    public static class FailBlockingNTimesStep extends ConfigurableStep
-            implements StepOneToOneBlocking<String, String> {
-        private final int failCount;
-        private final AtomicInteger callCount = new AtomicInteger(0);
-        private final boolean shouldRecover;
-
-        public FailBlockingNTimesStep(int failCount) {
-            this(failCount, false);
-        }
-
-        public FailBlockingNTimesStep(int failCount, boolean shouldRecover) {
-            this.failCount = failCount;
-            this.shouldRecover = shouldRecover;
-            // Don't call liveConfig() here as the step isn't fully initialized yet
-            // The configuration will be applied externally when the step is used in a pipeline
-        }
-
-        @Override
-        public Uni<String> apply(String input) {
-            if (callCount.incrementAndGet() <= failCount) {
-                throw new RuntimeException(
-                        "Intentional failure for testing - attempt " + callCount.get());
-            }
-            return Uni.createFrom().item("Success: " + input);
-        }
-
-        @Override
-        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
-            super.initialiseWithConfig(config);
-            // Apply the recovery setting after the config is properly set up
-            if (shouldRecover) {
-                if (config != null) {
-                    config.overrides().recoverOnFailure(true);
-                }
-            }
-        }
-
-        public Uni<String> applyOneToOne(String input) {
-            return apply(input);
-        }
-
-        @Override
-        public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
-            System.out.println("DLQ: " + failedItem.toString() + " due to " + cause.getMessage());
-            return Uni.createFrom().nullItem();
-        }
-    }
 
     public static class AsyncFailNTimesStep extends ConfigurableStep
             implements StepOneToOne<String, String> {
@@ -84,9 +36,79 @@ public class RetryTestSteps {
         @Override
         public Uni<String> applyOneToOne(String input) {
             if (callCount.incrementAndGet() <= failCount) {
-                throw new RuntimeException("Intentional async failure # " + callCount.get());
+                throw new RuntimeException("Intentional async failure #" + callCount.get());
             }
             return Uni.createFrom().item("Async Success: " + input);
+        }
+
+        private boolean hasManualConfig = false;
+        private int manualRetryLimit = -1;
+        private java.time.Duration manualRetryWait = null;
+        private boolean manualDebug = false;
+        private boolean manualRecoverOnFailure = false;
+
+        @Override
+        public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
+            System.out.println(
+                    "AsyncFailedNTimesStep dead letter: "
+                            + failedItem
+                            + " due to "
+                            + cause.getMessage());
+            // For recovery, return the original input value from the Uni
+            return failedItem.onItem().transform(item -> item);
+        }
+
+        @Override
+        public void initialiseWithConfig(io.github.mbarcia.pipeline.config.LiveStepConfig config) {
+            // Check if this is the first time being configured with non-default values
+            // If so, preserve these as manual configuration
+            if (!hasManualConfig && config != null) {
+                // Check if the incoming config has custom values
+                if (config.retryLimit()
+                                != new io.github.mbarcia.pipeline.config.StepConfig().retryLimit()
+                        || config.retryWait()
+                                != new io.github.mbarcia.pipeline.config.StepConfig().retryWait()
+                        || config.debug()
+                                != new io.github.mbarcia.pipeline.config.StepConfig().debug()
+                        || config.recoverOnFailure()
+                                != new io.github.mbarcia.pipeline.config.StepConfig()
+                                        .recoverOnFailure()) {
+                    // This looks like manual configuration - save the values
+                    setManualConfig(
+                            config.retryLimit(),
+                            config.retryWait(),
+                            config.debug(),
+                            config.recoverOnFailure());
+                }
+            }
+
+            if (hasManualConfig) {
+                // If we have manual config, apply it on top of the new config
+                super.initialiseWithConfig(config);
+                // Apply the manual overrides
+                if (config != null) {
+                    config.overrides()
+                            .retryLimit(manualRetryLimit)
+                            .retryWait(manualRetryWait)
+                            .debug(manualDebug)
+                            .recoverOnFailure(manualRecoverOnFailure);
+                }
+            } else {
+                super.initialiseWithConfig(config);
+            }
+        }
+
+        // Method to mark that manual config has been set
+        private void setManualConfig(
+                int retryLimit,
+                java.time.Duration retryWait,
+                boolean debug,
+                boolean recoverOnFailure) {
+            this.hasManualConfig = true;
+            this.manualRetryLimit = retryLimit;
+            this.manualRetryWait = retryWait;
+            this.manualDebug = debug;
+            this.manualRecoverOnFailure = recoverOnFailure;
         }
 
         public int getCallCount() {

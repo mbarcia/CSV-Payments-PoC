@@ -117,14 +117,7 @@ public class PipelineProcessorTest {
         BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
                 new DummyReflectiveClassBuildItemBuildProducer();
 
-        processor.generateAdapters(
-                indexBuildItem,
-                config,
-                beansProducer,
-                unremovableProducer,
-                additionalBeanBuildProducer,
-                generatedClassesProducer,
-                createBuildTarget());
+        processor.generateAdapters(indexBuildItem, config, beansProducer, createBuildTarget());
 
         // Verify that generated gRPC adapter classes were produced when generateCli is false
         // Should generate gRPC service adapters as generated classes
@@ -182,14 +175,7 @@ public class PipelineProcessorTest {
         BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
                 new DummyReflectiveClassBuildItemBuildProducer();
 
-        processor.generateAdapters(
-                indexBuildItem,
-                config,
-                beansProducer,
-                unremovableProducer,
-                additionalBeanBuildProducer,
-                generatedClassesProducer,
-                createBuildTarget());
+        processor.generateAdapters(indexBuildItem, config, beansProducer, createBuildTarget());
 
         // Should generate 2 gRPC adapter classes: 2 services * 1 adapter = 2
         assertTrue(
@@ -246,14 +232,7 @@ public class PipelineProcessorTest {
         BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
                 new DummyReflectiveClassBuildItemBuildProducer();
 
-        processor.generateAdapters(
-                indexBuildItem,
-                config,
-                beansProducer,
-                unremovableProducer,
-                additionalBeanBuildProducer,
-                generatedClassesProducer,
-                createBuildTarget());
+        processor.generateAdapters(indexBuildItem, config, beansProducer, createBuildTarget());
 
         // Should not generate any classes since there are no @PipelineStep annotations
         assertEquals(
@@ -311,14 +290,7 @@ public class PipelineProcessorTest {
         BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
                 new DummyReflectiveClassBuildItemBuildProducer();
 
-        processor.generateAdapters(
-                indexBuildItem,
-                config,
-                beansProducer,
-                unremovableProducer,
-                additionalBeanBuildProducer,
-                generatedClassesProducer,
-                createBuildTarget());
+        processor.generateAdapters(indexBuildItem, config, beansProducer, createBuildTarget());
 
         // Should generate step class (as class) and StepsRegistryImpl (as class) when
         // generateCli() == true
@@ -418,14 +390,7 @@ public class PipelineProcessorTest {
         BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
                 new DummyReflectiveClassBuildItemBuildProducer();
 
-        processor.generateAdapters(
-                indexBuildItem,
-                config,
-                beansProducer,
-                unremovableProducer,
-                additionalBeanBuildProducer,
-                generatedClassesProducer,
-                createBuildTarget());
+        processor.generateAdapters(indexBuildItem, config, beansProducer, createBuildTarget());
 
         // Should generate local step class when generateCli=true and local=true
         assertFalse(
@@ -488,14 +453,7 @@ public class PipelineProcessorTest {
         BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
                 new DummyReflectiveClassBuildItemBuildProducer();
 
-        processor.generateAdapters(
-                indexBuildItem,
-                config,
-                beansProducer,
-                unremovableProducer,
-                additionalBeanBuildProducer,
-                generatedClassesProducer,
-                createBuildTarget());
+        processor.generateAdapters(indexBuildItem, config, beansProducer, createBuildTarget());
 
         // For local steps and generateCli=false, no gRPC adapter should be generated
         // The test service has local=true, so no gRPC adapter should be created
@@ -558,14 +516,7 @@ public class PipelineProcessorTest {
         BuildProducer<ReflectiveClassBuildItem> reflectiveClasses =
                 new DummyReflectiveClassBuildItemBuildProducer();
 
-        processor.generateAdapters(
-                indexBuildItem,
-                config,
-                beansProducer,
-                unremovableProducer,
-                additionalBeanBuildProducer,
-                generatedClassesProducer,
-                createBuildTarget());
+        processor.generateAdapters(indexBuildItem, config, beansProducer, createBuildTarget());
 
         // Should generate step for remote service (as class) and local service + StepsRegistry
         // (as classes)

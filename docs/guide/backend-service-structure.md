@@ -4,7 +4,7 @@ Each backend service implements a specific pipeline step and follows the pattern
 
 ## Service Implementation
 
-Annotate your service class with `@PipelineStep`:
+Annotate your service class with `@PipelineStep`. Use the `inputGrpcType` and `outputGrpcType` parameters to explicitly specify the gRPC types that should be used in the generated client step interface:
 
 ```java
 // step-one-svc/src/main/java/com/example/app/stepone/service/ProcessPaymentStep.java
@@ -12,6 +12,8 @@ Annotate your service class with `@PipelineStep`:
     order = 1,
     inputType = PaymentRecord.class,
     outputType = PaymentStatus.class,
+    inputGrpcType = PaymentsProcessingSvc.PaymentRecord.class,
+    outputGrpcType = PaymentsProcessingSvc.PaymentStatus.class,
     stepType = StepOneToOne.class,
     backendType = GenericGrpcReactiveServiceAdapter.class,
     grpcStub = MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub.class,
@@ -32,6 +34,8 @@ public class ProcessPaymentStep implements StepOneToOne<PaymentRecord, PaymentSt
     }
 }
 ```
+
+The `inputGrpcType` and `outputGrpcType` parameters allow you to explicitly specify the gRPC message types that should be used in the generated client step interfaces. When these parameters are provided, the framework will use these exact types in the generated step implementations instead of trying to infer them from the domain types. This gives you more control over the interface contracts and helps avoid issues where the inferred types don't match the expected gRPC service contract.
 
 ## Step-Specific Mappers
 

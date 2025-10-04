@@ -9,8 +9,10 @@ The `@PipelineStep` annotation marks a class as a pipeline step and enables auto
 ### Parameters
 
 - `order`: Defines the order of execution for this step in the pipeline
-- `inputType`: The input type for this step
-- `outputType`: The output type for this step
+- `inputType`: The input type for this step (domain type)
+- `outputType`: The output type for this step (domain type)
+- `inputGrpcType`: The gRPC input type for this pipeline step. This is used for gRPC client generation and specifies the exact gRPC message type to be used in the generated client step interface instead of inferring from the domain type.
+- `outputGrpcType`: The gRPC output type for this pipeline step. This is used for gRPC client generation and specifies the exact gRPC message type to be used in the generated client step interface instead of inferring from the domain type.
 - `stepType`: The step type (StepOneToOne, StepOneToMany, etc.)
 - `backendType`: The backend adapter type (GenericGrpcReactiveServiceAdapter, etc.)
 - `backpressureBufferCapacity`: The buffer capacity for backpressure handling (default: 1024)
@@ -42,6 +44,8 @@ Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny 
    order = 1,
    inputType = PaymentRecord.class,
    outputType = PaymentStatus.class,
+   inputGrpcType = PaymentsProcessingSvc.PaymentRecord.class,
+   outputGrpcType = PaymentsProcessingSvc.PaymentStatus.class,
    stepType = StepOneToOne.class,
    backendType = GenericGrpcReactiveServiceAdapter.class,
    grpcStub = MutinyProcessPaymentServiceGrpc.MutinyProcessPaymentServiceStub.class,
@@ -66,6 +70,10 @@ public class ProcessPaymentService implements StepOneToOne<PaymentRecord, Paymen
     // Implementation
 }
 ```
+
+### Usage Notes
+
+The `inputGrpcType` and `outputGrpcType` parameters allow you to explicitly specify the gRPC message types that should be used in the generated client step interfaces. When these parameters are provided, the framework will use these exact types in the generated step implementations instead of trying to infer them from the domain types. This gives you more control over the interface contracts and helps avoid issues where the inferred types don't match the expected gRPC service contract.
 
 ## Benefits
 

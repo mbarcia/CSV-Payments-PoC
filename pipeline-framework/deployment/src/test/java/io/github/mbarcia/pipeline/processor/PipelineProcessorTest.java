@@ -123,6 +123,7 @@ public class PipelineProcessorTest {
                 beansProducer,
                 unremovableProducer,
                 additionalBeanBuildProducer,
+                generatedClassesProducer,
                 createBuildTarget());
 
         // Verify that generated gRPC adapter classes were produced when generateCli is false
@@ -187,6 +188,7 @@ public class PipelineProcessorTest {
                 beansProducer,
                 unremovableProducer,
                 additionalBeanBuildProducer,
+                generatedClassesProducer,
                 createBuildTarget());
 
         // Should generate 2 gRPC adapter classes: 2 services * 1 adapter = 2
@@ -250,6 +252,7 @@ public class PipelineProcessorTest {
                 beansProducer,
                 unremovableProducer,
                 additionalBeanBuildProducer,
+                generatedClassesProducer,
                 createBuildTarget());
 
         // Should not generate any classes since there are no @PipelineStep annotations
@@ -314,6 +317,7 @@ public class PipelineProcessorTest {
                 beansProducer,
                 unremovableProducer,
                 additionalBeanBuildProducer,
+                generatedClassesProducer,
                 createBuildTarget());
 
         // Should generate step class (as class) and StepsRegistryImpl (as class) when
@@ -420,6 +424,7 @@ public class PipelineProcessorTest {
                 beansProducer,
                 unremovableProducer,
                 additionalBeanBuildProducer,
+                generatedClassesProducer,
                 createBuildTarget());
 
         // Should generate local step class when generateCli=true and local=true
@@ -489,6 +494,7 @@ public class PipelineProcessorTest {
                 beansProducer,
                 unremovableProducer,
                 additionalBeanBuildProducer,
+                generatedClassesProducer,
                 createBuildTarget());
 
         // For local steps and generateCli=false, no gRPC adapter should be generated
@@ -558,6 +564,7 @@ public class PipelineProcessorTest {
                 beansProducer,
                 unremovableProducer,
                 additionalBeanBuildProducer,
+                generatedClassesProducer,
                 createBuildTarget());
 
         // Should generate step for remote service (as class) and local service + StepsRegistry

@@ -28,6 +28,7 @@ import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.gizmo.*;
 import io.quarkus.grpc.GrpcClient;
@@ -80,6 +81,7 @@ public class PipelineProcessor {
                           BuildProducer<SyntheticBeanBuildItem> beans,
                           BuildProducer<UnremovableBeanBuildItem> unremovable,
                           BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+                          BuildProducer<GeneratedClassBuildItem> generatedClasses,
                           BuildSystemTargetBuildItem target) {
 
         IndexView view = combinedIndex.getIndex();
@@ -125,13 +127,13 @@ public class PipelineProcessor {
                     autoPersistenceEnabled = ann.value("autoPersistence").asBoolean();
                 }
                 // Generate gRPC adapter class (server-side) - the service endpoint
-                generateGrpcAdaptedServiceClass(stepClassInfo, backendType, inMapperName, outMapperName, serviceName, autoPersistenceEnabled, genDir);
+                generateGrpcAdaptedServiceClass(stepClassInfo, backendType, inMapperName, outMapperName, serviceName, autoPersistenceEnabled, genDir, generatedClasses);
             }
 
             // Secondly, generate the client-side stubs
             if (config.generateCli() && !isLocal) {
                 // Generate step class (client-side) - the pipeline step
-                generateGrpcClientStepClass(stepClassInfo, stubName, stepType, grpcClientValue, inputGrpcType, outputGrpcType, additionalBeans, genDir);
+                generateGrpcClientStepClass(stepClassInfo, stubName, stepType, grpcClientValue, inputGrpcType, outputGrpcType, additionalBeans, genDir, generatedClasses);
             }
 
             // Alternatively, do the "local-only" wrappers
@@ -143,7 +145,8 @@ public class PipelineProcessor {
                         inputType,
                         outputType,  // Changed from outMapperName to outputType
                         additionalBeans,
-                        genDir);
+                        genDir,
+                        generatedClasses);
             }
 
             // Store step info for application generation - using fully qualified class name
@@ -168,7 +171,7 @@ public class PipelineProcessor {
                 .toList();
 
         if (config.generateCli() && !generatedStepClassNames.isEmpty()) {
-            generateStepsRegistry(beans, unremovable, generatedStepClassNames, additionalBeans, genDir);
+            generateStepsRegistry(beans, unremovable, generatedStepClassNames, additionalBeans, generatedClasses, genDir);
         }
 
         System.out.println("Finished pipeline processor build step");
@@ -181,7 +184,8 @@ public class PipelineProcessor {
             String outMapperName,
             String serviceName,
             boolean autoPersistenceEnabled,
-            Path genDir) {
+            Path genDir,
+            BuildProducer<GeneratedClassBuildItem> generatedClasses) {
 
         // Use the same package as the original service but with a ".pipeline" suffix
         String fqcn = stepClassInfo.name().toString();
@@ -199,16 +203,20 @@ public class PipelineProcessor {
                 serviceName,
                 autoPersistenceEnabled);  // The corresponding step class name and auto-persistence setting
 
-        writeSourceFile(pkg, simpleClassName, sourceCode, genDir);
+        writeSourceFile(pkg, simpleClassName, sourceCode, genDir, generatedClasses);
     }
 
-    private static void writeSourceFile(String pkg, String simpleClassName, String sourceCode, Path genDir) {
+    private static void writeSourceFile(String pkg, String simpleClassName, String sourceCode, Path genDir, BuildProducer<GeneratedClassBuildItem> generatedClasses) {
         // Write the source file to the generated sources directory
         try {
             Path sourceFile = genDir.resolve(pkg.replace('.', '/') + "/" + simpleClassName + ".java");
 
             Files.createDirectories(sourceFile.getParent());
             Files.writeString(sourceFile, sourceCode, StandardCharsets.UTF_8);
+
+            // Also produce a GeneratedClassBuildItem so the test can capture it
+            String className = pkg + "." + simpleClassName;
+            generatedClasses.produce(new GeneratedClassBuildItem(true, className, sourceCode.getBytes(StandardCharsets.UTF_8)));
 
             System.out.println(MessageFormat.format("Generated gRPC service adapter source: {0}", sourceFile));
         } catch (IOException e) {
@@ -262,7 +270,7 @@ public class PipelineProcessor {
             String grpcClientValue,
             String inputGrpcType,
             String outputGrpcType,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans, Path genDir) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, Path genDir, BuildProducer<GeneratedClassBuildItem> generatedClasses) {
 
         System.out.println("PipelineProcessor.generateGrpcClientStepClass: " + stepClassInfo.name());
 
@@ -284,7 +292,7 @@ public class PipelineProcessor {
                 outputGrpcType
         );
 
-        writeSourceFile(pkg, simpleName, sourceCode, genDir);
+        writeSourceFile(pkg, simpleName, sourceCode, genDir, generatedClasses);
 
         // Make the generated class an additional unremovable bean to ensure it's properly indexed
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(fqcn));
@@ -373,7 +381,7 @@ public class PipelineProcessor {
             ClassInfo serviceClassInfo,
             String stepType,
             String inputType,
-            String outputType, BuildProducer<AdditionalBeanBuildItem> additionalBeans, Path genDir) {
+            String outputType, BuildProducer<AdditionalBeanBuildItem> additionalBeans, Path genDir, BuildProducer<GeneratedClassBuildItem> generatedClasses) {
 
         // Use the same package as the original service but with a ".pipeline" suffix
         String originalServicePackage = serviceClassInfo.name().toString();
@@ -392,7 +400,7 @@ public class PipelineProcessor {
                 outputType
         );
 
-        writeSourceFile(pkg, simpleName, sourceCode, genDir);
+        writeSourceFile(pkg, simpleName, sourceCode, genDir, generatedClasses);
 
         // Make the generated class an additional unremovable bean to ensure it's properly indexed
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(stepClassName));
@@ -472,7 +480,7 @@ public class PipelineProcessor {
     private static void generateStepsRegistry(
             BuildProducer<SyntheticBeanBuildItem> beans,
             BuildProducer<UnremovableBeanBuildItem> unremovable,
-            List<String> stepClassNames, BuildProducer<AdditionalBeanBuildItem> additionalBeans, Path genDir) {
+            List<String> stepClassNames, BuildProducer<AdditionalBeanBuildItem> additionalBeans, BuildProducer<GeneratedClassBuildItem> generatedClasses, Path genDir) {
         
         // For the StepsRegistry, using the main pipeline package since it's a framework component
         String pkg = "io.github.mbarcia.pipeline.generated";
@@ -485,7 +493,7 @@ public class PipelineProcessor {
                 stepClassNames
         );
 
-        writeSourceFile(pkg, simpleClassName, sourceCode, genDir);
+        writeSourceFile(pkg, simpleClassName, sourceCode, genDir, generatedClasses);
 
         // Register the synthetic bean that provides the pre-computed steps list
         String registryImplClassName = pkg + "." + simpleClassName;

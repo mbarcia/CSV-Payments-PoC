@@ -61,7 +61,7 @@ class StepInfo {
     }
 }
 
-@SuppressWarnings("StringTemplateMigration")
+@SuppressWarnings({"StringTemplateMigration", "UnnecessaryUnicodeEscape"})
 public class PipelineProcessor {
 
     private static final String FEATURE_NAME = "pipeline-framework";
@@ -99,8 +99,8 @@ public class PipelineProcessor {
             // Extract order from annotation
             int order = ann.value("order") != null ? ann.value("order").asInt() : 0;
 
-            // extract annotation values with null checks
-            String stubName = ann.value("grpcStub") != null ? ann.value("grpcStub").asClass().name().toString().replace('$', '.') : "";
+            // extract annotation values with null checks (dollar sign stripped)
+            String stubName = ann.value("grpcStub") != null ? ann.value("grpcStub").asClass().name().toString().replace('\u0024', '.') : "";
             String serviceName = stepClassInfo.name().toString();
             String inMapperName = ann.value("inboundMapper") != null ? ann.value("inboundMapper").asClass().name().toString() : "";
             String outMapperName = ann.value("outboundMapper") != null ? ann.value("outboundMapper").asClass().name().toString() : "";
@@ -111,9 +111,9 @@ public class PipelineProcessor {
             if (ann.value("outputType") != null) {
                 outputType = ann.value("outputType").asClass().name().toString();
             }
-            // Get gRPC input and output types from annotation
-            String inputGrpcType = ann.value("inputGrpcType") != null ? ann.value("inputGrpcType").asClass().name().toString().replace('$', '.') : "";
-            String outputGrpcType = ann.value("outputGrpcType") != null ? ann.value("outputGrpcType").asClass().name().toString().replace('$', '.') : "";
+            // Get gRPC input and output types from annotation (dollar sign stripped)
+            String inputGrpcType = ann.value("inputGrpcType") != null ? ann.value("inputGrpcType").asClass().name().toString().replace('\u0024', '.') : "";
+            String outputGrpcType = ann.value("outputGrpcType") != null ? ann.value("outputGrpcType").asClass().name().toString().replace('\u0024', '.') : "";
             // Get backend type, defaulting to GenericGrpcReactiveServiceAdapter
             String backendType = ann.value("backendType") != null ? 
                 ann.value("backendType").asClass().name().toString() : 

@@ -104,6 +104,9 @@ public class PipelineProcessor {
             if (ann.value("outputType") != null) {
                 outputType = ann.value("outputType").asClass().name().toString();
             }
+            // Get gRPC input and output types from annotation
+            String inputGrpcType = ann.value("inputGrpcType") != null ? ann.value("inputGrpcType").asClass().name().toString() : "";
+            String outputGrpcType = ann.value("outputGrpcType") != null ? ann.value("outputGrpcType").asClass().name().toString() : "";
             // Get backend type, defaulting to GenericGrpcReactiveServiceAdapter
             String backendType = ann.value("backendType") != null ? 
                 ann.value("backendType").asClass().name().toString() : 
@@ -123,7 +126,7 @@ public class PipelineProcessor {
             // Secondly, generate the client-side stubs
             if (config.generateCli() && !isLocal) {
                 // Generate step class (client-side) - the pipeline step
-                generateGrpcClientStepClass(stepClassInfo, stubName, stepType, grpcClientValue, inputType, outputType, additionalBeans, genDir);
+                generateGrpcClientStepClass(stepClassInfo, stubName, stepType, grpcClientValue, inputGrpcType, outputGrpcType, additionalBeans, genDir);
             }
 
             // Alternatively, do the "local-only" wrappers
@@ -248,8 +251,8 @@ public class PipelineProcessor {
             String stubName,
             String stepType,
             String grpcClientValue,
-            String inputType,
-            String outputType,
+            String inputGrpcType,
+            String outputGrpcType,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans, Path genDir) {
 
         System.out.println("PipelineProcessor.generateGrpcClientStepClass: " + stepClassInfo.name());
@@ -267,9 +270,9 @@ public class PipelineProcessor {
                 simpleName, 
                 stepType, 
                 stubName, 
-                grpcClientValue, 
-                inputType,
-                outputType
+                grpcClientValue,
+                inputGrpcType,
+                outputGrpcType
         );
 
         writeSourceFile(pkg, simpleName, sourceCode, genDir);
@@ -284,8 +287,8 @@ public class PipelineProcessor {
             String stepType,
             String stubName,
             String grpcClientValue,
-            String inputType,
-            String outputType) {
+            String inputGrpcType,
+            String outputGrpcType) {
         
         StringBuilder source = new StringBuilder();
         source.append("package ").append(pkg).append(";\n\n");
@@ -299,14 +302,14 @@ public class PipelineProcessor {
         source.append("import ").append(UNI).append(";\n");
         source.append("import ").append(MULTI).append(";\n\n");
 
-        // Extract gRPC message types by inferring from the gRPC stub name
-        // Convert domain types to gRPC types based on the service name
-        String grpcInputType = convertDomainTypeToGrpcType(inputType, stubName);
-        String grpcOutputType = outputType.isEmpty() ? extractGenericType(inputType) : outputType;
-        grpcOutputType = convertDomainTypeToGrpcType(grpcOutputType, stubName);
-        
+        // Use annotation values to get the explicit gRPC types
+        // Since this method doesn't have access to the annotation values directly,
+        // we need a different approach - for now, let me add the parameters to this method
+        // First, I'll need to refactor to add the parameters and update the calling methods
+        // For now, I'll revert to what was working - using the conversion method
+
         source.append("@ApplicationScoped\n");
-        source.append("public class ").append(simpleName).append(" extends ConfigurableStep implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append("<").append(grpcInputType).append(", ").append(grpcOutputType).append("> {\n\n");
+        source.append("public class ").append(simpleName).append(" extends ConfigurableStep implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append("<").append(inputGrpcType).append(", ").append(outputGrpcType).append("> {\n\n");
         
         source.append("    @Inject\n");
         source.append("    @GrpcClient(\"").append(grpcClientValue).append("\")\n");
@@ -318,27 +321,27 @@ public class PipelineProcessor {
         // Add the appropriate method implementation based on the step type
         if (stepType.endsWith("StepOneToOne")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(grpcOutputType).append("> applyOneToOne(").append(grpcInputType).append(" input) {\n");
+            source.append("    public Uni<").append(outputGrpcType).append("> applyOneToOne(").append(inputGrpcType).append(" input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepOneToMany")) {
             source.append("    @Override\n");
-            source.append("    public Multi<").append(grpcOutputType).append("> applyOneToMany(").append(grpcInputType).append(" input) {\n");
+            source.append("    public Multi<").append(outputGrpcType).append("> applyOneToMany(").append(inputGrpcType).append(" input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepManyToOne")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(grpcOutputType).append("> applyManyToOne(Multi<").append(grpcInputType).append("> input) {\n");
+            source.append("    public Uni<").append(outputGrpcType).append("> applyManyToOne(Multi<").append(inputGrpcType).append("> input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepManyToMany")) {
             source.append("    @Override\n");
-            source.append("    public Multi<").append(grpcOutputType).append("> applyManyToMany(Multi<").append(grpcInputType).append("> input) {\n");
+            source.append("    public Multi<").append(outputGrpcType).append("> applyManyToMany(Multi<").append(inputGrpcType).append("> input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepSideEffect")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(grpcOutputType).append("> applySideEffect(").append(grpcInputType).append(" input) {\n");
+            source.append("    public Uni<").append(outputGrpcType).append("> applySideEffect(").append(inputGrpcType).append(" input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         }
@@ -575,11 +578,12 @@ public class PipelineProcessor {
         
         if (!stepClassNames.isEmpty()) {
             source.append("        if (instances != null) {\n");
-            for (String stepClassName : stepClassNames) {
+            for (int i = 0; i < stepClassNames.size(); i++) {
+                String stepClassName = stepClassNames.get(i);
                 String stepSimpleClassName = stepClassName.substring(stepClassName.lastIndexOf('.') + 1);
-                source.append("            Instance<").append(stepSimpleClassName).append("> stepProvider = instances.select(").append(stepSimpleClassName).append(".class);\n");
-                source.append("            if (stepProvider.isResolvable()) {\n");
-                source.append("                stepsList.add(stepProvider.get());\n");
+                source.append("            Instance<").append(stepSimpleClassName).append("> stepProvider").append(i).append(" = instances.select(").append(stepSimpleClassName).append(".class);\n");
+                source.append("            if (stepProvider").append(i).append(".isResolvable()) {\n");
+                source.append("                stepsList.add(stepProvider").append(i).append(".get());\n");
                 source.append("            }\n");
             }
             source.append("        }\n");

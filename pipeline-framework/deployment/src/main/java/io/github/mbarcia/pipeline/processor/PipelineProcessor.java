@@ -51,10 +51,12 @@ import org.jboss.jandex.IndexView;
 class StepInfo {
     final String stepClassName;
     final String stepType;
+    final int order;
     
-    StepInfo(String stepClassName, String stepType) {
+    StepInfo(String stepClassName, String stepType, int order) {
         this.stepClassName = stepClassName;
         this.stepType = stepType;
+        this.order = order;
     }
 }
 
@@ -91,9 +93,12 @@ public class PipelineProcessor {
             ClassInfo stepClassInfo = ann.target().asClass();
             String stepType = ann.value("stepType") != null ? ann.value("stepType").asClass().name().toString() : "";
             boolean isLocal = ann.value("local") != null && ann.value("local").asBoolean();
+            
+            // Extract order from annotation
+            int order = ann.value("order") != null ? ann.value("order").asInt() : 0;
 
             // extract annotation values with null checks
-            String stubName = ann.value("grpcStub") != null ? ann.value("grpcStub").asClass().name().toString() : "";
+            String stubName = ann.value("grpcStub") != null ? ann.value("grpcStub").asClass().name().toString().replace('$', '.') : "";
             String serviceName = stepClassInfo.name().toString();
             String inMapperName = ann.value("inboundMapper") != null ? ann.value("inboundMapper").asClass().name().toString() : "";
             String outMapperName = ann.value("outboundMapper") != null ? ann.value("outboundMapper").asClass().name().toString() : "";
@@ -105,8 +110,8 @@ public class PipelineProcessor {
                 outputType = ann.value("outputType").asClass().name().toString();
             }
             // Get gRPC input and output types from annotation
-            String inputGrpcType = ann.value("inputGrpcType") != null ? ann.value("inputGrpcType").asClass().name().toString() : "";
-            String outputGrpcType = ann.value("outputGrpcType") != null ? ann.value("outputGrpcType").asClass().name().toString() : "";
+            String inputGrpcType = ann.value("inputGrpcType") != null ? ann.value("inputGrpcType").asClass().name().toString().replace('$', '.') : "";
+            String outputGrpcType = ann.value("outputGrpcType") != null ? ann.value("outputGrpcType").asClass().name().toString().replace('$', '.') : "";
             // Get backend type, defaulting to GenericGrpcReactiveServiceAdapter
             String backendType = ann.value("backendType") != null ? 
                 ann.value("backendType").asClass().name().toString() : 
@@ -150,10 +155,14 @@ public class PipelineProcessor {
 
             stepInfos.add(new StepInfo(
                     generatedStepClassName,
-                stepType
+                    stepType,
+                    order
             ));
         }
 
+        // Sort the stepInfos list by order before generating the StepsRegistry
+        stepInfos.sort((info1, info2) -> Integer.compare(info1.order, info2.order));
+        
         List<String> generatedStepClassNames = stepInfos.stream()
                 .map(stepInfo -> stepInfo.stepClassName)
                 .toList();
@@ -358,44 +367,6 @@ public class PipelineProcessor {
         }
         // If it's a simple type like String, just return as-is
         return fullTypeName;
-    }
-    
-    /**
-     * Converts a domain type to its corresponding gRPC message type based on gRPC stub naming conventions.
-     * This method attempts to infer the gRPC message type from the domain type and the gRPC stub class name.
-     */
-    private static String convertDomainTypeToGrpcType(String domainType, String stubName) {
-        // Example: 
-        // Domain: io.github.mbarcia.csv.common.domain.AckPaymentSent
-        // Stub: io.github.mbarcia.csv.grpc.MutinyProcessAckPaymentSentServiceGrpc$ProcessAckPaymentSentServiceImplBase
-        // Expected gRPC: io.github.mbarcia.csv.grpc.PaymentsProcessingSvc.AckPaymentSent
-
-        // Extract the simple name of the domain type
-        String domainSimpleName = domainType.substring(domainType.lastIndexOf('.') + 1);
-        
-        // Common package for gRPC messages
-        String grpcPackage = "io.github.mbarcia.csv.grpc";
-        
-        // Determine the proto file class name
-        String protoFileClassName = "PaymentsProcessingSvc"; // Default assumption based on examples
-        
-        // Try to determine the appropriate proto file class name based on the stub name
-        if (stubName.contains("PaymentStatusSvcGrpc")) {
-            protoFileClassName = "PaymentStatusSvc";
-        } else if (stubName.contains("CsvFileProcessingSvcGrpc")) {
-            if (stubName.contains("Input")) {
-                protoFileClassName = "InputCsvFileProcessingSvc";
-            } else {
-                protoFileClassName = "OutputCsvFileProcessingSvc";
-            }
-        } else if (stubName.contains("OrchestratorGrpc")) {
-            protoFileClassName = "Orchestrator";
-        } else if (stubName.contains("PaymentsProcessingSvcGrpc")) {
-            protoFileClassName = "PaymentsProcessingSvc";
-        }
-        
-        // Return the gRPC message type
-        return grpcPackage + "." + protoFileClassName + "." + domainSimpleName;
     }
 
     private static void generateLocalStepClass(

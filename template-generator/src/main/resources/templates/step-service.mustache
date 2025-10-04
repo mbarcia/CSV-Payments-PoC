@@ -16,17 +16,17 @@ import org.slf4j.LoggerFactory;
 
 @PipelineStep(
     order = {{order}},
-    inputType = {{inputTypeName}}.class,
-    outputType = {{outputTypeName}}.class,
-    inputGrpcType = {{basePackage}}.grpc.{{serviceNameTitleCase}}.{{inputTypeName}}.class,
-    outputGrpcType = {{basePackage}}.grpc.{{serviceNameTitleCase}}.{{outputTypeName}}.class,
-    stepType = {{stepType}}.class,
-    backendType = {{grpcAdapter}}.class,
-    grpcStub = {{grpcStubName}}.class,
-    grpcImpl = {{grpcImplName}}.class,
+    inputType = {{basePackage}}.common.domain.{{inputTypeName}}.class,
+    outputType = {{basePackage}}.common.domain.{{outputTypeName}}.class,
+    inputGrpcType = {{basePackage}}.grpc.{{serviceName}}.{{inputTypeName}}.class,
+    outputGrpcType = {{basePackage}}.grpc.{{serviceName}}.{{outputTypeName}}.class,
+    stepType = io.github.mbarcia.pipeline.step.{{stepType}}.class,
+    backendType = io.github.mbarcia.pipeline.{{grpcAdapter}}.class,
+    grpcStub = {{basePackage}}.grpc.{{serviceName}}.{{grpcStubName}}.class,
+    grpcImpl = {{basePackage}}.grpc.{{serviceName}}.{{grpcImplName}}.class,
     inboundMapper = {{basePackage}}.common.mapper.{{inputTypeName}}Mapper.class,
     outboundMapper = {{basePackage}}.common.mapper.{{outputTypeName}}Mapper.class,
-    grpcClient = "{{grpcClientName}}",
+    grpcClient = "{{serviceName}}",
     autoPersist = true,
     debug = true
 )

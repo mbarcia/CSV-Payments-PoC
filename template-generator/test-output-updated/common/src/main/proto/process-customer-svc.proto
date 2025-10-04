@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option java_package = "com.example.sample.grpc.process-customer-svc";
+
+message CustomerInput {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+  string createdAt = 4;
+}
+
+message CustomerOutput {
+  string id = 5;
+  string name = 6;
+  string status = 7;
+  string processedAt = 8;
+}
+
+service ProcessCustomerService {
+  rpc remoteProcess(CustomerInput) returns (CustomerOutput);
+}

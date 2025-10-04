@@ -1,0 +1,66 @@
+/*
+ * Copyright (c) 2023-2025 Mariano Barcia
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package com.example.sample.common.mapper;
+
+import java.util.Currency;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.List;
+import org.mapstruct.Named;
+
+public class CommonConverters {
+
+    @Named("currencyToString")
+    public String currencyToString(Currency currency) {
+        return currency != null ? currency.getCurrencyCode() : null;
+    }
+
+    @Named("stringToCurrency")
+    public Currency stringToCurrency(String code) {
+        return code != null ? Currency.getInstance(code) : null;
+    }
+
+    @Named("atomicIntegerToString")
+    public String atomicIntegerToString(AtomicInteger atomicInteger) {
+        return atomicInteger != null ? String.valueOf(atomicInteger.get()) : null;
+    }
+
+    @Named("stringToAtomicInteger")
+    public AtomicInteger stringToAtomicInteger(String string) {
+        return string != null ? new AtomicInteger(Integer.parseInt(string)) : null;
+    }
+
+    @Named("atomicLongToString")
+    public String atomicLongToString(AtomicLong atomicLong) {
+        return atomicLong != null ? String.valueOf(atomicLong.get()) : null;
+    }
+
+    @Named("stringToAtomicLong")
+    public AtomicLong stringToAtomicLong(String string) {
+        return string != null ? new AtomicLong(Long.parseLong(string)) : null;
+    }
+    
+    @Named("listToString")
+    public String listToString(List<String> list) {
+        return list != null ? String.join(",", list) : null;
+    }
+    
+    @Named("stringToList")
+    public List<String> stringToList(String string) {
+        return string != null ? java.util.Arrays.asList(string.split(",")) : null;
+    }
+}

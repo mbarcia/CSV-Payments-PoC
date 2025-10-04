@@ -87,7 +87,7 @@ public class MustacheTemplateEngine {
         Files.createDirectories(commonPath.resolve("src/main/proto"));
         
         // Generate common POM
-        generateCommonPom(mf, basePackage, commonPath);
+        generateCommonPom(mf, appName, basePackage, commonPath);
         
         // Generate proto files for each step
         for (Map<String, Object> step : steps) {
@@ -108,9 +108,10 @@ public class MustacheTemplateEngine {
         generateCommonConverters(mf, basePackage, commonPath);
     }
     
-    private void generateCommonPom(MustacheFactory mf, String basePackage, Path commonPath) throws IOException {
+    private void generateCommonPom(MustacheFactory mf, String appName, String basePackage, Path commonPath) throws IOException {
         Map<String, Object> context = new HashMap<>();
         context.put("basePackage", basePackage);
+        context.put("rootProjectName", appName.toLowerCase().replaceAll("[^a-zA-Z0-9]", "-"));
         
         Mustache mustache = mf.compile("templates/common-pom.mustache");
         StringWriter stringWriter = new StringWriter();
@@ -141,6 +142,19 @@ public class MustacheTemplateEngine {
         context.put("basePackage", basePackage);
         context.put("isExpansion", "EXPANSION".equals(step.get("cardinality")));
         context.put("isReduction", "REDUCTION".equals(step.get("cardinality")));
+        // Format the service name properly for the proto file (e.g., "Process Customer" -> "Customer", "Validate Order" -> "Order")
+        String stepName = (String) step.get("name");
+        String formattedName = stepName.replace("Process ", "").trim();
+        // Remove spaces and capitalize each word (e.g., "Validate Order" -> "ValidateOrder")
+        String[] parts = formattedName.split(" ");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isEmpty()) {
+                sb.append(Character.toUpperCase(part.charAt(0)))
+                  .append(part.substring(1).toLowerCase());
+            }
+        }
+        context.put("serviceNameFormatted", sb.toString());
         
         Mustache mustache = mf.compile("templates/proto.mustache");
         StringWriter stringWriter = new StringWriter();
@@ -285,6 +299,9 @@ public class MustacheTemplateEngine {
         Path stepPath = outputPath.resolve((String)step.get("serviceName"));
         Files.createDirectories(stepPath.resolve("src/main/java").resolve(toPath(basePackage + "." + step.get("serviceName").toString().replace("-svc", "") + ".service")));
         
+        // Add rootProjectName to step map
+        step.put("rootProjectName", appName.toLowerCase().replaceAll("[^a-zA-Z0-9]", "-"));
+        
         // Generate step POM
         generateStepPom(mf, step, basePackage, stepPath);
         
@@ -299,7 +316,7 @@ public class MustacheTemplateEngine {
         Map<String, Object> context = new HashMap<>(step);
         context.put("basePackage", basePackage);
         context.put("artifactId", step.get("serviceName"));
-        context.put("rootProjectName", basePackage.substring(basePackage.lastIndexOf('.') + 1) + "-" + basePackage.substring(0, basePackage.lastIndexOf('.')));
+        context.put("rootProjectName", step.get("rootProjectName"));
         
         Mustache mustache = mf.compile("templates/step-pom.mustache");
         StringWriter stringWriter = new StringWriter();
@@ -313,9 +330,13 @@ public class MustacheTemplateEngine {
         Map<String, Object> context = new HashMap<>(step);
         context.put("basePackage", basePackage);
         context.put("serviceName", step.get("serviceName").toString().replace("-svc", ""));
-        context.put("grpcServiceName", "MutinyProcess" + step.get("name") + "ServiceGrpc");
-        context.put("grpcStubName", "MutinyProcess" + step.get("name") + "ServiceGrpc.MutinyProcess" + step.get("name") + "ServiceStub");
-        context.put("grpcImplName", "MutinyProcess" + step.get("name") + "ServiceGrpc.Process" + step.get("name") + "ServiceImplBase");
+        // Format the step name to remove spaces and properly capitalize for class names
+        String stepName = (String) step.get("name");
+        String formattedStepName = formatForClassName(stepName);
+        
+        context.put("grpcServiceName", "MutinyProcess" + formattedStepName + "ServiceGrpc");
+        context.put("grpcStubName", "MutinyProcess" + formattedStepName + "ServiceGrpc.MutinyProcess" + formattedStepName + "ServiceStub");
+        context.put("grpcImplName", "MutinyProcess" + formattedStepName + "ServiceGrpc.Process" + formattedStepName + "ServiceImplBase");
         context.put("serviceNameFormatted", step.get("name"));
         
         String reactiveServiceInterface = "ReactiveUnaryService";
@@ -373,17 +394,17 @@ public class MustacheTemplateEngine {
         Files.createDirectories(orchPath.resolve("src/main/java").resolve(toPath(basePackage + ".orchestrator.service")));
         
         // Generate orchestrator POM
-        generateOrchestratorPom(mf, basePackage, orchPath);
+        generateOrchestratorPom(mf, appName, basePackage, orchPath);
         
         // Generate Dockerfile
         generateDockerfile(mf, "orchestrator-svc", orchPath);
     }
     
-    private void generateOrchestratorPom(MustacheFactory mf, String basePackage, Path orchPath) throws IOException {
+    private void generateOrchestratorPom(MustacheFactory mf, String appName, String basePackage, Path orchPath) throws IOException {
         Map<String, Object> context = new HashMap<>();
         context.put("basePackage", basePackage);
         context.put("artifactId", "orchestrator-svc");
-        context.put("rootProjectName", basePackage.substring(basePackage.lastIndexOf('.') + 1) + "-" + basePackage.substring(0, basePackage.lastIndexOf('.')));
+        context.put("rootProjectName", appName.toLowerCase().replaceAll("[^a-zA-Z0-9]", "-"));
         
         Mustache mustache = mf.compile("templates/orchestrator-pom.mustache");
         StringWriter stringWriter = new StringWriter();
@@ -619,5 +640,18 @@ public class MustacheTemplateEngine {
         context.put("hasIoFields", hasIoFields);
         context.put("hasAtomicFields", hasAtomicFields);
         context.put("hasUtilFields", hasUtilFields);
+    }
+    
+    private String formatForClassName(String input) {
+        // Split by spaces and capitalize each word
+        String[] parts = input.split(" ");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isEmpty()) {
+                sb.append(Character.toUpperCase(part.charAt(0)))
+                  .append(part.substring(1).toLowerCase());
+            }
+        }
+        return sb.toString();
     }
 }

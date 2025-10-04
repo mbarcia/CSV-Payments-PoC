@@ -1,0 +1,98 @@
+networks:
+  pipeline-network:
+    driver: bridge
+
+services:
+
+  orchestrator-svc:
+    build:
+      dockerfile: orchestrator-svc/Dockerfile
+    ports:
+      - "8443:8443"
+    environment:
+      - CSV_FOLDER_PATH=/app/csv
+      - QUARKUS_GRPC_CLIENTS_ProcessCustomerSvc_HOST=process-customer-svc
+      - QUARKUS_GRPC_CLIENTS_ProcessCustomerSvc_PORT=1
+      - QUARKUS_GRPC_CLIENTS_ValidateOrderSvc_HOST=validate-order-svc
+      - QUARKUS_GRPC_CLIENTS_ValidateOrderSvc_PORT=2
+    depends_on:
+      process-customer-svc:
+        condition: service_healthy
+      validate-order-svc:
+        condition: service_healthy
+    volumes:
+      - ./data/csv:/app/csv:rw
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://orchestrator-svc:8443/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    # Run once and exit
+    restart: "no"
+    networks:
+      - pipeline-network
+
+  process-customer-svc:
+    build:
+      dockerfile: process-customer-svc/Dockerfile
+    ports:
+      - "1:1"
+    environment:
+      - PROCESS_PROCESS_CUSTOMER_SVC_PORT=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://process-customer-svc:1/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    networks:
+      - pipeline-network
+  validate-order-svc:
+    build:
+      dockerfile: validate-order-svc/Dockerfile
+    ports:
+      - "2:2"
+    environment:
+      - PROCESS_VALIDATE_ORDER_SVC_PORT=2
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-k", "-f", "https://validate-order-svc:2/q/health"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+      start_period: 3s
+    networks:
+      - pipeline-network
+
+  postgres:
+    image: postgres:17
+    environment:
+      - POSTGRES_DB=pipeline
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d pipeline"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    command: >
+      postgres
+      -c shared_buffers=128MB
+      -c work_mem=4MB
+      -c max_connections=50
+    networks:
+      - pipeline-network
+
+volumes:
+  postgres_data:

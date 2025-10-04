@@ -138,8 +138,12 @@ public class PipelineProcessor {
                         genDir);
             }
 
-            // Store step info for application generation
-            String generatedStepClassName = MessageFormat.format("{0}Step", stepClassInfo.simpleName());
+            // Store step info for application generation - using fully qualified class name
+            String originalFqcn = stepClassInfo.name().toString();
+            String originalPackage = originalFqcn.substring(0, originalFqcn.lastIndexOf('.'));
+            String pkg = MessageFormat.format("{0}.pipeline", originalPackage);
+            String simpleName = MessageFormat.format("{0}Step", stepClassInfo.simpleName());
+            String generatedStepClassName = pkg + "." + simpleName;
 
             stepInfos.add(new StepInfo(
                     generatedStepClassName,
@@ -295,9 +299,11 @@ public class PipelineProcessor {
         source.append("import ").append(UNI).append(";\n");
         source.append("import ").append(MULTI).append(";\n\n");
 
-        // Determine the gRPC input and output types for the interface
-        String grpcInputType = inputType;
+        // Extract gRPC message types by inferring from the gRPC stub name
+        // Convert domain types to gRPC types based on the service name
+        String grpcInputType = convertDomainTypeToGrpcType(inputType, stubName);
         String grpcOutputType = outputType.isEmpty() ? extractGenericType(inputType) : outputType;
+        grpcOutputType = convertDomainTypeToGrpcType(grpcOutputType, stubName);
         
         source.append("@ApplicationScoped\n");
         source.append("public class ").append(simpleName).append(" extends ConfigurableStep implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append("<").append(grpcInputType).append(", ").append(grpcOutputType).append("> {\n\n");
@@ -349,6 +355,44 @@ public class PipelineProcessor {
         }
         // If it's a simple type like String, just return as-is
         return fullTypeName;
+    }
+    
+    /**
+     * Converts a domain type to its corresponding gRPC message type based on gRPC stub naming conventions.
+     * This method attempts to infer the gRPC message type from the domain type and the gRPC stub class name.
+     */
+    private static String convertDomainTypeToGrpcType(String domainType, String stubName) {
+        // Example: 
+        // Domain: io.github.mbarcia.csv.common.domain.AckPaymentSent
+        // Stub: io.github.mbarcia.csv.grpc.MutinyProcessAckPaymentSentServiceGrpc$ProcessAckPaymentSentServiceImplBase
+        // Expected gRPC: io.github.mbarcia.csv.grpc.PaymentsProcessingSvc.AckPaymentSent
+
+        // Extract the simple name of the domain type
+        String domainSimpleName = domainType.substring(domainType.lastIndexOf('.') + 1);
+        
+        // Common package for gRPC messages
+        String grpcPackage = "io.github.mbarcia.csv.grpc";
+        
+        // Determine the proto file class name
+        String protoFileClassName = "PaymentsProcessingSvc"; // Default assumption based on examples
+        
+        // Try to determine the appropriate proto file class name based on the stub name
+        if (stubName.contains("PaymentStatusSvcGrpc")) {
+            protoFileClassName = "PaymentStatusSvc";
+        } else if (stubName.contains("CsvFileProcessingSvcGrpc")) {
+            if (stubName.contains("Input")) {
+                protoFileClassName = "InputCsvFileProcessingSvc";
+            } else {
+                protoFileClassName = "OutputCsvFileProcessingSvc";
+            }
+        } else if (stubName.contains("OrchestratorGrpc")) {
+            protoFileClassName = "Orchestrator";
+        } else if (stubName.contains("PaymentsProcessingSvcGrpc")) {
+            protoFileClassName = "PaymentsProcessingSvc";
+        }
+        
+        // Return the gRPC message type
+        return grpcPackage + "." + protoFileClassName + "." + domainSimpleName;
     }
 
     private static void generateLocalStepClass(

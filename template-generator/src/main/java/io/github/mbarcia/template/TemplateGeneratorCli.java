@@ -77,8 +77,10 @@ public class TemplateGeneratorCli implements Callable<Integer> {
                 
                 // Add missing properties
                 String stepName = (String) rawStep.get("name");
-                processedStep.put("serviceName", stepName.replaceAll("[^a-zA-Z0-9]", "-").toLowerCase() + "-svc");
+                String serviceName = stepName.replaceAll("[^a-zA-Z0-9]", "-").toLowerCase() + "-svc";
+                processedStep.put("serviceName", serviceName);
                 processedStep.put("serviceNameCamel", toCamelCase(stepName.replaceAll("[^a-zA-Z0-9]", " ")));
+                processedStep.put("serviceNameTitleCase", toTitleCase(serviceName.replaceAll("-svc$", "")) + "Svc");
                 processedStep.put("inputTypeSimpleName", ((String)rawStep.get("inputTypeName")).replaceAll(".*\\.", ""));
                 processedStep.put("outputTypeSimpleName", ((String)rawStep.get("outputTypeName")).replaceAll(".*\\.", ""));
                 processedStep.put("order", i + 1);
@@ -211,8 +213,10 @@ public class TemplateGeneratorCli implements Callable<Integer> {
             // Create step definition
             Map<String, Object> step = new HashMap<>();
             step.put("name", stepName);
-            step.put("serviceName", stepName.replaceAll("[^a-zA-Z0-9]", "-").toLowerCase() + "-svc");
+            String serviceName = stepName.replaceAll("[^a-zA-Z0-9]", "-").toLowerCase() + "-svc";
+            step.put("serviceName", serviceName);
             step.put("serviceNameCamel", toCamelCase(stepName.replaceAll("[^a-zA-Z0-9]", " ")));
+            step.put("serviceNameTitleCase", toTitleCase(serviceName.replaceAll("-svc$", "")) + "Svc");
             step.put("cardinality", cardinality);
             step.put("stepType", stepType);
             step.put("inputTypeName", inputTypeName);
@@ -539,6 +543,25 @@ public class TemplateGeneratorCli implements Callable<Integer> {
                     result.append(Character.toUpperCase(part.charAt(0)));
                 }
                 result.append(part.substring(1).toLowerCase());
+            }
+        }
+        
+        return result.toString();
+    }
+    
+    private String toTitleCase(String input) {
+        // Convert hyphens to spaces for proper title casing
+        String normalizedInput = input.replace('-', ' ');
+        String[] parts = normalizedInput.trim().split("\\s+");
+        StringBuilder result = new StringBuilder();
+        
+        for (int i = 0; i < parts.length; i++) {
+            String part = parts[i];
+            if (part.length() > 0) {
+                result.append(Character.toUpperCase(part.charAt(0)));
+                if (part.length() > 1) {
+                    result.append(part.substring(1).toLowerCase());
+                }
             }
         }
         

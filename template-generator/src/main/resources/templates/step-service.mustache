@@ -18,6 +18,8 @@ import org.slf4j.LoggerFactory;
     order = {{order}},
     inputType = {{inputTypeName}}.class,
     outputType = {{outputTypeName}}.class,
+    inputGrpcType = {{basePackage}}.grpc.{{serviceNameTitleCase}}.{{inputTypeName}}.class,
+    outputGrpcType = {{basePackage}}.grpc.{{serviceNameTitleCase}}.{{outputTypeName}}.class,
     stepType = {{stepType}}.class,
     backendType = {{grpcAdapter}}.class,
     grpcStub = {{grpcStubName}}.class,

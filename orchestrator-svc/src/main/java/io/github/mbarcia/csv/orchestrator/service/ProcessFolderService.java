@@ -33,7 +33,9 @@ import org.slf4j.LoggerFactory;
 @PipelineStep(
     order = 0,
     inputType = java.lang.String.class,
-    outputType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
+    outputType = io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile.class,
+    inputGrpcType = java.lang.String.class,
+    outputGrpcType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
     stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
     outboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class,
     local = true

@@ -46,6 +46,8 @@ import org.slf4j.MDC;
   order = 6,
   inputType = io.github.mbarcia.csv.common.domain.PaymentOutput.class,
   outputType = io.github.mbarcia.csv.common.domain.CsvPaymentsOutputFile.class,
+  inputGrpcType = io.github.mbarcia.csv.grpc.PaymentStatusSvc.PaymentOutput.class,
+  outputGrpcType = io.github.mbarcia.csv.grpc.OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.class,
   stepType = io.github.mbarcia.pipeline.step.StepManyToOne.class,
   backendType = io.github.mbarcia.pipeline.GenericGrpcServiceClientStreamingAdapter.class,
   grpcStub = io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc.MutinyProcessCsvPaymentsOutputFileServiceStub.class,

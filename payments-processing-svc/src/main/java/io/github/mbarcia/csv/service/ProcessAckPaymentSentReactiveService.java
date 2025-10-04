@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
         order = 3,
         inputType = AckPaymentSent.class,
         outputType = PaymentStatus.class,
+        inputGrpcType = io.github.mbarcia.csv.grpc.PaymentsProcessingSvc.AckPaymentSent.class,
+        outputGrpcType = io.github.mbarcia.csv.grpc.PaymentsProcessingSvc.PaymentStatus.class,
         stepType = io.github.mbarcia.pipeline.step.StepOneToOne.class,
         backendType = GenericGrpcReactiveServiceAdapter.class,
         grpcStub = MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase.class,

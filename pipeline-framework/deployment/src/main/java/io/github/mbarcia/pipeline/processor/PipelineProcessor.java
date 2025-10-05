@@ -17,14 +17,20 @@
 package io.github.mbarcia.pipeline.processor;
 
 import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
+import io.github.mbarcia.pipeline.StepsRegistry;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.config.PipelineBuildTimeConfig;
 import io.github.mbarcia.pipeline.persistence.PersistenceManager;
+import io.github.mbarcia.pipeline.recorder.StepsRegistryRecorder;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
+import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
+import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
@@ -74,7 +80,9 @@ public class PipelineProcessor {
     @BuildStep
     void generateAdapters(CombinedIndexBuildItem combinedIndex,
                           PipelineBuildTimeConfig config,
-                          BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+                          BuildProducer<GeneratedClassBuildItem> generatedClasses,
+                          BuildProducer<GeneratedResourceBuildItem> generatedResources,
+                          BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
                           BuildSystemTargetBuildItem target) {
 
         IndexView view = combinedIndex.getIndex();
@@ -163,7 +171,7 @@ public class PipelineProcessor {
                 .toList();
 
         if (config.generateCli() && !generatedStepClassNames.isEmpty()) {
-            generateStepsRegistry(syntheticBeans, generatedStepClassNames, genDir);
+            generateStepsRegistry(generatedStepClassNames, generatedClasses, generatedResources, reflectiveClasses);
         }
 
         System.out.println("Finished pipeline processor build step");
@@ -197,17 +205,50 @@ public class PipelineProcessor {
         writeSourceFile(pkg, simpleClassName, sourceCode, genDir);
     }
 
-    private static void writeSourceFile(String pkg, String simpleClassName, String sourceCode, Path genDir) {
+    private static void writeSourceFile(String pkg,
+                                        String simpleClassName,
+                                        String sourceCode,
+                                        Path genDir) {
         // Write the source file to the generated sources directory
         try {
-            Path sourceFile = genDir.resolve(pkg.replace('.', '/') + "/" + simpleClassName + ".java");
-
-            Files.createDirectories(sourceFile.getParent());
-            Files.writeString(sourceFile, sourceCode, StandardCharsets.UTF_8);
-
-            System.out.println(MessageFormat.format("Generated gRPC service adapter source: {0}", sourceFile));
+                Path sourceFile = genDir.resolve(pkg.replace('.', '/') + "/" + simpleClassName + ".java");
+                Files.createDirectories(sourceFile.getParent());
+                Files.writeString(sourceFile, sourceCode, StandardCharsets.UTF_8);
+                System.out.println(MessageFormat.format("Generated gRPC service adapter source: {0}", sourceFile));
         } catch (IOException e) {
             throw new RuntimeException("Failed to write generated source file", e);
+        }
+    }
+
+    private static void registerBuildItem(String pkg,
+                                        String simpleClassName,
+                                        String sourceCode,
+                                        BuildProducer<GeneratedClassBuildItem> generatedClasses,
+                                        BuildProducer<GeneratedResourceBuildItem> generatedResources,
+                                        BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
+        try {
+                String className = pkg + "." + simpleClassName;
+                byte[] classBytes = InMemoryCompiler.compile(className, sourceCode);
+
+                generatedClasses.produce(new GeneratedClassBuildItem(
+                        true, // include in runtime classloader
+                        className,
+                        classBytes
+                ));
+                generatedResources.produce(new GeneratedResourceBuildItem(
+                        className.replace('.', '/') + ".class",
+                        classBytes
+                ));
+                reflectiveClasses.produce(
+                        ReflectiveClassBuildItem.builder(className)
+                                .methods(true)
+                                .fields(true)
+                                .build()
+                );
+
+                System.out.println(MessageFormat.format("Registered class: {0}", simpleClassName));
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to compile StepsRegistryImpl", e);
         }
     }
 
@@ -279,9 +320,6 @@ public class PipelineProcessor {
         );
 
         writeSourceFile(pkg, simpleName, sourceCode, genDir);
-
-        // Make the generated class an additional unremovable bean to ensure it's properly indexed
-        /* Removed: Not registering step class as AdditionalBean */
     }
 
     private static String generateGrpcClientStepSourceCode(
@@ -305,14 +343,11 @@ public class PipelineProcessor {
         source.append("import ").append(UNI).append(";\n");
         source.append("import ").append(MULTI).append(";\n\n");
 
-        // Use annotation values to get the explicit gRPC types
-        // Since this method doesn't have access to the annotation values directly,
-        // we need a different approach - for now, let me add the parameters to this method
-        // First, I'll need to refactor to add the parameters and update the calling methods
-        // For now, I'll revert to what was working - using the conversion method
-
+        // Handle cases where inputGrpcType or outputGrpcType might be empty/invalid
+        String effectiveInputType = inputGrpcType != null && !inputGrpcType.isEmpty() ? inputGrpcType : "java.lang.Object";
+        String effectiveOutputType = outputGrpcType != null && !outputGrpcType.isEmpty() ? outputGrpcType : "java.lang.Object";
         
-        source.append("public class ").append(simpleName).append(" extends ConfigurableStep implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append("<").append(inputGrpcType).append(", ").append(outputGrpcType).append("> {\n\n");
+        source.append("public class ").append(simpleName).append(" extends ConfigurableStep implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append("<").append(effectiveInputType).append(", ").append(effectiveOutputType).append("> {\n\n");
         
         source.append("    @Inject\n");
         source.append("    @GrpcClient(\"").append(grpcClientValue).append("\")\n");
@@ -324,27 +359,27 @@ public class PipelineProcessor {
         // Add the appropriate method implementation based on the step type
         if (stepType.endsWith("StepOneToOne")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(outputGrpcType).append("> applyOneToOne(").append(inputGrpcType).append(" input) {\n");
+            source.append("    public Uni<").append(effectiveOutputType).append("> applyOneToOne(").append(effectiveInputType).append(" input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepOneToMany")) {
             source.append("    @Override\n");
-            source.append("    public Multi<").append(outputGrpcType).append("> applyOneToMany(").append(inputGrpcType).append(" input) {\n");
+            source.append("    public Multi<").append(effectiveOutputType).append("> applyOneToMany(").append(effectiveInputType).append(" input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepManyToOne")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(outputGrpcType).append("> applyManyToOne(Multi<").append(inputGrpcType).append("> input) {\n");
+            source.append("    public Uni<").append(effectiveOutputType).append("> applyManyToOne(Multi<").append(effectiveInputType).append("> input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepManyToMany")) {
             source.append("    @Override\n");
-            source.append("    public Multi<").append(outputGrpcType).append("> applyManyToMany(Multi<").append(inputGrpcType).append("> input) {\n");
+            source.append("    public Multi<").append(effectiveOutputType).append("> applyManyToMany(Multi<").append(effectiveInputType).append("> input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepSideEffect")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(outputGrpcType).append("> applySideEffect(").append(inputGrpcType).append(" input) {\n");
+            source.append("    public Uni<").append(effectiveOutputType).append("> applySideEffect(").append(effectiveInputType).append(" input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         }
@@ -461,41 +496,37 @@ public class PipelineProcessor {
     }
 
     private static void generateStepsRegistry(
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             List<String> stepClassNames,
-            Path genDir) {
-        
-        // For the StepsRegistry, using the main pipeline package since it's a framework component
+            BuildProducer<GeneratedClassBuildItem> generatedClasses,
+            BuildProducer<GeneratedResourceBuildItem> generatedResources,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses
+            ) {
+
         String pkg = "io.github.mbarcia.pipeline.generated";
         String simpleClassName = "StepsRegistryImpl";
 
-        // Generate the source code as a string
-        String sourceCode = generateStepsRegistrySourceCode(
-                pkg, 
-                simpleClassName, 
-                stepClassNames
+        String sourceCode = generateStepsRegistrySourceCode(pkg, simpleClassName, stepClassNames);
+
+        registerBuildItem(pkg, simpleClassName, sourceCode, generatedClasses, generatedResources, reflectiveClasses);
+        
+    }
+
+    @BuildStep
+    @io.quarkus.deployment.annotations.Record(ExecutionTime.STATIC_INIT)
+    void registerStepsRegistry(
+            StepsRegistryRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+
+        String registryImplClassName = "io.github.mbarcia.pipeline.generated.StepsRegistryImpl";
+
+        syntheticBeans.produce(
+                SyntheticBeanBuildItem.configure(StepsRegistry.class)
+                        .scope(ApplicationScoped.class)
+                        .unremovable()
+                        .runtimeValue(recorder.createStepsRegistry(registryImplClassName))
+                        .defaultBean()
+                        .done()
         );
-
-        writeSourceFile(pkg, simpleClassName, sourceCode, genDir);
-
-        String registryImplClassName = pkg + "." + simpleClassName;
-
-        SyntheticBeanBuildItem bean = SyntheticBeanBuildItem
-            .configure(io.github.mbarcia.pipeline.StepsRegistry.class)
-            .supplier(() -> {
-                try {
-                    Class<?> clazz = Class.forName(registryImplClassName);
-                    return clazz.getDeclaredConstructor().newInstance();
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to instantiate StepsRegistryImpl: " + registryImplClassName, e);
-                }
-            })
-            .scope(ApplicationScoped.class)
-            .done();
-
-        syntheticBeans.produce(bean);
-
-        System.out.println("Generated StepsRegistry with " + stepClassNames.size() + " steps");
     }
 
     private static String generateStepsRegistrySourceCode(
@@ -507,11 +538,11 @@ public class PipelineProcessor {
         source.append("package ").append(pkg).append(";\n\n");
         
         // Add necessary imports - only basic ones, no step class imports
-        source.append("import ").append("io.github.mbarcia.pipeline.StepsRegistry;\n");
+        // It is crucial not to try to import StepsRegistry as the compiler fails
         source.append("import ").append("java.util.List;\n");
         source.append("import ").append("java.util.ArrayList;\n\n");
-        
-        source.append("public class ").append(simpleClassName).append(" implements ").append("StepsRegistry {\n\n");
+
+        source.append("public class ").append(simpleClassName).append(" {\n\n");
         
         // Store only class names as strings to avoid indexing issues
         if (!stepClassNames.isEmpty()) {
@@ -533,7 +564,6 @@ public class PipelineProcessor {
         source.append("    public ").append(simpleClassName).append("() {\n");
         source.append("    }\n\n");
         
-        source.append("    @Override\n");
         source.append("    public List<Object> getSteps() {\n");
         source.append("        List<Object> stepsList = new ArrayList<>();\n");
         source.append("        for (String className : STEP_CLASS_NAMES) {\n");

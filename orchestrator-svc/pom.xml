@@ -172,6 +172,72 @@
                 <groupId>io.smallrye</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
             </plugin>
+
+            <!--
+            STEP 1: Run code generator.
+            We use the exec-maven-plugin to execute the main method of our StepGeneratorMain class.
+            This is bound to the 'generate-sources' phase, which runs before 'compile'.
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-pipeline-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals><goal>java</goal></goals>
+                        <configuration>
+                            <mainClass>io.github.mbarcia.pipeline.processor.StepGeneratorMain</mainClass>
+                            <classpathScope>compile</classpathScope>
+
+                            <!-- Generator args -->
+                            <arguments>
+                                <argument>${project.build.directory}/generated-sources/java/pipeline</argument>
+                                <argument>${pipeline.generate-cli}</argument>
+                                <argument>${project.build.outputDirectory}</argument>
+                                <argument>${project.parent.basedir}/input-csv-file-processing-svc/target/classes</argument>
+                                <argument>${project.parent.basedir}/payments-processing-svc/target/classes</argument>
+                                <argument>${project.parent.basedir}/payment-status-svc/target/classes</argument>
+                                <argument>${project.parent.basedir}/output-csv-file-processing-svc/target/classes</argument>
+                            </arguments>
+
+                            <!-- Ensure all deps (services + framework) are visible -->
+                            <includeProjectDependencies>true</includeProjectDependencies>
+                            <includePluginDependencies>true</includePluginDependencies>
+                            <addOutputToClasspath>true</addOutputToClasspath>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.github.mbarcia</groupId>
+                        <artifactId>pipeline-framework-processor</artifactId>
+                        <version>${pipeline.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <!-- Step 2:
+            Configure compilation to include the generated sources
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>add-generated-pipeline-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/java/pipeline</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
@@ -187,83 +253,6 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Step generation -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>generate-pipeline-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals><goal>java</goal></goals>
-                        <configuration>
-                            <mainClass>io.github.mbarcia.pipeline.processor.StepGeneratorMain</mainClass>
-                            <classpathScope>compile</classpathScope>
-
-                            <!-- Generator args -->
-                            <arguments>
-                                <argument>${project.build.directory}/generated-sources/annotations/pipeline</argument>
-                                <argument>${pipeline.generate-cli}</argument>
-                                <argument>${project.build.outputDirectory}</argument>
-                                <argument>${project.build.directory}/../../input-csv-file-processing-svc/target/classes</argument>
-                                <argument>${project.build.directory}/../../payments-processing-svc/target/classes</argument>
-                                <argument>${project.build.directory}/../../payment-status-svc/target/classes</argument>
-                                <argument>${project.build.directory}/../../output-csv-file-processing-svc/classes</argument>
-                            </arguments>
-
-                            <!-- Ensure all deps (services + framework) are visible -->
-                            <includeProjectDependencies>true</includeProjectDependencies>
-                            <includePluginDependencies>true</includePluginDependencies>
-                        </configuration>
-                    </execution>
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>io.github.mbarcia</groupId>
-                        <artifactId>pipeline-framework-processor</artifactId>
-                        <version>${pipeline.version}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-
-            <!-- Force compilation of generated sources -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>compile-generated</id>
-                        <phase>generate-sources</phase>
-                        <goals><goal>compile</goal></goals>
-                        <configuration>
-                            <source>${maven.compiler.source}</source>
-                            <target>${maven.compiler.target}</target>
-                            <compileSourceRoots>
-                                <compileSourceRoot>${project.build.directory}/generated-sources/annotations/pipeline</compileSourceRoot>
-                            </compileSourceRoots>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- Add generated sources -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>add-generated-pipeline-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals><goal>add-source</goal></goals>
-                        <configuration>
-                            <sources>
-                                <source>${project.build.directory}/generated-sources/annotations/pipeline</source>
-                            </sources>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

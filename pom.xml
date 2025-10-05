@@ -44,6 +44,7 @@
         <grpc.version>1.63.0</grpc.version>
         <version.jandex>3.5.0</version.jandex>
         <pipeline.version>0.9.0</pipeline.version>
+        <pipeline.generate-cli>false</pipeline.generate-cli>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
     </properties>
@@ -109,6 +110,7 @@
                     <configuration>
                         <source>21</source>
                         <target>21</target>
+                        <generatedSourcesDirectory>${project.build.directory}/generated-sources/annotations/pipeline</generatedSourcesDirectory>
                         <annotationProcessorPaths>
                             <!-- lombok must come first -->
                             <path>
@@ -120,11 +122,6 @@
                                 <groupId>org.mapstruct</groupId>
                                 <artifactId>mapstruct-processor</artifactId>
                                 <version>1.5.5.Final</version>
-                            </path>
-                            <path>
-                                <groupId>io.github.mbarcia</groupId>
-                                <artifactId>pipeline-framework-processor</artifactId>
-                                <version>${pipeline.version}</version>
                             </path>
                         </annotationProcessorPaths>
                         <compilerArgs>
@@ -148,6 +145,16 @@
                             </goals>
                         </execution>
                     </executions>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.6.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

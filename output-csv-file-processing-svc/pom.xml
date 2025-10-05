@@ -29,6 +29,10 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <properties>
+        <pipeline.generate-cli>false</pipeline.generate-cli>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.github.mbarcia</groupId>
@@ -175,6 +179,59 @@
                         <goals>
                             <goal>report</goal>
                         </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Step generation -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>generate-pipeline-sources</id>
+                        <phase>process-classes</phase>
+                        <goals><goal>java</goal></goals>
+                        <configuration>
+                            <mainClass>io.github.mbarcia.pipeline.processor.StepGeneratorMain</mainClass>
+                            <classpathScope>compile</classpathScope>
+
+                            <!-- Generator args -->
+                            <arguments>
+                                <argument>${project.build.directory}/generated-sources/annotations/pipeline</argument>
+                                <argument>${pipeline.generate-cli}</argument>
+                                <argument>${project.build.outputDirectory}</argument>
+                            </arguments>
+
+                            <!-- Ensure all deps (services + framework) are visible -->
+                            <includeProjectDependencies>true</includeProjectDependencies>
+                            <includePluginDependencies>true</includePluginDependencies>
+                        </configuration>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>io.github.mbarcia</groupId>
+                        <artifactId>pipeline-framework-processor</artifactId>
+                        <version>${pipeline.version}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+
+            <!-- Add generated sources -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>add-generated-pipeline-sources</id>
+                        <phase>generate-sources</phase>
+                        <goals><goal>add-source</goal></goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.build.directory}/generated-sources/annotations/pipeline</source>
+                            </sources>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>

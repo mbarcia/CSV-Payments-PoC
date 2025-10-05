@@ -47,8 +47,7 @@ public class ProcessFolderService {
   @Inject
   HybridResourceLoader resourceLoader;
 
-  public Stream<CsvPaymentsInputFile> process(String csvFolderPath)
-      throws URISyntaxException {
+  public Stream<CsvPaymentsInputFile> process(String csvFolderPath) {
     LOG.info("Reading CSV folder from path: {}", csvFolderPath);
 
     URL resource = resourceLoader.getResource(csvFolderPath);
@@ -59,8 +58,15 @@ public class ProcessFolderService {
           MessageFormat.format("CSV folder not found: {0}", csvFolderPath));
     }
 
-    File directory = new File(resource.toURI());
-    if (!directory.exists() || !directory.isDirectory()) {
+      File directory;
+      try {
+          directory = new File(resource.toURI());
+      } catch (URISyntaxException e) {
+        throw new IllegalArgumentException(
+                MessageFormat.format("CSV folder URI is invalid: {0}", csvFolderPath));
+      }
+
+      if (!directory.exists() || !directory.isDirectory()) {
       throw new IllegalArgumentException(
           MessageFormat.format(
               "CSV path is not a valid directory: {0}", directory.getAbsolutePath()));

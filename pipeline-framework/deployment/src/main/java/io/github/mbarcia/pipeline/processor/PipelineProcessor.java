@@ -86,7 +86,7 @@ public class PipelineProcessor {
 
         IndexView view = combinedIndex.getIndex();
         
-        Path genDir = target.getOutputDirectory().resolve("generated-sources/annotations");
+        Path genDir = target.getOutputDirectory().resolve("generated-sources/annotations/pipeline");
 
         // Collect all step classes for application generation
         List<StepInfo> stepInfos = new ArrayList<>();

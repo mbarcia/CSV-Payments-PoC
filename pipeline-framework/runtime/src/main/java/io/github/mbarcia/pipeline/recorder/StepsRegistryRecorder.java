@@ -33,7 +33,7 @@ public class StepsRegistryRecorder {
     // Inner class to handle lazy instantiation
     private static class LazyStepsRegistry implements StepsRegistry {
         private final String className;
-        private volatile StepsRegistry instance;
+        private volatile Object instance;  // Keep as Object to avoid cast issues
 
         public LazyStepsRegistry(String className) {
             this.className = className;
@@ -48,14 +48,25 @@ public class StepsRegistryRecorder {
                             ClassLoader cl = StepsRegistry.class.getClassLoader();
                             Class<?> clazz = Class.forName(className, true, cl);
                             Object obj = clazz.getDeclaredConstructor().newInstance();
-                            instance = (StepsRegistry) obj;
+                            
+                            // Verify that the generated class has the required getSteps method
+                            clazz.getMethod("getSteps");
+                            
+                            instance = obj;
                         } catch (Exception e) {
                             throw new RuntimeException(MessageFormat.format("Failed to instantiate StepsRegistryImpl: {0}", className), e);
                         }
                     }
                 }
             }
-            return instance.getSteps();
+            
+            try {
+                // Use reflection to call getSteps on the instance
+                java.lang.reflect.Method getStepsMethod = instance.getClass().getMethod("getSteps");
+                return (java.util.List<Object>) getStepsMethod.invoke(instance);
+            } catch (Exception e) {
+                throw new RuntimeException("Failed to call getSteps method on StepsRegistryImpl", e);
+            }
         }
     }
 }

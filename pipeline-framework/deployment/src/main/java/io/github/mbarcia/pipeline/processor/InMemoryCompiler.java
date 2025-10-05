@@ -48,8 +48,29 @@ public class InMemoryCompiler {
                 }
             };
 
+            // Get the classpath from the current thread's context class loader
+            String classpath = System.getProperty("java.class.path");
+            
+            // Try to build a more comprehensive classpath that includes the current runtime
+            ClassLoader currentClassLoader = Thread.currentThread().getContextClassLoader();
+            if (currentClassLoader != null) {
+                // If we have a custom classpath, use it
+                classpath = System.getProperty("java.class.path");
+                if (classpath == null || classpath.trim().isEmpty()) {
+                    // Fallback to the classpath from the class loader
+                    classpath = System.getProperty("java.class.path", "");
+                }
+            }
+            
+            // Add classpath options when calling the compiler
+            List<String> options = new ArrayList<>();
+            if (classpath != null && !classpath.isEmpty()) {
+                options.add("-cp");
+                options.add(classpath);
+            }
+            
             JavaCompiler.CompilationTask task = compiler.getTask(
-                    null, fileManager, diagnostics, null, null, Collections.singletonList(file));
+                    null, fileManager, diagnostics, options, null, Collections.singletonList(file));
 
             boolean success = task.call();
             fileManager.close();

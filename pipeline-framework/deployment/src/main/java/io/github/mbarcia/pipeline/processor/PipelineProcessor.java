@@ -25,7 +25,6 @@ import io.github.mbarcia.pipeline.recorder.StepsRegistryRecorder;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
-import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
@@ -173,8 +172,6 @@ public class PipelineProcessor {
         if (config.generateCli() && !generatedStepClassNames.isEmpty()) {
             generateStepsRegistry(generatedStepClassNames, generatedClasses, generatedResources, reflectiveClasses);
         }
-
-        System.out.println("Finished pipeline processor build step");
     }
 
     private static void generateGrpcAdaptedServiceClass(
@@ -512,7 +509,7 @@ public class PipelineProcessor {
     }
 
     @BuildStep
-    @io.quarkus.deployment.annotations.Record(ExecutionTime.STATIC_INIT)
+    @io.quarkus.deployment.annotations.Record(io.quarkus.deployment.annotations.ExecutionTime.STATIC_INIT)
     void registerStepsRegistry(
             StepsRegistryRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {

@@ -434,36 +434,36 @@ public class PipelineProcessor {
         
         // Add necessary imports
         source.append("import ").append(stepType).append(";\n");
+        source.append("import ").append("io.github.mbarcia.pipeline.step.ConfigurableStep;\n");
         source.append("import ").append(ApplicationScoped.class.getName()).append(";\n");
         source.append("import ").append(Inject.class.getName()).append(";\n");
         source.append("import ").append(UNI).append(";\n");
         source.append("import ").append(MULTI).append(";\n\n");
 
-        
-        source.append("public class ").append(simpleName).append(" implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append(" {\n\n");
-        
-        source.append("    @Inject\n");
-        source.append("    private ").append(serviceClassName).append(" service;\n\n");
-        
+
         // Create field for the output mapper if specified and not Void
         if (!outputType.equals("java.lang.Void") && !outputType.isEmpty()) {
             // This can be used as the output mapper if needed
             source.append("    // Output type: ").append(outputType).append("\n");
         }
 
-        source.append("    public ").append(simpleName).append("() {\n");
-        source.append("    }\n\n");
-        
         // Determine the output type to use - if outputType is provided and not empty, use it, else try to extract from input
         String returnType = outputType.isEmpty() ? extractGenericType(inputType) : outputType;
+
+        source.append("public class ").append(simpleName).append(" extends ConfigurableStep ").append(" implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append('<' + inputType + ", " + returnType + '>').append(" {\n\n");
+        
+        source.append("    @Inject\n");
+        source.append("    private ").append(serviceClassName).append(" service;\n\n");
+        
+        source.append("    public ").append(simpleName).append("() {\n");
+        source.append("    }\n\n");
         
         // Add the appropriate method implementation based on the step type
         if (stepType.endsWith("StepOneToMany")) {
             source.append("    @Override\n");
             source.append("    public Multi<").append(returnType).append("> applyOneToMany(").append(inputType).append(" input) {\n");
             source.append("        java.util.stream.Stream<").append(returnType).append("> domainStream = service.process(input);\n");
-            source.append("        java.util.List<").append(returnType).append("> domainList = domainStream.toList();\n");
-            source.append("        return io.smallrye.mutiny.Multi.createFrom().items(domainList);\n");
+            source.append("        return io.smallrye.mutiny.Multi.createFrom().items(domainStream);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepOneToOne")) {
             source.append("    @Override\n");

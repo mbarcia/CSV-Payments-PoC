@@ -46,7 +46,7 @@ public class StepsRegistryRecorder {
                 synchronized (this) {
                     if (instance == null) {
                         try {
-                            ClassLoader cl = StepsRegistry.class.getClassLoader();
+                            ClassLoader cl = Thread.currentThread().getContextClassLoader();
                             Class<?> clazz = Class.forName(className, true, cl);
                             Object obj = clazz.getDeclaredConstructor().newInstance();
                             

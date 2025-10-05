@@ -31,6 +31,7 @@ public class StepsRegistryRecorder {
     }
 
     // Inner class to handle lazy instantiation
+    @SuppressWarnings("unchecked")
     private static class LazyStepsRegistry implements StepsRegistry {
         private final String className;
         private volatile Object instance;  // Keep as Object to avoid cast issues

@@ -18,6 +18,7 @@ package io.github.mbarcia.pipeline.processor;
 
 import java.io.*;
 import java.net.URI;
+import java.text.MessageFormat;
 import java.util.*;
 import javax.tools.*;
 
@@ -37,9 +38,8 @@ public class InMemoryCompiler {
                     compiler.getStandardFileManager(diagnostics, null, null)) {
                 @Override
                 public JavaFileObject getJavaFileForOutput(
-                        Location location, String className, JavaFileObject.Kind kind, FileObject sibling)
-                        throws IOException {
-                    return new SimpleJavaFileObject(URI.create("bytes:///" + className + kind.extension), kind) {
+                        Location location, String className, JavaFileObject.Kind kind, FileObject sibling) {
+                    return new SimpleJavaFileObject(URI.create(MessageFormat.format("bytes:///{0}{1}", className, kind.extension)), kind) {
                         @Override
                         public OutputStream openOutputStream() {
                             return byteStream;
@@ -77,8 +77,8 @@ public class InMemoryCompiler {
 
             if (!success) {
                 diagnostics.getDiagnostics().forEach(d ->
-                        System.err.println("Compilation error: " + d.getMessage(Locale.ENGLISH)));
-                throw new RuntimeException("In-memory compilation failed for " + className);
+                        System.err.println(MessageFormat.format("Compilation error: {0}", d.getMessage(Locale.ENGLISH))));
+                throw new RuntimeException(MessageFormat.format("In-memory compilation failed for {0}", className));
             }
 
             return byteStream.toByteArray();
@@ -90,7 +90,7 @@ public class InMemoryCompiler {
     private static class JavaSourceFromString extends SimpleJavaFileObject {
         private final String code;
         protected JavaSourceFromString(String name, String code) {
-            super(URI.create("string:///" + name.replace('.', '/') + Kind.SOURCE.extension), Kind.SOURCE);
+            super(URI.create(MessageFormat.format("string:///{0}{1}", name.replace('.', '/'), Kind.SOURCE.extension)), Kind.SOURCE);
             this.code = code;
         }
         @Override

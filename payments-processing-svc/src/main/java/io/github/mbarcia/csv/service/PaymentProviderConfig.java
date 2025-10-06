@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,21 @@ import io.smallrye.config.WithDefault;
 
 @ConfigMapping(prefix = "csv-poc.payment-provider")
 public interface PaymentProviderConfig {
+  /**
+   * Rate-limiting of the 3rd party service (in seconds)
+   */
   @WithDefault("1000.0")
   double permitsPerSecond();
 
+  /**
+   * Timeout of the 3rd party service
+   */
   @WithDefault("5000")
   long timeoutMillis();
 
-  // simulated wait for when polling
+  /**
+   * Simulated wait for the polling of the 3rd party service
+   */
   @WithDefault("500")
   double waitMilliseconds();
 }

@@ -107,10 +107,30 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.14.0</version>
+                    <executions>
+                        <!-- Normal compile -->
+                        <execution>
+                            <id>default-compile</id>
+                            <phase>compile</phase>
+                            <goals><goal>compile</goal></goals>
+                        </execution>
+                        <!-- Compile generated sources -->
+                        <execution>
+                            <id>compile-generated</id>
+                            <phase>process-classes</phase>
+                            <goals><goal>compile</goal></goals>
+                            <configuration>
+                                <source>21</source>
+                                <target>21</target>
+                                <compileSourceRoots>
+                                    <compileSourceRoot>${project.build.directory}/generated-sources/java/pipeline</compileSourceRoot>
+                                </compileSourceRoots>
+                            </configuration>
+                        </execution>
+                    </executions>
                     <configuration>
                         <source>21</source>
                         <target>21</target>
-                        <generatedSourcesDirectory>${project.build.directory}/generated-sources/annotations/pipeline</generatedSourcesDirectory>
                         <annotationProcessorPaths>
                             <!-- lombok must come first -->
                             <path>
@@ -129,6 +149,70 @@
                         </compilerArgs>
                     </configuration>
                 </plugin>
+                <!--
+                STEP 1: Run the code generator.
+                We use the exec-maven-plugin to execute the main method of our StepGeneratorMain class.
+                This is bound to the 'generate-sources' phase, which runs before 'compile'.
+                -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.6.0</version>
+                    <executions>
+                        <execution>
+                            <id>generate-pipeline-sources</id>
+                            <phase>process-classes</phase>
+                            <goals><goal>java</goal></goals>
+                            <configuration>
+                                <mainClass>io.github.mbarcia.pipeline.processor.StepGeneratorMain</mainClass>
+                                <classpathScope>compile</classpathScope>
+
+                                <!-- Generator args -->
+                                <arguments>
+                                    <argument>${project.build.directory}/generated-sources/java/pipeline</argument>
+                                    <argument>${pipeline.generate-cli}</argument>
+                                    <argument>${project.build.outputDirectory}</argument>
+                                </arguments>
+
+                                <!-- Ensure all deps (services + framework) are visible -->
+                                <includeProjectDependencies>true</includeProjectDependencies>
+                                <includePluginDependencies>true</includePluginDependencies>
+                                <addOutputToClasspath>true</addOutputToClasspath>
+                            </configuration>
+                        </execution>
+                    </executions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>io.github.mbarcia</groupId>
+                            <artifactId>pipeline-framework-processor</artifactId>
+                            <version>${pipeline.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <!--
+                STEP 2:
+                The build-helper-maven-plugin adds the output directory of our generator
+                to Maven's list of source directories to be compiled.
+                -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.6.0</version>
+                    <executions>
+                        <execution>
+                            <id>add-generated-pipeline-sources</id>
+                            <phase>process-classes</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                            </goals>
+                            <configuration>
+                                <sources>
+                                    <source>${project.build.directory}/generated-sources/java/pipeline</source>
+                                </sources>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
@@ -145,16 +229,6 @@
                             </goals>
                         </execution>
                     </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>exec-maven-plugin</artifactId>
-                    <version>3.6.0</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.6.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

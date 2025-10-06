@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @PipelineStep(
-        order = 3,
+        order = 4,
         inputType = AckPaymentSent.class,
         outputType = PaymentStatus.class,
         inputGrpcType = io.github.mbarcia.csv.grpc.PaymentsProcessingSvc.AckPaymentSent.class,

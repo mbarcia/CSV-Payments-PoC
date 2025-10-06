@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 @PipelineStep(
-  order = 2,
+  order = 3,
   inputType = io.github.mbarcia.csv.common.domain.PaymentRecord.class,
   outputType = io.github.mbarcia.csv.common.domain.AckPaymentSent.class,
   inputGrpcType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.PaymentRecord.class,

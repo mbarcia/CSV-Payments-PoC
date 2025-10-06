@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 @PipelineStep(
-    order = 0,
+    order = 1,
     inputType = java.lang.String.class,
     outputType = io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile.class,
     inputGrpcType = java.lang.String.class,

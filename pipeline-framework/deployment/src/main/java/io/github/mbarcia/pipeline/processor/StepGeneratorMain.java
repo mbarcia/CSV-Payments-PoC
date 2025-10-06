@@ -121,6 +121,8 @@ public class StepGeneratorMain {
             
             // Extract order from annotation
             int order = ann.value("order") != null ? ann.value("order").asInt() : 0;
+            // Skip services with order < 1
+            if (order < 1) continue;
 
             // extract annotation values with null checks (dollar sign stripped)
             String stubName = ann.value("grpcStub") != null ? ann.value("grpcStub").asClass().name().toString().replace('\u0024', '.') : "";

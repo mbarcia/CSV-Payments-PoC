@@ -65,6 +65,8 @@ public class PipelineProcessor {
             String stepType = ann.value("stepType") != null ? ann.value("stepType").asClass().name().toString() : "";
             // Extract order from annotation
             int order = ann.value("order") != null ? ann.value("order").asInt() : 0;
+            // Skip services with order < 1
+            if (order < 1) continue;
 
             // Store step info for application generation - using fully qualified class name
             String originalFqcn = stepClassInfo.name().toString();

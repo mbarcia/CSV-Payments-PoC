@@ -498,6 +498,7 @@ public class StepGeneratorMain {
         
         // Add necessary imports
         source.append("import ").append(stepType).append(";\n");
+        source.append("import ").append(ApplicationScoped.class.getName()).append(";\n");
         source.append("import ").append("io.github.mbarcia.pipeline.step.ConfigurableStep;").append("\n");
         source.append("import ").append(Inject.class.getName()).append(";\n");
         source.append("import ").append(UNI).append(";\n");
@@ -507,6 +508,7 @@ public class StepGeneratorMain {
         // Determine the output type to use - if outputType is provided and not empty, use it, else try to extract from input
         String returnType = outputType.isEmpty() ? extractGenericType(inputType) : outputType;
 
+        source.append("@ApplicationScoped\n");
         source.append("public class ").append(simpleName).append(" extends ConfigurableStep ").append(" implements ").append(stepType.substring(stepType.lastIndexOf('.') + 1)).append('<' + inputType + ", " + returnType + '>').append(" {\n\n");
         
         source.append("    @Inject\n");

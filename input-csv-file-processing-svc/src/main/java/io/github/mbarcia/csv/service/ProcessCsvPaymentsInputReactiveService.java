@@ -47,7 +47,7 @@ import org.slf4j.MDC;
     grpcImpl = MutinyProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase.class,
     inboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class,
     outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordMapper.class,
-    grpcClient = "process-csv-payments-input-file",
+    grpcClient = "process-csv-payments-input-stream",
     autoPersist = true,
     debug = true
 )

@@ -19,16 +19,18 @@ package io.github.mbarcia.csv.common.dto;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import java.nio.file.Path;
-import lombok.Builder;
-import lombok.Value;
+import lombok.*;
 
+/**
+ * DTO for CsvFolder
+ */
 @Value
 @Builder
 @JsonDeserialize(builder = CsvFolderDto.CsvFolderDtoBuilder.class)
 public class CsvFolderDto {
-  public Path folderPath;
+    public Path path;
 
-  // Lombok will generate the builder, but Jackson needs to know how to interpret it
-  @JsonPOJOBuilder(withPrefix = "")
-  public static class CsvFolderDtoBuilder {}
+    // Lombok will generate the builder, but Jackson needs to know how to interpret it
+    @JsonPOJOBuilder(withPrefix = "")
+    public static class CsvFolderDtoBuilder {}
 }

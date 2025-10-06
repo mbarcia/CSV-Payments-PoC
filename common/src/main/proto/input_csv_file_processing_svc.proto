@@ -28,3 +28,11 @@ service ProcessCsvPaymentsInputFileService {
 service ProcessCsvPaymentsInputStreamService {
   rpc remoteProcess(CsvPaymentsInputStream) returns (stream PaymentRecord);
 }
+
+message CsvFolder {
+  string path = 1;
+}
+
+service ProcessFolderService {
+  rpc remoteProcess(CsvFolder) returns (stream CsvPaymentsInputFile);
+}

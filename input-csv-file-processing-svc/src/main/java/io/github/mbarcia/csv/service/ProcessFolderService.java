@@ -14,72 +14,89 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.csv.orchestrator.service;
+package io.github.mbarcia.csv.service;
 
+import io.github.mbarcia.csv.common.domain.CsvFolder;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
+import io.github.mbarcia.csv.grpc.MutinyProcessFolderServiceGrpc;
 import io.github.mbarcia.csv.util.HybridResourceLoader;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
+import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.text.MessageFormat;
-import java.util.stream.Stream;
+import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 @PipelineStep(
     order = 1,
-    inputType = java.lang.String.class,
+    inputType = io.github.mbarcia.csv.common.domain.CsvFolder.class,
     outputType = io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile.class,
-    inputGrpcType = java.lang.String.class,
+    inputGrpcType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.CsvFolder.class,
     outputGrpcType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
     stepType = io.github.mbarcia.pipeline.step.StepOneToMany.class,
+    backendType = io.github.mbarcia.pipeline.GenericGrpcServiceStreamingAdapter.class,
+    grpcStub = MutinyProcessFolderServiceGrpc.MutinyProcessFolderServiceStub.class,
+    grpcImpl = MutinyProcessFolderServiceGrpc.ProcessFolderServiceImplBase.class,
+    inboundMapper = io.github.mbarcia.csv.common.mapper.CsvFolderMapper.class,
     outboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class,
-    local = true
+    grpcClient = "process-folder",
+    autoPersist = true,
+    debug = true
 )
-public class ProcessFolderService {
+public class ProcessFolderService implements io.github.mbarcia.pipeline.service.ReactiveStreamingService<io.github.mbarcia.csv.common.domain.CsvFolder, io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile> {
 
   private static final Logger LOG = LoggerFactory.getLogger(ProcessFolderService.class);
 
   @Inject
   HybridResourceLoader resourceLoader;
 
-  public Stream<CsvPaymentsInputFile> process(String csvFolderPath) {
+  public Multi<CsvPaymentsInputFile> process(CsvFolder csvFolder) {
+    Path csvFolderPath = csvFolder.getPath();
     LOG.info("Reading CSV folder from path: {}", csvFolderPath);
 
-    URL resource = resourceLoader.getResource(csvFolderPath);
+    URL resource = resourceLoader.getResource(String.valueOf(csvFolderPath));
     if (resource == null) {
       LOG.warn("CSV folder not found: {}", csvFolderPath);
-      resourceLoader.diagnoseResourceAccess(csvFolderPath);
-      throw new IllegalArgumentException(
-          MessageFormat.format("CSV folder not found: {0}", csvFolderPath));
+      resourceLoader.diagnoseResourceAccess(String.valueOf(csvFolderPath));
+      return Multi.createFrom().failure(
+          new IllegalArgumentException(
+              MessageFormat.format("CSV folder not found: {0}", csvFolderPath)));
     }
 
       File directory;
       try {
           directory = new File(resource.toURI());
       } catch (URISyntaxException e) {
-        throw new IllegalArgumentException(
-                MessageFormat.format("CSV folder URI is invalid: {0}", csvFolderPath));
+        return Multi.createFrom().failure(
+            new IllegalArgumentException(
+                MessageFormat.format("CSV folder URI is invalid: {0}", csvFolderPath)));
       }
 
       if (!directory.exists() || !directory.isDirectory()) {
-      throw new IllegalArgumentException(
-          MessageFormat.format(
-              "CSV path is not a valid directory: {0}", directory.getAbsolutePath()));
+      return Multi.createFrom().failure(
+          new IllegalArgumentException(
+              MessageFormat.format(
+                  "CSV path is not a valid directory: {0}", directory.getAbsolutePath())));
     }
 
     File[] csvFiles = directory.listFiles((_, name) -> name.toLowerCase().endsWith(".csv"));
     if (csvFiles == null || csvFiles.length == 0) {
       LOG.warn("No CSV files found in {}", csvFolderPath);
-      resourceLoader.diagnoseResourceAccess(csvFolderPath);
-      return Stream.empty();
+      resourceLoader.diagnoseResourceAccess(String.valueOf(csvFolderPath));
+      return Multi.createFrom().empty();
     }
 
-    return Stream.of(csvFiles)
-        .map(CsvPaymentsInputFile::new);
+    return Multi.createFrom().iterable(
+            Arrays.stream(csvFiles)
+                    .map(CsvPaymentsInputFile::new)
+                    .toList()
+    );
   }
 }

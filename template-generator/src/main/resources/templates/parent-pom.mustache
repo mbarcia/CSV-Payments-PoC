@@ -27,6 +27,7 @@
         <grpc.version>1.63.0</grpc.version>
         <version.jandex>3.5.0</version.jandex>
         <pipeline.version>0.9.0</pipeline.version>
+        <pipeline.generate-cli>false</pipeline.generate-cli>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
     </properties>
@@ -59,6 +60,28 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+            <version>3.28.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.protobuf</groupId>
+                    <artifactId>protobuf-java</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.20.0</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <pluginManagement>
@@ -67,6 +90,27 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.14.0</version>
+                    <executions>
+                        <!-- Normal compile -->
+                        <execution>
+                            <id>default-compile</id>
+                            <phase>compile</phase>
+                            <goals><goal>compile</goal></goals>
+                        </execution>
+                        <!-- Compile generated sources -->
+                        <execution>
+                            <id>compile-generated</id>
+                            <phase>process-classes</phase>
+                            <goals><goal>compile</goal></goals>
+                            <configuration>
+                                <source>21</source>
+                                <target>21</target>
+                                <compileSourceRoots>
+                                    <compileSourceRoot>${project.build.directory}/generated-sources/java/pipeline</compileSourceRoot>
+                                </compileSourceRoots>
+                            </configuration>
+                        </execution>
+                    </executions>
                     <configuration>
                         <source>21</source>
                         <target>21</target>
@@ -87,6 +131,70 @@
                             <arg>--enable-preview</arg>
                         </compilerArgs>
                     </configuration>
+                </plugin>
+                <!--
+                STEP 1: Run the code generator.
+                We use the exec-maven-plugin to execute the main method of our StepGeneratorMain class.
+                This is bound to the 'generate-sources' phase, which runs before 'compile'.
+                -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>exec-maven-plugin</artifactId>
+                    <version>3.6.0</version>
+                    <executions>
+                        <execution>
+                            <id>generate-pipeline-sources</id>
+                            <phase>process-classes</phase>
+                            <goals><goal>java</goal></goals>
+                            <configuration>
+                                <mainClass>io.github.mbarcia.pipeline.processor.StepGeneratorMain</mainClass>
+                                <classpathScope>compile</classpathScope>
+
+                                <!-- Generator args -->
+                                <arguments>
+                                    <argument>${project.build.directory}/generated-sources/java/pipeline</argument>
+                                    <argument>${pipeline.generate-cli}</argument>
+                                    <argument>${project.build.outputDirectory}</argument>
+                                </arguments>
+
+                                <!-- Ensure all deps (services + framework) are visible -->
+                                <includeProjectDependencies>true</includeProjectDependencies>
+                                <includePluginDependencies>true</includePluginDependencies>
+                                <addOutputToClasspath>true</addOutputToClasspath>
+                            </configuration>
+                        </execution>
+                    </executions>
+                    <dependencies>
+                        <dependency>
+                            <groupId>io.github.mbarcia</groupId>
+                            <artifactId>pipeline-framework-processor</artifactId>
+                            <version>${pipeline.version}</version>
+                        </dependency>
+                    </dependencies>
+                </plugin>
+                <!--
+                STEP 2:
+                The build-helper-maven-plugin adds the output directory of our generator
+                to Maven's list of source directories to be compiled.
+                -->
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>3.6.0</version>
+                    <executions>
+                        <execution>
+                            <id>add-generated-pipeline-sources</id>
+                            <phase>process-classes</phase>
+                            <goals>
+                                <goal>add-source</goal>
+                            </goals>
+                            <configuration>
+                                <sources>
+                                    <source>${project.build.directory}/generated-sources/java/pipeline</source>
+                                </sources>
+                            </configuration>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>io.quarkus</groupId>
@@ -181,6 +289,14 @@
                     <groupId>io.smallrye</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
                     <version>${version.jandex}</version>
+                    <executions>
+                        <execution>
+                            <id>make-index</id>
+                            <goals>
+                                <goal>jandex</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>

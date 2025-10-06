@@ -172,25 +172,15 @@
                 <groupId>io.smallrye</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
             </plugin>
-
-            <!--
-            STEP 1: Run code generator.
-            We use the exec-maven-plugin to execute the main method of our StepGeneratorMain class.
-            This is bound to the 'generate-sources' phase, which runs before 'compile'.
-            -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>generate-pipeline-sources</id>
-                        <phase>generate-sources</phase>
-                        <goals><goal>java</goal></goals>
                         <configuration>
-                            <mainClass>io.github.mbarcia.pipeline.processor.StepGeneratorMain</mainClass>
-                            <classpathScope>compile</classpathScope>
-
-                            <!-- Generator args -->
+                            <!-- In the case of the orchestrator, we override the arguments as it needs-->
+                            <!-- all the compiled classes of the services annotated with PipelineStep -->
                             <arguments>
                                 <argument>${project.build.directory}/generated-sources/java/pipeline</argument>
                                 <argument>${pipeline.generate-cli}</argument>
@@ -200,43 +190,32 @@
                                 <argument>${project.parent.basedir}/payment-status-svc/target/classes</argument>
                                 <argument>${project.parent.basedir}/output-csv-file-processing-svc/target/classes</argument>
                             </arguments>
-
-                            <!-- Ensure all deps (services + framework) are visible -->
-                            <includeProjectDependencies>true</includeProjectDependencies>
-                            <includePluginDependencies>true</includePluginDependencies>
-                            <addOutputToClasspath>true</addOutputToClasspath>
                         </configuration>
                     </execution>
                 </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>io.github.mbarcia</groupId>
-                        <artifactId>pipeline-framework-processor</artifactId>
-                        <version>${pipeline.version}</version>
-                    </dependency>
-                </dependencies>
             </plugin>
-            <!-- Step 2:
-            Configure compilation to include the generated sources
-            -->
+            <!-- Force compilation of generated sources -->
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.0</version>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>add-generated-pipeline-sources</id>
+                        <id>compile-generated</id>
                         <phase>generate-sources</phase>
-                        <goals>
-                            <goal>add-source</goal>
-                        </goals>
+                        <goals><goal>compile</goal></goals>
                         <configuration>
-                            <sources>
-                                <source>${project.build.directory}/generated-sources/java/pipeline</source>
-                            </sources>
+                            <source>${maven.compiler.source}</source>
+                            <target>${maven.compiler.target}</target>
+                            <compileSourceRoots>
+                                <compileSourceRoot>${project.build.directory}/generated-sources/annotations/pipeline</compileSourceRoot>
+                            </compileSourceRoots>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>

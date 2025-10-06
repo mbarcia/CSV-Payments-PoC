@@ -19,10 +19,8 @@ package io.github.mbarcia.orchestrator;
 import io.github.mbarcia.pipeline.PipelineExecutionService;
 import io.quarkus.runtime.QuarkusApplication;
 import io.smallrye.mutiny.Multi;
-
 import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
-
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -38,9 +36,6 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", required = true)
     String input;
-
-    @Option(names = {"-a", "--args"}, description = "Additional arguments", split = " ")
-    String[] additionalArgs = {};
 
     @Inject
     PipelineExecutionService pipelineExecutionService;

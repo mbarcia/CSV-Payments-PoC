@@ -286,21 +286,20 @@ public class StepGeneratorMain {
                                         String sourceCode,
                                         Path genDir) {
         try {
-                Path sourceFile = genDir.resolve(pkg.replace('.', '/') + "/" + simpleClassName + ".java");
-                System.out.println("StepGeneratorMain: Writing source file to " + sourceFile);
-                System.out.println("StepGeneratorMain: genDir = " + genDir);
-                System.out.println("StepGeneratorMain: pkg = " + pkg);
-                System.out.println("StepGeneratorMain: simpleClassName = " + simpleClassName);
-                System.out.println("StepGeneratorMain: sourceFile.getParent() = " + sourceFile.getParent());
-                Files.createDirectories(sourceFile.getParent());
-                System.out.println("StepGeneratorMain: Created directories for " + sourceFile.getParent());
-                Files.writeString(sourceFile, sourceCode, StandardCharsets.UTF_8);
-                System.out.println("StepGeneratorMain: Wrote content to " + sourceFile);
-                System.out.println(MessageFormat.format("Generated gRPC service adapter source: {0}", sourceFile));
+            Path sourceFile = genDir.resolve(pkg.replace('.', '/') + "/" + simpleClassName + ".java");
+            System.out.println("StepGeneratorMain: Writing source file to " + sourceFile);
+            System.out.println("StepGeneratorMain: genDir = " + genDir);
+            System.out.println("StepGeneratorMain: pkg = " + pkg);
+            System.out.println("StepGeneratorMain: simpleClassName = " + simpleClassName);
+            System.out.println("StepGeneratorMain: sourceFile.getParent() = " + sourceFile.getParent());
+            Files.createDirectories(sourceFile.getParent());
+            System.out.println("StepGeneratorMain: Created directories for " + sourceFile.getParent());
+            Files.writeString(sourceFile, sourceCode, StandardCharsets.UTF_8);
+            System.out.println("StepGeneratorMain: Wrote content to " + sourceFile);
+            System.out.println(MessageFormat.format("Generated client class: {0}", sourceFile));
         } catch (IOException e) {
-            System.err.println("Failed to write generated source file: " + e.getMessage());
-            e.printStackTrace();
-            throw new RuntimeException("Failed to write generated source file", e);
+            System.err.println("Failed to write generated client source code file: " + e.getMessage());
+            throw new RuntimeException("Failed to write generated client source code file", e);
         }
     }
 
@@ -429,7 +428,7 @@ public class StepGeneratorMain {
             source.append("    }\n");
         } else if (stepType.endsWith("StepManyToOne")) {
             source.append("    @Override\n");
-            source.append("    public Uni<").append(effectiveOutputType).append("> applyManyToOne(Multi<").append(effectiveInputType).append("> input) {\n");
+            source.append("    public Uni<").append(effectiveOutputType).append("> applyBatchMulti(Multi<").append(effectiveInputType).append("> input) {\n");
             source.append("        return grpcClient.remoteProcess(input);\n");
             source.append("    }\n");
         } else if (stepType.endsWith("StepManyToMany")) {

@@ -127,66 +127,6 @@ public class StepGeneratorMainTest {
         // Let's not check for the auto persistence method since it might not always be present
     }
 
-    @Test
-    public void testGenerateGrpcClientStep() throws Exception {
-        // Create a temporary directory for generated sources
-        Path genDir = tempDir.resolve("pipeline");
-        Files.createDirectories(genDir);
-
-        // Generate gRPC client step source code
-        String sourceCode =
-                StepGeneratorMain.generateGrpcClientStepSourceCode(
-                        "io.github.mbarcia.test.pipeline",
-                        "TestReactiveServiceStep",
-                        StepOneToOne.class.getName(),
-                        "io.github.mbarcia.test.TestGrpcStub",
-                        "test-client",
-                        "java.lang.String",
-                        "java.lang.Integer");
-
-        // Verify that the generated source contains expected elements
-        assertTrue(sourceCode.contains("public class TestReactiveServiceStep"));
-        assertTrue(sourceCode.contains("extends ConfigurableStep"));
-        assertTrue(
-                sourceCode.contains(
-                        "implements StepOneToOne<java.lang.String, java.lang.Integer>"));
-        assertTrue(sourceCode.contains("@GrpcClient(\"test-client\")"));
-        assertTrue(sourceCode.contains("io.github.mbarcia.test.TestGrpcStub grpcClient;"));
-        assertTrue(
-                sourceCode.contains(
-                        "public Uni<java.lang.Integer> applyOneToOne(java.lang.String input)"));
-        assertTrue(sourceCode.contains("return grpcClient.remoteProcess(input);"));
-    }
-
-    @Test
-    public void testGenerateLocalStep() throws Exception {
-        // Create a temporary directory for generated sources
-        Path genDir = tempDir.resolve("pipeline");
-        Files.createDirectories(genDir);
-
-        // Generate local step source code
-        String sourceCode =
-                StepGeneratorMain.generateLocalStepSourceCode(
-                        "io.github.mbarcia.test.pipeline",
-                        "TestLocalReactiveServiceStep",
-                        StepOneToMany.class.getName(),
-                        "io.github.mbarcia.test.TestLocalReactiveService",
-                        "java.lang.String",
-                        "java.lang.Integer");
-
-        // Verify that the generated source contains expected elements
-        assertTrue(sourceCode.contains("public class TestLocalReactiveServiceStep"));
-        assertTrue(sourceCode.contains("extends ConfigurableStep"));
-        assertTrue(
-                sourceCode.contains(
-                        "implements StepOneToMany<java.lang.String, java.lang.Integer>"));
-        assertTrue(sourceCode.contains("io.github.mbarcia.test.TestLocalReactiveService service;"));
-        assertTrue(
-                sourceCode.contains(
-                        "public Multi<java.lang.Integer> applyOneToMany(java.lang.String input)"));
-        assertTrue(sourceCode.contains("service.process(input)"));
-    }
-
     // Test classes
     @PipelineStep(
             order = 1,

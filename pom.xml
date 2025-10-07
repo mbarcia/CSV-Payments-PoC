@@ -143,6 +143,12 @@
                                 <artifactId>mapstruct-processor</artifactId>
                                 <version>1.5.5.Final</version>
                             </path>
+                            <!-- Our pipeline annotation processor -->
+                            <path>
+                                <groupId>io.github.mbarcia</groupId>
+                                <artifactId>pipeline-framework-processor</artifactId>
+                                <version>${pipeline.version}</version>
+                            </path>
                         </annotationProcessorPaths>
                         <compilerArgs>
                             <arg>--enable-preview</arg>

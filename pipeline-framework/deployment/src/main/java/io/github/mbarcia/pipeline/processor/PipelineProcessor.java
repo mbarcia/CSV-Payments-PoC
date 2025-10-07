@@ -74,10 +74,14 @@ public class PipelineProcessor {
             String pkg = MessageFormat.format("{0}.pipeline", originalPackage);
             String simpleName = MessageFormat.format("{0}Step", stepClassInfo.simpleName());
             String generatedStepClassName = pkg + "." + simpleName;
+            String stubName = ann.value("grpcStub") != null ? ann.value("grpcStub").asClass().name().toString().replace('\u0024', '.') : "";
+            String grpcClientName = ann.value("grpcClient") != null ? ann.value("grpcClient").asString() : "";
 
             stepInfos.add(new StepGeneratorMain.StepInfo(
                     generatedStepClassName,
                     stepType,
+                    stubName,
+                    grpcClientName,
                     order
             ));
         }

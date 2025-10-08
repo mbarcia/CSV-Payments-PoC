@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 @PipelineStep(
-    order = 0,
+    order = 2,
     inputType = io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile.class,
     outputType = io.github.mbarcia.csv.common.domain.PaymentRecord.class,
     inputGrpcType = io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
@@ -47,7 +47,7 @@ import org.slf4j.MDC;
     grpcImpl = MutinyProcessCsvPaymentsInputFileServiceGrpc.ProcessCsvPaymentsInputFileServiceImplBase.class,
     inboundMapper = io.github.mbarcia.csv.common.mapper.CsvPaymentsInputFileMapper.class,
     outboundMapper = io.github.mbarcia.csv.common.mapper.PaymentRecordMapper.class,
-    grpcClient = "process-csv-payments-input-stream",
+    grpcClient = "process-csv-payments-input-file",
     autoPersist = true,
     debug = true
 )

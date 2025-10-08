@@ -37,7 +37,7 @@ import org.slf4j.MDC;
  * This converts a single input file into multiple payment records.
  */
 @PipelineStep(
-    order = 2,
+    order = 0,
     autoPersist = true,
     debug = true,
     recoverOnFailure = true,

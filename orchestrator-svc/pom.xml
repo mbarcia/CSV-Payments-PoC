@@ -41,29 +41,36 @@
             <groupId>io.github.mbarcia</groupId>
             <artifactId>input-csv-file-processing-svc</artifactId>
             <version>1.0</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.github.mbarcia</groupId>
             <artifactId>payments-processing-svc</artifactId>
             <version>1.0</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.github.mbarcia</groupId>
             <artifactId>payment-status-svc</artifactId>
             <version>1.0</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.github.mbarcia</groupId>
             <artifactId>output-csv-file-processing-svc</artifactId>
             <version>1.0</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-picocli</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.mbarcia</groupId>
+            <artifactId>pipeline-framework</artifactId>
+            <version>${pipeline.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.mbarcia</groupId>
+            <artifactId>pipeline-framework-processor</artifactId>
+            <version>${pipeline.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -172,47 +179,7 @@
                 <groupId>io.smallrye</groupId>
                 <artifactId>jandex-maven-plugin</artifactId>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>generate-pipeline-sources</id>
-                        <configuration>
-                            <!-- In the case of the orchestrator, we override the arguments as it needs-->
-                            <!-- all the compiled classes of the services annotated with PipelineStep -->
-                            <arguments>
-                                <argument>${project.build.directory}/generated-sources/java/pipeline</argument>
-                                <argument>${pipeline.generate-cli}</argument>
-                                <argument>${project.build.outputDirectory}</argument>
-                                <argument>${project.parent.basedir}/input-csv-file-processing-svc/target/classes</argument>
-                                <argument>${project.parent.basedir}/payments-processing-svc/target/classes</argument>
-                                <argument>${project.parent.basedir}/payment-status-svc/target/classes</argument>
-                                <argument>${project.parent.basedir}/output-csv-file-processing-svc/target/classes</argument>
-                            </arguments>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- Force compilation of generated sources -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>compile-generated</id>
-                        <phase>generate-sources</phase>
-                        <goals><goal>compile</goal></goals>
-                        <configuration>
-                            <source>${maven.compiler.source}</source>
-                            <target>${maven.compiler.target}</target>
-                            <compileSourceRoots>
-                                <compileSourceRoot>${project.build.directory}/generated-sources/annotations/pipeline</compileSourceRoot>
-                            </compileSourceRoots>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
+
             <plugin>
             <groupId>org.codehaus.mojo</groupId>
             <artifactId>build-helper-maven-plugin</artifactId>

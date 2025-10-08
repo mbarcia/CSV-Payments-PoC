@@ -61,12 +61,7 @@ public class ClientStepProcessor extends AbstractProcessor {
             TypeElement serviceClass = (TypeElement) annotatedElement;
             PipelineStep pipelineStep = serviceClass.getAnnotation(PipelineStep.class);
             
-            // Check if we need to generate a client step (e.g., based on a system property)
-            String generateCli = System.getProperty("pipeline.generate-cli", "false");
-            if (!Boolean.parseBoolean(generateCli)) {
-                // Only generate client steps when building for CLI/orchestrator
-                continue;
-            }
+
 
             try {
                 generateClientStep(serviceClass, pipelineStep);
@@ -79,14 +74,14 @@ public class ClientStepProcessor extends AbstractProcessor {
         return true;
     }
 
-    private void generateClientStep(TypeElement serviceClass, PipelineStep pipelineStep) throws IOException {
+    private String generateClientStep(TypeElement serviceClass, PipelineStep pipelineStep) throws IOException {
         // For annotation processing, we need to get the annotation values properly
         // Get the annotation mirror to extract TypeMirror values
         AnnotationMirror annotationMirror = getAnnotationMirror(serviceClass, PipelineStep.class);
         if (annotationMirror == null) {
             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, 
                 "Could not get annotation mirror for " + serviceClass, serviceClass);
-            return;
+            return null;
         }
 
         // Extract values from the annotation mirror
@@ -102,15 +97,17 @@ public class ClientStepProcessor extends AbstractProcessor {
 
         // Create the package for the generated class
         String packageName = processingEnv.getElementUtils()
-            .getPackageOf(serviceClass).getQualifiedName().toString();
+            .getPackageOf(serviceClass).getQualifiedName().toString() + ".generated";
         
         // Create the simple name for the generated client step
         String serviceClassName = serviceClass.getSimpleName().toString();
         String clientStepClassName = serviceClassName.replace("Service", "") + "ClientStep";
         
-        // Create the class
+        // Create the class with ApplicationScoped annotation for CDI
         TypeSpec.Builder clientStepBuilder = TypeSpec.classBuilder(clientStepClassName)
-            .addModifiers(Modifier.PUBLIC);
+            .addModifiers(Modifier.PUBLIC)
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.enterprise.context", "ApplicationScoped"))
+                .build());
 
         // Add necessary imports as field declarations or annotations
         if (grpcStubType != null && !grpcStubType.toString().equals("void")) {
@@ -157,6 +154,8 @@ public class ClientStepProcessor extends AbstractProcessor {
         clientStepBuilder.addMethod(constructor);
         
         // Extend ConfigurableStep and implement the pipeline step interface based on stepType
+        // Use gRPC types for the interface, as the client steps work with gRPC types directly
+        // The server-side GenericGrpcReactiveServiceAdapter handles gRPC-to-domain conversion
         ClassName configurableStep = ClassName.get("io.github.mbarcia.pipeline.step", "ConfigurableStep");
         clientStepBuilder.superclass(configurableStep);
 
@@ -164,41 +163,40 @@ public class ClientStepProcessor extends AbstractProcessor {
         if (stepType != null && stepType.toString().equals("io.github.mbarcia.pipeline.step.StepOneToOne")) {
             stepInterface = ClassName.get(StepOneToOne.class);
             clientStepBuilder.addSuperinterface(ParameterizedTypeName.get(stepInterface,
-                ClassName.get(inputType), ClassName.get(outputType)));
+                ClassName.get(inputGrpcType), ClassName.get(outputGrpcType)));
         } else if (stepType != null && stepType.toString().equals("io.github.mbarcia.pipeline.step.StepOneToMany")) {
             stepInterface = ClassName.get(StepOneToMany.class);
             clientStepBuilder.addSuperinterface(ParameterizedTypeName.get(stepInterface,
-                ClassName.get(inputType), ClassName.get(outputType)));
+                ClassName.get(inputGrpcType), ClassName.get(outputGrpcType)));
         } else if (stepType != null && stepType.toString().equals("io.github.mbarcia.pipeline.step.StepManyToOne")) {
             // Handle StepManyToOne specifically
             stepInterface = ClassName.get("io.github.mbarcia.pipeline.step", "StepManyToOne");
             clientStepBuilder.addSuperinterface(ParameterizedTypeName.get(stepInterface,
-                ClassName.get(inputType), ClassName.get(outputType)));
+                ClassName.get(inputGrpcType), ClassName.get(outputGrpcType)));
         } else if (stepType != null && stepType.toString().equals("io.github.mbarcia.pipeline.step.StepManyToMany")) {
             // Handle StepManyToMany
             stepInterface = ClassName.get("io.github.mbarcia.pipeline.step", "StepManyToMany");
             clientStepBuilder.addSuperinterface(ParameterizedTypeName.get(stepInterface,
-                ClassName.get(inputType), ClassName.get(outputType)));
+                ClassName.get(inputGrpcType), ClassName.get(outputGrpcType)));
         } else {
             // Default to OneToOne for simplicity; can extend to support more types
             stepInterface = ClassName.get(StepOneToOne.class);
             clientStepBuilder.addSuperinterface(ParameterizedTypeName.get(stepInterface,
-                ClassName.get(inputType), ClassName.get(outputType)));
+                ClassName.get(inputGrpcType), ClassName.get(outputGrpcType)));
         }
         
         // Add the apply method implementation based on the step type
+        // No mapping needed - client steps work directly with gRPC types
+        // Server-side GenericGrpcReactiveServiceAdapter handles gRPC-to-domain conversion
         if (stepType != null && stepType.toString().equals("io.github.mbarcia.pipeline.step.StepOneToMany")) {
             // For OneToMany: Input -> Multi<Output> (StepOneToMany interface has applyOneToMany(Input in) method)
             MethodSpec applyMethod = MethodSpec.methodBuilder("applyOneToMany")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(ParameterizedTypeName.get(ClassName.get(Multi.class), 
-                    ClassName.get(outputType)))
-                .addParameter(ClassName.get(inputType), "input")
-                // Convert domain input to gRPC input, call gRPC service, then convert gRPC output back to domain
-                .addStatement("$T grpcRequest = this.inboundMapper.toDtoToGrpc(input)", 
-                    ClassName.get(inputGrpcType))
-                .addStatement("return this.grpcClient.remoteProcess(grpcRequest).map(this.outboundMapper::fromGrpcFromDto)")
+                    ClassName.get(outputGrpcType)))
+                .addParameter(ClassName.get(inputGrpcType), "input")
+                .addStatement("return this.grpcClient.remoteProcess(input)")
                 .build();
                 
             clientStepBuilder.addMethod(applyMethod);
@@ -208,9 +206,9 @@ public class ClientStepProcessor extends AbstractProcessor {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(ParameterizedTypeName.get(ClassName.get(Uni.class), 
-                    ClassName.get(outputType)))
+                    ClassName.get(outputGrpcType)))
                 .addParameter(ParameterizedTypeName.get(ClassName.get(Multi.class), 
-                    ClassName.get(inputType)), "inputs")
+                    ClassName.get(inputGrpcType)), "inputs")
                 // Client streaming gRPC requires special handling - placeholder implementation
                 .addStatement("throw new UnsupportedOperationException(\"Client streaming gRPC requires special implementation - please implement manually\")")
                 .build();
@@ -222,12 +220,9 @@ public class ClientStepProcessor extends AbstractProcessor {
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
                 .returns(ParameterizedTypeName.get(ClassName.get(Uni.class), 
-                    ClassName.get(outputType)))
-                .addParameter(ClassName.get(inputType), "input")
-                // Convert domain input to gRPC input, call gRPC service, then convert gRPC output back to domain
-                .addStatement("$T grpcRequest = this.inboundMapper.toDtoToGrpc(input)", 
-                    ClassName.get(inputGrpcType))
-                .addStatement("return this.grpcClient.remoteProcess(grpcRequest).map(this.outboundMapper::fromGrpcFromDto)")
+                    ClassName.get(outputGrpcType)))
+                .addParameter(ClassName.get(inputGrpcType), "input")
+                .addStatement("return this.grpcClient.remoteProcess(input)")
                 .build();
                 
             clientStepBuilder.addMethod(applyMethod);
@@ -245,6 +240,8 @@ public class ClientStepProcessor extends AbstractProcessor {
         try (var writer = builderFile.openWriter()) {
             javaFile.writeTo(writer);
         }
+        
+        return packageName + "." + clientStepClassName;
     }
 
     private AnnotationMirror getAnnotationMirror(Element element, Class<?> annotationClass) {

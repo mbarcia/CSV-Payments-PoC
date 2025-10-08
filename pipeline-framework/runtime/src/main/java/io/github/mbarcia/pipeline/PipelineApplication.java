@@ -19,9 +19,7 @@ package io.github.mbarcia.pipeline;
 import io.github.mbarcia.pipeline.config.PipelineConfig;
 import io.github.mbarcia.pipeline.step.*;
 import io.smallrye.mutiny.Multi;
-
 import jakarta.inject.Inject;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +42,7 @@ public abstract class PipelineApplication {
   @Inject
   protected PipelineRunner pipelineRunner;
 
-  @Inject
-  protected StepsRegistry stepsRegistry;
+
 
   @Inject
   protected PipelineExecutionService pipelineExecutionService;

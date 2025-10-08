@@ -169,12 +169,10 @@ public class StepGeneratorMain {
                     order));
         }
 
-        // Sort the stepInfos list by order before generating the StepsRegistry
+
         stepInfos.sort(Comparator.comparingInt(info -> info.order));
 
-        // NOTE: StepsRegistryImpl is generated separately by the annotation processor
-        // at build time to avoid classloader issues, so we're not generating it here.
-        // See PipelineProcessor.java for the generation of StepsRegistryImpl
+
     }
 
     private static IndexView buildIndex(List<String> classpathEntries) throws IOException {

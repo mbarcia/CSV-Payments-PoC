@@ -16,6 +16,7 @@
 
 package io.github.mbarcia.orchestrator;
 
+import io.github.mbarcia.csv.grpc.InputCsvFileProcessingSvc;
 import io.github.mbarcia.pipeline.PipelineExecutionService;
 import io.quarkus.runtime.QuarkusApplication;
 import io.smallrye.mutiny.Multi;
@@ -45,7 +46,7 @@ public class OrchestratorApplication implements QuarkusApplication {
     }
 
     @Override
-    public int run(String... args) throws Exception {
+    public int run(String... args) {
         CommandLine cmd = new CommandLine(this);
         cmd.parseArgs(args);
 
@@ -60,10 +61,10 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     // Execute the pipeline when arguments are properly parsed
     private void executePipelineWithInput(String input) {
-        System.out.println("Processing input: " + input);
-        
+        InputCsvFileProcessingSvc.CsvFolder csvFolder = InputCsvFileProcessingSvc.CsvFolder.newBuilder().setPath(input).build();
+
         // Create input Multi from the input parameter
-        Multi<String> inputMulti = Multi.createFrom().item(input);
+        Multi<InputCsvFileProcessingSvc.CsvFolder> inputMulti = Multi.createFrom().item(csvFolder);
         
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti);

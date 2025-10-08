@@ -26,7 +26,7 @@ import org.mapstruct.factory.Mappers;
 
 @SuppressWarnings("unused")
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class, PaymentStatusMapper.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface PaymentOutputMapper extends io.github.mbarcia.pipeline.mapper.Mapper<PaymentStatusSvc.PaymentOutput, PaymentOutputDto, PaymentOutput> {

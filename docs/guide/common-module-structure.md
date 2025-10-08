@@ -41,7 +41,7 @@ Mappers that are used across multiple services should be in the common module us
 ```java
 // common/src/main/java/com/example/app/common/mapper/PaymentRecordMapper.java
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN
 )

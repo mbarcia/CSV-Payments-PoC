@@ -25,7 +25,7 @@ import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface CsvPaymentsOutputFileMapper extends io.github.mbarcia.pipeline.mapper.Mapper<OutputCsvFileProcessingSvc.CsvPaymentsOutputFile, CsvPaymentsOutputFileDto, CsvPaymentsOutputFile>{

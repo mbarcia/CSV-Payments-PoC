@@ -23,7 +23,7 @@ import java.util.UUID;
 import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 
-@Mapper(componentModel = "cdi")
+@Mapper(componentModel = "jakarta")
 public class CommonConverters {
   @Named("stringToUUID")
   public UUID toUUID(String id) {

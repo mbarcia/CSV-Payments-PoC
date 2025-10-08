@@ -105,7 +105,7 @@ Create unified mappers using MapStruct that handle all conversions:
 
 ```java
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN
 )

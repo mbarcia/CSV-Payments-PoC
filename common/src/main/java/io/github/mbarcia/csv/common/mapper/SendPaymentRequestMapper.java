@@ -31,7 +31,7 @@ import org.mapstruct.factory.Mappers;
 
 @SuppressWarnings("unused")
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class, PaymentRecordMapper.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface SendPaymentRequestMapper extends io.github.mbarcia.pipeline.mapper.Mapper<PaymentStatusSvc.SendPaymentRequest, SendPaymentRequestMapper.SendPaymentRequest, SendPaymentRequestMapper.SendPaymentRequest> {

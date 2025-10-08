@@ -25,7 +25,7 @@ import org.mapstruct.ReportingPolicy;
 import org.mapstruct.factory.Mappers;
 
 @SuppressWarnings("unused")
-@Mapper(componentModel = "cdi", uses = {CommonConverters.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
+@Mapper(componentModel = "jakarta", uses = {CommonConverters.class}, unmappedTargetPolicy = ReportingPolicy.WARN)
 public interface CsvPaymentsInputFileMapper extends io.github.mbarcia.pipeline.mapper.Mapper<InputCsvFileProcessingSvc.CsvPaymentsInputFile, CsvPaymentsInputFileDto, CsvPaymentsInputFile>{
 
   CsvPaymentsInputFileMapper INSTANCE = Mappers.getMapper( CsvPaymentsInputFileMapper.class );

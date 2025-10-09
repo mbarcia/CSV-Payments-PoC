@@ -29,10 +29,6 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <properties>
-        <pipeline.generate-cli>false</pipeline.generate-cli>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>io.github.mbarcia</groupId>
@@ -147,14 +143,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>build-helper-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

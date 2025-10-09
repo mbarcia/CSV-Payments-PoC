@@ -129,7 +129,11 @@
                                 <artifactId>mapstruct-processor</artifactId>
                                 <version>1.5.5.Final</version>
                             </path>
-                            <!-- Quarkus’ processors MUST come after -->
+                            <path>
+                                <groupId>io.github.mbarcia</groupId>
+                                <artifactId>pipeline-framework-extension-deployment</artifactId>
+                                <version>${pipeline.version}</version>
+                            </path>
                             <path>
                                 <groupId>io.quarkus</groupId>
                                 <artifactId>quarkus-extension-processor</artifactId>

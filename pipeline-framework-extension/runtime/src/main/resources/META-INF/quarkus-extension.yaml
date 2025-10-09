@@ -1,0 +1,13 @@
+name: "Pipeline Framework"
+description: "A framework for building reactive pipeline processing systems"
+metadata:
+  keywords:
+    - "pipeline"
+    - "processing"
+    - "reactive"
+    - "grpc"
+  guide: "https://github.com/mbarcia/CSV-Payments-PoC"
+  categories:
+    - "reactive"
+  status: "stable"
+  unlisted: false

@@ -19,6 +19,7 @@ package io.github.mbarcia.pipeline.persistence.provider;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.github.mbarcia.pipeline.domain.TestEntity;
+import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,28 +36,15 @@ class ReactivePanachePersistenceProviderTest {
 
     @Test
     void persist_WithNullEntity_ShouldReturnSameEntity() {
-        Object entity = null;
+        PanacheEntityBase entity = null;
 
-        Uni<Object> resultUni = provider.persist(entity);
+        Uni<PanacheEntityBase> resultUni = provider.persist(entity);
 
         UniAssertSubscriber<Object> subscriber =
                 resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
         subscriber.awaitItem();
 
         assertNull(subscriber.getItem());
-    }
-
-    @Test
-    void persist_WithNonPanacheEntity_ShouldReturnSameEntity() {
-        Object entity = new Object();
-
-        Uni<Object> resultUni = provider.persist(entity);
-
-        UniAssertSubscriber<Object> subscriber =
-                resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
-        subscriber.awaitItem();
-
-        assertSame(entity, subscriber.getItem());
     }
 
     @Test

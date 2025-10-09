@@ -159,6 +159,13 @@ public @interface PipelineStep {
     String backpressureStrategy() default "BUFFER";
 
     /**
+     * The gRPC service base class for this pipeline step.
+     * Used to extend the proper gRPC service base class.
+     * @return the gRPC service base class
+     */
+    Class<?> grpcServiceBaseClass() default Void.class;
+
+    /**
      * Whether this step is local to the runner (default=false)
      * When true, no gRPC client is generated and the service is called directly
      * @return true if the step is local, false if it requires a gRPC client

@@ -18,41 +18,48 @@ package io.github.mbarcia.pipeline.persistence.provider;
 
 import io.github.mbarcia.pipeline.persistence.PersistenceProvider;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
-import io.quarkus.hibernate.reactive.panache.common.WithSession;
+import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.MessageFormat;
-
 /**
  * Reactive persistence provider using Hibernate Reactive Panache.
  * This provider only activates when Hibernate Reactive classes are available,
- * which happens when auto-persistence is enabled and required dependencies are present.
+ * which happens required dependencies are present.
  */
 @ApplicationScoped
-public class ReactivePanachePersistenceProvider implements PersistenceProvider<Object> {
+public class ReactivePanachePersistenceProvider implements PersistenceProvider<PanacheEntityBase> {
 
     private static final Logger LOG = LoggerFactory.getLogger(ReactivePanachePersistenceProvider.class);
 
     @Override
-    @WithSession
-    public Uni<Object> persist(Object entity) {
+    public Class<PanacheEntityBase> type() {
+        return PanacheEntityBase.class;
+    }
+
+    @Override
+    @WithTransaction
+    public Uni<PanacheEntityBase> persist(PanacheEntityBase entity) {
+        if (entity == null) {
+            LOG.debug("Null entity received and returned");
+            return Uni.createFrom().nullItem();
+        }
         if (entity instanceof PanacheEntityBase panacheEntity) {
-            LOG.debug(MessageFormat.format("About to persist entity: {0}", entity));
+            LOG.debug("About to persist entity: {}", entity);
 
             // Directly persist the entity without wrapping in Panache.withSession()
             // since we're already in a transactional context
             return panacheEntity.persistAndFlush()
-                .onItem().transform(_ -> entity)
+                .replaceWith(entity)
                 .onFailure().recoverWithUni(t -> {
                     // Log the error but don't fail the operation
-                    LOG.error(MessageFormat.format("Failed to persist entity with Hibernate Reactive: {0}", t.getMessage()));
+                    LOG.error("Failed to persist {}: {}", entity.getClass().getSimpleName(), t.getMessage(), t);
                     return Uni.createFrom().item(entity);
                 });
         } else {
-            LOG.debug(MessageFormat.format("Skipped entity: {0}", entity));
+            LOG.debug("Skipped non-Panache entity");
         }
 
         return Uni.createFrom().item(entity);

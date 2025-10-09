@@ -1,6 +1,9 @@
 name: "Pipeline Framework"
 description: "A framework for building reactive pipeline processing systems"
 metadata:
+  group-id: "io.github.mbarcia"
+  artifact: "pipeline-framework-extension"
+  version: "0.9.0"
   keywords:
     - "pipeline"
     - "processing"

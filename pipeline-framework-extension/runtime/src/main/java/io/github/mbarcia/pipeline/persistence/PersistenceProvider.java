@@ -20,24 +20,27 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * Abstraction for persistence operations that can work with different database technologies.
- * 
+ *
  * @param <T> The type of entity to persist
  */
 public interface PersistenceProvider<T> {
-    
+
+    Class<T> type();
+
     /**
      * Persist an entity and return a Uni that completes when the operation is done.
-     * 
+     *
      * @param entity The entity to persist
      * @return A Uni that completes with the persisted entity
      */
     Uni<T> persist(T entity);
-    
+
     /**
      * Check if this provider can handle the given entity type.
-     * 
+     *
      * @param entity The entity to check
      * @return true if this provider can handle the entity, false otherwise
      */
     boolean supports(Object entity);
 }
+

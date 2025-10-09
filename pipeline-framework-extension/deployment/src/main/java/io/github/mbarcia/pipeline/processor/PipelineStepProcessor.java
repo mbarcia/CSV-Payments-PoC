@@ -21,11 +21,11 @@ import io.github.mbarcia.pipeline.GenericGrpcReactiveServiceAdapter;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.step.StepOneToMany;
 import io.github.mbarcia.pipeline.step.StepOneToOne;
+import io.quarkus.arc.Unremovable;
 import io.quarkus.grpc.GrpcClient;
 import io.quarkus.grpc.GrpcService;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.Set;
@@ -68,7 +68,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
             try {
                 generateGrpcServiceAdapter(serviceClass, pipelineStep);
             } catch (IOException e) {
-                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, 
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                     "Failed to generate step (server) for " + serviceClass.getSimpleName() + ": " + e.getMessage());
             }
 
@@ -217,8 +217,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
                     ClassName.get(outputGrpcType)))
                 .addParameter(ParameterizedTypeName.get(ClassName.get(Multi.class), 
                     ClassName.get(inputGrpcType)), "inputs")
-                // Client streaming gRPC requires special handling - placeholder implementation
-                .addStatement("throw new UnsupportedOperationException(\"Client streaming gRPC requires special implementation - please implement manually\")")
+                .addStatement("return this.grpcClient.remoteProcess(inputs)")
                 .build();
                 
             clientStepBuilder.addMethod(applyMethod);
@@ -260,8 +259,14 @@ public class PipelineStepProcessor extends AbstractProcessor {
         }
 
         // Extract values from the annotation mirror
+        TypeMirror inputType = getAnnotationValue(annotationMirror, "inputType");
+        TypeMirror outputType = getAnnotationValue(annotationMirror, "outputType");
         TypeMirror inboundMapperType = getAnnotationValue(annotationMirror, "inboundMapper");
         TypeMirror outboundMapperType = getAnnotationValue(annotationMirror, "outboundMapper");
+        TypeMirror inputGrpcType = getAnnotationValue(annotationMirror, "inputGrpcType");
+        TypeMirror outputGrpcType = getAnnotationValue(annotationMirror, "outputGrpcType");
+        TypeMirror stepType = getAnnotationValue(annotationMirror, "stepType");
+        TypeMirror grpcImplType = getAnnotationValue(annotationMirror, "grpcImpl");
         String serviceName = serviceClass.getQualifiedName().toString();
         TypeMirror backendType = getAnnotationValue(annotationMirror, "backendType");
         boolean autoPersistenceEnabled = getAnnotationValueAsBoolean(annotationMirror, "autoPersist", true);
@@ -291,21 +296,48 @@ public class PipelineStepProcessor extends AbstractProcessor {
             backendClassName = ClassName.get(GenericGrpcReactiveServiceAdapter.class);
         }
 
+        // Determine the appropriate gRPC service base class based on the grpcImpl annotation value
+        ClassName grpcBaseClassName;
+        if (grpcImplType != null && !grpcImplType.toString().equals("void")) {
+            // Use the grpcImpl class as the base class
+            String grpcImplTypeStr = grpcImplType.toString();
+            int lastDot = grpcImplTypeStr.lastIndexOf('.');
+            if (lastDot > 0) {
+                String packageName = grpcImplTypeStr.substring(0, lastDot);
+                String simpleName = grpcImplTypeStr.substring(lastDot + 1);
+                grpcBaseClassName = ClassName.get(packageName, simpleName);
+            } else {
+                grpcBaseClassName = ClassName.get("", grpcImplTypeStr);
+            }
+        } else {
+            // Fallback to default - need to determine from gRPC types which service is needed
+            // For now, assume a simple naming convention based on the service class name
+            String grpcServiceBaseClass = "io.github.mbarcia.csv.grpc.Mutiny" + 
+                serviceClass.getSimpleName().toString().replace("Service", "") + "Grpc." + 
+                serviceClass.getSimpleName().toString().replace("Service", "") + "ImplBase";
+            int lastDot = grpcServiceBaseClass.lastIndexOf('.');
+            if (lastDot > 0) {
+                String packageName = grpcServiceBaseClass.substring(0, lastDot);
+                String simpleName = grpcServiceBaseClass.substring(lastDot + 1);
+                grpcBaseClassName = ClassName.get(packageName, simpleName);
+            } else {
+                grpcBaseClassName = ClassName.get("", grpcServiceBaseClass);
+            }
+        }
+
         // Create the gRPC service class
         TypeSpec.Builder grpcServiceBuilder = TypeSpec.classBuilder(simpleClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(AnnotationSpec.builder(ClassName.get(GrpcService.class)).build())
-            .addAnnotation(AnnotationSpec.builder(ApplicationScoped.class).build())
-            .addAnnotation(AnnotationSpec.builder(ClassName.get("lombok", "NoArgsConstructor")).build())
-            .addAnnotation(AnnotationSpec.builder(ClassName.get("lombok", "Getter")).build())
-            .superclass(backendClassName);
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.inject", "Singleton")).build())
+            .addAnnotation(AnnotationSpec.builder(Unremovable.class).build())
+            .superclass(grpcBaseClassName); // Extend the actual gRPC service base class
 
         // Add field declarations
         if (inboundMapperType != null && !inboundMapperType.toString().equals("void")) {
             FieldSpec inboundMapperField = FieldSpec.builder(
                 ClassName.get(inboundMapperType),
-                "inboundMapper",
-                Modifier.PRIVATE)
+                "inboundMapper")
                 .addAnnotation(AnnotationSpec.builder(Inject.class).build())
                 .build();
             grpcServiceBuilder.addField(inboundMapperField);
@@ -314,8 +346,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
         if (outboundMapperType != null && !outboundMapperType.toString().equals("void")) {
             FieldSpec outboundMapperField = FieldSpec.builder(
                 ClassName.get(outboundMapperType),
-                "outboundMapper",
-                Modifier.PRIVATE)
+                "outboundMapper")
                 .addAnnotation(AnnotationSpec.builder(Inject.class).build())
                 .build();
             grpcServiceBuilder.addField(outboundMapperField);
@@ -323,8 +354,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
 
         FieldSpec serviceField = FieldSpec.builder(
             ClassName.get(serviceClass),
-            "service",
-            Modifier.PRIVATE)
+            "service")
             .addAnnotation(AnnotationSpec.builder(Inject.class).build())
             .build();
         grpcServiceBuilder.addField(serviceField);
@@ -332,20 +362,185 @@ public class PipelineStepProcessor extends AbstractProcessor {
         // Add persistence manager field
         FieldSpec persistenceManagerField = FieldSpec.builder(
                 ClassName.get("io.github.mbarcia.pipeline.persistence", "PersistenceManager"),
-                "persistenceManager",
-                Modifier.PRIVATE)
+                "persistenceManager")
             .addAnnotation(AnnotationSpec.builder(Inject.class).build())
             .build();
         grpcServiceBuilder.addField(persistenceManagerField);
 
-        // Add method to determine auto-persistence
-        MethodSpec autoPersistenceMethod = MethodSpec.methodBuilder("isAutoPersistenceEnabled")
-            .addAnnotation(Override.class)
-            .addModifiers(Modifier.PROTECTED)
-            .returns(boolean.class)
-            .addStatement("return $L", autoPersistenceEnabled)
-            .build();
-        grpcServiceBuilder.addMethod(autoPersistenceMethod);
+        // Determine which gRPC adapter to use based on the step type
+        ClassName grpcAdapterClassName;
+        if (stepType != null && stepType.toString().equals("io.github.mbarcia.pipeline.step.StepOneToMany")) {
+            // For OneToMany: unary input -> streaming output
+            grpcAdapterClassName = ClassName.get("io.github.mbarcia.pipeline.grpc", "GrpcServiceStreamingAdapter");
+        } else if (stepType != null && stepType.toString().equals("io.github.mbarcia.pipeline.step.StepManyToOne")) {
+            // For ManyToOne: streaming input -> unary output
+            grpcAdapterClassName = ClassName.get("io.github.mbarcia.pipeline.grpc", "GrpcServiceClientStreamingAdapter");
+        } else {
+            // Default to GrpcReactiveServiceAdapter for OneToOne, ManyToMany, etc.
+            grpcAdapterClassName = ClassName.get("io.github.mbarcia.pipeline.grpc", "GrpcReactiveServiceAdapter");
+        }
+
+        // Add the required gRPC service method implementation based on the gRPC service base class
+        // For Mutiny gRPC services, all methods return Uni/Multi, not use StreamObserver
+        // Following the manual template, the adapter is created inline inside the method
+        if (stepType != null && stepType.toString().equals("io.github.mbarcia.pipeline.step.StepOneToMany")) {
+            // For server streaming (unary input, streaming output) - e.g., ProcessFolderService
+            // Creates the adapter inline as an anonymous class inside the method
+            TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
+                .superclass(ParameterizedTypeName.get(grpcAdapterClassName, 
+                    ClassName.get(inputGrpcType), 
+                    ClassName.get(outputGrpcType), 
+                    ClassName.get(inputType), 
+                    ClassName.get(outputType)))
+                .addMethod(MethodSpec.methodBuilder("getService")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(serviceClass))
+                    .addStatement("return $N", "service")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("fromGrpc")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(inputType))
+                    .addParameter(ClassName.get(inputGrpcType), "grpcIn")
+                    .addStatement("return $N.fromGrpcFromDto(grpcIn)", "inboundMapper")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("toGrpc")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(outputGrpcType))
+                    .addParameter(ClassName.get(outputType), "output")
+                    .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("getStepConfig")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get("io.github.mbarcia.pipeline.config", "StepConfig"))
+                    .addStatement("return new io.github.mbarcia.pipeline.config.StepConfig().autoPersist($L)", autoPersistenceEnabled)
+                    .build())
+                .build();
+
+            MethodSpec remoteProcessMethod = MethodSpec.methodBuilder("remoteProcess")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"), ClassName.get(outputGrpcType)))
+                .addParameter(ClassName.get(inputGrpcType), "request")
+                .addStatement("$T adapter = $L", 
+                    ParameterizedTypeName.get(grpcAdapterClassName, 
+                        ClassName.get(inputGrpcType), 
+                        ClassName.get(outputGrpcType), 
+                        ClassName.get(inputType), 
+                        ClassName.get(outputType)), 
+                    inlineAdapter)
+                .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
+                .addStatement("return adapter.remoteProcess(request)")
+                .build();
+            grpcServiceBuilder.addMethod(remoteProcessMethod);
+        } else if (stepType != null && stepType.toString().equals("io.github.mbarcia.pipeline.step.StepManyToOne")) {
+            // For client streaming (streaming input, unary output) - e.g., ProcessCsvPaymentsOutputFileService
+            TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
+                .superclass(ParameterizedTypeName.get(grpcAdapterClassName, 
+                    ClassName.get(inputGrpcType), 
+                    ClassName.get(outputGrpcType), 
+                    ClassName.get(inputType), 
+                    ClassName.get(outputType)))
+                .addMethod(MethodSpec.methodBuilder("getService")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(serviceClass))
+                    .addStatement("return $N", "service")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("fromGrpc")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(inputType))
+                    .addParameter(ClassName.get(inputGrpcType), "grpcIn")
+                    .addStatement("return $N.fromGrpcFromDto(grpcIn)", "inboundMapper")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("toGrpc")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(outputGrpcType))
+                    .addParameter(ClassName.get(outputType), "output")
+                    .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("getStepConfig")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get("io.github.mbarcia.pipeline.config", "StepConfig"))
+                    .addStatement("return new io.github.mbarcia.pipeline.config.StepConfig().autoPersist($L)", autoPersistenceEnabled)
+                    .build())
+                .build();
+
+            MethodSpec remoteProcessMethod = MethodSpec.methodBuilder("remoteProcess")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Uni"), ClassName.get(outputGrpcType)))
+                .addParameter(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"), ClassName.get(inputGrpcType)), "request")
+                .addStatement("$T adapter = $L", 
+                    ParameterizedTypeName.get(grpcAdapterClassName, 
+                        ClassName.get(inputGrpcType), 
+                        ClassName.get(outputGrpcType), 
+                        ClassName.get(inputType), 
+                        ClassName.get(outputType)), 
+                    inlineAdapter)
+                .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
+                .addStatement("return adapter.remoteProcess(request)")
+                .build();
+            grpcServiceBuilder.addMethod(remoteProcessMethod);
+        } else {
+            // Default to unary (unary input, unary output) - e.g., ProcessPaymentStatusGrpcService
+            TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
+                .superclass(ParameterizedTypeName.get(grpcAdapterClassName, 
+                    ClassName.get(inputGrpcType), 
+                    ClassName.get(outputGrpcType), 
+                    ClassName.get(inputType), 
+                    ClassName.get(outputType)))
+                .addMethod(MethodSpec.methodBuilder("getService")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(serviceClass))
+                    .addStatement("return $N", "service")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("fromGrpc")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(inputType))
+                    .addParameter(ClassName.get(inputGrpcType), "grpcIn")
+                    .addStatement("return $N.fromGrpcFromDto(grpcIn)", "inboundMapper")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("toGrpc")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(outputGrpcType))
+                    .addParameter(ClassName.get(outputType), "output")
+                    .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("getStepConfig")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get("io.github.mbarcia.pipeline.config", "StepConfig"))
+                    .addStatement("return new io.github.mbarcia.pipeline.config.StepConfig().autoPersist($L)", autoPersistenceEnabled)
+                    .build())
+                .build();
+
+            MethodSpec remoteProcessMethod = MethodSpec.methodBuilder("remoteProcess")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Uni"), ClassName.get(outputGrpcType)))
+                .addParameter(ClassName.get(inputGrpcType), "request")
+                .addStatement("$T adapter = $L", 
+                    ParameterizedTypeName.get(grpcAdapterClassName, 
+                        ClassName.get(inputGrpcType), 
+                        ClassName.get(outputGrpcType), 
+                        ClassName.get(inputType), 
+                        ClassName.get(outputType)), 
+                    inlineAdapter)
+                .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
+                .addStatement("return adapter.remoteProcess(request)")
+                .build();
+            grpcServiceBuilder.addMethod(remoteProcessMethod);
+        }
 
         TypeSpec grpcServiceClass = grpcServiceBuilder.build();
 

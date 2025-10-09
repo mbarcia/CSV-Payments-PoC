@@ -74,29 +74,30 @@ public class PipelineExecutionService {
         throw new IllegalStateException(MessageFormat.format("PipelineRunner returned unexpected type: {0}", result.getClass()));
       }
 
-      multiResult.collect().asList().await().indefinitely();
+      // Blocking invocation
+      // multiResult.collect().asList().await().indefinitely();
 
-//      multiResult
-//        .onCompletion().invoke(() -> {
-//          LOG.info("Processing completed.");
-//          watch.stop();
-//          LOG.info(
-//              "✅ PIPELINE FINISHED processing in {} seconds",
-//              watch.getTime(TimeUnit.SECONDS));
-//        })
-//        .onFailure().invoke(failure -> {
-//          LOG.error(MessageFormat.format("Error: {0}", failure.getMessage()));
-//          watch.stop();
-//          LOG.error(
-//              "❌ PIPELINE FAILED after {} seconds",
-//              watch.getTime(TimeUnit.SECONDS),
-//              failure);
-//        })
-//        .subscribe()
-//        .with(
-//          item -> LOG.debug("Processed item {}", item),
-//          failure -> LOG.error("❌ Unhandled pipeline error", failure)
-//        );
+      multiResult
+        .onCompletion().invoke(() -> {
+          LOG.info("Processing completed.");
+          watch.stop();
+          LOG.info(
+              "✅ PIPELINE FINISHED processing in {} seconds",
+              watch.getTime(TimeUnit.SECONDS));
+        })
+        .onFailure().invoke(failure -> {
+          LOG.error(MessageFormat.format("Error: {0}", failure.getMessage()));
+          watch.stop();
+          LOG.error(
+              "❌ PIPELINE FAILED after {} seconds",
+              watch.getTime(TimeUnit.SECONDS),
+              failure);
+        })
+        .subscribe()
+        .with(
+          item -> LOG.debug("Processed item {}", item),
+          failure -> LOG.error("❌ Unhandled pipeline error", failure)
+        );
     } catch (Exception e) {
       watch.stop();
       LOG.error(

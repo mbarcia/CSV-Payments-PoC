@@ -17,6 +17,7 @@
 package io.github.mbarcia.pipeline.persistence;
 
 import io.smallrye.mutiny.Uni;
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -30,14 +31,22 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class PersistenceManager {
 
-    @Inject
-    Instance<PersistenceProvider<?>> providers;
-
     private static final Logger LOG = LoggerFactory.getLogger(PersistenceManager.class);
+
+    private List<PersistenceProvider<?>> providers;
+
+    @Inject
+    Instance<PersistenceProvider<?>> providerInstance;
+
+    @PostConstruct
+    void init() {
+        this.providers = providerInstance.stream().toList();
+        LOG.info("Initialized {} persistence providers", providers.size());
+    }
 
     /**
      * Persist an entity using the appropriate provider.
-     * 
+     *
      * @param entity The entity to persist
      * @return A Uni that completes with the persisted entity, or the original entity if no provider supports it
      */
@@ -46,40 +55,15 @@ public class PersistenceManager {
             return Uni.createFrom().item((T) null);
         }
 
-        // Find a provider that supports this entity
-        PersistenceProvider<T> provider = findProvider(entity);
-        
-        if (provider != null) {
-            LOG.debug("Found a persistence provider");
-            return provider.persist(entity);
-        } else {
-            LOG.debug("Did NOT find a persistence provider");
-        }
-        
-        // No provider found, return the entity as-is
-        return Uni.createFrom().item(entity);
-    }
-
-    /**
-     * Find a provider that supports the given entity.
-     * 
-     * @param entity The entity to find a provider for
-     * @return A provider that supports the entity, or null if none found
-     */
-    @SuppressWarnings("unchecked")
-    private <T> PersistenceProvider<T> findProvider(T entity) {
-        if (providers.isUnsatisfied()) {
-            return null;
-        }
-
-        List<PersistenceProvider<?>> providerList = providers.stream().toList();
-        
-        for (PersistenceProvider<?> provider : providerList) {
+        for (PersistenceProvider<?> provider : providers) {
             if (provider.supports(entity)) {
-                return (PersistenceProvider<T>) provider;
+                @SuppressWarnings("unchecked")
+                PersistenceProvider<T> p = (PersistenceProvider<T>) provider;
+                return p.persist(entity);
             }
         }
-        
-        return null;
+
+        LOG.warn("No persistence provider found for {}", entity.getClass().getName());
+        return Uni.createFrom().item(entity);
     }
 }

@@ -46,11 +46,11 @@ public class StepServerRegistrar {
 
         // Find all classes ending with "GrpcService"
         index.getKnownClasses().stream()
-                .filter(ci -> ci.name().toString().startsWith(BASE_PACKAGE))
-                .filter(ci -> ci.name().toString().endsWith("GrpcService"))
-                .forEach(ci -> {
-                    System.out.println("Registering gRPC service: " + ci.name());
-                    additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ci.name().toString()));
-                });
+            .filter(ci -> ci.name().toString().startsWith(BASE_PACKAGE))
+            .filter(ci -> ci.name().toString().endsWith("GrpcService"))
+            .forEach(ci -> {
+                System.out.println("Registering gRPC service: " + ci.name());
+                additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ci.name().toString()));
+            });
     }
 }

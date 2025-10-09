@@ -23,6 +23,7 @@ import io.github.mbarcia.pipeline.annotation.PipelineStep;
 import io.github.mbarcia.pipeline.service.ReactiveService;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.util.UUID;
 import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,6 +61,7 @@ public class ProcessPaymentStatusReactiveService
 
     PaymentOutputDto dto =
         PaymentOutputDto.builder()
+            .id(UUID.randomUUID())
             .paymentStatus(paymentStatus)
             .csvId(paymentRecord.getCsvId())
             .recipient(paymentRecord.getRecipient())

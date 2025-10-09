@@ -16,11 +16,10 @@
 
 package io.github.mbarcia.csv.resource;
 
-import io.github.mbarcia.csv.common.domain.CsvPaymentsInput;
 import io.github.mbarcia.csv.common.domain.CsvPaymentsInputStream;
 import io.github.mbarcia.csv.common.dto.PaymentRecordDto;
 import io.github.mbarcia.csv.common.mapper.PaymentRecordMapper;
-import io.github.mbarcia.csv.service.ProcessCsvPaymentsInputReactiveService;
+import io.github.mbarcia.csv.service.ProcessCsvPaymentsInputStreamService;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -41,7 +40,7 @@ import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 public class ProcessCsvPaymentsInputStreamRestResource {
 
   @Inject
-  ProcessCsvPaymentsInputReactiveService domainService;
+  ProcessCsvPaymentsInputStreamService domainService;
 
   PaymentRecordMapper paymentRecordMapper = PaymentRecordMapper.INSTANCE;
 
@@ -52,7 +51,7 @@ public class ProcessCsvPaymentsInputStreamRestResource {
       @RestForm("file") InputStream file,
       @RestForm("filename") String filename) {
 
-    CsvPaymentsInput domainObject = new CsvPaymentsInputStream(
+    CsvPaymentsInputStream domainObject = new CsvPaymentsInputStream(
             file,
             filename
         );

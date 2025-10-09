@@ -17,7 +17,7 @@
 package io.github.mbarcia.csv.service;
 
 import com.opencsv.bean.CsvToBeanBuilder;
-import io.github.mbarcia.csv.common.domain.CsvPaymentsInput;
+import io.github.mbarcia.csv.common.domain.CsvPaymentsInputFile;
 import io.github.mbarcia.csv.common.domain.PaymentRecord;
 import io.github.mbarcia.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
 import io.github.mbarcia.pipeline.annotation.PipelineStep;
@@ -54,7 +54,7 @@ import org.slf4j.MDC;
 @ApplicationScoped
 @Getter
 public class ProcessCsvPaymentsInputReactiveService
-    implements ReactiveStreamingService<CsvPaymentsInput, PaymentRecord> {
+    implements ReactiveStreamingService<CsvPaymentsInputFile, PaymentRecord> {
 
   Executor executor;
 
@@ -64,7 +64,7 @@ public class ProcessCsvPaymentsInputReactiveService
   }
 
   @Override
-  public Multi<PaymentRecord> process(CsvPaymentsInput input) {
+  public Multi<PaymentRecord> process(CsvPaymentsInputFile input) {
     Logger logger = LoggerFactory.getLogger(getClass());
 
     return Multi.createFrom()

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2023-2025 Mariano Barcia
+ * Copyright (c) 2023-2025 Mariano Barcia
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import jakarta.persistence.*;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Currency;
+import java.util.Objects;
 import java.util.UUID;
 import lombok.*;
 
@@ -32,56 +33,34 @@ import lombok.*;
 @NoArgsConstructor
 public class PaymentOutput extends BaseEntity implements Serializable {
 
-  @CsvIgnore @Transient private PaymentStatus paymentStatus;
+    @CsvIgnore @Transient private PaymentStatus paymentStatus;
 
-  // en-UK locale to match the format of the (mock) payment service
-  @CsvBindByName(column = "CSV Id")
-  String csvId;
+    // en-UK locale to match the format of the (mock) payment service
+    @CsvBindByName(column = "CSV Id")
+    String csvId;
 
-  @CsvBindByName(column = "Recipient")
-  String recipient;
+    @CsvBindByName(column = "Recipient")
+    String recipient;
 
-  @CsvBindByName(column = "Amount", locale = "en-UK")
-  @CsvNumber("#,###.00")
-  BigDecimal amount;
+    @CsvBindByName(column = "Amount", locale = "en-UK")
+    @CsvNumber("#,###.00")
+    BigDecimal amount;
 
-  @CsvBindByName(column = "Currency")
-  Currency currency;
+    @CsvBindByName(column = "Currency")
+    Currency currency;
 
-  @CsvBindByName(column = "Reference")
-  UUID conversationId;
+    @CsvBindByName(column = "Reference")
+    UUID conversationId;
 
-  @CsvBindByName(column = "Status")
-  Long status;
+    @CsvBindByName(column = "Status")
+    Long status;
 
-  @CsvBindByName(column = "Message")
-  String message;
+    @CsvBindByName(column = "Message")
+    String message;
 
-  @CsvBindByName(column = "Fee", locale = "en-UK")
-  @CsvNumber("#,###.00")
-  BigDecimal fee;
-
-  public PaymentOutput(
-      PaymentStatus paymentStatus,
-      String csvId,
-      String recipient,
-      BigDecimal amount,
-      Currency currency,
-      UUID conversationId,
-      Long status,
-      String message,
-      BigDecimal fee) {
-    super();
-    this.paymentStatus = paymentStatus;
-    this.csvId = csvId;
-    this.recipient = recipient;
-    this.amount = amount;
-    this.currency = currency;
-    this.conversationId = conversationId;
-    this.status = status;
-    this.message = message;
-    this.fee = fee;
-  }
+    @CsvBindByName(column = "Fee", locale = "en-UK")
+    @CsvNumber("#,###.00")
+    BigDecimal fee;
 
   @Override
   public boolean equals(Object o) {
@@ -90,4 +69,10 @@ public class PaymentOutput extends BaseEntity implements Serializable {
     PaymentOutput that = (PaymentOutput) o;
     return this.getId() != null && this.getId().equals(that.getId());
   }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getId(), getCsvId(), getRecipient(), getAmount(), getCurrency());
+  }
+
 }

@@ -18,6 +18,7 @@ package io.github.mbarcia.pipeline.annotation;
 
 import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.step.ConfigurableStep;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -46,6 +47,8 @@ public class StepConfigProvider {
                        .debug(annotation.debug())
                        .recoverOnFailure(annotation.recoverOnFailure())
                        .backpressureBufferCapacity(annotation.backpressureBufferCapacity())
+                       .batchSize(annotation.batchSize())
+                       .batchTimeout(Duration.ofMillis(annotation.batchTimeoutMs()))
                        .backpressureStrategy(annotation.backpressureStrategy());
                 return config;
             } else {

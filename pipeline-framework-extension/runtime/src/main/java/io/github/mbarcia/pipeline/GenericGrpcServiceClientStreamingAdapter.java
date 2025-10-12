@@ -42,19 +42,6 @@ public abstract class GenericGrpcServiceClientStreamingAdapter<GRpcIn, DomainIn,
     public abstract ReactiveStreamingClientService<DomainIn, DomainOut> getService();
     public abstract PersistenceManager getPersistenceManager();
     
-    public Uni<GRpcOut> remoteProcess(Multi<GRpcIn> requestStream) {
-        Multi<DomainIn> domainStream = requestStream.onItem().transform(getInboundMapper()::fromGrpcFromDto);
-
-        Multi<DomainIn> persistentStream = getPersistedStream(domainStream);
-
-        return getService()
-            .process(persistentStream) // Multi<DomainIn> → Uni<DomainOut>
-            .onItem()
-            .transform(getOutboundMapper()::toDtoToGrpc) // Uni<GrpcOut>
-            .onFailure()
-            .transform(new throwStatusRuntimeExceptionFunction());
-    }
-
     /**
      * Determines whether entities should be automatically persisted before processing.
      * Override this method to enable auto-persistence.
@@ -63,14 +50,37 @@ public abstract class GenericGrpcServiceClientStreamingAdapter<GRpcIn, DomainIn,
      */
     protected abstract boolean isAutoPersistenceEnabled();
 
-    private Multi<DomainIn> getPersistedStream(Multi<DomainIn> domainStream) {
-        if (isAutoPersistenceEnabled()) {
-            LOG.debug("Auto-persistance is enabled");
-            return domainStream.onItem().transformToUniAndMerge(getPersistenceManager()::persist);
-        } else {
-            LOG.debug("Auto-persistance is disabled");
-        }
+    public Uni<GRpcOut> remoteProcess(Multi<GRpcIn> requestStream) {
+        Multi<DomainIn> domainStream = requestStream.onItem().transform(getInboundMapper()::fromGrpcFromDto);
 
-        return domainStream;
+        // Cache the stream so it can be subscribed to multiple times
+        Multi<DomainIn> cachedStream = domainStream.cache();
+
+        // First, process the stream without persistence
+        Uni<DomainOut> processedResult = getService()
+            .process(cachedStream); // Multi<DomainIn> → Uni<DomainOut>
+
+        // If auto-persistence is enabled, persist the input entities after successful processing
+        if (isAutoPersistenceEnabled()) {
+            LOG.debug("Auto-persistence is enabled, will persist inputs after processing");
+            
+            return processedResult
+                .onItem().call(result -> 
+                    // Persist all input items after successful processing (using cached stream)
+                    // This prevents duplicate persistence on retries after failures
+                    cachedStream
+                        .onItem().transformToUniAndConcatenate(getPersistenceManager()::persist)
+                        .collect().asList() // Wait for all persist operations to complete
+                        .replaceWith(result) // Replace with the originally processed result
+                )
+                .onItem().transform(getOutboundMapper()::toDtoToGrpc) // Uni<GrpcOut>
+                .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+        } else {
+            LOG.debug("Auto-persistence is disabled");
+            
+            return processedResult
+                .onItem().transform(getOutboundMapper()::toDtoToGrpc) // Uni<GrpcOut>
+                .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+        }
     }
 }

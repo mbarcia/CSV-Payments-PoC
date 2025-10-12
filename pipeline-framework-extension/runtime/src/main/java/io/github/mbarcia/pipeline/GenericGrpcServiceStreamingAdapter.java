@@ -21,7 +21,6 @@ import io.github.mbarcia.pipeline.persistence.PersistenceManager;
 import io.github.mbarcia.pipeline.service.ReactiveStreamingService;
 import io.github.mbarcia.pipeline.service.throwStatusRuntimeExceptionFunction;
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,17 +44,25 @@ public abstract class GenericGrpcServiceStreamingAdapter<GRpcIn, DomainIn, Domai
     public Multi<GRpcOut> remoteProcess(GRpcIn grpcRequest) {
         DomainIn entity = getInboundMapper().fromGrpcFromDto(grpcRequest);
 
-        Uni<DomainIn> persistenceUni = getPersistedUni(entity);
-
-        return persistenceUni
-            .onItem().transformToMulti(persistedEntity ->
-                getService()
-                    .process(persistedEntity) // Multi<DomainOut>
-                    .onItem()
-                    .transform(getOutboundMapper()::toDtoToGrpc) // Multi<GrpcOut>
-                    .onFailure()
-                    .transform(new throwStatusRuntimeExceptionFunction())
-            );
+        // If auto-persistence is enabled, persist after processing starts
+        if (isAutoPersistenceEnabled()) {
+            LOG.debug("Auto-persistence is enabled, will persist input after processing");
+            
+            // Process the entity and persist the input when stream is consumed
+            return getService().process(entity) // Multi<DomainOut>
+                .onSubscription().call(() -> 
+                    // Persist the input entity when the stream is subscribed to
+                    getPersistenceManager().persist(entity)
+                )
+                .onItem().transform(getOutboundMapper()::toDtoToGrpc) // Multi<GrpcOut>
+                .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+        } else {
+            LOG.debug("Auto-persistence is disabled");
+            
+            return getService().process(entity) // Multi<DomainOut>
+                .onItem().transform(getOutboundMapper()::toDtoToGrpc) // Multi<GrpcOut>
+                .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+        }
     }
 
     /**
@@ -65,15 +72,4 @@ public abstract class GenericGrpcServiceStreamingAdapter<GRpcIn, DomainIn, Domai
      * @return true if entities should be auto-persisted, false otherwise
      */
     protected abstract boolean isAutoPersistenceEnabled();
-
-    private Uni<DomainIn> getPersistedUni(DomainIn entity) {
-        if (isAutoPersistenceEnabled()) {
-            LOG.debug("Auto-persistence is enabled");
-            return getPersistenceManager().persist(entity);
-        }
-        else {
-            LOG.debug("Auto-persistence is disabled");
-            return Uni.createFrom().item(entity);
-        }
-    }
 }

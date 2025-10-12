@@ -171,4 +171,18 @@ public @interface PipelineStep {
      * @return true if the step is local, false if it requires a gRPC client
      */
     boolean local() default false;
+
+    /**
+     * The batch size for collecting inputs before processing (default=10)
+     * Set to a very large number to effectively disable batching
+     * @return the batch size for this step
+     */
+    int batchSize() default 10;
+
+    /**
+     * The time window in milliseconds to wait before processing a batch,
+     * even if the batch size hasn't been reached (default=1000ms)
+     * @return the time window in milliseconds for this step
+     */
+    long batchTimeoutMs() default 1000L;
 }

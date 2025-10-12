@@ -17,8 +17,8 @@
 package io.github.mbarcia.pipeline.persistence.provider;
 
 import io.github.mbarcia.pipeline.persistence.PersistenceProvider;
+import io.quarkus.hibernate.reactive.panache.Panache;
 import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
-import io.quarkus.hibernate.reactive.panache.common.WithTransaction;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.slf4j.Logger;
@@ -40,29 +40,52 @@ public class ReactivePanachePersistenceProvider implements PersistenceProvider<P
     }
 
     @Override
-    @WithTransaction
     public Uni<PanacheEntityBase> persist(PanacheEntityBase entity) {
         if (entity == null) {
             LOG.debug("Null entity received and returned");
             return Uni.createFrom().nullItem();
         }
+
         if (entity instanceof PanacheEntityBase panacheEntity) {
             LOG.debug("About to persist entity: {}", entity);
-
-            // Directly persist the entity without wrapping in Panache.withSession()
-            // since we're already in a transactional context
-            return panacheEntity.persistAndFlush()
-                .replaceWith(entity)
-                .onFailure().recoverWithUni(t -> {
-                    // Log the error but don't fail the operation
-                    LOG.error("Failed to persist {}: {}", entity.getClass().getSimpleName(), t.getMessage(), t);
-                    return Uni.createFrom().item(entity);
-                });
+            
+            // Use a try-catch approach for handling duplicate keys
+            // Since we can't access the id field directly from PanacheEntityBase
+            return Panache.withTransaction(() -> 
+                panacheEntity.persistAndFlush()
+                    .replaceWith(panacheEntity)
+                    .onFailure().recoverWithUni(failure -> {
+                        LOG.debug("Error during persist, checking for duplicate key: {}", failure.getMessage());
+                        
+                        // If it's a duplicate key violation, we can return the original entity safely
+                        if (isDuplicateKeyError(failure)) {
+                            LOG.debug("Duplicate key error detected, returning entity without persisting");
+                            return Uni.createFrom().item(panacheEntity);
+                        }
+                        
+                        // For other errors, log and return the entity
+                        LOG.error("Failed to persist {}: {}", entity.getClass().getSimpleName(), failure.getMessage(), failure);
+                        return Uni.createFrom().item(panacheEntity);
+                    })
+            );
         } else {
             LOG.debug("Skipped non-Panache entity");
         }
 
         return Uni.createFrom().item(entity);
+    }
+    
+    /**
+     * Checks if the failure is a duplicate key constraint violation
+     */
+    private boolean isDuplicateKeyError(Throwable failure) {
+        String message = failure.getMessage();
+        if (message != null) {
+            return message.contains("duplicate key value violates unique constraint") ||
+                   message.contains("Unique index or primary key violation") ||
+                   message.contains("Duplicate entry");
+        }
+        return false;
     }
 
     @Override

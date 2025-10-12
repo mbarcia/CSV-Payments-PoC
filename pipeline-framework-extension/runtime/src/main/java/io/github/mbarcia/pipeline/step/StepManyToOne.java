@@ -16,6 +16,7 @@
 
 package io.github.mbarcia.pipeline.step;
 
+import io.github.mbarcia.pipeline.config.StepConfig;
 import io.github.mbarcia.pipeline.step.functional.ManyToOne;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -70,8 +71,14 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
     @Override
     default Uni<O> applyReduce(Multi<I> input) {
         Logger LOG = LoggerFactory.getLogger(this.getClass());
-        int batchSize = this.batchSize();
-        long batchTimeoutMs = this.batchTimeoutMs();
+        
+        // Retrieve configuration
+        StepConfig config = effectiveConfig() instanceof StepConfig ? (StepConfig) effectiveConfig() : null;
+        
+        // Use configured batch size if available, otherwise use the default
+        int batchSize = config != null ? config.batchSize() : this.batchSize();
+        // Use configured batch timeout if available, otherwise use the default
+        long batchTimeoutMs = config != null ? config.batchTimeout().toMillis() : this.batchTimeoutMs();
 
         // Apply overflow strategy to the input
         Multi<I> backpressuredInput = input;

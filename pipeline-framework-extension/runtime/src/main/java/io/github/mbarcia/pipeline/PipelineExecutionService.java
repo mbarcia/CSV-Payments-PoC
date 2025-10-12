@@ -75,7 +75,8 @@ public class PipelineExecutionService {
       }
 
       // Blocking invocation
-      // multiResult.collect().asList().await().indefinitely();
+      multiResult.collect().asList().await().indefinitely();
+      System.exit(0);
 
       multiResult
         .onCompletion().invoke(() -> {

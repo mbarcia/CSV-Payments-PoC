@@ -52,26 +52,28 @@ public abstract class GenericGrpcReactiveServiceAdapter<GRpcIn, DomainIn, Domain
     public Uni<GRpcOut> remoteProcess(GRpcIn grpcRequest) {
         DomainIn entity = getInboundMapper().fromGrpcFromDto(grpcRequest);
 
-        Uni<DomainIn> persistenceUni = getPersistedUni(entity);
+        // Process the entity first without persistence
+        Uni<DomainOut> processedResult = getService().process(entity);
 
-        return persistenceUni
-            .onItem().transformToUni(persistedEntity -> getService()
-                .process(persistedEntity)
-                .onItem()
-                .transform(getOutboundMapper()::toDtoToGrpc)
-                .onFailure()
-                .transform(new throwStatusRuntimeExceptionFunction())
-            );
-    }
-
-    private Uni<DomainIn> getPersistedUni(DomainIn entity) {
+        // If auto-persistence is enabled, persist after successful processing
         if (isAutoPersistenceEnabled()) {
-            LOG.debug("Auto-persistence is enabled");
-            return getPersistenceManager().persist(entity);
-        }
-        else {
+            LOG.debug("Auto-persistence is enabled, will persist input after processing");
+            
+            return processedResult
+                .onItem().call(result -> 
+                    // Persist the input entity after successful processing
+                    // This prevents duplicate persistence on retries after failures
+                    getPersistenceManager().persist(entity)
+                        .replaceWith(result) // Replace with the originally processed result
+                )
+                .onItem().transform(getOutboundMapper()::toDtoToGrpc)
+                .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+        } else {
             LOG.debug("Auto-persistence is disabled");
-            return Uni.createFrom().item(entity);
+            
+            return processedResult
+                .onItem().transform(getOutboundMapper()::toDtoToGrpc)
+                .onFailure().transform(new throwStatusRuntimeExceptionFunction());
         }
     }
 }

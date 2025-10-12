@@ -47,11 +47,33 @@ public class ProcessPaymentService implements StepOneToOne<PaymentRecord, Paymen
     public Uni<PaymentStatus> applyOneToOne(PaymentRecord paymentRecord) {
         // Implementation here
         return Uni.createFrom().item(/* processed payment status */);
+
+### 3. Configure Batching for StepManyToOne Steps
+
+For `StepManyToOne` steps, you can configure batching behavior using the `batchSize` and `batchTimeoutMs` parameters in the `@PipelineStep` annotation:
+
+```java
+@PipelineStep(
+    order = 6,
+    inputType = PaymentOutput.class,
+    outputType = CsvPaymentsOutputFile.class,
+    stepType = StepManyToOne.class,
+    batchSize = 50,        // Collect up to 50 items before processing
+    batchTimeoutMs = 5000  // Or process after 5 seconds, whichever comes first
+)
+@ApplicationScoped
+public class ProcessCsvPaymentsOutputFileService implements StepManyToOne<PaymentOutput, CsvPaymentsOutputFile> {
+    // Implementation here
+}
+```
+
+This is particularly useful when you need to ensure that related records (such as all PaymentOutput records from the same CSV file) are processed together in a single batch. By setting a sufficiently large batch size and timeout, you can guarantee that all related records are collected before processing begins.
+
     }
 }
 ```
 
-### 3. Implement the Business Logic
+### 5. Implement the Business Logic
 
 The core of your service is the implementation of the step interface method:
 

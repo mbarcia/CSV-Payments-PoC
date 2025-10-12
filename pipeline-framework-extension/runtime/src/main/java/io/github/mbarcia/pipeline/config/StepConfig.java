@@ -30,6 +30,8 @@ public class StepConfig {
     private final AtomicReference<Duration> retryWait = new AtomicReference<>(Duration.ofMillis(200));
     private final AtomicInteger concurrency = new AtomicInteger(4);
     private final AtomicInteger backpressureBufferCapacity = new AtomicInteger(1024);
+    private final AtomicInteger batchSize = new AtomicInteger(10); // Default batch size
+    private final AtomicReference<Duration> batchTimeout = new AtomicReference<>(Duration.ofMillis(1000)); // Default batch timeout
 
     private volatile boolean debug = false;
     private volatile boolean recoverOnFailure = false;
@@ -48,6 +50,8 @@ public class StepConfig {
     public Duration retryWait() { return retryWait.get(); }
     public int concurrency() { return concurrency.get(); }
     public int backpressureBufferCapacity() { return backpressureBufferCapacity.get(); }
+    public int batchSize() { return batchSize.get(); }
+    public Duration batchTimeout() { return batchTimeout.get(); }
     public String backpressureStrategy() { return backpressureStrategy; }
     public boolean debug() { return debug; }
     public boolean recoverOnFailure() { return recoverOnFailure; }
@@ -61,6 +65,8 @@ public class StepConfig {
     public StepConfig retryWait(Duration v) { retryWait.set(Objects.requireNonNull(v)); return this; }
     public StepConfig concurrency(int v) { concurrency.set(v); return this; }
     public StepConfig backpressureBufferCapacity(int v) { backpressureBufferCapacity.set(v); return this; }
+    public StepConfig batchSize(int v) { batchSize.set(v); return this; }
+    public StepConfig batchTimeout(Duration v) { batchTimeout.set(Objects.requireNonNull(v)); return this; }
     public StepConfig backpressureStrategy(String v) { backpressureStrategy = v; return this; }
     public StepConfig debug(boolean v) { debug = v; return this; }
     public StepConfig recoverOnFailure(boolean v) { recoverOnFailure = v; return this; }

@@ -341,8 +341,7 @@ To run an end-to-end integration test that starts all services and processes a r
 ./run-e2e-test.sh
 ```
 
-This script will start all microservices, process a sample CSV file, and verify the results. See [https://pipelineframework.org]
-(https://pipelineframework.org/) for more details.
+This script will start all microservices, process a sample CSV file, and verify the results. See [pipelineframework.org](https://pipelineframework.org/) for more details.
 
 ## SSL Certificate Handling in Development
 

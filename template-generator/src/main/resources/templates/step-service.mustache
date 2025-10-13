@@ -1,9 +1,9 @@
-package {{basePackage}}.{{serviceName}}.service;
+package {{basePackage}}.{{serviceNameForPackage}}.service;
 
 import {{basePackage}}.common.domain.{{inputTypeName}};
 import {{basePackage}}.common.domain.{{outputTypeName}};
 import {{basePackage}}.grpc.{{grpcStubName}};
-import org.pipelineframework.{{grpcAdapter}};
+import org.pipelineframework.grpc.{{grpcAdapter}};
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.service.{{reactiveServiceInterface}};
 import org.pipelineframework.step.{{stepType}};
@@ -18,12 +18,12 @@ import org.slf4j.LoggerFactory;
     order = {{order}},
     inputType = {{basePackage}}.common.domain.{{inputTypeName}}.class,
     outputType = {{basePackage}}.common.domain.{{outputTypeName}}.class,
-    inputGrpcType = {{basePackage}}.grpc.{{serviceName}}.{{inputTypeName}}.class,
-    outputGrpcType = {{basePackage}}.grpc.{{serviceName}}.{{outputTypeName}}.class,
+    inputGrpcType = {{basePackage}}.grpc.{{inputGrpcProtoClassName}}.{{inputTypeName}}.class,
+    outputGrpcType = {{basePackage}}.grpc.{{protoClassName}}.{{outputTypeName}}.class,
     stepType = org.pipelineframework.step.{{stepType}}.class,
-    backendType = org.pipelineframework.{{grpcAdapter}}.class,
-    grpcStub = {{basePackage}}.grpc.{{serviceName}}.{{grpcStubName}}.class,
-    grpcImpl = {{basePackage}}.grpc.{{serviceName}}.{{grpcImplName}}.class,
+    backendType = org.pipelineframework.grpc.{{grpcAdapter}}.class,
+    grpcStub = {{basePackage}}.grpc.{{grpcStubName}}.class,
+    grpcImpl = {{basePackage}}.grpc.{{grpcImplName}}.class,
     inboundMapper = {{basePackage}}.common.mapper.{{inputTypeName}}Mapper.class,
     outboundMapper = {{basePackage}}.common.mapper.{{outputTypeName}}Mapper.class,
     grpcClient = "{{serviceName}}",
@@ -32,11 +32,11 @@ import org.slf4j.LoggerFactory;
 )
 @ApplicationScoped
 @Getter
-public class Process{{serviceNameCamel}}Service
+public class Process{{serviceNamePascal}}Service
     implements {{reactiveServiceInterface}}<{{inputTypeName}}, {{outputTypeName}}> {
 
   @Override
-  public {{processMethodReturnType}} process({{processMethodParamType}} input) {
+  public {{{processMethodReturnType}}} process({{{processMethodParamType}}} input) {
     Logger logger = LoggerFactory.getLogger(getClass());
 
     // TODO implement business logic here
@@ -46,6 +46,6 @@ public class Process{{serviceNameCamel}}Service
     // Set output fields based on input
     // TODO: Add actual business logic here
     
-    return {{returnStatement}};
+    return {{{returnStatement}}};
   }
 }

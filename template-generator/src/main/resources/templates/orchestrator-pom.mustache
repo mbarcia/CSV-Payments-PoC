@@ -15,16 +15,23 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
+    <properties>
+        <pipeline.generate-cli>true</pipeline.generate-cli>
+    </properties>
+
     <dependencies>
+        {{#steps}}
         <dependency>
             <groupId>{{basePackage}}</groupId>
-            <artifactId>common</artifactId>
+            <artifactId>{{serviceName}}</artifactId>
             <version>1.0</version>
         </dependency>
+        {{/steps}}
         <dependency>
             <groupId>org.pipelineframework</groupId>
-            <artifactId>pipeline-framework</artifactId>
+            <artifactId>pipelineframework-deployment</artifactId>
             <version>${pipeline.version}</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>

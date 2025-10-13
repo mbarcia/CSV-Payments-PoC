@@ -29,6 +29,15 @@ public class MustacheTemplateEngine {
     public void generateApplication(String appName, String basePackage, List<Map<String, Object>> steps, Path outputPath) throws Exception {
         MustacheFactory mf = new DefaultMustacheFactory();
         
+        // For sequential pipeline, update input types of steps after the first one
+        // to match the output type of the previous step
+        for (int i = 1; i < steps.size(); i++) {
+            Map<String, Object> currentStep = steps.get(i);
+            Map<String, Object> previousStep = steps.get(i - 1);
+            // Set the input type of the current step to the output type of the previous step
+            currentStep.put("inputTypeName", previousStep.get("outputTypeName"));
+        }
+        
         // Generate parent POM
         generateParentPom(mf, appName, basePackage, steps, outputPath);
         
@@ -36,8 +45,8 @@ public class MustacheTemplateEngine {
         generateCommonModule(mf, appName, basePackage, steps, outputPath);
         
         // Generate each step service
-        for (Map<String, Object> step : steps) {
-            generateStepService(mf, appName, basePackage, step, outputPath);
+        for (int i = 0; i < steps.size(); i++) {
+            generateStepService(mf, appName, basePackage, steps.get(i), outputPath, i, steps);
         }
         
         // Generate orchestrator
@@ -90,15 +99,16 @@ public class MustacheTemplateEngine {
         generateCommonPom(mf, appName, basePackage, commonPath);
         
         // Generate proto files for each step
-        for (Map<String, Object> step : steps) {
-            generateProtoFile(mf, step, basePackage, commonPath);
+        for (int i = 0; i < steps.size(); i++) {
+            generateProtoFile(mf, steps.get(i), basePackage, commonPath, i, steps);
         }
         
         // Generate entities, DTOs, and mappers for each step
-        for (Map<String, Object> step : steps) {
-            generateDomainClasses(mf, step, basePackage, commonPath);
-            generateDtoClasses(mf, step, basePackage, commonPath);
-            generateMapperClasses(mf, step, basePackage, commonPath);
+        for (int i = 0; i < steps.size(); i++) {
+            Map<String, Object> step = steps.get(i);
+            generateDomainClasses(mf, step, basePackage, commonPath, i);
+            generateDtoClasses(mf, step, basePackage, commonPath, i);
+            generateMapperClasses(mf, step, basePackage, commonPath, i);
         }
         
         // Generate base entity
@@ -122,7 +132,7 @@ public class MustacheTemplateEngine {
         Files.write(pomPath, stringWriter.toString().getBytes());
     }
     
-    private void generateProtoFile(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath) throws IOException {
+    private void generateProtoFile(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath, int stepIndex, List<Map<String, Object>> allSteps) throws IOException {
         // Process input fields to add field numbers
         @SuppressWarnings("unchecked")
         List<Map<String, String>> inputFields = (List<Map<String, String>>) step.get("inputFields");
@@ -142,6 +152,13 @@ public class MustacheTemplateEngine {
         context.put("basePackage", basePackage);
         context.put("isExpansion", "EXPANSION".equals(step.get("cardinality")));
         context.put("isReduction", "REDUCTION".equals(step.get("cardinality")));
+        context.put("isFirstStep", stepIndex == 0);
+        if (stepIndex > 0) {
+            // Reference the previous step's input type as the current step's input type
+            Map<String, Object> previousStep = allSteps.get(stepIndex - 1);
+            context.put("previousStepName", previousStep.get("serviceName"));
+            context.put("previousStepOutputTypeName", previousStep.get("outputTypeName"));
+        }
         // Format the service name properly for the proto file (e.g., "Process Customer" -> "Customer", "Validate Order" -> "Order")
         String stepName = (String) step.get("name");
         String formattedName = stepName.replace("Process ", "").trim();
@@ -165,26 +182,28 @@ public class MustacheTemplateEngine {
         Files.write(protoPath, stringWriter.toString().getBytes());
     }
     
-    private void generateDomainClasses(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath) throws IOException {
-        // Process input domain class
-        @SuppressWarnings("unchecked")
-        List<Map<String, String>> inputFields = (List<Map<String, String>>) step.get("inputFields");
-        Map<String, Object> inputContext = new HashMap<>(step);
-        inputContext.put("basePackage", basePackage);
-        inputContext.put("className", step.get("inputTypeName"));
-        inputContext.put("fields", inputFields);
-        addImportFlagsToContext(inputContext, inputFields);
+    private void generateDomainClasses(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath, int stepIndex) throws IOException {
+        // Process input domain class only for first step
+        if (stepIndex == 0) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> inputFields = (List<Map<String, String>>) step.get("inputFields");
+            Map<String, Object> inputContext = new HashMap<>(step);
+            inputContext.put("basePackage", basePackage);
+            inputContext.put("className", step.get("inputTypeName"));
+            inputContext.put("fields", inputFields);
+            addImportFlagsToContext(inputContext, inputFields);
+            
+            Mustache mustache = mf.compile("templates/domain.mustache");
+            StringWriter stringWriter = new StringWriter();
+            mustache.execute(stringWriter, inputContext);
+            stringWriter.flush();
+            
+            Path inputDomainPath = commonPath.resolve("src/main/java").resolve(toPath(basePackage + ".common.domain"))
+                .resolve(step.get("inputTypeName") + ".java");
+            Files.write(inputDomainPath, stringWriter.toString().getBytes());
+        }
         
-        Mustache mustache = mf.compile("templates/domain.mustache");
-        StringWriter stringWriter = new StringWriter();
-        mustache.execute(stringWriter, inputContext);
-        stringWriter.flush();
-        
-        Path inputDomainPath = commonPath.resolve("src/main/java").resolve(toPath(basePackage + ".common.domain"))
-            .resolve(step.get("inputTypeName") + ".java");
-        Files.write(inputDomainPath, stringWriter.toString().getBytes());
-        
-        // Process output domain class
+        // Process output domain class for all steps
         @SuppressWarnings("unchecked")
         List<Map<String, String>> outputFields = (List<Map<String, String>>) step.get("outputFields");
         Map<String, Object> outputContext = new HashMap<>(step);
@@ -193,14 +212,14 @@ public class MustacheTemplateEngine {
         outputContext.put("fields", outputFields);
         addImportFlagsToContext(outputContext, outputFields);
         
-        mustache = mf.compile("templates/domain.mustache");
-        stringWriter = new StringWriter();
-        mustache.execute(stringWriter, outputContext);
-        stringWriter.flush();
+        Mustache outputMustache = mf.compile("templates/domain.mustache");
+        StringWriter outputStringWriter = new StringWriter();
+        outputMustache.execute(outputStringWriter, outputContext);
+        outputStringWriter.flush();
         
         Path outputDomainPath = commonPath.resolve("src/main/java").resolve(toPath(basePackage + ".common.domain"))
             .resolve(step.get("outputTypeName") + ".java");
-        Files.write(outputDomainPath, stringWriter.toString().getBytes());
+        Files.write(outputDomainPath, outputStringWriter.toString().getBytes());
     }
     
     private void generateBaseEntity(MustacheFactory mf, String basePackage, Path commonPath) throws IOException {
@@ -217,26 +236,28 @@ public class MustacheTemplateEngine {
         Files.write(baseEntityPath, stringWriter.toString().getBytes());
     }
     
-    private void generateDtoClasses(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath) throws IOException {
-        // Process input DTO class
-        @SuppressWarnings("unchecked")
-        List<Map<String, String>> inputFields = (List<Map<String, String>>) step.get("inputFields");
-        Map<String, Object> inputContext = new HashMap<>(step);
-        inputContext.put("basePackage", basePackage);
-        inputContext.put("className", step.get("inputTypeName") + "Dto");
-        inputContext.put("fields", inputFields);
-        addImportFlagsToContext(inputContext, inputFields);
+    private void generateDtoClasses(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath, int stepIndex) throws IOException {
+        // Process input DTO class only for first step
+        if (stepIndex == 0) {
+            @SuppressWarnings("unchecked")
+            List<Map<String, String>> inputFields = (List<Map<String, String>>) step.get("inputFields");
+            Map<String, Object> inputContext = new HashMap<>(step);
+            inputContext.put("basePackage", basePackage);
+            inputContext.put("className", step.get("inputTypeName") + "Dto");
+            inputContext.put("fields", inputFields);
+            addImportFlagsToContext(inputContext, inputFields);
+            
+            Mustache mustache = mf.compile("templates/dto.mustache");
+            StringWriter stringWriter = new StringWriter();
+            mustache.execute(stringWriter, inputContext);
+            stringWriter.flush();
+            
+            Path inputDtoPath = commonPath.resolve("src/main/java").resolve(toPath(basePackage + ".common.dto"))
+                .resolve(step.get("inputTypeName") + "Dto.java");
+            Files.write(inputDtoPath, stringWriter.toString().getBytes());
+        }
         
-        Mustache mustache = mf.compile("templates/dto.mustache");
-        StringWriter stringWriter = new StringWriter();
-        mustache.execute(stringWriter, inputContext);
-        stringWriter.flush();
-        
-        Path inputDtoPath = commonPath.resolve("src/main/java").resolve(toPath(basePackage + ".common.dto"))
-            .resolve(step.get("inputTypeName") + "Dto.java");
-        Files.write(inputDtoPath, stringWriter.toString().getBytes());
-        
-        // Process output DTO class
+        // Process output DTO class for all steps
         @SuppressWarnings("unchecked")
         List<Map<String, String>> outputFields = (List<Map<String, String>>) step.get("outputFields");
         Map<String, Object> outputContext = new HashMap<>(step);
@@ -245,21 +266,23 @@ public class MustacheTemplateEngine {
         outputContext.put("fields", outputFields);
         addImportFlagsToContext(outputContext, outputFields);
         
-        mustache = mf.compile("templates/dto.mustache");
-        stringWriter = new StringWriter();
-        mustache.execute(stringWriter, outputContext);
-        stringWriter.flush();
+        Mustache outputMustache = mf.compile("templates/dto.mustache");
+        StringWriter outputStringWriter = new StringWriter();
+        outputMustache.execute(outputStringWriter, outputContext);
+        outputStringWriter.flush();
         
         Path outputDtoPath = commonPath.resolve("src/main/java").resolve(toPath(basePackage + ".common.dto"))
             .resolve(step.get("outputTypeName") + "Dto.java");
-        Files.write(outputDtoPath, stringWriter.toString().getBytes());
+        Files.write(outputDtoPath, outputStringWriter.toString().getBytes());
     }
     
-    private void generateMapperClasses(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath) throws IOException {
-        // Generate input mapper class
-        generateMapperClass(mf, step.get("inputTypeName").toString(), step, basePackage, commonPath);
+    private void generateMapperClasses(MustacheFactory mf, Map<String, Object> step, String basePackage, Path commonPath, int stepIndex) throws IOException {
+        // Generate input mapper class only for first step (since other steps reference previous step's output)
+        if (stepIndex == 0) {
+            generateMapperClass(mf, step.get("inputTypeName").toString(), step, basePackage, commonPath);
+        }
         
-        // Generate output mapper class
+        // Generate output mapper class for all steps
         generateMapperClass(mf, step.get("outputTypeName").toString(), step, basePackage, commonPath);
     }
     
@@ -269,7 +292,9 @@ public class MustacheTemplateEngine {
         context.put("className", className);
         context.put("domainClass", className.replace("Dto", ""));
         context.put("dtoClass", className + "Dto");
-        context.put("grpcClass", basePackage + ".grpc." + step.get("serviceName") + "." + className);
+        // Convert service name to proper format for proto-generated class
+        String protoClassName = formatForProtoClassName((String) step.get("serviceName"));
+        context.put("grpcClass", basePackage + ".grpc." + protoClassName);
         
         Mustache mustache = mf.compile("templates/mapper.mustache");
         StringWriter stringWriter = new StringWriter();
@@ -295,9 +320,11 @@ public class MustacheTemplateEngine {
         Files.write(convertersPath, stringWriter.toString().getBytes());
     }
     
-    private void generateStepService(MustacheFactory mf, String appName, String basePackage, Map<String, Object> step, Path outputPath) throws IOException {
+    private void generateStepService(MustacheFactory mf, String appName, String basePackage, Map<String, Object> step, Path outputPath, int stepIndex, List<Map<String, Object>> allSteps) throws IOException {
         Path stepPath = outputPath.resolve((String)step.get("serviceName"));
-        Files.createDirectories(stepPath.resolve("src/main/java").resolve(toPath(basePackage + "." + step.get("serviceName").toString().replace("-svc", "") + ".service")));
+        // Convert hyphens to underscores for valid Java package names
+        String serviceNameForPackage = ((String) step.get("serviceName")).toString().replace("-svc", "").replace('-', '_');
+        Files.createDirectories(stepPath.resolve("src/main/java").resolve(toPath(basePackage + "." + serviceNameForPackage + ".service")));
         
         // Add rootProjectName to step map
         step.put("rootProjectName", appName.toLowerCase().replaceAll("[^a-zA-Z0-9]", "-"));
@@ -306,7 +333,7 @@ public class MustacheTemplateEngine {
         generateStepPom(mf, step, basePackage, stepPath);
         
         // Generate the service class
-        generateStepServiceClass(mf, appName, basePackage, step, stepPath);
+        generateStepServiceClass(mf, appName, basePackage, step, stepPath, stepIndex, allSteps);
         
         // Generate Dockerfile
         generateDockerfile(mf, step.get("serviceName").toString(), stepPath);
@@ -326,38 +353,70 @@ public class MustacheTemplateEngine {
         Files.write(stepPath.resolve("pom.xml"), stringWriter.toString().getBytes());
     }
     
-    private void generateStepServiceClass(MustacheFactory mf, String appName, String basePackage, Map<String, Object> step, Path stepPath) throws IOException {
+    private void generateStepServiceClass(MustacheFactory mf, String appName, String basePackage, Map<String, Object> step, Path stepPath, int stepIndex, List<Map<String, Object>> allSteps) throws IOException {
         Map<String, Object> context = new HashMap<>(step);
         context.put("basePackage", basePackage);
         context.put("serviceName", step.get("serviceName").toString().replace("-svc", ""));
-        // Format the step name to remove spaces and properly capitalize for class names
-        String stepName = (String) step.get("name");
-        String formattedStepName = formatForClassName(stepName);
+        // Convert hyphens to underscores for valid Java package names
+        String serviceNameForPackage = ((String) step.get("serviceName")).toString().replace("-svc", "").replace('-', '_');
+        context.put("serviceNameForPackage", serviceNameForPackage);
         
-        context.put("grpcServiceName", "MutinyProcess" + formattedStepName + "ServiceGrpc");
-        context.put("grpcStubName", "MutinyProcess" + formattedStepName + "ServiceGrpc.MutinyProcess" + formattedStepName + "ServiceStub");
-        context.put("grpcImplName", "MutinyProcess" + formattedStepName + "ServiceGrpc.Process" + formattedStepName + "ServiceImplBase");
+        // Format service name for proto-generated class names (e.g., "process-customer-svc" -> "ProcessCustomerSvc")
+        String protoClassName = formatForProtoClassName((String) step.get("serviceName"));
+        context.put("protoClassName", protoClassName);
+        
+        // Determine the inputGrpcType proto class name based on step position
+        if (stepIndex == 0) {
+            // For the first step, inputGrpcType comes from the same proto file
+            context.put("inputGrpcProtoClassName", protoClassName);
+        } else {
+            // For subsequent steps, inputGrpcType comes from the previous step's proto file
+            Map<String, Object> previousStep = allSteps.get(stepIndex - 1);
+            String previousProtoClassName = formatForProtoClassName((String) previousStep.get("serviceName"));
+            context.put("inputGrpcProtoClassName", previousProtoClassName);
+        }
+        
+        // Use the serviceNameCamel field from the configuration to form the gRPC class names
+        String serviceNameCamel = (String) step.get("serviceNameCamel");
+        // Convert camelCase to PascalCase (e.g., "validateOrder" -> "ValidateOrder", "processCustomer" -> "ProcessCustomer")
+        String serviceNamePascal = Character.toUpperCase(serviceNameCamel.charAt(0)) + serviceNameCamel.substring(1);
+        
+        // Extract the entity name from the PascalCase service name to match proto service names
+        // ProcessCustomer -> Customer, ValidateOrder -> Order
+        String entityName = extractEntityName(serviceNamePascal);
+        
+        // For gRPC class names, use the pattern MutinyProcess[Entity]ServiceGrpc to match proto generation
+        // ProcessCustomerService proto -> MutinyProcessCustomerServiceGrpc
+        // ProcessValidateOrderService proto -> MutinyProcessValidateOrderServiceGrpc
+        String grpcServiceName = "MutinyProcess" + entityName + "ServiceGrpc";
+        String grpcStubName = grpcServiceName + ".MutinyProcess" + entityName + "ServiceStub";
+        String grpcImplName = grpcServiceName + ".Process" + entityName + "ServiceImplBase";
+        
+        context.put("grpcServiceName", grpcServiceName);
+        context.put("grpcStubName", grpcStubName);
+        context.put("grpcImplName", grpcImplName);
+        context.put("serviceNamePascal", serviceNamePascal);
         context.put("serviceNameFormatted", step.get("name"));
         
-        String reactiveServiceInterface = "ReactiveUnaryService";
-        String grpcAdapter = "GenericGrpcServiceUnaryAdapter";
+        String reactiveServiceInterface = "ReactiveService";
+        String grpcAdapter = "GrpcReactiveServiceAdapter";
         String processMethodReturnType = "Uni<" + step.get("outputTypeName") + ">";
         String processMethodParamType = (String) step.get("inputTypeName");
         String returnStatement = "Uni.createFrom().item(output)";
         
         if ("EXPANSION".equals(step.get("cardinality"))) {
             reactiveServiceInterface = "ReactiveStreamingService";
-            grpcAdapter = "GenericGrpcServiceStreamingAdapter";
+            grpcAdapter = "GrpcServiceStreamingAdapter";
             processMethodReturnType = "Multi<" + step.get("outputTypeName") + ">";
             returnStatement = "Multi.createFrom().item(output)";
         } else if ("REDUCTION".equals(step.get("cardinality"))) {
-            reactiveServiceInterface = "ReactiveAccumulatingService";
-            grpcAdapter = "GenericGrpcServiceAccumulatingAdapter";
+            reactiveServiceInterface = "ReactiveStreamingClientService";
+            grpcAdapter = "GrpcServiceClientStreamingAdapter";
             processMethodParamType = "Multi<" + step.get("inputTypeName") + ">";
             returnStatement = "Uni.createFrom().item(output)";
         } else if ("SIDE_EFFECT".equals(step.get("cardinality"))) {
-            reactiveServiceInterface = "ReactiveUnaryService";
-            grpcAdapter = "GenericGrpcServiceUnaryAdapter";
+            reactiveServiceInterface = "ReactiveService";
+            grpcAdapter = "GrpcReactiveServiceAdapter";
             returnStatement = "Uni.createFrom().item(input)";
         }
         
@@ -372,8 +431,10 @@ public class MustacheTemplateEngine {
         mustache.execute(stringWriter, context);
         stringWriter.flush();
         
-        Path servicePath = stepPath.resolve("src/main/java").resolve(toPath(basePackage + "/" + step.get("serviceName").toString().replace("-svc", "") + "/service"))
-            .resolve("Process" + step.get("serviceNameCamel") + "Service.java");
+        // Convert hyphens to underscores for valid Java package names  
+        String stepServiceNameForPackage = ((String) step.get("serviceName")).toString().replace("-svc", "").replace('-', '_');
+        Path servicePath = stepPath.resolve("src/main/java").resolve(toPath(basePackage + "." + stepServiceNameForPackage + ".service"))
+            .resolve("Process" + serviceNamePascal + "Service.java");
         Files.write(servicePath, stringWriter.toString().getBytes());
     }
     
@@ -572,6 +633,7 @@ public class MustacheTemplateEngine {
         boolean hasIoFields = false;
         boolean hasAtomicFields = false;
         boolean hasUtilFields = false;
+        boolean hasIdField = false; // Check if there's already an 'id' field
         
         // Process fields and add list type information
         List<Map<String, String>> processedFields = new ArrayList<>();
@@ -585,6 +647,15 @@ public class MustacheTemplateEngine {
                 processedField.put("listInnerType", "string");
             } else {
                 processedField.put("isListType", "false");
+            }
+            
+            // Check if this field is named 'id'
+            String fieldName = field.get("name");
+            if ("id".equals(fieldName)) {
+                processedField.put("isIdField", "true");
+                hasIdField = true;
+            } else {
+                processedField.put("isIdField", "false");
             }
             
             processedFields.add(processedField);
@@ -640,6 +711,7 @@ public class MustacheTemplateEngine {
         context.put("hasIoFields", hasIoFields);
         context.put("hasAtomicFields", hasAtomicFields);
         context.put("hasUtilFields", hasUtilFields);
+        context.put("hasIdField", hasIdField); // Add flag for existing id field
     }
     
     private String formatForClassName(String input) {
@@ -653,5 +725,32 @@ public class MustacheTemplateEngine {
             }
         }
         return sb.toString();
+    }
+    
+    private String formatForProtoClassName(String input) {
+        // Convert service names like "process-customer-svc" to "ProcessCustomerSvc"
+        String[] parts = input.split("-");
+        StringBuilder sb = new StringBuilder();
+        for (String part : parts) {
+            if (!part.isEmpty()) {
+                sb.append(Character.toUpperCase(part.charAt(0)))
+                  .append(part.substring(1).toLowerCase());
+            }
+        }
+        return sb.toString();
+    }
+    
+    /**
+     * Extracts the entity name from a PascalCase service name.
+     * For example: "ProcessCustomer" -> "Customer", "ValidateOrder" -> "Order"
+     */
+    private String extractEntityName(String serviceNamePascal) {
+        // If it starts with "Process", return everything after "Process"
+        if (serviceNamePascal.startsWith("Process")) {
+            return serviceNamePascal.substring("Process".length());
+        }
+        // For other cases, we'll default to the whole string
+        // In practice for this framework, service names should start with "Process"
+        return serviceNamePascal;
     }
 }

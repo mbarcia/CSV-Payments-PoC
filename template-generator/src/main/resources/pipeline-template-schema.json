@@ -1,2 +1,93 @@
 {
-  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"Pipeline Template Configuration\",\n  \"description\": \"Configuration schema for the Pipeline Template Generator\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"appName\": {\n      \"type\": \"string\",\n      \"description\": \"Name of the application to generate\"\n    },\n    \"basePackage\": {\n      \"type\": \"string\",\n      \"description\": \"Base package name for the generated Java code (e.g., io.github.mbarcia)\",\n      \"pattern\": \"^[a-z][a-z0-9_]*(\\\\.[a-z0-9_]+)*$\"\n    },\n    \"steps\": {\n      \"type\": \"array\",\n      \"description\": \"List of pipeline steps to generate\",\n      \"items\": {\n        \"type\": \"object\",\n        \"properties\": {\n          \"name\": {\n            \"type\": \"string\",\n            \"description\": \"Name of the step (e.g., Process Customer)\"\n          },\n          \"cardinality\": {\n            \"type\": \"string\",\n            \"description\": \"Cardinality of the step\",\n            \"enum\": [\"ONE_TO_ONE\", \"EXPANSION\", \"REDUCTION\", \"SIDE_EFFECT\"]\n          },\n          \"inputTypeName\": {\n            \"type\": \"string\",\n            \"description\": \"Name of the input type (plural if reduction)\"\n          },\n          \"inputFields\": {\n            \"type\": \"array\",\n            \"description\": \"List of fields in the input type\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"name\": {\n                  \"type\": \"string\",\n                  \"description\": \"Name of the field\"\n                },\n                \"type\": {\n                  \"type\": \"string\",\n                  \"description\": \"Java type of the field\",\n                  \"enum\": [\"String\", \"Integer\", \"Long\", \"Double\", \"Boolean\", \"UUID\", \"BigDecimal\", \"Currency\", \"Path\"]\n                },\n                \"protoType\": {\n                  \"type\": \"string\",\n                  \"description\": \"Protobuf type of the field\",\n                  \"enum\": [\"string\", \"int32\", \"int64\", \"double\", \"bool\"]\n                }\n              },\n              \"required\": [\"name\", \"type\", \"protoType\"]\n            }\n          },\n          \"outputTypeName\": {\n            \"type\": \"string\",\n            \"description\": \"Name of the output type (plural if expansion)\"\n          },\n          \"outputFields\": {\n            \"type\": \"array\",\n            \"description\": \"List of fields in the output type\",\n            \"items\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"name\": {\n                  \"type\": \"string\",\n                  \"description\": \"Name of the field\"\n                },\n                \"type\": {\n                  \"type\": \"string\",\n                  \"description\": \"Java type of the field\",\n                  \"enum\": [\"String\", \"Integer\", \"Long\", \"Double\", \"Boolean\", \"UUID\", \"BigDecimal\", \"Currency\", \"Path\"]\n                },\n                \"protoType\": {\n                  \"type\": \"string\",\n                  \"description\": \"Protobuf type of the field\",\n                  \"enum\": [\"string\", \"int32\", \"int64\", \"double\", \"bool\"]\n                }\n              },\n              \"required\": [\"name\", \"type\", \"protoType\"]\n            }\n          }\n        },\n        \"required\": [\"name\", \"cardinality\", \"inputTypeName\", \"inputFields\", \"outputTypeName\", \"outputFields\"]\n      }\n    }\n  },\n  \"required\": [\"appName\", \"basePackage\", \"steps\"]\n}
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pipeline Template Configuration",
+  "description": "Configuration schema for the Pipeline Template Generator",
+  "type": "object",
+  "properties": {
+    "appName": {
+      "type": "string",
+      "description": "Name of the application to generate"
+    },
+    "basePackage": {
+      "type": "string",
+      "description": "Base package name for the generated Java code (e.g., com.example)",
+      "pattern": "^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)*$"
+    },
+    "steps": {
+      "type": "array",
+      "description": "List of pipeline steps to generate",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the step (e.g., Process Customer)"
+          },
+          "cardinality": {
+            "type": "string",
+            "description": "Cardinality of the step",
+            "enum": ["ONE_TO_ONE", "EXPANSION", "REDUCTION", "SIDE_EFFECT"]
+          },
+          "inputTypeName": {
+            "type": "string",
+            "description": "Name of the input type (plural if reduction)"
+          },
+          "inputFields": {
+            "type": "array",
+            "description": "List of fields in the input type",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the field"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Java type of the field",
+                  "enum": ["String", "Integer", "Long", "Double", "Boolean", "UUID", "BigDecimal", "Currency", "Path"]
+                },
+                "protoType": {
+                  "type": "string",
+                  "description": "Protobuf type of the field",
+                  "enum": ["string", "int32", "int64", "double", "bool"]
+                }
+              },
+              "required": ["name", "type", "protoType"]
+            }
+          },
+          "outputTypeName": {
+            "type": "string",
+            "description": "Name of the output type (plural if expansion)"
+          },
+          "outputFields": {
+            "type": "array",
+            "description": "List of fields in the output type",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the field"
+                },
+                "type": {
+                  "type": "string",
+                  "description": "Java type of the field",
+                  "enum": ["String", "Integer", "Long", "Double", "Boolean", "UUID", "BigDecimal", "Currency", "Path"]
+                },
+                "protoType": {
+                  "type": "string",
+                  "description": "Protobuf type of the field",
+                  "enum": ["string", "int32", "int64", "double", "bool"]
+                }
+              },
+              "required": ["name", "type", "protoType"]
+            }
+          }
+        },
+        "required": ["name", "cardinality", "inputTypeName", "inputFields", "outputTypeName", "outputFields"]
+      }
+    }
+  },
+  "required": ["appName", "basePackage", "steps"]
+}

@@ -82,10 +82,10 @@ They do Value/Builder and the JsonDeserialize needs the inner static class as we
 Under mapper, generate one mapper per step plus the last output type, need to implement Mapper and be annotated with MapStruct 
 ```java
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface PaymentRecordMapper extends io.github.mbarcia.pipeline.mapper.Mapper<InputCsvFileProcessingSvc.PaymentRecord, PaymentRecordDto, PaymentRecord> {
+public interface PaymentRecordMapper extends org.pipelineframework.mapper.Mapper<InputCsvFileProcessingSvc.PaymentRecord, PaymentRecordDto, PaymentRecord> {
     ...
 
 ```

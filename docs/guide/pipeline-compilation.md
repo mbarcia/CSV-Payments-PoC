@@ -212,8 +212,8 @@ The pipeline framework integrates with the Maven build process. Both runtime and
 ```xml
 <!-- pom.xml dependencies -->
 <dependency>
-    <groupId>io.github.mbarcia</groupId>
-    <artifactId>pipeline-framework</artifactId>
+    <groupId>org.pipelineframework</groupId>
+    <artifactId>pipelineframework</artifactId>
 </dependency>
 ```
 
@@ -224,15 +224,15 @@ The annotation processor runs during the `compile` phase:
 ```bash
 # During mvn compile
 [INFO] --- quarkus:3.28.0.CR1:generate-code (default) @ service-module ---
-[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generating adapters for annotated services
-[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Found 3 @PipelineStep annotated services
-[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated ProcessPaymentServiceGrpcService
-[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated ProcessPaymentServiceStep
-[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated SendPaymentServiceGrpcService
-[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated SendPaymentServiceStep
-[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated ProcessAckPaymentServiceGrpcService
-[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated ProcessAckPaymentServiceStep
-[INFO] [io.github.mbarcia.pipeline.processor.PipelineProcessor] Generated GeneratedPipelineApplication
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Generating adapters for annotated services
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Found 3 @PipelineStep annotated services
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Generated ProcessPaymentServiceGrpcService
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Generated ProcessPaymentServiceStep
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Generated SendPaymentServiceGrpcService
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Generated SendPaymentServiceStep
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Generated ProcessAckPaymentServiceGrpcService
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Generated ProcessAckPaymentServiceStep
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Generated GeneratedPipelineApplication
 ```
 
 ## Generated Code Verification
@@ -255,7 +255,7 @@ Enable verbose logging to debug generation issues:
 
 ```properties
 # application.properties
-quarkus.log.category."io.github.mbarcia.pipeline.processor".level=DEBUG
+quarkus.log.category."org.pipelineframework.processor".level=DEBUG
 ```
 
 ## Customization Points
@@ -319,8 +319,8 @@ Ensure the required dependency is present. Both runtime and deployment component
 
 ```xml
 <dependency>
-    <groupId>io.github.mbarcia</groupId>
-    <artifactId>pipeline-framework</artifactId>
+    <groupId>org.pipelineframework</groupId>
+    <artifactId>pipelineframework</artifactId>
 </dependency>
 ```
 
@@ -345,14 +345,14 @@ find target/generated-sources -name "*.java" | grep -i pipeline
 #### Enable Detailed Logging
 ```properties
 # application.properties
-quarkus.log.category."io.github.mbarcia.pipeline".level=DEBUG
-quarkus.log.category."io.github.mbarcia.pipeline.processor".level=TRACE
+quarkus.log.category."org.pipelineframework".level=DEBUG
+quarkus.log.category."org.pipelineframework.processor".level=TRACE
 ```
 
 #### Verify Generated Classes
 ```bash
 # Check that classes were generated
-ls target/classes/io/github/mbarcia/pipeline/GeneratedPipelineApplication.class
+ls target/classes/org/pipelineframework/pipeline/GeneratedPipelineApplication.class
 ```
 
 #### Clean and Rebuild

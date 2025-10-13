@@ -12,7 +12,7 @@ import org.mapstruct.factory.Mappers;
     componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface {{className}}Mapper extends io.github.mbarcia.pipeline.mapper.Mapper<{{grpcClass}}.{{className}}, {{dtoClass}}, {{domainClass}}> {
+public interface {{className}}Mapper extends org.pipelineframework.mapper.Mapper<{{grpcClass}}.{{className}}, {{dtoClass}}, {{domainClass}}> {
 
   {{className}}Mapper INSTANCE = Mappers.getMapper( {{className}}Mapper.class );
 

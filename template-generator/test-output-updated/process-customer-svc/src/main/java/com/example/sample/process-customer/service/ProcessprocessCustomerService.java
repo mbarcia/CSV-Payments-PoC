@@ -19,10 +19,10 @@ package com.example.sample.process-customer.service;
 import com.example.sample.common.domain.CustomerInput;
 import com.example.sample.common.domain.CustomerOutput;
 import com.example.sample.grpc.MutinyProcessProcessCustomerServiceGrpc.MutinyProcessProcessCustomerServiceStub;
-import io.github.mbarcia.pipeline.GenericGrpcServiceUnaryAdapter;
-import io.github.mbarcia.pipeline.annotation.PipelineStep;
-import io.github.mbarcia.pipeline.service.ReactiveUnaryService;
-import io.github.mbarcia.pipeline.step.StepOneToOne;
+import org.pipelineframework.GenericGrpcServiceUnaryAdapter;
+import org.pipelineframework.annotation.PipelineStep;
+import org.pipelineframework.service.ReactiveUnaryService;
+import org.pipelineframework.step.StepOneToOne;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
     outputType = com.example.sample.common.domain.CustomerOutput.class,
     inputGrpcType = com.example.sample.grpc.process-customer.CustomerInput.class,
     outputGrpcType = com.example.sample.grpc.process-customer.CustomerOutput.class,
-    stepType = io.github.mbarcia.pipeline.step.StepOneToOne.class,
-    backendType = io.github.mbarcia.pipeline.GenericGrpcServiceUnaryAdapter.class,
+    stepType = org.pipelineframework.step.StepOneToOne.class,
+    backendType = org.pipelineframework.GenericGrpcServiceUnaryAdapter.class,
     grpcStub = com.example.sample.grpc.process-customer.MutinyProcessProcessCustomerServiceGrpc.MutinyProcessProcessCustomerServiceStub.class,
     grpcImpl = com.example.sample.grpc.process-customer.MutinyProcessProcessCustomerServiceGrpc.ProcessProcessCustomerServiceImplBase.class,
     inboundMapper = com.example.sample.common.mapper.CustomerInputMapper.class,

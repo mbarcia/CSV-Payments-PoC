@@ -14,8 +14,8 @@ Add the following dependency to your `pom.xml`. Both runtime and deployment comp
 
 ```xml
 <dependency>
-  <groupId>io.github.mbarcia</groupId>
-  <artifactId>pipeline-framework</artifactId>
+  <groupId>org.pipelineframework</groupId>
+  <artifactId>pipelineframework</artifactId>
   <version>LATEST_VERSION</version>
 </dependency>
 ```

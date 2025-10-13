@@ -91,7 +91,7 @@ export default withMermaid(
       },
       
       socialLinks: [
-        { icon: 'github', link: 'https://github.com/mbarcia/CSV-Payments-PoC' }
+        { icon: 'github', link: 'https://github.com/mbarcia/pipelineframework' }
       ]
     },
     

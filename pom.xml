@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ Copyright (c) 2023-2025 Mariano Barcia
   ~
@@ -14,23 +15,41 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>io.github.mbarcia</groupId>
-    <artifactId>csv-payments-parent</artifactId>
-    <version>1.0.0</version>
-    <packaging>pom</packaging>
-    <name>CSV Payments POC</name>
 
-    <modules>
-        <module>common</module>
-        <module>pipeline-framework-extension</module>
-        <module>input-csv-file-processing-svc</module>
-        <module>payments-processing-svc</module>
-        <module>payment-status-svc</module>
-        <module>output-csv-file-processing-svc</module>
-        <module>orchestrator-svc</module>
-    </modules>
+    <groupId>org.pipelineframework</groupId>
+    <artifactId>pipeline-framework-root</artifactId>
+    <version>0.9.0</version>
+    <packaging>pom</packaging>
+    <name>The Pipeline Framework - Root POM</name>
+    <description>The root POM for the Pipeline Framework project, managing both framework components and example applications</description>
+    <url>https://pipelineframework.org/</url>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <id>mbarcia</id>
+            <name>Mariano E. Barcia</name>
+            <url>https://github.com/mbarcia</url>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:https://github.com/mbarcia/pipelineframework.git</connection>
+        <developerConnection>scm:git:git@github.com:mbarcia/pipelineframework.git</developerConnection>
+        <url>https://github.com/mbarcia/pipelineframework</url>
+        <tag>HEAD</tag>
+    </scm>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -40,16 +59,30 @@
         <quarkus.platform.version>3.28.1</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <version.jandex>3.5.0</version.jandex>
         <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.63.0</grpc.version>
-        <version.jandex>3.5.0</version.jandex>
         <pipeline.version>0.9.0</pipeline.version>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
     </properties>
 
+    <modules>
+        <!-- Example projects -->
+        <module>examples/csv-payments</module>
+    </modules>
+
     <dependencyManagement>
         <dependencies>
+            <!-- Import the framework's parent POM dependency management -->
+            <dependency>
+                <groupId>org.pipelineframework</groupId>
+                <artifactId>framework-parent</artifactId>
+                <version>${pipeline.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
             <!-- Quarkus BOM -->
             <dependency>
                 <groupId>${quarkus.platform.group-id}</groupId>
@@ -58,17 +91,20 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+            
             <!-- Explicitly manage protobuf-java version to ensure consistency -->
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
                 <version>${protobuf.version}</version>
             </dependency>
+            
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-protobuf</artifactId>
                 <version>${grpc.version}</version>
             </dependency>
+            
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-stub</artifactId>
@@ -76,44 +112,15 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc-protoc-plugin</artifactId>
-            <version>3.28.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.protobuf</groupId>
-                    <artifactId>protobuf-java</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.20.0</version>
-        </dependency>
-    </dependencies>
 
     <build>
+        <defaultGoal>clean install</defaultGoal>
         <pluginManagement>
             <plugins>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>3.14.0</version>
-                    <executions>
-                        <!-- Normal compile -->
-                        <execution>
-                            <id>default-compile</id>
-                            <phase>compile</phase>
-                            <goals><goal>compile</goal></goals>
-                        </execution>
-                    </executions>
                     <configuration>
                         <source>21</source>
                         <target>21</target>
@@ -130,11 +137,6 @@
                                 <version>1.5.5.Final</version>
                             </path>
                             <path>
-                                <groupId>io.github.mbarcia</groupId>
-                                <artifactId>pipeline-framework-extension-deployment</artifactId>
-                                <version>${pipeline.version}</version>
-                            </path>
-                            <path>
                                 <groupId>io.quarkus</groupId>
                                 <artifactId>quarkus-extension-processor</artifactId>
                                 <version>${quarkus.platform.version}</version>
@@ -145,17 +147,13 @@
                         </compilerArgs>
                     </configuration>
                 </plugin>
-                <!-- 
-                The annotation processor automatically handles generation of gRPC services and client steps 
-                based on the @PipelineStep annotation. Generation type (client vs server) is determined by 
-                the pipeline.generate-cli property. -->
+                
                 <plugin>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${quarkus.platform.version}</version>
                     <configuration>
                         <jvmArgs>--enable-preview</jvmArgs>
-                        <sourceDir>${project.build.directory}/generated-sources/annotations</sourceDir>
                     </configuration>
                     <executions>
                         <execution>
@@ -167,6 +165,7 @@
                         </execution>
                     </executions>
                 </plugin>
+                
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -188,6 +187,7 @@
                         <argLine>--enable-preview -XX:+EnableDynamicAgentLoading</argLine>
                     </configuration>
                 </plugin>
+                
                 <plugin>
                     <groupId>com.diffplug.spotless</groupId>
                     <artifactId>spotless-maven-plugin</artifactId>
@@ -220,6 +220,7 @@
                         </execution>
                     </executions>
                 </plugin>
+                
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
@@ -239,6 +240,7 @@
                         </execution>
                     </executions>
                 </plugin>
+                
                 <plugin>
                     <groupId>io.smallrye</groupId>
                     <artifactId>jandex-maven-plugin</artifactId>
@@ -252,39 +254,23 @@
                         </execution>
                     </executions>
                 </plugin>
+                
+                <plugin>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-extension-maven-plugin</artifactId>
+                    <version>${quarkus.platform.version}</version>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>extension-descriptor</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                    <configuration>
+                        <deployment>org.pipelineframework:pipelineframework-deployment:${pipeline.version}</deployment>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
-
-    <profiles>
-        <profile>
-            <id>native</id>
-            <properties>
-                <quarkus.native.enabled>true</quarkus.native.enabled>
-                <skipITs>false</skipITs>
-            </properties>
-        </profile>
-        <profile>
-            <id>skip-tests</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skipTests>true</skipTests>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <configuration>
-                            <skipTests>true</skipTests>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
-
 </project>

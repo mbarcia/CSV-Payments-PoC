@@ -147,7 +147,7 @@ Steps can be configured to run with different concurrency models, including virt
 pipeline-framework/
 ├── runtime/                 # Core framework components
 │   ├── src/main/java/
-│   │   └── io/github/mbarcia/pipeline/
+│   │   └── org/pipelineframework/pipeline/
 │   │       ├── annotation/    # Framework annotations
 │   │       ├── config/         # Configuration classes
 │   │       ├── mapper/        # Mapper interfaces
@@ -158,7 +158,7 @@ pipeline-framework/
 │   └── pom.xml
 ├── deployment/              # Build-time processors (used with provided scope)
 │   ├── src/main/java/
-│   │   └── io/github/mbarcia/pipeline/processor/
+│   │   └── org/pipelineframework/pipeline/processor/
 │   │       └── PipelineProcessor.java
 │   └── pom.xml
 └── pom.xml

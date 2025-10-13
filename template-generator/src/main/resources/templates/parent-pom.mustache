@@ -147,7 +147,7 @@
                             <phase>process-classes</phase>
                             <goals><goal>java</goal></goals>
                             <configuration>
-                                <mainClass>io.github.mbarcia.pipeline.processor.StepGeneratorMain</mainClass>
+                                <mainClass>org.pipelineframework.processor.StepGeneratorMain</mainClass>
                                 <classpathScope>compile</classpathScope>
 
                                 <!-- Generator args -->
@@ -166,7 +166,7 @@
                     </executions>
                     <dependencies>
                         <dependency>
-                            <groupId>io.github.mbarcia</groupId>
+                            <groupId>org.pipelineframework</groupId>
                             <artifactId>pipeline-framework-processor</artifactId>
                             <version>${pipeline.version}</version>
                         </dependency>

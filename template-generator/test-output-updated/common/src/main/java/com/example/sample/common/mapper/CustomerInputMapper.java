@@ -28,7 +28,7 @@ import org.mapstruct.factory.Mappers;
     componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface CustomerInputMapper extends io.github.mbarcia.pipeline.mapper.Mapper<com.example.sample.grpc.process-customer-svc.CustomerInput.CustomerInput, CustomerInputDto, CustomerInput> {
+public interface CustomerInputMapper extends org.pipelineframework.mapper.Mapper<com.example.sample.grpc.process-customer-svc.CustomerInput.CustomerInput, CustomerInputDto, CustomerInput> {
 
   CustomerInputMapper INSTANCE = Mappers.getMapper( CustomerInputMapper.class );
 

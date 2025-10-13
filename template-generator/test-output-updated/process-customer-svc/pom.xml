@@ -39,7 +39,7 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>io.github.mbarcia</groupId>
+            <groupId>org.pipelineframework</groupId>
             <artifactId>pipeline-framework</artifactId>
             <version>0.9.0</version>
         </dependency>

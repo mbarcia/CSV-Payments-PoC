@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.template;
+package org.pipelineframework.template;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;

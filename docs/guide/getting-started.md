@@ -22,8 +22,8 @@ Add the following dependency to your `pom.xml`. Both runtime and deployment comp
 
 ```xml
 <dependency>
-  <groupId>io.github.mbarcia</groupId>
-  <artifactId>pipeline-framework</artifactId>
+  <groupId>org.pipelineframework</groupId>
+  <artifactId>pipelineframework</artifactId>
   <version>LATEST_VERSION</version>
 </dependency>
 ```
@@ -117,7 +117,7 @@ Create mapper classes for converting between gRPC, DTO, and domain types using M
 
 ```java
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN
 )

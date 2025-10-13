@@ -18,7 +18,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>io.github.mbarcia</groupId>
+            <groupId>org.pipelineframework</groupId>
             <artifactId>pipeline-framework</artifactId>
             <version>${pipeline.version}</version>
         </dependency>
@@ -118,6 +118,16 @@
             <version>2.0.9</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.20.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>2.20.0</version>
+        </dependency>
 
         <!-- Observability dependencies -->
         <dependency>
@@ -139,11 +149,6 @@
             <groupId>io.opentelemetry</groupId>
             <artifactId>opentelemetry-exporter-sender-grpc-managed-channel</artifactId>
             <version>1.54.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.20.0</version>
         </dependency>
     </dependencies>
 

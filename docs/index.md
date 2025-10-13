@@ -14,7 +14,7 @@ hero:
       link: /guide/getting-started
     - theme: alt
       text: View on GitHub
-      link: https://github.com/mbarcia/CSV-Payments-PoC
+      link: https://github.com/mbarcia/pipelineframework
     - theme: alt
       text: Design with Canvas
       link: https://app.pipelineframework.org

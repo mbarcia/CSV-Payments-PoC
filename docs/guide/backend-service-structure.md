@@ -44,7 +44,7 @@ Mappers that are specific to a step should be in that service's module using Map
 ```java
 // step-one-svc/src/main/java/com/example/app/stepone/mapper/PaymentRecordMapper.java
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN
 )

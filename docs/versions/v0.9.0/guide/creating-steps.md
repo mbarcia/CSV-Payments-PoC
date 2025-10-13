@@ -40,7 +40,7 @@ Create mapper classes for converting between gRPC, DTO, and domain types using M
 
 ```java
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN
 )

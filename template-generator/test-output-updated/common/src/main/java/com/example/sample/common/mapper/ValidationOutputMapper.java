@@ -25,10 +25,10 @@ import org.mapstruct.factory.Mappers;
 
 @SuppressWarnings("unused")
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN)
-public interface ValidationOutputMapper extends io.github.mbarcia.pipeline.mapper.Mapper<com.example.sample.grpc.validate-order-svc.ValidationOutput.ValidationOutput, ValidationOutputDto, ValidationOutput> {
+public interface ValidationOutputMapper extends org.pipelineframework.mapper.Mapper<com.example.sample.grpc.validate-order-svc.ValidationOutput.ValidationOutput, ValidationOutputDto, ValidationOutput> {
 
   ValidationOutputMapper INSTANCE = Mappers.getMapper( ValidationOutputMapper.class );
 

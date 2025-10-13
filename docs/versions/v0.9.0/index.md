@@ -30,7 +30,7 @@ Mapper classes implement the conversion interfaces using MapStruct to handle con
 
 ```java
 @Mapper(
-    componentModel = "cdi",
+    componentModel = "jakarta",
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN
 )

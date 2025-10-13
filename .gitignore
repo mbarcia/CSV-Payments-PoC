@@ -44,7 +44,7 @@ grafana_data/
 tempo_data/
 
 # Local configuration and logs
-docker-compose.local.yml
+examples/csv-payments/docker-compose.local.yml
 docker-compose.orchestrator.local.yml
 *.log
 *.pid
@@ -68,3 +68,6 @@ ANNOTATION_BASED_ADAPTERS.md
 # AI Agents
 QWEN.md
 QWEN.md
+
+# Template generator
+/template-generator/test-output/

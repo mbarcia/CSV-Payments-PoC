@@ -17,6 +17,8 @@ The `@PipelineStep` annotation marks a class as a pipeline step and enables auto
 - `backendType`: The backend adapter type (GenericGrpcReactiveServiceAdapter, etc.)
 - `backpressureBufferCapacity`: The buffer capacity for backpressure handling (default: 1024)
 - `backpressureStrategy`: The backpressure strategy ("BUFFER", "DROP"; default: "BUFFER")
+- `batchSize`: The batch size for collecting inputs before processing (default: 10). For StepManyToOne steps, this controls how many input items are collected before the batch is processed. Set to a value larger than the expected number of related items to ensure they are processed together.
+- `batchTimeoutMs`: The time window in milliseconds to wait before processing a batch, even if the batch size hasn't been reached (default: 1000ms). For StepManyToOne steps, this controls how long to wait for additional items to accumulate in a batch.
 
 Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
 - `grpcStub`: The gRPC stub class for this pipeline step
@@ -63,7 +65,9 @@ Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny 
    retryWait = "PT500MS",
    maxBackoff = "PT30S",
    jitter = true,
-   concurrency = 1000
+   concurrency = 1000,
+   batchSize = 50,
+   batchTimeoutMs = 5000
 )
 @ApplicationScoped
 public class ProcessPaymentService implements StepOneToOne<PaymentRecord, PaymentStatus> {
@@ -74,6 +78,24 @@ public class ProcessPaymentService implements StepOneToOne<PaymentRecord, Paymen
 ### Usage Notes
 
 The `inputGrpcType` and `outputGrpcType` parameters allow you to explicitly specify the gRPC message types that should be used in the generated client step interfaces. When these parameters are provided, the framework will use these exact types in the generated step implementations instead of trying to infer them from the domain types. This gives you more control over the interface contracts and helps avoid issues where the inferred types don't match the expected gRPC service contract.
+
+### Batching Configuration for StepManyToOne
+
+For `StepManyToOne` steps, the `batchSize` and `batchTimeoutMs` parameters control how input items are collected before processing:
+
+- **batchSize**: Controls how many input items are collected before the batch is processed. For scenarios where related records should be processed together (such as all PaymentOutput records from the same CSV file), set this to a value larger than the expected number of related items to ensure they are processed in the same batch.
+
+- **batchTimeoutMs**: Controls how long to wait for additional items to accumulate in a batch before processing, even if the batch size hasn't been reached. This is particularly useful when dealing with streams where items arrive sporadically.
+
+For example, to ensure that all 12 PaymentOutput records from a single CSV file are processed together in one batch, configure a batch size of 50 and sufficient timeout:
+```java
+@PipelineStep(
+   // ... other parameters
+   stepType = StepManyToOne.class,
+   batchSize = 50,        // Large enough to hold all related records
+   batchTimeoutMs = 5000  // 5 second timeout to allow accumulation
+)
+```
 
 ## Benefits
 

@@ -20,7 +20,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.github.mbarcia</groupId>
+    <groupId>org.pipelineframework</groupId>
     <artifactId>template-generator</artifactId>
     <version>1.0.0</version>
     <packaging>jar</packaging>
@@ -81,7 +81,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.github.mbarcia.template.TemplateGeneratorCli</mainClass>
+                                    <mainClass>org.pipelineframework.template.TemplateGeneratorCli</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

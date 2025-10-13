@@ -263,11 +263,11 @@ Configure appropriate log levels for different environments:
 
 ```properties
 # application-dev.properties
-quarkus.log.category."io.github.mbarcia.pipeline".level=DEBUG
+quarkus.log.category."org.pipelineframework".level=DEBUG
 quarkus.log.category."com.example.app".level=DEBUG
 
 # application-prod.properties
-quarkus.log.category."io.github.mbarcia.pipeline".level=INFO
+quarkus.log.category."org.pipelineframework".level=INFO
 quarkus.log.category."com.example.app".level=WARN
 ```
 

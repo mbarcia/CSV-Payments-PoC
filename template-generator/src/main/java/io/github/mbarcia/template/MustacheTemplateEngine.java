@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package io.github.mbarcia.template;
+package org.pipelineframework.template;
 
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.github.mustachejava.Mustache;

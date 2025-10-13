@@ -1,4 +1,4 @@
-[![Workflow for CSV-Payments-PoC](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml/badge.svg)](https://github.com/mbarcia/CSV-Payments-PoC/actions/workflows/tests.yaml)
+[![Workflow for CSV-Payments-PoC](https://github.com/mbarcia/pipelineframework/actions/workflows/tests.yaml/badge.svg)](https://github.com/mbarcia/pipelineframework/actions/workflows/tests.yaml)
 
 # CSV Payments Processing Application
 
@@ -19,16 +19,7 @@ This application demonstrates modern microservices architecture patterns using g
 - **Parallel Processing**: Concurrent handling of multiple payment records
 - **Comprehensive Logging**: Detailed observability and debugging information
 
-## Architecture
-
-### Pipeline Framework
-
-This service is built using the pipeline framework which provides numerous benefits for distributed processing:
-
-- [How to Create a New Pipeline Step](./pipeline-framework/docs/HOWTO_NEW_STEP.md) - Guide for implementing new steps
-- [Pipeline Benefits](./pipeline-framework/docs/PIPELINE_BENEFITS.md) - Detailed list of advantages of using the framework
-
-### Running End-to-End Tests
+## Running End-to-End Tests
 
 To run the end-to-end integration test that starts all services and processes a sample CSV file:
 
@@ -350,7 +341,8 @@ To run an end-to-end integration test that starts all services and processes a r
 ./run-e2e-test.sh
 ```
 
-This script will start all microservices, process a sample CSV file, and verify the results. See [pipeline-framework/docs/README.md](./pipeline-framework/docs/README.md) for more details.
+This script will start all microservices, process a sample CSV file, and verify the results. See [https://pipelineframework.org]
+(https://pipelineframework.org/) for more details.
 
 ## SSL Certificate Handling in Development
 

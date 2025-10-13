@@ -319,9 +319,26 @@ public class PipelineStepProcessor extends AbstractProcessor {
                 grpcBaseClassName = ClassName.get("", grpcImplTypeStr);
             }
         } else {
-            // Fallback to default - need to determine from gRPC types which service is needed
-            // For now, assume a simple naming convention based on the service class name
-            String grpcServiceBaseClass = "org.pipelineframework.csv.grpc.Mutiny" + 
+            // Fallback to determine the package from available gRPC types
+            String grpcPackage = "org.pipelineframework.csv.grpc"; // default fallback
+            
+            // Try to determine the actual gRPC package from inputGrpcType or outputGrpcType
+            if (inputGrpcType != null && !inputGrpcType.toString().equals("void")) {
+                String inputGrpcTypeStr = inputGrpcType.toString();
+                int lastDot = inputGrpcTypeStr.lastIndexOf('.');
+                if (lastDot > 0) {
+                    grpcPackage = inputGrpcTypeStr.substring(0, lastDot);
+                }
+            } else if (outputGrpcType != null && !outputGrpcType.toString().equals("void")) {
+                String outputGrpcTypeStr = outputGrpcType.toString();
+                int lastDot = outputGrpcTypeStr.lastIndexOf('.');
+                if (lastDot > 0) {
+                    grpcPackage = outputGrpcTypeStr.substring(0, lastDot);
+                }
+            }
+            
+            // Construct the gRPC service base class using the determined package
+            String grpcServiceBaseClass = grpcPackage + "." + 
                 serviceClass.getSimpleName().toString().replace("Service", "") + "Grpc." + 
                 serviceClass.getSimpleName().toString().replace("Service", "") + "ImplBase";
             int lastDot = grpcServiceBaseClass.lastIndexOf('.');

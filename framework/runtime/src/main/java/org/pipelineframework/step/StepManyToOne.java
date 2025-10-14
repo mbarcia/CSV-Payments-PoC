@@ -73,7 +73,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
         Logger LOG = LoggerFactory.getLogger(this.getClass());
         
         // Retrieve configuration
-        StepConfig config = effectiveConfig() != null ? effectiveConfig() : null;
+        StepConfig config = effectiveConfig();
         
         // Use configured batch size if available, otherwise use the default
         int batchSize = config != null ? config.batchSize() : this.batchSize();

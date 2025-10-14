@@ -591,15 +591,16 @@ public class PipelineStepProcessor extends AbstractProcessor {
         }
     }
 
-    private static String extractPackage(TypeMirror inputGrpcType, String grpcPackage) {
-        String inputGrpcTypeStr = inputGrpcType.toString();
-        int lastDot = inputGrpcTypeStr.lastIndexOf('.');
-        if (lastDot > 0) {
-            grpcPackage = inputGrpcTypeStr.substring(0, lastDot);
+    private String extractPackage(TypeMirror inputGrpcType, String grpcPackage) {
+        Element element = processingEnv.getTypeUtils().asElement(inputGrpcType);
+        if (element != null) {
+            PackageElement pkgEl = processingEnv.getElementUtils().getPackageOf(element);
+            if (pkgEl != null) {
+                return pkgEl.getQualifiedName().toString();
+            }
         }
         return grpcPackage;
     }
-
     protected AnnotationMirror getAnnotationMirror(Element element, Class<?> annotationClass) {
         String annotationClassName = annotationClass.getCanonicalName();
         for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {

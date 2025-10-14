@@ -44,6 +44,16 @@ public class TemplateGeneratorCli implements Callable<Integer> {
     @Option(names = {"-g", "--generate-config"}, description = "Generate a sample configuration file instead of generating an application")
     private boolean generateConfig = false;
 
+    /**
+     * Entrypoint for the CLI command that generates a pipeline application or a sample configuration.
+     *
+     * <p>When run with the generate-config flag, writes a sample pipeline YAML and exits.
+     * Otherwise it either loads a pipeline configuration from the provided file or enters an
+     * interactive prompt to collect configuration, then generates the application files
+     * into the configured output directory using the template engine.</p>
+     *
+     * @return 0 on successful generation, 1 if a provided configuration file does not exist
+     */
     @Override
     public Integer call() throws Exception {
         if (generateConfig) {
@@ -79,7 +89,31 @@ public class TemplateGeneratorCli implements Callable<Integer> {
                 String stepName = (String) rawStep.get("name");
                 String serviceName = stepName.replaceAll("[^a-zA-Z0-9]", "-").toLowerCase() + "-svc";
                 processedStep.put("serviceName", serviceName);
-                processedStep.put("serviceNameCamel", toCamelCase(stepName.replaceAll("[^a-zA-Z0-9]", " ")));
+                // Preserve the original serviceNameCamel from config if exists, otherwise derive from step name
+                Object originalServiceNameCamel = rawStep.get("serviceNameCamel");
+                if (originalServiceNameCamel != null) {
+                    processedStep.put("serviceNameCamel", originalServiceNameCamel);
+                } else {
+                    // Extract entity name from step name (e.g., "Process Customer" -> "Customer", "Validate Order" -> "Order")
+                    String entityName = stepName
+                        .replace("Process ", "")
+                        .replace("Validate ", "")
+                        .replace("Enrich ", "")
+                        .trim();
+                    String sanitizedEntity = entityName.replaceAll("[^a-zA-Z0-9]", " ").trim();
+                    String camelCaseName = toCamelCase(sanitizedEntity);
+                    if (camelCaseName.isEmpty()) {
+                        // Fallback to the full stepName if nothing remains after stripping
+                        camelCaseName = toCamelCase(stepName.replaceAll("[^a-zA-Z0-9]", " ").trim());
+                    }
+                    if (camelCaseName.isEmpty()) {
+                        // Final fallback to a generic name
+                        camelCaseName = "Step" + (i + 1);
+                    }
+                    String capitalizedCamelName =
+                        Character.toUpperCase(camelCaseName.charAt(0)) + camelCaseName.substring(1);
+                    processedStep.put("serviceNameCamel", capitalizedCamelName);
+                }
                 processedStep.put("serviceNameTitleCase", toTitleCase(serviceName.replaceAll("-svc$", "")) + "Svc");
                 processedStep.put("inputTypeSimpleName", ((String)rawStep.get("inputTypeName")).replaceAll(".*\\.", ""));
                 processedStep.put("outputTypeSimpleName", ((String)rawStep.get("outputTypeName")).replaceAll(".*\\.", ""));
@@ -104,7 +138,7 @@ public class TemplateGeneratorCli implements Callable<Integer> {
             System.out.print("Enter the name of your application: ");
             appName = scanner.nextLine().trim();
             
-            System.out.print("Enter the base package name (e.g., io.github.mbarcia): ");
+            System.out.print("Enter the base package name (e.g., com.example): ");
             basePackage = scanner.nextLine().trim();
             
             // Create the application structure first
@@ -123,7 +157,7 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         Files.createDirectories(outputPath);
         
         // Create the template engine and generate all components
-        MustacheTemplateEngine engine = new MustacheTemplateEngine();
+        org.pipelineframework.template.MustacheTemplateEngine engine = new org.pipelineframework.template.MustacheTemplateEngine();
         engine.generateApplication(appName, basePackage, steps, outputPath);
         
         System.out.println("\nApplication generated successfully in: " + outputDir);
@@ -132,6 +166,21 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         return 0;
     }
     
+    /**
+     * Interactively collects pipeline step definitions from the provided Scanner.
+     *
+     * <p>Prompts the user for step name, cardinality, input/output type names and their fields.
+     * Collection ends when an empty step name is entered. For the first step the user must
+     * provide the input type and its fields; subsequent steps reuse the previous step's output
+     * as their input. Derived values such as serviceName, serviceNameCamel, serviceNameTitleCase,
+     * stepType, order and grpcClientName are added to each step map.
+     *
+     * @param scanner the Scanner to read interactive user input from
+     * @return a List of Maps where each Map represents a step definition and contains the keys:
+     *         "name", "serviceName", "serviceNameCamel", "serviceNameTitleCase", "cardinality",
+     *         "stepType", "inputTypeName", "inputTypeSimpleName", "inputFields",
+     *         "outputTypeName", "outputTypeSimpleName", "outputFields", "order", and "grpcClientName"
+     */
     private List<Map<String, Object>> collectSteps(Scanner scanner) {
         List<Map<String, Object>> steps = new ArrayList<>();
         int stepNumber = 1;
@@ -215,7 +264,12 @@ public class TemplateGeneratorCli implements Callable<Integer> {
             step.put("name", stepName);
             String serviceName = stepName.replaceAll("[^a-zA-Z0-9]", "-").toLowerCase() + "-svc";
             step.put("serviceName", serviceName);
-            step.put("serviceNameCamel", toCamelCase(stepName.replaceAll("[^a-zA-Z0-9]", " ")));
+            // Extract entity name from step name (e.g., "Process Customer" -> "Customer", "Validate Order" -> "Order")
+        String entityName = stepName.replace("Process ", "").replace("Validate ", "").replace("Enrich ", "").trim();
+        String camelCaseName = toCamelCase(entityName.replaceAll("[^a-zA-Z0-9]", " "));
+        // Capitalize the first letter for class names
+        String capitalizedCamelName = Character.toUpperCase(camelCaseName.charAt(0)) + camelCaseName.substring(1);
+        step.put("serviceNameCamel", capitalizedCamelName);
             step.put("serviceNameTitleCase", toTitleCase(serviceName.replaceAll("-svc$", "")) + "Svc");
             step.put("cardinality", cardinality);
             step.put("stepType", stepType);

@@ -1,7 +1,12 @@
 syntax = "proto3";
 
-option java_package = "{{basePackage}}.grpc.{{serviceName}}";
+option java_package = "{{basePackage}}.grpc";
 
+{{^isFirstStep}}
+import "{{previousStepName}}.proto";
+{{/isFirstStep}}
+
+{{#isFirstStep}}
 message {{inputTypeName}} {
 {{#inputFields}}
 {{#isListType}}
@@ -12,6 +17,7 @@ message {{inputTypeName}} {
 {{/isListType}}
 {{/inputFields}}
 }
+{{/isFirstStep}}
 
 message {{outputTypeName}} {
 {{#outputFields}}
@@ -26,14 +32,14 @@ message {{outputTypeName}} {
 
 service Process{{serviceNameFormatted}}Service {
 {{#isExpansion}}
-  rpc remoteProcess({{inputTypeName}}) returns (stream {{outputTypeName}});
+  rpc remoteProcess({{#isFirstStep}}{{inputTypeName}}{{/isFirstStep}}{{^isFirstStep}}{{previousStepOutputTypeName}}{{/isFirstStep}}) returns (stream {{outputTypeName}});
 {{/isExpansion}}
 {{#isReduction}}
-  rpc remoteProcess(stream {{inputTypeName}}) returns ({{outputTypeName}});
+  rpc remoteProcess(stream {{#isFirstStep}}{{inputTypeName}}{{/isFirstStep}}{{^isFirstStep}}{{previousStepOutputTypeName}}{{/isFirstStep}}) returns ({{outputTypeName}});
 {{/isReduction}}
 {{^isExpansion}}
 {{^isReduction}}
-  rpc remoteProcess({{inputTypeName}}) returns ({{outputTypeName}});
+  rpc remoteProcess({{#isFirstStep}}{{inputTypeName}}{{/isFirstStep}}{{^isFirstStep}}{{previousStepOutputTypeName}}{{/isFirstStep}}) returns ({{outputTypeName}});
 {{/isReduction}}
 {{/isExpansion}}
 }

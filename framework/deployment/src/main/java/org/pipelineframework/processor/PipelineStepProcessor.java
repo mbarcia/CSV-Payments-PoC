@@ -258,6 +258,18 @@ public class PipelineStepProcessor extends AbstractProcessor {
         }
     }
 
+    /**
+     * Generates and writes a gRPC service adapter class for the given service annotated with @PipelineStep.
+     *
+     * The generated class is placed in the original service package with a ".pipeline" suffix, extends an
+     * appropriate gRPC base implementation, is annotated for CDI and gRPC wiring, injects the original service
+     * and optional mappers/persistence manager, and exposes a remoteProcess method implemented via an inline
+     * adapter chosen according to the configured step type.
+     *
+     * @param serviceClass the TypeElement representing the annotated service class
+     * @param pipelineStep the PipelineStep annotation instance for the service (used to read configured values)
+     * @throws IOException if writing the generated Java source file fails
+     */
     protected void generateGrpcServiceAdapter(TypeElement serviceClass, PipelineStep pipelineStep) throws IOException {
         // Get the annotation mirror to extract TypeMirror values
         AnnotationMirror annotationMirror = getAnnotationMirror(serviceClass, PipelineStep.class);
@@ -319,9 +331,19 @@ public class PipelineStepProcessor extends AbstractProcessor {
                 grpcBaseClassName = ClassName.get("", grpcImplTypeStr);
             }
         } else {
-            // Fallback to default - need to determine from gRPC types which service is needed
-            // For now, assume a simple naming convention based on the service class name
-            String grpcServiceBaseClass = "org.pipelineframework.csv.grpc.Mutiny" + 
+            // Fallback to determine the package from available gRPC types
+            // Default to the original package with .grpc suffix if no gRPC types available
+            String grpcPackage = originalPackage + ".grpc";
+            
+            // Try to determine the actual gRPC package from inputGrpcType or outputGrpcType
+            if (inputGrpcType != null && !inputGrpcType.toString().equals("void")) {
+                grpcPackage = extractPackage(inputGrpcType, grpcPackage);
+            } else if (outputGrpcType != null && !outputGrpcType.toString().equals("void")) {
+                grpcPackage = extractPackage(outputGrpcType, grpcPackage);
+            }
+            
+            // Construct the gRPC service base class using the determined package
+            String grpcServiceBaseClass = grpcPackage + "." + 
                 serviceClass.getSimpleName().toString().replace("Service", "") + "Grpc." + 
                 serviceClass.getSimpleName().toString().replace("Service", "") + "ImplBase";
             int lastDot = grpcServiceBaseClass.lastIndexOf('.');
@@ -569,6 +591,16 @@ public class PipelineStepProcessor extends AbstractProcessor {
         }
     }
 
+    private String extractPackage(TypeMirror inputGrpcType, String grpcPackage) {
+        Element element = processingEnv.getTypeUtils().asElement(inputGrpcType);
+        if (element != null) {
+            PackageElement pkgEl = processingEnv.getElementUtils().getPackageOf(element);
+            if (pkgEl != null) {
+                return pkgEl.getQualifiedName().toString();
+            }
+        }
+        return grpcPackage;
+    }
     protected AnnotationMirror getAnnotationMirror(Element element, Class<?> annotationClass) {
         String annotationClassName = annotationClass.getCanonicalName();
         for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {

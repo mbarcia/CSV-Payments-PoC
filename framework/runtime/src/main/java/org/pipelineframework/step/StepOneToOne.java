@@ -24,8 +24,22 @@ import org.pipelineframework.step.functional.OneToOne;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** 1 -> 1 (async) */
+/**
+ * Interface for one-to-one pipeline steps that transform a single input item to a single output item asynchronously.
+ *
+ * <p>This interface represents a 1 -> 1 (async) transformation where each input item
+ * is processed to produce exactly one output item. The processing is asynchronous,
+ * returning a Uni that emits the transformed result.</p>
+ *
+ * @param <I> the type of input item
+ * @param <O> the type of output item
+ */
 public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLetterQueue<I ,O> {
+    /**
+     * Applies the transformation to a single input item asynchronously.
+     * @param in the input item to transform
+     * @return a Uni that emits the transformed output item
+     */
     Uni<O> applyOneToOne(I in);
     
     @Override
@@ -41,7 +55,7 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
             // Check if the input Uni is null before processing
             if (input == null) {
                 if (recoverOnFailure()) {
-                    return deadLetter(Uni.createFrom().failure(new NullPointerException("Input Uni is null")), 
+                    return deadLetter(Uni.createFrom().failure(new NullPointerException("Input Uni is null")),
                         new NullPointerException("Input Uni is null"));
                 } else {
                     return Uni.createFrom().failure(new NullPointerException("Input Uni is null"));

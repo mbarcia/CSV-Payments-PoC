@@ -45,8 +45,8 @@ import java.util.List;
 @Builder
 @JsonDeserialize(builder = {{className}}.{{className}}Builder.class)
 public class {{className}} {
-  public UUID id;
-
+{{^hasIdField}}  public UUID id;
+{{/hasIdField}}
 {{#fields}}
   public {{type}} {{name}};
 {{/fields}}

@@ -45,6 +45,7 @@ import org.slf4j.MDC;
   inboundMapper = PaymentRecordMapper.class,
   outboundMapper = AckPaymentSentMapper.class,
   grpcClient = "send-payment-record",
+  restEnabled = true,
   autoPersist = true,
   debug = true
 )

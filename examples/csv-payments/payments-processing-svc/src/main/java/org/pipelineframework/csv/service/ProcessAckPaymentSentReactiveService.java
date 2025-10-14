@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
         inboundMapper = AckPaymentSentMapper.class,
         outboundMapper = PaymentStatusMapper.class,
         grpcClient = "process-ack-payment-sent",
+        restEnabled = true,
         autoPersist = true,
         debug = true
 )

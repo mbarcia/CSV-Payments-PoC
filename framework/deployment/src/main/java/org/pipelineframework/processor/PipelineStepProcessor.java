@@ -258,6 +258,18 @@ public class PipelineStepProcessor extends AbstractProcessor {
         }
     }
 
+    /**
+     * Generates and writes a gRPC service adapter class for the given service annotated with @PipelineStep.
+     *
+     * The generated class is placed in the original service package with a ".pipeline" suffix, extends an
+     * appropriate gRPC base implementation, is annotated for CDI and gRPC wiring, injects the original service
+     * and optional mappers/persistence manager, and exposes a remoteProcess method implemented via an inline
+     * adapter chosen according to the configured step type.
+     *
+     * @param serviceClass the TypeElement representing the annotated service class
+     * @param pipelineStep the PipelineStep annotation instance for the service (used to read configured values)
+     * @throws IOException if writing the generated Java source file fails
+     */
     protected void generateGrpcServiceAdapter(TypeElement serviceClass, PipelineStep pipelineStep) throws IOException {
         // Get the annotation mirror to extract TypeMirror values
         AnnotationMirror annotationMirror = getAnnotationMirror(serviceClass, PipelineStep.class);

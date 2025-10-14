@@ -73,7 +73,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
         Logger LOG = LoggerFactory.getLogger(this.getClass());
         
         // Retrieve configuration
-        StepConfig config = effectiveConfig() instanceof StepConfig ? (StepConfig) effectiveConfig() : null;
+        StepConfig config = effectiveConfig() != null ? effectiveConfig() : null;
         
         // Use configured batch size if available, otherwise use the default
         int batchSize = config != null ? config.batchSize() : this.batchSize();
@@ -95,7 +95,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
             .onItem().transform(list -> Multi.createFrom().iterable(list)); // convert List<I> to Multi<I> for applyBatchMulti
 
         return batches
-            .onItem().transformToUniAndMerge(batch ->
+            .onItem().transformToUniAndConcatenate(batch ->
                 applyBatchMulti(batch)
                     .onItem().invoke(result -> {
                         if (debug()) {

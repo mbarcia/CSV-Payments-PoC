@@ -95,10 +95,23 @@ public class TemplateGeneratorCli implements Callable<Integer> {
                     processedStep.put("serviceNameCamel", originalServiceNameCamel);
                 } else {
                     // Extract entity name from step name (e.g., "Process Customer" -> "Customer", "Validate Order" -> "Order")
-                    String entityName = stepName.replace("Process ", "").replace("Validate ", "").replace("Enrich ", "").trim();
-                    String camelCaseName = toCamelCase(entityName.replaceAll("[^a-zA-Z0-9]", " "));
-                    // Capitalize the first letter for class names
-                    String capitalizedCamelName = Character.toUpperCase(camelCaseName.charAt(0)) + camelCaseName.substring(1);
+                    String entityName = stepName
+                        .replace("Process ", "")
+                        .replace("Validate ", "")
+                        .replace("Enrich ", "")
+                        .trim();
+                    String sanitizedEntity = entityName.replaceAll("[^a-zA-Z0-9]", " ").trim();
+                    String camelCaseName = toCamelCase(sanitizedEntity);
+                    if (camelCaseName.isEmpty()) {
+                        // Fallback to the full stepName if nothing remains after stripping
+                        camelCaseName = toCamelCase(stepName.replaceAll("[^a-zA-Z0-9]", " ").trim());
+                    }
+                    if (camelCaseName.isEmpty()) {
+                        // Final fallback to a generic name
+                        camelCaseName = "Step" + (i + 1);
+                    }
+                    String capitalizedCamelName =
+                        Character.toUpperCase(camelCaseName.charAt(0)) + camelCaseName.substring(1);
                     processedStep.put("serviceNameCamel", capitalizedCamelName);
                 }
                 processedStep.put("serviceNameTitleCase", toTitleCase(serviceName.replaceAll("-svc$", "")) + "Svc");

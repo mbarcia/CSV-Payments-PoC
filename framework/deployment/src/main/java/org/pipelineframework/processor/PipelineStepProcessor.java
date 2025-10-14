@@ -320,21 +320,14 @@ public class PipelineStepProcessor extends AbstractProcessor {
             }
         } else {
             // Fallback to determine the package from available gRPC types
-            String grpcPackage = "org.pipelineframework.csv.grpc"; // default fallback
+            // Default to the original package with .grpc suffix if no gRPC types available
+            String grpcPackage = originalPackage + ".grpc";
             
             // Try to determine the actual gRPC package from inputGrpcType or outputGrpcType
             if (inputGrpcType != null && !inputGrpcType.toString().equals("void")) {
-                String inputGrpcTypeStr = inputGrpcType.toString();
-                int lastDot = inputGrpcTypeStr.lastIndexOf('.');
-                if (lastDot > 0) {
-                    grpcPackage = inputGrpcTypeStr.substring(0, lastDot);
-                }
+                grpcPackage = extractPackage(inputGrpcType, grpcPackage);
             } else if (outputGrpcType != null && !outputGrpcType.toString().equals("void")) {
-                String outputGrpcTypeStr = outputGrpcType.toString();
-                int lastDot = outputGrpcTypeStr.lastIndexOf('.');
-                if (lastDot > 0) {
-                    grpcPackage = outputGrpcTypeStr.substring(0, lastDot);
-                }
+                grpcPackage = extractPackage(outputGrpcType, grpcPackage);
             }
             
             // Construct the gRPC service base class using the determined package
@@ -584,6 +577,15 @@ public class PipelineStepProcessor extends AbstractProcessor {
         try (var writer = builderFile.openWriter()) {
             javaFile.writeTo(writer);
         }
+    }
+
+    private static String extractPackage(TypeMirror inputGrpcType, String grpcPackage) {
+        String inputGrpcTypeStr = inputGrpcType.toString();
+        int lastDot = inputGrpcTypeStr.lastIndexOf('.');
+        if (lastDot > 0) {
+            grpcPackage = inputGrpcTypeStr.substring(0, lastDot);
+        }
+        return grpcPackage;
     }
 
     protected AnnotationMirror getAnnotationMirror(Element element, Class<?> annotationClass) {

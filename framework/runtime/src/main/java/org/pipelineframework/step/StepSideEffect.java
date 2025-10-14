@@ -17,10 +17,27 @@
 package org.pipelineframework.step;
 
 
-/** 1 -> side-effect (async), passes original item downstream */
+/**
+ * Interface for side effect pipeline steps that perform operations with side effects
+ * but pass the original input item downstream unchanged.
+ * 
+ * <p>This interface represents a 1 -> side-effect (async) transformation where an input item
+ * triggers an asynchronous side effect operation, but the original item continues down
+ * the pipeline unchanged.</p>
+ * 
+ * @param <I> the type of input item
+ */
 public interface StepSideEffect<I> extends Configurable, StepOneToOne<I, I>, DeadLetterQueue<I, I> {
 
+    /**
+     * The maximum number of in-flight items per upstream item for this side effect step.
+     * @return the maximum number of concurrent operations (defaults to 1)
+     */
     default int concurrency() { return 1; } // max in-flight items per upstream item
 
+    /**
+     * Indicates whether this step should run with virtual threads.
+     * @return true if virtual threads should be used, false otherwise (defaults to false)
+     */
     default boolean runWithVirtualThreads() { return false; }
 }

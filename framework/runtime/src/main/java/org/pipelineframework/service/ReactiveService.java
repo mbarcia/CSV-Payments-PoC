@@ -18,7 +18,20 @@ package org.pipelineframework.service;
 
 import io.smallrye.mutiny.Uni;
 
+/**
+ * Functional interface for reactive services that process an input object asynchronously
+ * and return a result in a reactive manner using Mutiny Uni.
+ * 
+ * @param <T> the type of input object to process
+ * @param <S> the type of output/result object
+ */
 @FunctionalInterface
 public interface ReactiveService<T, S> {
+  /**
+   * Process the input object asynchronously and return a Uni containing the result.
+   * 
+   * @param processableObj the input object to process
+   * @return a Uni that emits the processed result
+   */
   Uni<S> process(T processableObj);
 }

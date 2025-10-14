@@ -34,13 +34,43 @@ public interface Mapper<Grpc, Dto, Domain> {
         return fromDto(fromGrpc(grpcIn));
     }
 
+    /**
+     * Converts from domain type to gRPC type by first converting to DTO then to gRPC.
+     *
+     * @param domain the domain object
+     * @return the gRPC object
+     */
     default Grpc toDtoToGrpc(Domain domain) {
         return toGrpc(toDto(domain));
     }
 
+    /**
+     * Converts from gRPC type to DTO type.
+     *
+     * @param grpc the gRPC object
+     * @return the DTO object
+     */
     Dto fromGrpc(Grpc grpc);
+    /**
+     * Converts from DTO type to gRPC type.
+     *
+     * @param dto the DTO object
+     * @return the gRPC object
+     */
     Grpc toGrpc(Dto dto);
 
+    /**
+     * Converts from DTO type to domain type.
+     *
+     * @param dto the DTO object
+     * @return the domain object
+     */
     Domain fromDto(Dto dto);
+    /**
+     * Converts from domain type to DTO type.
+     *
+     * @param domain the domain object
+     * @return the DTO object
+     */
     Dto toDto(Domain domain);
 }

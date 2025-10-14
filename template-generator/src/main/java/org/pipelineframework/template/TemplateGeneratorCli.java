@@ -44,6 +44,16 @@ public class TemplateGeneratorCli implements Callable<Integer> {
     @Option(names = {"-g", "--generate-config"}, description = "Generate a sample configuration file instead of generating an application")
     private boolean generateConfig = false;
 
+    /**
+     * Entrypoint for the CLI command that generates a pipeline application or a sample configuration.
+     *
+     * <p>When run with the generate-config flag, writes a sample pipeline YAML and exits.
+     * Otherwise it either loads a pipeline configuration from the provided file or enters an
+     * interactive prompt to collect configuration, then generates the application files
+     * into the configured output directory using the template engine.</p>
+     *
+     * @return 0 on successful generation, 1 if a provided configuration file does not exist
+     */
     @Override
     public Integer call() throws Exception {
         if (generateConfig) {
@@ -143,6 +153,21 @@ public class TemplateGeneratorCli implements Callable<Integer> {
         return 0;
     }
     
+    /**
+     * Interactively collects pipeline step definitions from the provided Scanner.
+     *
+     * <p>Prompts the user for step name, cardinality, input/output type names and their fields.
+     * Collection ends when an empty step name is entered. For the first step the user must
+     * provide the input type and its fields; subsequent steps reuse the previous step's output
+     * as their input. Derived values such as serviceName, serviceNameCamel, serviceNameTitleCase,
+     * stepType, order and grpcClientName are added to each step map.
+     *
+     * @param scanner the Scanner to read interactive user input from
+     * @return a List of Maps where each Map represents a step definition and contains the keys:
+     *         "name", "serviceName", "serviceNameCamel", "serviceNameTitleCase", "cardinality",
+     *         "stepType", "inputTypeName", "inputTypeSimpleName", "inputFields",
+     *         "outputTypeName", "outputTypeSimpleName", "outputFields", "order", and "grpcClientName"
+     */
     private List<Map<String, Object>> collectSteps(Scanner scanner) {
         List<Map<String, Object>> steps = new ArrayList<>();
         int stepNumber = 1;

@@ -24,11 +24,13 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import org.jboss.jandex.IndexView;
+import org.jboss.logging.Logger;
 import org.pipelineframework.config.PipelineBuildTimeConfig;
 
 public class StepServerRegistrar {
 
     private static final String FEATURE_NAME = "pipelineframework-services";
+    private static final Logger LOG = Logger.getLogger(StepServerRegistrar.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -48,7 +50,7 @@ public class StepServerRegistrar {
         index.getKnownClasses().stream()
             .filter(ci -> ci.name().toString().endsWith(GRPC_SERVICE_SUFFIX))
             .forEach(ci -> {
-                System.out.println("Registering gRPC service: " + ci.name());
+                LOG.infof("Registering gRPC service: %s", ci.name());
                 additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ci.name().toString()));
             });
     }

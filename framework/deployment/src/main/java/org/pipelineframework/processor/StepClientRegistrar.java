@@ -26,11 +26,13 @@ import io.quarkus.deployment.builditem.FeatureBuildItem;
 import java.util.List;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
+import org.jboss.logging.Logger;
 import org.pipelineframework.config.PipelineBuildTimeConfig;
 
 public class StepClientRegistrar {
 
     private static final String FEATURE_NAME = "pipelineframework-steps";
+    private static final Logger LOG = Logger.getLogger(StepClientRegistrar.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -51,11 +53,11 @@ public class StepClientRegistrar {
 
         for (ClassInfo ci : classes) {
             if (!config.generateCli()) {
-                System.out.println("Skipping step (client) " + ci.name());
+                LOG.debugf("Skipping step (client) %s", ci.name());
                 // Skip to the next class instead of returning from the entire method
             } else {
                 beans.produce(AdditionalBeanBuildItem.unremovableOf(ci.name().toString()));
-                System.out.println("Registered step (client) " + ci.name());
+                LOG.infof("Registered step (client) %s", ci.name());
             }
         }
     }

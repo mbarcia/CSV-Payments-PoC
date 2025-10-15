@@ -191,4 +191,58 @@ class PipelineStepProcessorTest {
                         eq("@PipelineStep can only be applied to classes"),
                         eq(mockElement));
     }
+
+    @Test
+    void testDeriveResourcePath() {
+        // Create a test instance using reflection to access protected method
+        PipelineStepProcessor processor = new PipelineStepProcessor();
+
+        // Use reflection to call the protected method
+        try {
+            java.lang.reflect.Method method =
+                    PipelineStepProcessor.class.getDeclaredMethod(
+                            "deriveResourcePath", String.class);
+            method.setAccessible(true);
+
+            // Test various class names
+            assertEquals(
+                    "/api/v1/process-customer", method.invoke(processor, "ProcessCustomerService"));
+            assertEquals(
+                    "/api/v1/validate-order", method.invoke(processor, "ValidateOrderService"));
+            assertEquals("/api/v1/customer", method.invoke(processor, "CustomerService"));
+            assertEquals(
+                    "/api/v1/process-payment-status",
+                    method.invoke(processor, "ProcessPaymentStatus"));
+        } catch (Exception e) {
+            fail("Error calling deriveResourcePath method: " + e.getMessage());
+        }
+    }
+
+    @Test
+    void testGetDtoType() {
+        // Create a test instance using reflection to access protected method
+        PipelineStepProcessor processor = new PipelineStepProcessor();
+
+        // Create a mock TypeMirror
+        javax.lang.model.type.TypeMirror mockTypeMirror =
+                mock(javax.lang.model.type.TypeMirror.class);
+        when(mockTypeMirror.toString()).thenReturn("com.example.domain.CustomerInput");
+
+        try {
+            java.lang.reflect.Method method =
+                    PipelineStepProcessor.class.getDeclaredMethod(
+                            "getDtoType", javax.lang.model.type.TypeMirror.class);
+            method.setAccessible(true);
+
+            String result = (String) method.invoke(processor, mockTypeMirror);
+            assertEquals("com.example.dto.CustomerInputDto", result);
+
+            // Test with common.domain
+            when(mockTypeMirror.toString()).thenReturn("com.example.common.domain.CustomerOutput");
+            result = (String) method.invoke(processor, mockTypeMirror);
+            assertEquals("com.example.common.dto.CustomerOutputDto", result);
+        } catch (Exception e) {
+            fail("Error calling getDtoType method: " + e.getMessage());
+        }
+    }
 }

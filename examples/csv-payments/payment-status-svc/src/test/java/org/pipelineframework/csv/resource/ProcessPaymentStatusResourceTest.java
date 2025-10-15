@@ -33,6 +33,7 @@ import org.pipelineframework.csv.common.dto.PaymentStatusDto;
 import org.pipelineframework.csv.common.mapper.PaymentOutputMapper;
 import org.pipelineframework.csv.common.mapper.PaymentStatusMapper;
 import org.pipelineframework.csv.service.ProcessPaymentStatusReactiveService;
+import org.pipelineframework.csv.service.pipeline.ProcessPaymentStatusResource;
 
 class ProcessPaymentStatusResourceTest {
 

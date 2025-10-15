@@ -58,7 +58,7 @@ class ProcessAckPaymentSentResourceTest {
         given().contentType(ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .post("/api/v1/payments-processing/process-ack-payment")
+                .post("/api/v1/process-ack-payment-sent-reactive/process")
                 .then()
                 .statusCode(200)
                 .body("id", notNullValue())
@@ -83,7 +83,7 @@ class ProcessAckPaymentSentResourceTest {
         given().contentType(ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .post("/api/v1/payments-processing/process-ack-payment")
+                .post("/api/v1/process-ack-payment-sent-reactive/process")
                 .then()
                 .statusCode(400); // Jackson deserialization error results in 400
     }
@@ -104,7 +104,7 @@ class ProcessAckPaymentSentResourceTest {
         given().contentType(ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .post("/api/v1/payments-processing/process-ack-payment")
+                .post("/api/v1/process-ack-payment-sent-reactive/process")
                 .then()
                 .statusCode(500); // Missing required fields in the response object results in 500
     }

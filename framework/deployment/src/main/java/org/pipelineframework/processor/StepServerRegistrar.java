@@ -32,11 +32,26 @@ public class StepServerRegistrar {
     private static final String FEATURE_NAME = "pipelineframework-services";
     private static final Logger LOG = Logger.getLogger(StepServerRegistrar.class);
 
+    /**
+     * Declare the extension feature provided by this processor.
+     *
+     * @return a FeatureBuildItem identifying the processor feature named "pipelineframework-services"
+     */
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE_NAME);
     }
 
+    /**
+     * Registers generated gRPC service classes as unremovable CDI beans when CLI generation is disabled.
+     *
+     * Iterates the Jandex index for classes whose fully qualified name ends with the GRPC service suffix
+     * and produces AdditionalBeanBuildItem entries to mark them unremovable.
+     *
+     * @param additionalBeans producer used to register AdditionalBeanBuildItem instances for discovered services
+     * @param config build-time configuration; if {@code config.generateCli()} is true, no registration is performed
+     * @param combinedIndex provides the Jandex index used to discover generated gRPC service classes
+     */
     @BuildStep
     void registerGeneratedServices(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
                                   PipelineBuildTimeConfig config,

@@ -796,16 +796,30 @@ public class PipelineStepProcessor extends AbstractProcessor {
         
         resourceBuilder.addMethod(processMethod);
 
-        // Add exception mapper method to handle runtime exceptions
-        MethodSpec exceptionMapperMethod = MethodSpec.methodBuilder("handleRuntimeException")
+        // Add exception mapper method to handle different types of exceptions
+        MethodSpec exceptionMapperMethod = MethodSpec.methodBuilder("handleException")
             .addAnnotation(AnnotationSpec.builder(ClassName.get("org.jboss.resteasy.reactive.server", "ServerExceptionMapper"))
                 .build())
             .addModifiers(Modifier.PUBLIC)
             .returns(ClassName.get("org.jboss.resteasy.reactive", "RestResponse"))
-            .addParameter(ClassName.get(RuntimeException.class), "ex")
-            .addStatement("return $T.status($T.Status.BAD_REQUEST, \"Error processing request: \" + ex.getMessage())",
+            .addParameter(Exception.class, "ex")
+            .beginControlFlow("if (ex instanceof $T)", IllegalArgumentException.class)
+            .addStatement("return $T.status($T.Status.BAD_REQUEST, ex.getMessage() != null ? ex.getMessage() : \"Invalid request\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
                 ClassName.get("jakarta.ws.rs.core", "Response"))
+            .nextControlFlow("else if (ex instanceof $T)", jakarta.validation.ValidationException.class)
+            .addStatement("return $T.status($T.Status.BAD_REQUEST, ex.getMessage() != null ? ex.getMessage() : \"Validation failed\")",
+                ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
+                ClassName.get("jakarta.ws.rs.core", "Response"))
+            .nextControlFlow("else if (ex instanceof $T)", RuntimeException.class)
+            .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
+                ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
+                ClassName.get("jakarta.ws.rs.core", "Response"))
+            .nextControlFlow("else")
+            .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
+                ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
+                ClassName.get("jakarta.ws.rs.core", "Response"))
+            .endControlFlow()
             .build();
         
         resourceBuilder.addMethod(exceptionMapperMethod);

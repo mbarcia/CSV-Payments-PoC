@@ -27,11 +27,28 @@ public class PersistenceProviderRegistrar {
     private static final String FEATURE_NAME = "pipelineframework-providers";
     private static final Logger LOG = Logger.getLogger(PersistenceProviderRegistrar.class);
 
+    /**
+     * Registers this extension's feature with the Quarkus build.
+     *
+     * @return a FeatureBuildItem identifying the extension feature
+     */
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE_NAME);
     }
 
+    /**
+     * Registers the ReactivePanachePersistenceProvider if both Panache and Hibernate Reactive are present on the classpath.
+     *
+     * If both `io.quarkus.hibernate.reactive.panache.PanacheEntityBase` and
+     * `org.hibernate.reactive.mutiny.Mutiny$SessionFactory` are available, an unremovable
+     * {@code AdditionalBeanBuildItem} for
+     * {@code org.pipelineframework.persistence.provider.ReactivePanachePersistenceProvider}
+     * is produced; otherwise the registration is skipped.
+     *
+     * @param additionalBeans producer used to register additional beans for the build; may produce an
+     *                        unremovable {@code AdditionalBeanBuildItem} for the persistence provider when available
+     */
     @BuildStep
     void registerReactivePersistenceProvider(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         boolean hasPanache = classAvailable("io.quarkus.hibernate.reactive.panache.PanacheEntityBase");

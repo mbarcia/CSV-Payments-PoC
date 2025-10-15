@@ -51,7 +51,11 @@ public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
         System.exit(exitCode);
     }
 
-    // Called when the command is executed by picocli
+    /**
+     * Entry point invoked by Picocli to execute the command: runs the pipeline when an input value is provided, otherwise logs an error.
+     *
+     * @return 0 if pipeline execution was started successfully, 1 if the required input was missing
+     */
     @Override
     public Integer call() {
         if (input != null) {
@@ -63,7 +67,14 @@ public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
         }
     }
     
-    // Execute the pipeline when arguments are properly parsed
+    /**
+     * Run the pipeline using the provided input string.
+     *
+     * Creates a reactive stream containing the single input value and delegates pipeline execution
+     * to the injected PipelineExecutionService while logging start and completion.
+     *
+     * @param input the input value to provide as the single item to the pipeline
+     */
     private void executePipelineWithInput(String input) {
         LOG.infof("Processing input: %s", input);
         

@@ -49,6 +49,13 @@ public class RetryTestSteps {
         private boolean manualDebug = false;
         private boolean manualRecoverOnFailure = false;
 
+        /**
+         * Handles a failed asynchronous item by logging the dead-letter event and returning the original item.
+         *
+         * @param failedItem a Uni that contains the item which failed processing
+         * @param cause the exception that caused the failure
+         * @return the original item value extracted from {@code failedItem}
+         */
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
             LOG.infof(

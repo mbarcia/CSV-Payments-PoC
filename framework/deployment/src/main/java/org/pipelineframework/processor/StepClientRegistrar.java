@@ -34,11 +34,27 @@ public class StepClientRegistrar {
     private static final String FEATURE_NAME = "pipelineframework-steps";
     private static final Logger LOG = Logger.getLogger(StepClientRegistrar.class);
 
+    /**
+     * Declares the build feature provided by this extension.
+     *
+     * @return the FeatureBuildItem for the "pipelineframework-steps" feature
+     */
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE_NAME);
     }
 
+    /**
+     * Registers step client classes discovered in the application index as additional unremovable beans when CLI generation is enabled.
+     *
+     * Scans the combined index for classes whose simple name ends with the configured client step suffix. For each matching class, if
+     * pipeline CLI generation is enabled via the provided build-time configuration, produces an AdditionalBeanBuildItem for that class
+     * and marks it unremovable; otherwise the class is skipped.
+     *
+     * @param beans a build producer used to register AdditionalBeanBuildItem instances
+     * @param config pipeline build-time configuration that controls whether CLI-generated clients should be registered
+     * @param combinedIndex combined Jandex index containing application classes to scan
+     */
     @BuildStep
     void registerStepClients(BuildProducer<AdditionalBeanBuildItem> beans,
                              PipelineBuildTimeConfig config,

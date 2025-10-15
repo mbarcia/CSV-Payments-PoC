@@ -47,7 +47,10 @@ public class PipelineRunner implements AutoCloseable {
     private final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
-     * Run a pipeline: input Multi through the list of steps read from application properties.
+     * Execute the configured pipeline steps against the provided Multi input.
+     *
+     * @param input the source Multi of items to process through the pipeline
+     * @return the pipeline's resulting reactive stream — either a `Multi<?>` or a `Uni<?>` representing the final stage
      */
     public Object run(Multi<?> input) {
         List<Object> steps = loadPipelineSteps();
@@ -60,7 +63,17 @@ public class PipelineRunner implements AutoCloseable {
     }
 
     /**
-     * Run a pipeline: input Multi through the provided list of steps.
+     * Execute the pipeline by applying the ordered steps to the given input stream.
+     *
+     * <p>Each non-null step from {@code steps} is applied in sequence to the current pipeline state.
+     * If a step implements {@code Configurable} it will be initialised with a live configuration
+     * before being applied. Unknown step types are ignored (logged) and null entries are skipped.</p>
+     *
+     * @param input  the initial Multi stream to be processed
+     * @param steps  an ordered list of pipeline step instances; null entries are skipped and
+     *               {@code Configurable} steps are initialised before application
+     * @return       the resulting pipeline output, typically a {@code Uni<?>} or {@code Multi<?>} representing
+     *               the pipeline's final stream
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Object run(Multi<?> input, List<Object> steps) {
@@ -97,6 +110,18 @@ public class PipelineRunner implements AutoCloseable {
         return current; // could be Uni<?> or Multi<?>
     }
 
+    /**
+     * Load and instantiate pipeline steps defined in application properties.
+     *
+     * <p>Reads configured properties for a predefined set of step names (properties
+     * under `pipeline.steps.{name}`), collects each step's `class` and optional
+     * `type` and `order` properties, instantiates managed step objects via
+     * {@code createStepFromConfig}, sorts steps by the numeric `order` property
+     * (steps without a valid `order` default to 100), and returns the instantiated
+     * steps in execution order. If configuration cannot be read, returns an empty list.
+     *
+     * @return a list of instantiated pipeline step objects in execution order
+     */
     private List<Object> loadPipelineSteps() {
         // Get all configured pipeline steps from application properties
         Map<String, Map<String, String>> stepConfigs = new HashMap<>();
@@ -167,6 +192,13 @@ public class PipelineRunner implements AutoCloseable {
         return steps;
     }
 
+    /**
+     * Instantiate a pipeline step from its configuration and return a CDI-managed instance.
+     *
+     * @param stepName the logical name of the step (used only for error logging)
+     * @param config a map of step properties; must include the `class` key with the step's fully-qualified class name
+     * @return a CDI-managed instance of the configured class, or `null` if the `class` key is missing or instantiation fails
+     */
     private Object createStepFromConfig(String stepName, Map<String, String> config) {
         String stepClassName = config.get("class");
         if (stepClassName == null) {

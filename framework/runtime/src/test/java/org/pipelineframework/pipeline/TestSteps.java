@@ -147,6 +147,13 @@ public class TestSteps {
             throw new RuntimeException("Intentional failure for testing");
         }
 
+        /**
+         * Handle a failed item by logging the dead-letter event and returning the original item unchanged.
+         *
+         * @param failedItem a Uni that produces the item that failed processing
+         * @param cause the throwable that caused the failure
+         * @return a Uni that emits the original input value
+         */
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
             LOG.infof("Dead letter handled for: %s", failedItem.toString());

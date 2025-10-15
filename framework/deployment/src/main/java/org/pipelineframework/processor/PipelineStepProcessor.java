@@ -56,6 +56,17 @@ public class PipelineStepProcessor extends AbstractProcessor {
         super.init(processingEnv);
     }
 
+    /**
+     * Processes elements annotated with {@code @PipelineStep} and generates gRPC server adapters,
+     * gRPC client steps, and — when enabled and compatible — REST resource classes.
+     *
+     * The method validates annotated elements, emits compiler diagnostics for invalid uses or
+     * generation failures, and invokes code generation helpers for each discovered service class.
+     *
+     * @param annotations the set of annotation types requested to be processed for this round
+     * @param roundEnv    environment that provides access to elements annotated with the requested annotations
+     * @return {@code true} if this processor handled the provided annotations (processing occurred), {@code false} if there were no annotations to process
+     */
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         if (annotations.isEmpty()) {
@@ -631,6 +642,13 @@ public class PipelineStepProcessor extends AbstractProcessor {
         }
     }
 
+    /**
+     * Resolve the package name for a gRPC type, falling back to the provided package when resolution fails.
+     *
+     * @param inputGrpcType the TypeMirror representing the gRPC type to inspect
+     * @param grpcPackage   the fallback package name to return if the type's package cannot be determined
+     * @return              the fully qualified package name of the given type, or `grpcPackage` if it cannot be resolved
+     */
     private String extractPackage(TypeMirror inputGrpcType, String grpcPackage) {
         Element element = processingEnv.getTypeUtils().asElement(inputGrpcType);
         if (element != null) {
@@ -643,15 +661,16 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
     
     /**
-     * Generates a REST resource class for services implementing ReactiveService, ReactiveStreamingService, or ReactiveStreamingClientService interface.
-     * The generated class provides a REST endpoint that maps DTOs to domain objects
-     * and calls the underlying service.
+     * Generate a REST resource class that exposes the annotated reactive service as HTTP endpoints.
      *
-     * @param serviceClass the TypeElement representing the annotated service class
+     * The generated resource maps request/response DTOs to domain types (using configured mappers when present),
+     * delegates processing to the domain service, and includes an exception mapper for runtime errors.
+     *
+     * @param serviceClass the annotated service class element
      * @param pipelineStep the PipelineStep annotation instance for the service
-     * @param isReactiveService whether the service implements ReactiveService interface
-     * @param isReactiveStreamingService whether the service implements ReactiveStreamingService interface
-     * @param isReactiveStreamingClientService whether the service implements ReactiveStreamingClientService interface
+     * @param isReactiveService true if the service implements ReactiveService
+     * @param isReactiveStreamingService true if the service implements ReactiveStreamingService
+     * @param isReactiveStreamingClientService true if the service implements ReactiveStreamingClientService
      * @throws IOException if writing the generated Java source file fails
      */
     protected void generateRestResource(TypeElement serviceClass, PipelineStep pipelineStep, boolean isReactiveService, boolean isReactiveStreamingService, boolean isReactiveStreamingClientService) throws IOException {
@@ -842,15 +861,16 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
     
     /**
-     * Creates the process method for ReactiveStreamingService which takes a single input 
-     * and returns a stream of outputs.
-     * 
-     * @param inputDtoClassName The DTO type for the input
-     * @param outputDtoClassName The DTO type for the output
-     * @param inboundMapperFieldName The name of the inbound mapper field
-     * @param outboundMapperFieldName The name of the outbound mapper field
-     * @param inputType The domain type for the input (from service generics)
-     * @param outputType The domain type for the output (from service generics)
+     * Creates the JAX-RS `process` method for a ReactiveStreamingService that accepts a single
+     * input DTO and returns a stream of output DTOs.
+     *
+     * @param inputDtoClassName      the DTO type used as the method parameter
+     * @param outputDtoClassName     the DTO element type emitted by the returned stream
+     * @param inboundMapperFieldName the field name of the mapper used to convert DTO -> domain
+     * @param outboundMapperFieldName the field name of the mapper used to convert domain -> DTO
+     * @param inputType              the domain input type from the service generics (may be null)
+     * @param outputType             the domain output type from the service generics (may be null)
+     * @return                       a MethodSpec for the generated REST `process` method
      */
     private MethodSpec createReactiveStreamingServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
@@ -886,15 +906,21 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
 
     /**
-     * Creates the process method for ReactiveStreamingClientService which takes a stream of inputs 
-     * and returns a single output.
-     * 
-     * @param inputDtoClassName The DTO type for the input
-     * @param outputDtoClassName The DTO type for the output
-     * @param inboundMapperFieldName The name of the inbound mapper field
-     * @param outboundMapperFieldName The name of the outbound mapper field
-     * @param inputType The domain type for the input (from service generics)
-     * @param outputType The domain type for the output (from service generics)
+     * Creates the REST resource `process` method for a ReactiveStreamingClientService: accepts a stream
+     * of input DTOs and produces a single output DTO.
+     *
+     * <p>The generated method is public, annotated with `@POST` and `@Path("/process")`, takes a
+     * `Multi<inputDto>` parameter named `inputDtos`, and returns a `Uni<outputDto>`. It maps incoming
+     * DTOs to domain inputs using the provided inbound mapper field, delegates to `domainService.process`,
+     * and maps the resulting domain output to a DTO using the provided outbound mapper field.
+     *
+     * @param inputDtoClassName the TypeName of the input DTO type
+     * @param outputDtoClassName the TypeName of the output DTO type
+     * @param inboundMapperFieldName the field name of the inbound mapper used to convert DTOs to domain objects
+     * @param outboundMapperFieldName the field name of the outbound mapper used to convert domain objects to DTOs
+     * @param inputType the domain input TypeMirror (may be null)
+     * @param outputType the domain output TypeMirror (may be null)
+     * @return a MethodSpec for the REST `process` method that handles streaming inputs and produces a single output
      */
     private MethodSpec createReactiveStreamingClientServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
@@ -927,15 +953,23 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
 
     /**
-     * Creates the process method for regular ReactiveService.
-     * 
-     * @param inputDtoClassName The DTO type for the input
-     * @param outputDtoClassName The DTO type for the output
-     * @param inboundMapperFieldName The name of the inbound mapper field
-     * @param outboundMapperFieldName The name of the outbound mapper field
-     * @param inputType The domain type for the input (from service generics)
-     * @param outputType The domain type for the output (from service generics)
-     */
+         * Builds the REST resource "process" method for a unary reactive service endpoint.
+         *
+         * The generated method is a public POST mapped to "/process" that:
+         * - accepts an input DTO,
+         * - converts it to the domain input using the provided inbound mapper,
+         * - delegates to domainService.process(...),
+         * - maps the resulting domain output to an output DTO using the outbound mapper,
+         * - and returns a `Uni<OutputDto>` containing the mapped result.
+         *
+         * @param inputDtoClassName the DTO type used as the method parameter
+         * @param outputDtoClassName the DTO type returned inside the `Uni`
+         * @param inboundMapperFieldName the injected field name of the inbound mapper used to convert DTO -> domain
+         * @param outboundMapperFieldName the injected field name of the outbound mapper used to convert domain -> DTO
+         * @param inputType the domain input type (used to reference the converted domain parameter)
+         * @param outputType the domain output type (used for type references when mapping the result)
+         * @return a MethodSpec representing the generated `process` method that returns `Uni<OutputDto>`
+         */
     private MethodSpec createReactiveServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
             String inboundMapperFieldName, String outboundMapperFieldName,
@@ -1040,10 +1074,17 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
     
     /**
-     * Gets the DTO type name based on the domain type name.
-     * 
-     * @param typeMirror the TypeMirror of the domain type
-     * @return the corresponding DTO type name
+     * Derives the corresponding DTO type name for a given domain type.
+     *
+     * The result is a fully qualified type name when a package can be produced,
+     * otherwise a simple DTO type name. Common package transformations are applied:
+     * ".common.domain" -> ".common.dto", ".domain" -> ".dto", and ".service" -> ".dto".
+     * If the input type already ends with `Dto`, it is returned unchanged. A special
+     * case maps a type whose simple name is `"domain"` to a `Dto` class in the
+     * transformed package.
+     *
+     * @param typeMirror the domain type to map (may be a fully qualified or simple name)
+     * @return the DTO type name (fully qualified when possible), or `null` if {@code typeMirror} is null
      */
     String getDtoType(TypeMirror typeMirror) {
         if (typeMirror == null || typeMirror.toString() == null) {
@@ -1107,6 +1148,13 @@ public class PipelineStepProcessor extends AbstractProcessor {
         return modifiedPackageName.isEmpty() ? simpleName + "Dto" : modifiedPackageName + "." + simpleName + "Dto";
     }
     
+    /**
+     * Finds the AnnotationMirror instance for a specific annotation present on an element.
+     *
+     * @param element the element to inspect for the annotation
+     * @param annotationClass the annotation class to look for
+     * @return the matching {@link AnnotationMirror} if the annotation is present on the element, or {@code null} if not found
+     */
     protected AnnotationMirror getAnnotationMirror(Element element, Class<?> annotationClass) {
         String annotationClassName = annotationClass.getCanonicalName();
         for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {

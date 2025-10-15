@@ -26,11 +26,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Interface for one-to-one pipeline steps that transform a single input item to a single output item asynchronously.
- * 
+ *
  * <p>This interface represents a 1 -> 1 (async) transformation where each input item
  * is processed to produce exactly one output item. The processing is asynchronous,
  * returning a Uni that emits the transformed result.</p>
- * 
+ *
  * @param <I> the type of input item
  * @param <O> the type of output item
  */
@@ -47,9 +47,21 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
         final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
-        Supplier<Uni<O>> uniSupplier = () -> input.onItem().transformToUni(this::applyOneToOne);
+        Supplier<Uni<O>> uniSupplier = () -> input
+            .onItem().ifNull().failWith(new NullPointerException("Input item is null"))
+            .onItem().transformToUni(this::applyOneToOne);
 
         try {
+            // Check if the input Uni is null before processing
+            if (input == null) {
+                if (recoverOnFailure()) {
+                    return deadLetter(Uni.createFrom().failure(new NullPointerException("Input Uni is null")),
+                        new NullPointerException("Input Uni is null"));
+                } else {
+                    return Uni.createFrom().failure(new NullPointerException("Input Uni is null"));
+                }
+            }
+
             Uni<O> uni = Uni.createFrom().deferred(() -> {
                 Uni<O> result = uniSupplier.get();
                 if (result == null) {
@@ -65,13 +77,11 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
 
             // Apply backpressure strategy if input is a Multi (stream)
             // For Uni, we handle it as part of the Multi pipeline in the pipeline execution
-            if (input != null) {
-                uni = uni
-                    .onFailure().retry()
-                    .withBackOff(retryWait(), maxBackoff())
-                    .withJitter(jitter() ? 0.5 : 0.0)
-                    .atMost(retryLimit());
-            }
+            uni = uni
+                .onFailure().retry()
+                .withBackOff(retryWait(), maxBackoff())
+                .withJitter(jitter() ? 0.5 : 0.0)
+                .atMost(retryLimit());
 
             return uni
             .onItem().invoke(i -> {
@@ -90,7 +100,10 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
                             this.getClass().getSimpleName(), input, retryLimit(), err
                         );
                     }
-                    assert input != null;
+                    // Make sure input isn't null when calling deadLetter
+                    if (input == null) {
+                        return deadLetter(Uni.createFrom().failure(new NullPointerException("Input Uni is null")), err);
+                    }
                     return deadLetter(input, err);
                 } else {
                     return Uni.createFrom().failure(err);
@@ -107,7 +120,10 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
                         this.getClass().getSimpleName(), input, t
                     );
                 }
-                assert input != null;
+                // Make sure input isn't null when calling deadLetter
+                if (input == null) {
+                    return deadLetter(Uni.createFrom().failure(new NullPointerException("Input Uni is null")), t);
+                }
                 return deadLetter(input, t);
             } else {
                 return Uni.createFrom().failure(t);

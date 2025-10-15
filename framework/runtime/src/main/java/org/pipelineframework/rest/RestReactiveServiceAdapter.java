@@ -100,11 +100,11 @@ public abstract class RestReactiveServiceAdapter<DomainIn, DomainOut, DtoOut> {
      */
     protected Multi<DtoOut> processStreamWithAutoPersistence(Multi<DomainIn> domainStream) {
         Multi<DomainIn> persistedStream = isAutoPersistenceEnabled() 
-            ? domainStream.onItem().transformToUniAndMerge(persistenceManager::persist)
+            ? domainStream.onItem().transformToUniAndConcatenate(persistenceManager::persist)
             : domainStream;
 
         return persistedStream
-            .onItem().transformToUniAndMerge(entity -> 
+            .onItem().transformToUniAndConcatenate(entity ->
                 getService()
                     .process(entity)
                     .onItem()

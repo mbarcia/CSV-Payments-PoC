@@ -46,6 +46,8 @@ For specialized operations like file downloads, you might need to complement the
 ```java
 @Path("/api/v1/process-csv-payments-output-file-reactive")
 public class ProcessCsvPaymentsOutputFileRestResource {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ProcessCsvPaymentsOutputFileRestResource.class);
     
     @Inject
     ProcessCsvPaymentsOutputFileReactiveService domainService;

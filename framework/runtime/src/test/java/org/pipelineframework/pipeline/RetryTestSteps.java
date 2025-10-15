@@ -18,10 +18,13 @@ package org.pipelineframework.pipeline;
 
 import io.smallrye.mutiny.Uni;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.jboss.logging.Logger;
 import org.pipelineframework.step.ConfigurableStep;
 import org.pipelineframework.step.StepOneToOne;
 
 public class RetryTestSteps {
+
+    private static final Logger LOG = Logger.getLogger(RetryTestSteps.class);
 
     public static class AsyncFailNTimesStep extends ConfigurableStep
             implements StepOneToOne<String, String> {
@@ -48,11 +51,9 @@ public class RetryTestSteps {
 
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
-            System.out.println(
-                    "AsyncFailedNTimesStep dead letter: "
-                            + failedItem
-                            + " due to "
-                            + cause.getMessage());
+            LOG.infof(
+                    "AsyncFailedNTimesStep dead letter: %s due to %s",
+                    failedItem, cause.getMessage());
             // For recovery, return the original input value from the Uni
             return failedItem.onItem().transform(item -> item);
         }

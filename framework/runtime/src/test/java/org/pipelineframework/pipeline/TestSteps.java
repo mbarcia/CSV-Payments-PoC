@@ -19,6 +19,7 @@ package org.pipelineframework.pipeline;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.jboss.logging.Logger;
 import org.pipelineframework.step.ConfigurableStep;
 import org.pipelineframework.step.StepManyToMany;
 import org.pipelineframework.step.StepOneToMany;
@@ -27,6 +28,8 @@ import org.pipelineframework.step.blocking.StepOneToOneBlocking;
 
 @ApplicationScoped
 public class TestSteps {
+
+    private static final Logger LOG = Logger.getLogger(TestSteps.class);
 
     public static class TestStepOneToOneBlocking extends ConfigurableStep
             implements StepOneToOneBlocking<String, String> {
@@ -146,7 +149,7 @@ public class TestSteps {
 
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
-            System.out.println("Dead letter handled for: " + failedItem.toString());
+            LOG.infof("Dead letter handled for: %s", failedItem.toString());
             // Return the original input value when recovery is enabled
             return failedItem.onItem().transform(item -> item);
         }

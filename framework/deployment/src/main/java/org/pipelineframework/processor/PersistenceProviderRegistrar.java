@@ -20,10 +20,12 @@ import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
+import org.jboss.logging.Logger;
 
 public class PersistenceProviderRegistrar {
 
     private static final String FEATURE_NAME = "pipelineframework-providers";
+    private static final Logger LOG = Logger.getLogger(PersistenceProviderRegistrar.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -36,14 +38,14 @@ public class PersistenceProviderRegistrar {
         boolean hasHibernateReactive = classAvailable("org.hibernate.reactive.mutiny.Mutiny$SessionFactory");
 
         if (hasPanache && hasHibernateReactive) {
-            System.out.println("Registering ReactivePanachePersistenceProvider");
+            LOG.info("Registering ReactivePanachePersistenceProvider");
             additionalBeans.produce(
                     AdditionalBeanBuildItem.unremovableOf(
                             "org.pipelineframework.persistence.provider.ReactivePanachePersistenceProvider"
                     )
             );
         } else {
-            System.out.printf("Skipping ReactivePanachePersistenceProvider (Panache=%s, HibernateReactive=%s)%n",
+            LOG.debugf("Skipping ReactivePanachePersistenceProvider (Panache=%s, HibernateReactive=%s)",
                     hasPanache, hasHibernateReactive);
         }
     }

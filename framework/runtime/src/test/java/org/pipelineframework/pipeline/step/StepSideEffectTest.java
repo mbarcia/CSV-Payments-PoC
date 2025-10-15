@@ -22,17 +22,20 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.StepSideEffect;
 
 class StepSideEffectTest {
 
+    private static final Logger LOG = Logger.getLogger(StepSideEffectTest.class);
+
     static class TestStep implements StepSideEffect<String> {
         @Override
         public Uni<String> applyOneToOne(String input) {
             // Simulate some side effect
-            System.out.println("Side effect for: " + input);
+            LOG.infof("Side effect for: %s", input);
             return Uni.createFrom().item(input); // Return original input after side effect
         }
 

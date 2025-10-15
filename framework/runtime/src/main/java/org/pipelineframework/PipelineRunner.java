@@ -25,7 +25,7 @@ import jakarta.inject.Inject;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
 import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.step.*;
@@ -35,6 +35,8 @@ import org.pipelineframework.step.functional.ManyToOne;
 @ApplicationScoped
 @Unremovable
 public class PipelineRunner implements AutoCloseable {
+
+    private static final Logger LOG = Logger.getLogger(PipelineRunner.class);
 
     @Inject
     ConfigFactory configFactory;
@@ -51,7 +53,7 @@ public class PipelineRunner implements AutoCloseable {
         List<Object> steps = loadPipelineSteps();
         
         if (steps.isEmpty()) {
-            System.out.println("No steps available to execute - pipeline will not process data");
+            LOG.warn("No steps available to execute - pipeline will not process data");
         }
         
         return run(input, steps);
@@ -66,7 +68,7 @@ public class PipelineRunner implements AutoCloseable {
 
         for (Object step : steps) {
             if (step == null) {
-                System.err.println("Warning: Found null step in configuration, skipping...");
+                LOG.warn("Warning: Found null step in configuration, skipping...");
                 continue;
             }
             
@@ -76,9 +78,9 @@ public class PipelineRunner implements AutoCloseable {
             }
 
             Class<?> clazz = step.getClass();
-            System.out.println("Step class: " + clazz.getName());
+            LOG.infof("Step class: %s", clazz.getName());
             for (Class<?> iface : clazz.getInterfaces()) {
-                System.out.println("Implements: " + iface.getName());
+                LOG.infof("Implements: %s", iface.getName());
             }
 
             switch (step) {
@@ -88,7 +90,7 @@ public class PipelineRunner implements AutoCloseable {
                 case org.pipelineframework.step.future.StepOneToOneCompletableFuture stepFuture -> current = applyOneToOneFutureUnchecked(stepFuture, current);
                 case ManyToOne manyToOne -> current = applyManyToOneUnchecked(manyToOne, current);
                 case ManyToMany manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
-                default -> System.err.println("Step not recognised: " + step.getClass().getName());
+                default -> LOG.errorf("Step not recognised: %s", step.getClass().getName());
             }
         }
 
@@ -111,9 +113,7 @@ public class PipelineRunner implements AutoCloseable {
             // A better approach: use Quarkus Config's ability to create configuration objects
             // For now, let's look for a known property to see if configuration access works
             Optional<String> testProp = config.getOptionalValue("pipeline.steps.process-folder.class", String.class);
-            if (testProp.isPresent()) {
-                System.out.println("Found test property: " + testProp.get());
-            }
+            testProp.ifPresent(s -> LOG.debugf("Found test property: %s", s));
             
             // Instead of iterating all properties, let's use the fact that we know the pattern
             // We'll try to get properties for known step names (this could be made more dynamic)
@@ -137,8 +137,7 @@ public class PipelineRunner implements AutoCloseable {
             }
             
         } catch (Exception e) {
-            System.err.println("Failed to load configuration: " + e.getMessage());
-            e.printStackTrace(); // print stack trace to identify the exact issue
+            LOG.errorf(e, "Failed to load configuration: %s", e.getMessage());
             return Collections.emptyList();
         }
 
@@ -164,14 +163,14 @@ public class PipelineRunner implements AutoCloseable {
             }
         }
 
-        System.out.println("Loaded " + steps.size() + " pipeline steps from application properties");
+        LOG.infof("Loaded %d pipeline steps from application properties", steps.size());
         return steps;
     }
 
     private Object createStepFromConfig(String stepName, Map<String, String> config) {
         String stepClassName = config.get("class");
         if (stepClassName == null) {
-            System.err.println("No class specified for pipeline step: " + stepName);
+            LOG.errorf("No class specified for pipeline step: %s", stepName);
             return null;
         }
 
@@ -179,8 +178,7 @@ public class PipelineRunner implements AutoCloseable {
             Class<?> stepClass = Thread.currentThread().getContextClassLoader().loadClass(stepClassName);
             return CDI.current().select(stepClass).get();
         } catch (Exception e) {
-            System.err.println("Failed to instantiate pipeline step: " + stepClassName + ", error: " + e.getMessage());
-            e.printStackTrace();
+            LOG.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
             return null;
         }
     }

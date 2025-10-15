@@ -19,6 +19,7 @@ package org.pipelineframework;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -32,6 +33,8 @@ import picocli.CommandLine.Option;
          description = "Pipeline execution CLI")
 @Dependent // Mark as a CDI bean to enable injection
 public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
+
+    private static final Logger LOG = Logger.getLogger(PipelineCLI.class);
 
     @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", required = true)
     public String input;
@@ -55,14 +58,14 @@ public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
             executePipelineWithInput(input);
             return 0; // Success exit code
         } else {
-            System.err.println("Input parameter is required");
+            LOG.error("Input parameter is required");
             return 1; // Error exit code
         }
     }
     
     // Execute the pipeline when arguments are properly parsed
     private void executePipelineWithInput(String input) {
-        System.out.println("Processing input: " + input);
+        LOG.infof("Processing input: %s", input);
         
         // Create input Multi from the input parameter
         Multi<String> inputMulti = Multi.createFrom().item(input);
@@ -70,6 +73,6 @@ public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti);
         
-        System.out.println("Pipeline execution completed");
+        LOG.info("Pipeline execution completed");
     }
 }

@@ -103,7 +103,7 @@ class StepOneToOneCompletableFutureTest {
         // When
         Multi<String> result =
                 input.onItem()
-                        .transformToUniAndMerge(
+                        .transformToUniAndConcatenate(
                                 item -> step.apply(io.smallrye.mutiny.Uni.createFrom().item(item)));
 
         // Then

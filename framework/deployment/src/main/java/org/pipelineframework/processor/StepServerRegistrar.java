@@ -36,15 +36,15 @@ public class StepServerRegistrar {
     }
 
     @BuildStep
-    void registerGeneratedGrpcServices(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-                                       PipelineBuildTimeConfig config,
-                                       CombinedIndexBuildItem combinedIndex) {
+    void registerGeneratedServices(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
+                                  PipelineBuildTimeConfig config,
+                                  CombinedIndexBuildItem combinedIndex) {
 
         if (config.generateCli()) return;
 
         IndexView index = combinedIndex.getIndex();
 
-        // Find all classes ending with "GrpcService"
+        // Find all classes ending with "GrpcService" - these need explicit registration
         index.getKnownClasses().stream()
             .filter(ci -> ci.name().toString().endsWith(GRPC_SERVICE_SUFFIX))
             .forEach(ci -> {

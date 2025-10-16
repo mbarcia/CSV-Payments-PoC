@@ -19,6 +19,7 @@ package org.pipelineframework;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -33,11 +34,10 @@ import picocli.CommandLine.Option;
 @Dependent // Mark as a CDI bean to enable injection
 public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
 
+    private static final Logger LOG = Logger.getLogger(PipelineCLI.class);
+
     @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", required = true)
     public String input;
-
-    @Option(names = {"-a", "--args"}, description = "Additional arguments", split = " ")
-    String[] additionalArgs = {};
 
     @Inject
     PipelineExecutionService pipelineExecutionService;
@@ -48,21 +48,32 @@ public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
         System.exit(exitCode);
     }
 
-    // Called when the command is executed by picocli
+    /**
+     * Entry point invoked by Picocli to execute the command: runs the pipeline when an input value is provided, otherwise logs an error.
+     *
+     * @return 0 if pipeline execution was started successfully, 1 if the required input was missing
+     */
     @Override
     public Integer call() {
         if (input != null) {
             executePipelineWithInput(input);
             return 0; // Success exit code
         } else {
-            System.err.println("Input parameter is required");
+            LOG.error("Input parameter is required");
             return 1; // Error exit code
         }
     }
     
-    // Execute the pipeline when arguments are properly parsed
+    /**
+     * Run the pipeline using the provided input string.
+     * <p>
+     * Creates a reactive stream containing the single input value and delegates pipeline execution
+     * to the injected PipelineExecutionService while logging start and completion.
+     *
+     * @param input the input value to provide as the single item to the pipeline
+     */
     private void executePipelineWithInput(String input) {
-        System.out.println("Processing input: " + input);
+        LOG.infof("Processing input: %s", input);
         
         // Create input Multi from the input parameter
         Multi<String> inputMulti = Multi.createFrom().item(input);
@@ -70,6 +81,6 @@ public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti);
         
-        System.out.println("Pipeline execution completed");
+        LOG.info("Pipeline execution completed");
     }
 }

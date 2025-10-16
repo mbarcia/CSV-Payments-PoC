@@ -25,7 +25,7 @@ import jakarta.inject.Inject;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
 import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.step.*;
@@ -36,6 +36,8 @@ import org.pipelineframework.step.functional.ManyToOne;
 @Unremovable
 public class PipelineRunner implements AutoCloseable {
 
+    private static final Logger LOG = Logger.getLogger(PipelineRunner.class);
+
     @Inject
     ConfigFactory configFactory;
 
@@ -45,20 +47,33 @@ public class PipelineRunner implements AutoCloseable {
     private final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
-     * Run a pipeline: input Multi through the list of steps read from application properties.
+     * Execute the configured pipeline steps against the provided Multi input.
+     *
+     * @param input the source Multi of items to process through the pipeline
+     * @return the pipeline's resulting reactive stream — either a `Multi<?>` or a `Uni<?>` representing the final stage
      */
     public Object run(Multi<?> input) {
         List<Object> steps = loadPipelineSteps();
         
         if (steps.isEmpty()) {
-            System.out.println("No steps available to execute - pipeline will not process data");
+            LOG.warn("No steps available to execute - pipeline will not process data");
         }
         
         return run(input, steps);
     }
 
     /**
-     * Run a pipeline: input Multi through the provided list of steps.
+     * Execute the pipeline by applying the ordered steps to the given input stream.
+     *
+     * <p>Each non-null step from {@code steps} is applied in sequence to the current pipeline state.
+     * If a step implements {@code Configurable} it will be initialised with a live configuration
+     * before being applied. Unknown step types are ignored (logged) and null entries are skipped.</p>
+     *
+     * @param input  the initial Multi stream to be processed
+     * @param steps  an ordered list of pipeline step instances; null entries are skipped and
+     *               {@code Configurable} steps are initialised before application
+     * @return       the resulting pipeline output, typically a {@code Uni<?>} or {@code Multi<?>} representing
+     *               the pipeline's final stream
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Object run(Multi<?> input, List<Object> steps) {
@@ -66,7 +81,7 @@ public class PipelineRunner implements AutoCloseable {
 
         for (Object step : steps) {
             if (step == null) {
-                System.err.println("Warning: Found null step in configuration, skipping...");
+                LOG.warn("Warning: Found null step in configuration, skipping...");
                 continue;
             }
             
@@ -76,9 +91,9 @@ public class PipelineRunner implements AutoCloseable {
             }
 
             Class<?> clazz = step.getClass();
-            System.out.println("Step class: " + clazz.getName());
+            LOG.debugf("Step class: %s", clazz.getName());
             for (Class<?> iface : clazz.getInterfaces()) {
-                System.out.println("Implements: " + iface.getName());
+                LOG.debugf("Implements: %s", iface.getName());
             }
 
             switch (step) {
@@ -88,13 +103,25 @@ public class PipelineRunner implements AutoCloseable {
                 case org.pipelineframework.step.future.StepOneToOneCompletableFuture stepFuture -> current = applyOneToOneFutureUnchecked(stepFuture, current);
                 case ManyToOne manyToOne -> current = applyManyToOneUnchecked(manyToOne, current);
                 case ManyToMany manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
-                default -> System.err.println("Step not recognised: " + step.getClass().getName());
+                default -> LOG.errorf("Step not recognised: %s", step.getClass().getName());
             }
         }
 
         return current; // could be Uni<?> or Multi<?>
     }
 
+    /**
+     * Load and instantiate pipeline steps defined in application properties.
+     *
+     * <p>Reads configured properties for a predefined set of step names (properties
+     * under `pipeline.steps.{name}`), collects each step's `class` and optional
+     * `type` and `order` properties, instantiates managed step objects via
+     * {@code createStepFromConfig}, sorts steps by the numeric `order` property
+     * (steps without a valid `order` default to 100), and returns the instantiated
+     * steps in execution order. If configuration cannot be read, returns an empty list.
+     *
+     * @return a list of instantiated pipeline step objects in execution order
+     */
     private List<Object> loadPipelineSteps() {
         // Get all configured pipeline steps from application properties
         Map<String, Map<String, String>> stepConfigs = new HashMap<>();
@@ -111,9 +138,7 @@ public class PipelineRunner implements AutoCloseable {
             // A better approach: use Quarkus Config's ability to create configuration objects
             // For now, let's look for a known property to see if configuration access works
             Optional<String> testProp = config.getOptionalValue("pipeline.steps.process-folder.class", String.class);
-            if (testProp.isPresent()) {
-                System.out.println("Found test property: " + testProp.get());
-            }
+            testProp.ifPresent(s -> LOG.debugf("Found test property: %s", s));
             
             // Instead of iterating all properties, let's use the fact that we know the pattern
             // We'll try to get properties for known step names (this could be made more dynamic)
@@ -137,8 +162,7 @@ public class PipelineRunner implements AutoCloseable {
             }
             
         } catch (Exception e) {
-            System.err.println("Failed to load configuration: " + e.getMessage());
-            e.printStackTrace(); // print stack trace to identify the exact issue
+            LOG.errorf(e, "Failed to load configuration: %s", e.getMessage());
             return Collections.emptyList();
         }
 
@@ -153,7 +177,7 @@ public class PipelineRunner implements AutoCloseable {
                     return 100; // default order
                 }
             }))
-            .collect(Collectors.toList());
+            .toList();
 
         List<Object> steps = new ArrayList<>();
         for (String stepName : sortedStepNames) {
@@ -164,14 +188,21 @@ public class PipelineRunner implements AutoCloseable {
             }
         }
 
-        System.out.println("Loaded " + steps.size() + " pipeline steps from application properties");
+        LOG.debugf("Loaded %d pipeline steps from application properties", steps.size());
         return steps;
     }
 
+    /**
+     * Instantiate a pipeline step from its configuration and return a CDI-managed instance.
+     *
+     * @param stepName the logical name of the step (used only for error logging)
+     * @param config a map of step properties; must include the `class` key with the step's fully-qualified class name
+     * @return a CDI-managed instance of the configured class, or `null` if the `class` key is missing or instantiation fails
+     */
     private Object createStepFromConfig(String stepName, Map<String, String> config) {
         String stepClassName = config.get("class");
         if (stepClassName == null) {
-            System.err.println("No class specified for pipeline step: " + stepName);
+            LOG.errorf("No class specified for pipeline step: %s", stepName);
             return null;
         }
 
@@ -179,8 +210,7 @@ public class PipelineRunner implements AutoCloseable {
             Class<?> stepClass = Thread.currentThread().getContextClassLoader().loadClass(stepClassName);
             return CDI.current().select(stepClass).get();
         } catch (Exception e) {
-            System.err.println("Failed to instantiate pipeline step: " + stepClassName + ", error: " + e.getMessage());
-            e.printStackTrace();
+            LOG.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
             return null;
         }
     }
@@ -254,11 +284,10 @@ public class PipelineRunner implements AutoCloseable {
         } else if (current instanceof Multi<?>) {
             // Apply the OneToOne step to each item in the Multi, using the apply method 
             // which includes retry and recovery logic
-            Multi<O> result = ((Multi<I>) current)
+            return ((Multi<I>) current)
                 .onItem()
                 .transformToUni(item -> step.apply(Uni.createFrom().item(item)))
                 .concatenate();
-            return result;
         } else {
             throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToOneCompletableFuture: {0}", current));
         }

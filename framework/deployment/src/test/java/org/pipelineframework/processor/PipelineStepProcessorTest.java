@@ -29,6 +29,8 @@ import javax.tools.Diagnostic;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -192,57 +194,117 @@ class PipelineStepProcessorTest {
                         eq(mockElement));
     }
 
-    @Test
-    void testDeriveResourcePath() {
-        // Create a test instance using reflection to access protected method
-        PipelineStepProcessor processor = new PipelineStepProcessor();
-
-        // Use reflection to call the protected method
-        try {
-            java.lang.reflect.Method method =
-                    PipelineStepProcessor.class.getDeclaredMethod(
-                            "deriveResourcePath", String.class);
-            method.setAccessible(true);
-
-            // Test various class names
-            assertEquals(
-                    "/api/v1/process-customer", method.invoke(processor, "ProcessCustomerService"));
-            assertEquals(
-                    "/api/v1/validate-order", method.invoke(processor, "ValidateOrderService"));
-            assertEquals("/api/v1/customer", method.invoke(processor, "CustomerService"));
-            assertEquals(
-                    "/api/v1/process-payment-status",
-                    method.invoke(processor, "ProcessPaymentStatus"));
-        } catch (Exception e) {
-            fail("Error calling deriveResourcePath method: " + e.getMessage());
-        }
+    @ParameterizedTest
+    @CsvSource({
+        "ProcessCustomerService, /api/v1/process-customer",
+        "ValidateOrderService, /api/v1/validate-order",
+        "CustomerService, /api/v1/customer",
+        "ProcessPaymentStatus, /api/v1/process-payment-status",
+        "SimpleClass, /api/v1/simple-class",
+        "UPPERCASE, /api/v1/uppercase",
+        "camelCase, /api/v1/camel-case",
+        "XMLHttpRequest, /api/v1/xml-http-request"
+    })
+    void testDeriveResourcePath(String className, String expectedPath) {
+        assertEquals(expectedPath, processor.deriveResourcePath(className));
     }
 
     @Test
-    void testGetDtoType() {
-        // Create a test instance using reflection to access protected method
-        PipelineStepProcessor processor = new PipelineStepProcessor();
+    void testDeriveResourcePathWithException() {
+        // Test exception handling in deriveResourcePath
+        try {
+            // Pass null to trigger exception for better diagnostic coverage
+            processor.deriveResourcePath(null);
+            fail("Expected exception was not thrown");
+        } catch (Exception e) {
+            // Verify that the exception is handled appropriately
+            // In this case, it would be a NullPointerException from calling substring on null
+            assertTrue(e instanceof NullPointerException);
+        }
+    }
 
-        // Create a mock TypeMirror
+    @ParameterizedTest
+    @CsvSource({
+        "com.example.domain.CustomerInput, com.example.dto.CustomerInputDto",
+        "com.example.common.domain.CustomerOutput, com.example.common.dto.CustomerOutputDto",
+        "com.example.domain.payment.PaymentRecord, com.example.dto.payment.PaymentRecordDto",
+        "com.example.domain.CustomerInputDto, com.example.domain.CustomerInputDto", // Already ends
+        // with Dto
+        "com.example.service.Customer, com.example.dto.CustomerDto", // Service package
+        "com.example.model.Customer, com.example.model.CustomerDto", // Not in domain package
+        "com.example.foo.domain.bar.Type, com.example.foo.dto.bar.TypeDto", // Nested domain
+        // packages
+        "CustomerInput, CustomerInputDto", // No package
+        "com.example.domain, com.example.Dto", // Edge case with class named domain
+        "com.example.common.domain, com.example.common.Dto" // Edge case with class named domain
+    })
+    void testGetDtoType(String domainType, String expectedDtoType) {
+        // Create a proper TypeMirror mock that returns the domainType when toString is called
         javax.lang.model.type.TypeMirror mockTypeMirror =
                 mock(javax.lang.model.type.TypeMirror.class);
-        when(mockTypeMirror.toString()).thenReturn("com.example.domain.CustomerInput");
+        when(mockTypeMirror.toString()).thenReturn(domainType);
 
-        try {
-            java.lang.reflect.Method method =
-                    PipelineStepProcessor.class.getDeclaredMethod(
-                            "getDtoType", javax.lang.model.type.TypeMirror.class);
-            method.setAccessible(true);
+        String actualDtoType = processor.getDtoType(mockTypeMirror);
+        assertEquals(expectedDtoType, actualDtoType);
+    }
 
-            String result = (String) method.invoke(processor, mockTypeMirror);
-            assertEquals("com.example.dto.CustomerInputDto", result);
+    @Test
+    void testGetDtoTypeWithNullInput() {
+        // Create a TypeMirror mock that returns null for toString
+        javax.lang.model.type.TypeMirror mockTypeMirror =
+                mock(javax.lang.model.type.TypeMirror.class);
+        when(mockTypeMirror.toString()).thenReturn(null);
 
-            // Test with common.domain
-            when(mockTypeMirror.toString()).thenReturn("com.example.common.domain.CustomerOutput");
-            result = (String) method.invoke(processor, mockTypeMirror);
-            assertEquals("com.example.common.dto.CustomerOutputDto", result);
-        } catch (Exception e) {
-            fail("Error calling getDtoType method: " + e.getMessage());
-        }
+        // When toString returns null, the method should return null
+        String result = processor.getDtoType(mockTypeMirror);
+        assertNull(result);
+    }
+
+    @Test
+    void testImplementsInterface() {
+        // The implementsInterface method requires processingEnv to be properly initialized
+        // For this test, we'll test with a processor that has been initialized
+        PipelineStepProcessor localProcessor = new PipelineStepProcessor();
+
+        // Set up the processingEnv mock
+        ProcessingEnvironment localProcessingEnv = mock(ProcessingEnvironment.class);
+        when(localProcessingEnv.getElementUtils())
+                .thenReturn(mock(javax.lang.model.util.Elements.class));
+        when(localProcessingEnv.getTypeUtils()).thenReturn(mock(javax.lang.model.util.Types.class));
+
+        localProcessor.init(localProcessingEnv);
+
+        // Create a mock service class and test interface checking
+        TypeElement mockServiceClass = mock(TypeElement.class);
+        when(mockServiceClass.getInterfaces()).thenReturn(Collections.emptyList());
+
+        // Test with a class that doesn't implement the interface
+        boolean result =
+                localProcessor.implementsInterface(
+                        mockServiceClass, "org.pipelineframework.service.ReactiveService");
+        // This should return false since we mocked empty interfaces
+        assertFalse(result);
+    }
+
+    @Test
+    void testImplementsReactiveService() {
+        // The implementsReactiveService method requires processingEnv to be properly initialized
+        PipelineStepProcessor localProcessor = new PipelineStepProcessor();
+
+        // Set up the processingEnv mock
+        ProcessingEnvironment localProcessingEnv = mock(ProcessingEnvironment.class);
+        when(localProcessingEnv.getElementUtils())
+                .thenReturn(mock(javax.lang.model.util.Elements.class));
+        when(localProcessingEnv.getTypeUtils()).thenReturn(mock(javax.lang.model.util.Types.class));
+
+        localProcessor.init(localProcessingEnv);
+
+        // Create a mock service class and test reactive service interface checking
+        TypeElement mockServiceClass = mock(TypeElement.class);
+        when(mockServiceClass.getInterfaces()).thenReturn(Collections.emptyList());
+
+        boolean result = localProcessor.implementsReactiveService(mockServiceClass);
+        // This should return false since the service doesn't implement ReactiveService
+        assertFalse(result);
     }
 }

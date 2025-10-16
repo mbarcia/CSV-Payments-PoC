@@ -19,6 +19,7 @@ package org.pipelineframework.pipeline;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.jboss.logging.Logger;
 import org.pipelineframework.step.ConfigurableStep;
 import org.pipelineframework.step.StepManyToMany;
 import org.pipelineframework.step.StepOneToMany;
@@ -27,6 +28,8 @@ import org.pipelineframework.step.blocking.StepOneToOneBlocking;
 
 @ApplicationScoped
 public class TestSteps {
+
+    private static final Logger LOG = Logger.getLogger(TestSteps.class);
 
     public static class TestStepOneToOneBlocking extends ConfigurableStep
             implements StepOneToOneBlocking<String, String> {
@@ -144,12 +147,21 @@ public class TestSteps {
             throw new RuntimeException("Intentional failure for testing");
         }
 
+        /**
+         * Handle a failed item by logging the dead-letter event with error context and returning
+         * the original item unchanged. This method is invoked when a step fails and recovery is
+         * enabled.
+         *
+         * @param failedItem a Uni that produces the item that failed processing
+         * @param cause the throwable that caused the failure
+         * @return a Uni that emits the original input value
+         */
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
-            System.out.println("Dead letter handled for: " + failedItem.toString());
-            // Return the original input value when recovery is enabled
-            return failedItem.onItem().transform(item -> item);
-        }
+            return failedItem.onItem().invoke(item ->
+                LOG.infof("Dead letter handled for item: %s, cause: %s", item, cause.getMessage())
+            );
+         }
 
         @Override
         public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {

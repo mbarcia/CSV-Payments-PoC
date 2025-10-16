@@ -29,10 +29,10 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Imperative variant of StepOneToOne that works with CompletableFuture instead of Uni.
- * 
+ * <p>
  * This interface is designed for developers who prefer imperative programming
  * and want to work with standard Java CompletableFuture instead of Mutiny Uni.
- * 
+ * <p>
  * The PipelineRunner will automatically handle the conversion between reactive
  * and imperative representations.
  */
@@ -69,7 +69,7 @@ public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Con
                 return uni;
             })
             // retry / backoff / jitter
-            .onFailure().retry()
+            .onFailure(t -> !(t instanceof NullPointerException)).retry()
             .withBackOff(retryWait(), maxBackoff())
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())

@@ -56,6 +56,17 @@ public class PipelineStepProcessor extends AbstractProcessor {
         super.init(processingEnv);
     }
 
+    /**
+     * Processes elements annotated with {@code @PipelineStep} and generates gRPC server adapters,
+     * gRPC client steps, and — when enabled and compatible — REST resource classes.
+     * <p>
+     * The method validates annotated elements, emits compiler diagnostics for invalid uses or
+     * generation failures, and invokes code generation helpers for each discovered service class.
+     *
+     * @param annotations the set of annotation types requested to be processed for this round
+     * @param roundEnv    environment that provides access to elements annotated with the requested annotations
+     * @return {@code true} if this processor handled the provided annotations (processing occurred), {@code false} if there were no annotations to process
+     */
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
         if (annotations.isEmpty()) {
@@ -96,15 +107,22 @@ public class PipelineStepProcessor extends AbstractProcessor {
                     ", restEnabled=" + restEnabled);
                 
                 if (restEnabled) {
-                    // Check if service implements ReactiveService
-                    if (implementsReactiveService(serviceClass)) {
+                    // Check if service implements ReactiveService, ReactiveStreamingService, or ReactiveStreamingClientService
+                    boolean isReactiveService = implementsInterface(serviceClass, "org.pipelineframework.service.ReactiveService");
+                    boolean isReactiveStreamingService = implementsInterface(serviceClass, "org.pipelineframework.service.ReactiveStreamingService");
+                    boolean isReactiveStreamingClientService = implementsInterface(serviceClass, "org.pipelineframework.service.ReactiveStreamingClientService");
+                    
+                    if (!isReactiveService && !isReactiveStreamingService && !isReactiveStreamingClientService) {
                         processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, 
-                            "Service " + serviceClass.getSimpleName() + " has restEnabled=true but does not implement ReactiveService, skipping REST resource generation");
+                            "Service " + serviceClass.getSimpleName() + " has restEnabled=true but does not implement ReactiveService, ReactiveStreamingService, or ReactiveStreamingClientService, skipping REST resource generation");
                     } else {
                         processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, 
-                            "Generating REST resource for " + serviceClass.getSimpleName());
+                            "Generating REST resource for " + serviceClass.getSimpleName() + 
+                            " (type: " + (isReactiveService ? "ReactiveService" : 
+                                          isReactiveStreamingService ? "ReactiveStreamingService" : 
+                                          "ReactiveStreamingClientService") + ")");
                         try {
-                            generateRestResource(serviceClass, pipelineStep);
+                            generateRestResource(serviceClass, pipelineStep, isReactiveService, isReactiveStreamingService, isReactiveStreamingClientService);
                         } catch (IOException e) {
                             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                                 "Failed to generate REST resource for " + serviceClass.getSimpleName() + ": " + e.getMessage());
@@ -624,6 +642,13 @@ public class PipelineStepProcessor extends AbstractProcessor {
         }
     }
 
+    /**
+     * Resolve the package name for a gRPC type, falling back to the provided package when resolution fails.
+     *
+     * @param inputGrpcType the TypeMirror representing the gRPC type to inspect
+     * @param grpcPackage   the fallback package name to return if the type's package cannot be determined
+     * @return              the fully qualified package name of the given type, or `grpcPackage` if it cannot be resolved
+     */
     private String extractPackage(TypeMirror inputGrpcType, String grpcPackage) {
         Element element = processingEnv.getTypeUtils().asElement(inputGrpcType);
         if (element != null) {
@@ -636,15 +661,19 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
     
     /**
-     * Generates a REST resource class for services implementing ReactiveService interface.
-     * The generated class provides a REST endpoint that maps DTOs to domain objects
-     * and calls the underlying ReactiveService.
+     * Generate a REST resource class that exposes the annotated reactive service as HTTP endpoints.
+     * <p>
+     * The generated resource maps request/response DTOs to domain types (using configured mappers when present),
+     * delegates processing to the domain service, and includes an exception mapper for runtime errors.
      *
-     * @param serviceClass the TypeElement representing the annotated service class
+     * @param serviceClass the annotated service class element
      * @param pipelineStep the PipelineStep annotation instance for the service
+     * @param isReactiveService true if the service implements ReactiveService
+     * @param isReactiveStreamingService true if the service implements ReactiveStreamingService
+     * @param isReactiveStreamingClientService true if the service implements ReactiveStreamingClientService
      * @throws IOException if writing the generated Java source file fails
      */
-    protected void generateRestResource(TypeElement serviceClass, PipelineStep pipelineStep) throws IOException {
+    protected void generateRestResource(TypeElement serviceClass, PipelineStep pipelineStep, boolean isReactiveService, boolean isReactiveStreamingService, boolean isReactiveStreamingClientService) throws IOException {
         // Get the annotation mirror to extract TypeMirror values
         AnnotationMirror annotationMirror = getAnnotationMirror(serviceClass, PipelineStep.class);
         if (annotationMirror == null) {
@@ -658,28 +687,39 @@ public class PipelineStepProcessor extends AbstractProcessor {
         TypeMirror outputType = getAnnotationValue(annotationMirror, "outputType");
         TypeMirror inboundMapperType = getAnnotationValue(annotationMirror, "inboundMapper");
         TypeMirror outboundMapperType = getAnnotationValue(annotationMirror, "outboundMapper");
-        
-        // Check if service implements ReactiveService
-        if (implementsReactiveService(serviceClass)) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, 
-                "Service " + serviceClass.getSimpleName() + " does not implement ReactiveService, skipping REST resource generation");
+        String path = getAnnotationValueAsString(annotationMirror, "path");
+
+        // Validate that required mappers are present for REST generation
+        if (inboundMapperType == null || inboundMapperType.toString().equals("void") ||
+            outboundMapperType == null || outboundMapperType.toString().equals("void")) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                    "REST generation requires both inboundMapper and outboundMapper to be configured for "
+                   + serviceClass.getSimpleName(),
+                serviceClass);
             return;
         }
 
-        // Use the same package as the original service
+        // Use the same package as the original service but with a ".pipeline" suffix (like gRPC services)
         String fqcn = serviceClass.getQualifiedName().toString();
         String originalPackage = fqcn.substring(0, fqcn.lastIndexOf('.'));
-        String pkg = String.format("%s%s", originalPackage, PIPELINE_PACKAGE_SUFFIX);
+        String pkg = originalPackage + PIPELINE_PACKAGE_SUFFIX;
         String serviceClassName = serviceClass.getSimpleName().toString();
-        String resourceClassName = serviceClassName.replace("ReactiveService", "") + REST_RESOURCE_SUFFIX;
+        
+        // Determine the resource class name - remove "Service" and optionally "Reactive" for cleaner naming
+        String baseName = serviceClassName.replace("Service", "");
+        // For services with "Reactive" in the name, we might want to remove it for cleaner resource names
+        if (baseName.endsWith("Reactive")) {
+            baseName = baseName.substring(0, baseName.length() - "Reactive".length());
+        }
+        String resourceClassName = baseName + REST_RESOURCE_SUFFIX;
 
         // Create the REST resource class
         TypeSpec.Builder resourceBuilder = TypeSpec.classBuilder(resourceClassName)
-            .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.enterprise.context", "ApplicationScoped")).build());
+            .addModifiers(Modifier.PUBLIC);
 
-        // Add @Path annotation - derive path from service class name
-        String servicePath = deriveResourcePath(serviceClassName);
+        // Add @Path annotation - derive path from service class name or use provided path
+        String servicePath = path != null && !path.isEmpty() ? path : deriveResourcePath(serviceClassName);
         resourceBuilder.addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Path"))
             .addMember("value", "$S", servicePath)
             .build());
@@ -696,7 +736,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
         // Add service field with @Inject
         FieldSpec serviceField = FieldSpec.builder(
             ClassName.get(serviceClass),
-            "service")
+            "domainService")
             .addAnnotation(AnnotationSpec.builder(Inject.class).build())
             .build();
         resourceBuilder.addField(serviceField);
@@ -765,27 +805,50 @@ public class PipelineStepProcessor extends AbstractProcessor {
             outputDtoClassName = ClassName.OBJECT;
         }
 
-        // Create the process method that maps DTO to domain and calls service
-        ParameterSpec inputParam = ParameterSpec.builder(inputDtoClassName, "inputDto")
-            .build();
-            
-        MethodSpec processMethod = MethodSpec.methodBuilder("process")
-            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "POST")).build())
-            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Path")).addMember("value", "$S", "/process").build())
-            .addModifiers(Modifier.PUBLIC)
-            .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Uni"), outputDtoClassName))
-            .addParameter(inputParam)
-            .addStatement("$T inputDomain = $L.fromDto(inputDto)", 
-                inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
-                inboundMapperFieldName)
-            .addStatement("$T<$T> outputDomain = service.process(inputDomain)", 
-                ClassName.get("io.smallrye.mutiny", "Uni"),
-                outputType != null ? ClassName.get(outputType) : ClassName.OBJECT)
-            .addStatement("return outputDomain.onItem().transform($L::toDto)", 
-                outboundMapperFieldName)
-            .build();
-            
+        // Create the process method based on service type
+        MethodSpec processMethod;
+        if (isReactiveStreamingService) {
+            // For ReactiveStreamingService: input -> Multi<output>
+            processMethod = createReactiveStreamingServiceProcessMethod(
+                inputDtoClassName, outputDtoClassName, 
+                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType);
+        } else if (isReactiveStreamingClientService) {
+            // For ReactiveStreamingClientService: Multi<input> -> output
+            processMethod = createReactiveStreamingClientServiceProcessMethod(
+                inputDtoClassName, outputDtoClassName, 
+                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType);
+        } else {
+            // For regular ReactiveService: input -> output
+            processMethod = createReactiveServiceProcessMethod(
+                inputDtoClassName, outputDtoClassName, 
+                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType);
+        }
+        
         resourceBuilder.addMethod(processMethod);
+
+        // Add exception mapper method to handle different types of exceptions
+        MethodSpec exceptionMapperMethod = MethodSpec.methodBuilder("handleException")
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("org.jboss.resteasy.reactive.server", "ServerExceptionMapper"))
+                .build())
+            .addModifiers(Modifier.PUBLIC)
+            .returns(ClassName.get("org.jboss.resteasy.reactive", "RestResponse"))
+            .addParameter(Exception.class, "ex")
+            .beginControlFlow("if (ex instanceof $T)", IllegalArgumentException.class)
+                .addStatement("return $T.status($T.Status.BAD_REQUEST, \"Invalid request\")",
+                ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
+                ClassName.get("jakarta.ws.rs.core", "Response"))
+            .nextControlFlow("else if (ex instanceof $T)", RuntimeException.class)
+            .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
+                ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
+                ClassName.get("jakarta.ws.rs.core", "Response"))
+            .nextControlFlow("else")
+            .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
+                ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
+                ClassName.get("jakarta.ws.rs.core", "Response"))
+            .endControlFlow()
+            .build();
+        
+        resourceBuilder.addMethod(exceptionMapperMethod);
 
         TypeSpec resourceClass = resourceBuilder.build();
 
@@ -805,35 +868,175 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
     
     /**
+     * Creates the JAX-RS `process` method for a ReactiveStreamingService that accepts a single
+     * input DTO and returns a stream of output DTOs.
+     *
+     * @param inputDtoClassName      the DTO type used as the method parameter
+     * @param outputDtoClassName     the DTO element type emitted by the returned stream
+     * @param inboundMapperFieldName the field name of the mapper used to convert DTO -> domain
+     * @param outboundMapperFieldName the field name of the mapper used to convert domain -> DTO
+     * @param inputType              the domain input type from the service generics (may be null)
+     * @param outputType             the domain output type from the service generics (may be null)
+     * @return                       a MethodSpec for the generated REST `process` method
+     */
+    private MethodSpec createReactiveStreamingServiceProcessMethod(
+            TypeName inputDtoClassName, TypeName outputDtoClassName,
+            String inboundMapperFieldName, String outboundMapperFieldName,
+            TypeMirror inputType, TypeMirror outputType) {
+        
+        TypeName multiOutputDto = ParameterizedTypeName.get(ClassName.get(Multi.class), outputDtoClassName);
+
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("process")
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "POST"))
+                .build())
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Path"))
+                .addMember("value", "$S", "/process")
+                .build())
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("org.jboss.resteasy.reactive", "RestStreamElementType"))
+                .addMember("value", "$S", "application/json")
+                .build())
+            .addModifiers(Modifier.PUBLIC)
+            .returns(multiOutputDto)
+            .addParameter(inputDtoClassName, "inputDto");
+
+        // Add the implementation code
+        methodBuilder.addStatement("$T inputDomain = $L.fromDto(inputDto)", 
+                inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                inboundMapperFieldName != null ? inboundMapperFieldName : "/* mapper missing */");
+
+        // Return the stream, allowing errors to propagate to the exception mapper
+        methodBuilder.addStatement("return domainService.process(inputDomain).map(output -> $L.toDto(output))",
+                outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */");
+
+        return methodBuilder.build();
+    }
+
+    /**
+     * Creates the REST resource `process` method for a ReactiveStreamingClientService: accepts a stream
+     * of input DTOs and produces a single output DTO.
+     *
+     * <p>The generated method is public, annotated with `@POST` and `@Path("/process")`, takes a
+     * `Multi<inputDto>` parameter named `inputDtos`, and returns a `Uni<outputDto>`. It maps incoming
+     * DTOs to domain inputs using the provided inbound mapper field, delegates to `domainService.process`,
+     * and maps the resulting domain output to a DTO using the provided outbound mapper field.
+     *
+     * @param inputDtoClassName the TypeName of the input DTO type
+     * @param outputDtoClassName the TypeName of the output DTO type
+     * @param inboundMapperFieldName the field name of the inbound mapper used to convert DTOs to domain objects
+     * @param outboundMapperFieldName the field name of the outbound mapper used to convert domain objects to DTOs
+     * @param inputType the domain input TypeMirror (may be null)
+     * @param outputType the domain output TypeMirror (may be null)
+     * @return a MethodSpec for the REST `process` method that handles streaming inputs and produces a single output
+     */
+    private MethodSpec createReactiveStreamingClientServiceProcessMethod(
+            TypeName inputDtoClassName, TypeName outputDtoClassName,
+            String inboundMapperFieldName, String outboundMapperFieldName,
+            TypeMirror inputType, TypeMirror outputType) {
+        
+        TypeName multiInputDto = ParameterizedTypeName.get(ClassName.get(Multi.class), inputDtoClassName);
+        TypeName uniOutputDto = ParameterizedTypeName.get(ClassName.get(Uni.class), outputDtoClassName);
+
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("process")
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "POST"))
+                .build())
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Path"))
+                .addMember("value", "$S", "/process")
+                .build())
+            .addModifiers(Modifier.PUBLIC)
+            .returns(uniOutputDto)
+            .addParameter(ParameterSpec.builder(multiInputDto, "inputDtos")
+                .build());
+
+        // Add the implementation code
+        methodBuilder.addStatement("$T<$T> domainInputs = inputDtos.map(input -> $L.fromDto(input))", 
+                ClassName.get(Multi.class),
+                inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                inboundMapperFieldName != null ? inboundMapperFieldName : "/* mapper missing */");
+
+        methodBuilder.addStatement("return domainService.process(domainInputs).map(output -> $L.toDto(output))", 
+                outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */");
+
+        return methodBuilder.build();
+    }
+
+    /**
+         * Builds the REST resource "process" method for a unary reactive service endpoint.
+         * <p>
+         * The generated method is a public POST mapped to "/process" that:
+         * - accepts an input DTO,
+         * - converts it to the domain input using the provided inbound mapper,
+         * - delegates to domainService.process(...),
+         * - maps the resulting domain output to an output DTO using the outbound mapper,
+         * - and returns a `Uni<OutputDto>` containing the mapped result.
+         *
+         * @param inputDtoClassName the DTO type used as the method parameter
+         * @param outputDtoClassName the DTO type returned inside the `Uni`
+         * @param inboundMapperFieldName the injected field name of the inbound mapper used to convert DTO -> domain
+         * @param outboundMapperFieldName the injected field name of the outbound mapper used to convert domain -> DTO
+         * @param inputType the domain input type (used to reference the converted domain parameter)
+         * @param outputType the domain output type (used for type references when mapping the result)
+         * @return a MethodSpec representing the generated `process` method that returns `Uni<OutputDto>`
+         */
+    private MethodSpec createReactiveServiceProcessMethod(
+            TypeName inputDtoClassName, TypeName outputDtoClassName,
+            String inboundMapperFieldName, String outboundMapperFieldName,
+            TypeMirror inputType, TypeMirror outputType) {
+        
+        TypeName uniOutputDto = ParameterizedTypeName.get(ClassName.get(Uni.class), outputDtoClassName);
+
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("process")
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "POST"))
+                .build())
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Path"))
+                .addMember("value", "$S", "/process")
+                .build())
+            .addModifiers(Modifier.PUBLIC)
+            .returns(uniOutputDto)
+            .addParameter(inputDtoClassName, "inputDto");
+
+        // Add the implementation code
+        methodBuilder.addStatement("$T inputDomain = $L.fromDto(inputDto)", 
+                inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                inboundMapperFieldName != null ? inboundMapperFieldName : "/* mapper missing */");
+
+        methodBuilder.addStatement("return domainService.process(inputDomain).map(output -> $L.toDto(output))", 
+                outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */");
+
+        return methodBuilder.build();
+    }
+    
+    /**
      * Checks if a service class implements the ReactiveService interface.
      * 
      * @param serviceClass the TypeElement representing the service class
      * @return true if the service implements ReactiveService, false otherwise
      */
-    protected boolean implementsReactiveService(TypeElement serviceClass) {
-        // Get the ReactiveService interface element
-        TypeElement reactiveServiceElement = processingEnv.getElementUtils()
-            .getTypeElement("org.pipelineframework.service.ReactiveService");
-        
-        if (reactiveServiceElement == null) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, 
-                "Could not find ReactiveService interface");
-            return true;
-        }
-        
+    boolean implementsReactiveService(TypeElement serviceClass) {
         // Check if the service class implements ReactiveService
         // We need to check all interfaces implemented by the service class
-        return !implementsInterface(serviceClass, reactiveServiceElement);
+        return implementsInterface(serviceClass, "org.pipelineframework.service.ReactiveService");
     }
     
     /**
      * Recursively checks if a class implements a specific interface.
      * 
      * @param classElement the class to check
-     * @param interfaceElement the interface to look for
+     * @param interfaceClassName the fully qualified class name of the interface to look for
      * @return true if the class implements the interface, false otherwise
      */
-    protected boolean implementsInterface(TypeElement classElement, TypeElement interfaceElement) {
+    boolean implementsInterface(TypeElement classElement, String interfaceClassName) {
+        // Get the interface element from the processing environment
+        TypeElement interfaceElement = processingEnv.getElementUtils()
+            .getTypeElement(interfaceClassName);
+        
+        if (interfaceElement == null) {
+            if (processingEnv != null && processingEnv.getMessager() != null) {
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, 
+                    "Could not find interface: " + interfaceClassName);
+            }
+            return false;
+        }
+        
         // Check direct interfaces
         for (TypeMirror interfaceType : classElement.getInterfaces()) {
             if (processingEnv.getTypeUtils().isSameType(
@@ -848,7 +1051,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
         if (superClass != null && superClass.getKind() != javax.lang.model.type.TypeKind.NONE) {
             TypeElement superClassElement = (TypeElement) processingEnv.getTypeUtils().asElement(superClass);
             if (superClassElement != null) {
-                return implementsInterface(superClassElement, interfaceElement);
+                return implementsInterface(superClassElement, interfaceClassName);
             }
         }
         
@@ -862,11 +1065,14 @@ public class PipelineStepProcessor extends AbstractProcessor {
      * @param className the simple name of the service class
      * @return the derived resource path
      */
-    protected String deriveResourcePath(String className) {
+    String deriveResourcePath(String className) {
         // Remove "Service" suffix if present
         if (className.endsWith("Service")) {
             className = className.substring(0, className.length() - 7);
         }
+        
+        // Remove "Reactive" if present (for service names like "ProcessPaymentReactiveService")
+        className = className.replace("Reactive", "");
         
         // Convert from PascalCase to kebab-case
         // Handle sequences like "ProcessPaymentStatus" -> "process-payment-status"
@@ -878,29 +1084,68 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
     
     /**
-     * Gets the DTO type name based on the domain type name.
-     * 
-     * @param typeMirror the TypeMirror of the domain type
-     * @return the corresponding DTO type name
+     * Derives the corresponding DTO type name for a given domain type.
+     * <p>
+     * The result is a fully qualified type name when a package can be produced,
+     * otherwise a simple DTO type name. Common package transformations are applied:
+     * ".common.domain" -> ".common.dto", ".domain" -> ".dto", and ".service" -> ".dto".
+     * If the input type already ends with `Dto`, it is returned unchanged. A special
+     * case maps a type whose simple name is `"domain"` to a `Dto` class in the
+     * transformed package.
+     *
+     * @param typeMirror the domain type to map (may be a fully qualified or simple name)
+     * @return the DTO type name (fully qualified when possible), or `null` if {@code typeMirror} is null
      */
-    protected String getDtoType(TypeMirror typeMirror) {
+    String getDtoType(TypeMirror typeMirror) {
+        if (typeMirror == null || typeMirror.toString() == null) {
+            return null;
+        }
+        
         String typeName = typeMirror.toString();
         int lastDot = typeName.lastIndexOf('.');
         String packageName = lastDot > 0 ? typeName.substring(0, lastDot) : "";
         String simpleName = lastDot > 0 ? typeName.substring(lastDot + 1) : typeName;
         
-        // Replace domain package with dto package
-        if (packageName.contains(".domain")) {
-            packageName = packageName.replace(".domain", ".dto");
-        } else if (packageName.contains(".common.domain")) {
-            packageName = packageName.replace(".common.domain", ".common.dto");
-        } else if (packageName.contains(".service")) {
-            packageName = packageName.replace(".service", ".dto");
+        // Check if simpleName already ends with "Dto" to avoid duplication
+        if (simpleName.endsWith("Dto")) {
+            // If it already ends with Dto, don't add Dto again
+            return typeName;
         }
         
-        return packageName.isEmpty() ? simpleName + "Dto" : packageName + "." + simpleName + "Dto";
+        // Replace domain package with dto package
+        String modifiedPackageName = packageName;
+        // Handle the more specific pattern first to avoid partial replacements
+        if (modifiedPackageName.contains(".common.domain")) {
+            modifiedPackageName = modifiedPackageName.replace(".common.domain", ".common.dto");
+        }
+        // Then handle general .domain
+        if (modifiedPackageName.contains(".domain")) {
+            modifiedPackageName = modifiedPackageName.replace(".domain", ".dto");
+        } else if (modifiedPackageName.contains(".service")) {
+            // For service packages, replace with .dto
+            modifiedPackageName = modifiedPackageName.replace(".service", ".dto");
+        }
+        
+        // If the simpleName is exactly "domain", change it to "Dto"
+        if ("domain".equals(simpleName)) {
+            // Edge case: class name is literally "domain"
+            // Ensure the package has .dto in it if it doesn't already
+            if (!modifiedPackageName.contains(".dto")) {
+                modifiedPackageName = modifiedPackageName + ".dto";
+            }
+            return modifiedPackageName + ".Dto";
+        }
+        
+        return modifiedPackageName.isEmpty() ? simpleName + "Dto" : modifiedPackageName + "." + simpleName + "Dto";
     }
     
+    /**
+     * Finds the AnnotationMirror instance for a specific annotation present on an element.
+     *
+     * @param element the element to inspect for the annotation
+     * @param annotationClass the annotation class to look for
+     * @return the matching {@link AnnotationMirror} if the annotation is present on the element, or {@code null} if not found
+     */
     protected AnnotationMirror getAnnotationMirror(Element element, Class<?> annotationClass) {
         String annotationClassName = annotationClass.getCanonicalName();
         for (AnnotationMirror annotationMirror : element.getAnnotationMirrors()) {

@@ -24,31 +24,51 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import org.jboss.jandex.IndexView;
+import org.jboss.logging.Logger;
 import org.pipelineframework.config.PipelineBuildTimeConfig;
 
 public class StepServerRegistrar {
 
     private static final String FEATURE_NAME = "pipelineframework-services";
+    private static final Logger LOG = Logger.getLogger(StepServerRegistrar.class);
 
+    /**
+     * Declare the extension feature provided by this processor.
+     *
+     * @return a FeatureBuildItem identifying the processor feature named "pipelineframework-services"
+     */
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE_NAME);
     }
 
+    /**
+     * Registers generated gRPC service classes as unremovable CDI beans when CLI generation is disabled.
+     * <p>
+     * Iterates the Jandex index for classes whose fully qualified name ends with the GRPC service suffix
+     * and produces AdditionalBeanBuildItem entries to mark them unremovable.
+     *
+     * @param additionalBeans producer used to register AdditionalBeanBuildItem instances for discovered services
+     * @param config build-time configuration; if {@code config.generateCli()} is true, no registration is performed
+     * @param combinedIndex provides the Jandex index used to discover generated gRPC service classes
+     */
     @BuildStep
     void registerGeneratedGrpcServices(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-                                       PipelineBuildTimeConfig config,
-                                       CombinedIndexBuildItem combinedIndex) {
+                                  PipelineBuildTimeConfig config,
+                                  CombinedIndexBuildItem combinedIndex) {
 
-        if (config.generateCli()) return;
+        if (config.generateCli()) {
+            LOG.debug("Client generation enabled; skipping server registration.");
+            return;
+        }
 
         IndexView index = combinedIndex.getIndex();
 
-        // Find all classes ending with "GrpcService"
+        // Find all classes ending with "GrpcService" - these need explicit registration
         index.getKnownClasses().stream()
             .filter(ci -> ci.name().toString().endsWith(GRPC_SERVICE_SUFFIX))
             .forEach(ci -> {
-                System.out.println("Registering gRPC service: " + ci.name());
+                LOG.infof("Registering gRPC service: %s", ci.name());
                 additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(ci.name().toString()));
             });
     }

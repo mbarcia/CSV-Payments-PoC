@@ -689,6 +689,17 @@ public class PipelineStepProcessor extends AbstractProcessor {
         TypeMirror outboundMapperType = getAnnotationValue(annotationMirror, "outboundMapper");
         String path = getAnnotationValueAsString(annotationMirror, "path");
 
+        // Validate that required mappers are present for REST generation
+        if (inboundMapperType == null || inboundMapperType.toString().equals("void") ||
+            outboundMapperType == null || outboundMapperType.toString().equals("void")) {
+            processingEnv.getMessager().printMessage(
+                Diagnostic.Kind.ERROR,
+                    "REST generation requires both inboundMapper and outboundMapper to be configured for "
+                   + serviceClass.getSimpleName(),
+                serviceClass);
+            return;
+        }
+
         // Use the same package as the original service but with a ".pipeline" suffix (like gRPC services)
         String fqcn = serviceClass.getQualifiedName().toString();
         String originalPackage = fqcn.substring(0, fqcn.lastIndexOf('.'));
@@ -823,7 +834,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .returns(ClassName.get("org.jboss.resteasy.reactive", "RestResponse"))
             .addParameter(Exception.class, "ex")
             .beginControlFlow("if (ex instanceof $T)", IllegalArgumentException.class)
-            .addStatement("return $T.status($T.Status.BAD_REQUEST, ex.getMessage() != null ? ex.getMessage() : \"Invalid request\")",
+                .addStatement("return $T.status($T.Status.BAD_REQUEST, \"Invalid request\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
                 ClassName.get("jakarta.ws.rs.core", "Response"))
             .nextControlFlow("else if (ex instanceof $T)", RuntimeException.class)
@@ -893,10 +904,9 @@ public class PipelineStepProcessor extends AbstractProcessor {
                 inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
                 inboundMapperFieldName != null ? inboundMapperFieldName : "/* mapper missing */");
 
-        // Create the full return statement in one go to ensure proper chaining
-        methodBuilder.addStatement("return domainService.process(inputDomain).map(output -> $L.toDto(output)).onFailure().recoverWithMulti($T.createFrom().empty())", 
-                outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */",
-                ClassName.get(Multi.class));
+        // Return the stream, allowing errors to propagate to the exception mapper
+        methodBuilder.addStatement("return domainService.process(inputDomain).map(output -> $L.toDto(output))",
+                outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */");
 
         return methodBuilder.build();
     }
@@ -1118,29 +1128,10 @@ public class PipelineStepProcessor extends AbstractProcessor {
         
         // If the simpleName is exactly "domain", change it to "Dto"
         if ("domain".equals(simpleName)) {
-            // If class name is "domain", we may need to make sure we're in a DTO package
-            // Look for patterns where the package might need to be transformed to include DTO
-            if (!modifiedPackageName.contains(".dto") && modifiedPackageName.contains("domain")) {
-                // If the original package had "domain" in it, but now it's been transformed,
-                // or if the original didn't have domain but it's a "domain" class, 
-                // make sure DTO is in the path somewhere
-                if (!modifiedPackageName.endsWith(".dto")) {
-                    // If this looks like a domain-related package, ensure DTO path exists
-                    if (packageName.contains(".domain")) {
-                        // Package was already transformed from domain to dto
-                    } else {
-                        // Original package didn't contain domain but class is named "domain"
-                        // Transform the last component of package that might represent a domain layer
-                        if (modifiedPackageName.contains(".")) {
-                            // For package like com.example containing domain class, 
-                            // the expectation suggests changing last package part to include .dto
-                            // Actually, let's just follow the test expectation: 
-                            // "com.example.domain" -> "com.example.dto.Dto"
-                            // This means package "com.example" + class "domain" -> "com.example.dto.Dto"
-                            // So it seems when class is "domain", we look if we can transform package to include .dto
-                        }
-                    }
-                }
+            // Edge case: class name is literally "domain"
+            // Ensure the package has .dto in it if it doesn't already
+            if (!modifiedPackageName.contains(".dto")) {
+                modifiedPackageName = modifiedPackageName + ".dto";
             }
             return modifiedPackageName + ".Dto";
         }

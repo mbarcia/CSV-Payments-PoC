@@ -148,8 +148,9 @@ public class TestSteps {
         }
 
         /**
-         * Handle a failed item by logging the dead-letter event and returning the original item
-         * unchanged.
+         * Handle a failed item by logging the dead-letter event with error context and returning
+         * the original item unchanged. This method is invoked when a step fails and recovery is
+         * enabled.
          *
          * @param failedItem a Uni that produces the item that failed processing
          * @param cause the throwable that caused the failure
@@ -157,10 +158,10 @@ public class TestSteps {
          */
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
-            LOG.infof("Dead letter handled for: %s", failedItem.toString());
-            // Return the original input value when recovery is enabled
-            return failedItem.onItem().transform(item -> item);
-        }
+            return failedItem.onItem().invoke(item ->
+                LOG.infof("Dead letter handled for item: %s, cause: %s", item, cause.getMessage())
+            );
+         }
 
         @Override
         public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {

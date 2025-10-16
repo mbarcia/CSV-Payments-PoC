@@ -91,9 +91,9 @@ public class PipelineRunner implements AutoCloseable {
             }
 
             Class<?> clazz = step.getClass();
-            LOG.infof("Step class: %s", clazz.getName());
+            LOG.debugf("Step class: %s", clazz.getName());
             for (Class<?> iface : clazz.getInterfaces()) {
-                LOG.infof("Implements: %s", iface.getName());
+                LOG.debugf("Implements: %s", iface.getName());
             }
 
             switch (step) {
@@ -188,7 +188,7 @@ public class PipelineRunner implements AutoCloseable {
             }
         }
 
-        LOG.infof("Loaded %d pipeline steps from application properties", steps.size());
+        LOG.debugf("Loaded %d pipeline steps from application properties", steps.size());
         return steps;
     }
 

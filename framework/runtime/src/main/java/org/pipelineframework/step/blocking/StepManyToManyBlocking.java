@@ -26,10 +26,10 @@ import org.pipelineframework.step.functional.ManyToMany;
 
 /**
  * Imperative variant of StepManyToMany that works with Lists instead of Multi.
- * 
+ * <p>
  * This interface is designed for developers who prefer imperative programming
  * and want to work with standard Java collections instead of reactive streams.
- * 
+ * <p>
  * The PipelineRunner will automatically handle the conversion between reactive
  * and imperative representations.
  */
@@ -48,17 +48,13 @@ public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configur
         final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 
-        Multi<I> upstream = (executor != null) ? input.runSubscriptionOn(executor) : input;
-
         // Apply overflow strategy to the input
-        Multi<I> backpressuredInput = upstream;
+        // default behavior - buffer with default capacity (no explicit overflow strategy needed)
+        Multi<I> backpressuredInput = (executor != null) ? input.runSubscriptionOn(executor) : input;
         if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
             backpressuredInput = backpressuredInput.onOverflow().buffer(backpressureBufferCapacity());
         } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
             backpressuredInput = backpressuredInput.onOverflow().drop();
-        } else {
-            // default behavior - buffer with default capacity (no explicit overflow strategy needed)
-            backpressuredInput = backpressuredInput; // default behavior will handle overflow
         }
 
         return backpressuredInput
@@ -76,7 +72,7 @@ public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configur
                     }
                 }
             })
-            .onFailure().retry()
+            .onFailure(t -> !(t instanceof NullPointerException)).retry()
             .withBackOff(retryWait(), maxBackoff())
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())

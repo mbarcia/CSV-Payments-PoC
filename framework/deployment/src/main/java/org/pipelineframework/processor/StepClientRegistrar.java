@@ -46,7 +46,7 @@ public class StepClientRegistrar {
 
     /**
      * Registers step client classes discovered in the application index as additional unremovable beans when CLI generation is enabled.
-     *
+     * <p>
      * Scans the combined index for classes whose simple name ends with the configured client step suffix. For each matching class, if
      * pipeline CLI generation is enabled via the provided build-time configuration, produces an AdditionalBeanBuildItem for that class
      * and marks it unremovable; otherwise the class is skipped.
@@ -59,6 +59,10 @@ public class StepClientRegistrar {
     void registerStepClients(BuildProducer<AdditionalBeanBuildItem> beans,
                              PipelineBuildTimeConfig config,
                              CombinedIndexBuildItem combinedIndex) {
+        if (!config.generateCli()) {
+            LOG.debug("Client generation disabled; skipping client step registration.");
+            return;
+        }
 
         IndexView index = combinedIndex.getIndex();
 
@@ -68,13 +72,8 @@ public class StepClientRegistrar {
                 .toList();
 
         for (ClassInfo ci : classes) {
-            if (!config.generateCli()) {
-                LOG.debugf("Skipping step (client) %s", ci.name());
-                // Skip to the next class instead of returning from the entire method
-            } else {
-                beans.produce(AdditionalBeanBuildItem.unremovableOf(ci.name().toString()));
-                LOG.infof("Registered step (client) %s", ci.name());
-            }
+            beans.produce(AdditionalBeanBuildItem.unremovableOf(ci.name().toString()));
+            LOG.infof("Registered step (client) %s", ci.name());
         }
     }
 }

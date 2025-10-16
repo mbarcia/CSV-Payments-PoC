@@ -148,7 +148,8 @@ public class TestSteps {
         }
 
         /**
-         * Handle a failed item by logging the dead-letter event and returning the original item unchanged.
+         * Handle a failed item by logging the dead-letter event and returning the original item
+         * unchanged.
          *
          * @param failedItem a Uni that produces the item that failed processing
          * @param cause the throwable that caused the failure

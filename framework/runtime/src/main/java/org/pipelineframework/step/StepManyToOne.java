@@ -65,7 +65,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
         Logger LOG = LoggerFactory.getLogger(this.getClass());
         return inputs.collect().asList()
             .onItem().invoke(list -> LOG.error("DLQ drop for batch of {} items: {}", list.size(), error.getMessage()))
-            .onItem().transformToUni(list -> Uni.createFrom().nullItem());
+            .onItem().transformToUni(_ -> Uni.createFrom().nullItem());
     }
 
     @Override
@@ -119,7 +119,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
                         }
                     })
                 )
-                .onFailure().retry()
+                .onFailure(t -> !(t instanceof NullPointerException)).retry()
                 .withBackOff(retryWait(), maxBackoff())
                 .withJitter(jitter() ? 0.5 : 0.0)
                 .atMost(retryLimit())

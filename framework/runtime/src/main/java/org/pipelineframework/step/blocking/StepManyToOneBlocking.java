@@ -75,19 +75,15 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
         int batchSize = this.batchSize();
         long batchTimeoutMs = this.batchTimeoutMs();
 
-        Multi<I> upstream = (executor != null)
+        // Apply overflow strategy to the input
+        // default behavior - buffer with default capacity (no explicit overflow strategy needed)
+        Multi<I> backpressuredInput = (executor != null)
                 ? input.runSubscriptionOn(executor)
                 : input;
-
-        // Apply overflow strategy to the input
-        Multi<I> backpressuredInput = upstream;
         if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
             backpressuredInput = backpressuredInput.onOverflow().buffer(backpressureBufferCapacity());
         } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
             backpressuredInput = backpressuredInput.onOverflow().drop();
-        } else {
-            // default behavior - buffer with default capacity (no explicit overflow strategy needed)
-            backpressuredInput = backpressuredInput; // default behavior will handle overflow
         }
 
         return backpressuredInput
@@ -118,7 +114,7 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     }
                 }
             })
-            .onFailure().retry()
+            .onFailure(t -> !(t instanceof NullPointerException)).retry()
             .withBackOff(retryWait(), maxBackoff())
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())

@@ -177,7 +177,7 @@ public class PipelineRunner implements AutoCloseable {
                     return 100; // default order
                 }
             }))
-            .collect(Collectors.toList());
+            .toList();
 
         List<Object> steps = new ArrayList<>();
         for (String stepName : sortedStepNames) {
@@ -284,11 +284,10 @@ public class PipelineRunner implements AutoCloseable {
         } else if (current instanceof Multi<?>) {
             // Apply the OneToOne step to each item in the Multi, using the apply method 
             // which includes retry and recovery logic
-            Multi<O> result = ((Multi<I>) current)
+            return ((Multi<I>) current)
                 .onItem()
                 .transformToUni(item -> step.apply(Uni.createFrom().item(item)))
                 .concatenate();
-            return result;
         } else {
             throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToOneCompletableFuture: {0}", current));
         }

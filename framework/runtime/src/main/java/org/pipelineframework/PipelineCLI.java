@@ -39,9 +39,6 @@ public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
     @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", required = true)
     public String input;
 
-    @Option(names = {"-a", "--args"}, description = "Additional arguments", split = " ")
-    String[] additionalArgs = {};
-
     @Inject
     PipelineExecutionService pipelineExecutionService;
 
@@ -69,7 +66,7 @@ public class PipelineCLI implements java.util.concurrent.Callable<Integer> {
     
     /**
      * Run the pipeline using the provided input string.
-     *
+     * <p>
      * Creates a reactive stream containing the single input value and delegates pipeline execution
      * to the injected PipelineExecutionService while logging start and completion.
      *

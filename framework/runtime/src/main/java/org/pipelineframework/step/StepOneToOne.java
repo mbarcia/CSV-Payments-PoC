@@ -78,7 +78,7 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
             // Apply backpressure strategy if input is a Multi (stream)
             // For Uni, we handle it as part of the Multi pipeline in the pipeline execution
             uni = uni
-                .onFailure().retry()
+                .onFailure(t -> !(t instanceof NullPointerException)).retry()
                 .withBackOff(retryWait(), maxBackoff())
                 .withJitter(jitter() ? 0.5 : 0.0)
                 .atMost(retryLimit());
@@ -99,10 +99,6 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
                             "Step {0}: failed item={} after {} retries: {}",
                             this.getClass().getSimpleName(), input, retryLimit(), err
                         );
-                    }
-                    // Make sure input isn't null when calling deadLetter
-                    if (input == null) {
-                        return deadLetter(Uni.createFrom().failure(new NullPointerException("Input Uni is null")), err);
                     }
                     return deadLetter(input, err);
                 } else {

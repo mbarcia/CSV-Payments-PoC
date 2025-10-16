@@ -59,7 +59,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
     /**
      * Processes elements annotated with {@code @PipelineStep} and generates gRPC server adapters,
      * gRPC client steps, and — when enabled and compatible — REST resource classes.
-     *
+     * <p>
      * The method validates annotated elements, emits compiler diagnostics for invalid uses or
      * generation failures, and invokes code generation helpers for each discovered service class.
      *
@@ -662,7 +662,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
     
     /**
      * Generate a REST resource class that exposes the annotated reactive service as HTTP endpoints.
-     *
+     * <p>
      * The generated resource maps request/response DTOs to domain types (using configured mappers when present),
      * delegates processing to the domain service, and includes an exception mapper for runtime errors.
      *
@@ -826,10 +826,6 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .addStatement("return $T.status($T.Status.BAD_REQUEST, ex.getMessage() != null ? ex.getMessage() : \"Invalid request\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
                 ClassName.get("jakarta.ws.rs.core", "Response"))
-            .nextControlFlow("else if (ex instanceof $T)", jakarta.validation.ValidationException.class)
-            .addStatement("return $T.status($T.Status.BAD_REQUEST, ex.getMessage() != null ? ex.getMessage() : \"Validation failed\")",
-                ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
-                ClassName.get("jakarta.ws.rs.core", "Response"))
             .nextControlFlow("else if (ex instanceof $T)", RuntimeException.class)
             .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
@@ -938,7 +934,8 @@ public class PipelineStepProcessor extends AbstractProcessor {
                 .build())
             .addModifiers(Modifier.PUBLIC)
             .returns(uniOutputDto)
-            .addParameter(multiInputDto, "inputDtos");
+            .addParameter(ParameterSpec.builder(multiInputDto, "inputDtos")
+                .build());
 
         // Add the implementation code
         methodBuilder.addStatement("$T<$T> domainInputs = inputDtos.map(input -> $L.fromDto(input))", 
@@ -954,7 +951,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
 
     /**
          * Builds the REST resource "process" method for a unary reactive service endpoint.
-         *
+         * <p>
          * The generated method is a public POST mapped to "/process" that:
          * - accepts an input DTO,
          * - converts it to the domain input using the provided inbound mapper,
@@ -1064,6 +1061,9 @@ public class PipelineStepProcessor extends AbstractProcessor {
             className = className.substring(0, className.length() - 7);
         }
         
+        // Remove "Reactive" if present (for service names like "ProcessPaymentReactiveService")
+        className = className.replace("Reactive", "");
+        
         // Convert from PascalCase to kebab-case
         // Handle sequences like "ProcessPaymentStatus" -> "process-payment-status"
         String pathPart = className.replaceAll("([a-z])([A-Z])", "$1-$2")
@@ -1075,7 +1075,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
     
     /**
      * Derives the corresponding DTO type name for a given domain type.
-     *
+     * <p>
      * The result is a fully qualified type name when a package can be produced,
      * otherwise a simple DTO type name. Common package transformations are applied:
      * ".common.domain" -> ".common.dto", ".domain" -> ".dto", and ".service" -> ".dto".

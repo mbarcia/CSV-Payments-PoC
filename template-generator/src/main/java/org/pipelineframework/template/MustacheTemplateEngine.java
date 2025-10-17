@@ -623,10 +623,13 @@ public class MustacheTemplateEngine {
     
     private void generateOrchestrator(MustacheFactory mf, String appName, String basePackage, List<Map<String, Object>> steps, Path outputPath) throws IOException {
         Path orchPath = outputPath.resolve("orchestrator-svc");
-        Files.createDirectories(orchPath.resolve("src/main/java").resolve(toPath(basePackage + ".orchestrator.service")));
+        Files.createDirectories(orchPath.resolve("src/main/java").resolve(toPath(basePackage + ".orchestrator")));
         
         // Generate orchestrator POM
         generateOrchestratorPom(mf, appName, basePackage, orchPath);
+        
+        // Generate orchestrator application class
+        generateOrchestratorApplication(mf, appName, basePackage, steps, orchPath);
         
         // Generate Dockerfile
         generateDockerfile(mf, "orchestrator-svc", orchPath);
@@ -644,6 +647,33 @@ public class MustacheTemplateEngine {
         stringWriter.flush();
         
         Files.write(orchPath.resolve("pom.xml"), stringWriter.toString().getBytes());
+    }
+    
+    private void generateOrchestratorApplication(MustacheFactory mf, String appName, String basePackage, List<Map<String, Object>> steps, Path orchPath) throws IOException {
+        // Prepare context for the template
+        Map<String, Object> context = new HashMap<>();
+        context.put("basePackage", basePackage);
+        context.put("appName", appName);
+        
+        // Use the first step for the input type to the orchestrator
+        if (!steps.isEmpty()) {
+            Map<String, Object> firstStep = steps.get(0);
+            context.put("firstInputTypeName", firstStep.get("inputTypeName"));
+            
+            // Format service name for proto class name (e.g., "process-customer-svc" -> "ProcessCustomerSvc")
+            String firstStepServiceName = (String) firstStep.get("serviceName");
+            String firstStepProtoClassName = formatForProtoClassName(firstStepServiceName);
+            context.put("firstStepProtoClassName", firstStepProtoClassName);
+        }
+        
+        Mustache mustache = mf.compile("templates/orchestrator-application.mustache");
+        StringWriter stringWriter = new StringWriter();
+        mustache.execute(stringWriter, context);
+        stringWriter.flush();
+        
+        Path appPath = orchPath.resolve("src/main/java").resolve(toPath(basePackage + ".orchestrator"))
+            .resolve("OrchestratorApplication.java");
+        Files.write(appPath, stringWriter.toString().getBytes());
     }
     
     private void generateDockerCompose(MustacheFactory mf, String appName, List<Map<String, Object>> steps, Path outputPath) throws IOException {

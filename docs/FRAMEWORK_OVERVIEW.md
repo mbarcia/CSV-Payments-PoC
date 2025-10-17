@@ -101,6 +101,7 @@ The template generator implements the original spec with significant enhancement
 - Generates Java entities, DTOs, and mappers
 - Creates gRPC proto definitions with proper imports
 - Generates microservice implementations with `@PipelineStep` annotations
+- Creates a CLI OrchestratorApplication with placeholder methods for user implementation
 - Creates Docker configuration and deployment scripts
 - Generates observability stack (Prometheus, Grafana, Tempo, Loki, OpenTelemetry)
 

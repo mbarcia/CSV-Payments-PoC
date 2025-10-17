@@ -50,6 +50,7 @@ import org.slf4j.MDC;
     inboundMapper = CsvPaymentsInputFileMapper.class,
     outboundMapper = PaymentRecordMapper.class,
     grpcClient = "process-csv-payments-input-file",
+    restEnabled = true,
     autoPersist = true,
     debug = true
 )

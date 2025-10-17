@@ -149,6 +149,11 @@
             <version>3.26.3</version> <!-- latest stable as of Aug 2025 -->
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>3.1.1</version>
+        </dependency>
     </dependencies>
 
     <build>

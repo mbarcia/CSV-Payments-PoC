@@ -4,9 +4,6 @@ WORKDIR /app
 # Copy the parent pom
 COPY pom.xml .
 
-# Copy the pipeline-framework pom
-COPY pipeline-framework/pom.xml pipeline-framework/pom.xml
-
 # Copy the common pom
 COPY common/pom.xml common/pom.xml
 
@@ -16,7 +13,6 @@ COPY input-csv-file-processing-svc/pom.xml input-csv-file-processing-svc/pom.xml
 # Filter unwanted modules and overwrite the original pom.xml
 RUN sed -n '\
   1,/<modules>/p; \
-  /<module>pipeline\-framework<\/module>/p; \
   /<module>common<\/module>/p; \
   /<module>input-csv-file-processing-svc<\/module>/p; \
   /<\/modules>/,$p' pom.xml > filtered-pom.xml \
@@ -27,16 +23,11 @@ RUN --mount=type=cache,target=/root/.m2 \
     mvn -B install:install-file \
     -Dfile=pom.xml \
     -DpomFile=pom.xml \
-    -DgroupId=io.github.mbarcia \
+    -DgroupId=org.pipelineframework \
     -DartifactId=csv-payments \
     -Dversion=1.0.0 \
     -Dpackaging=pom \
     -DgeneratePom=false
-
-# Copy and install pipeline-framework module
-COPY pipeline-framework/ pipeline-framework/
-RUN --mount=type=cache,target=/root/.m2 \
-    mvn -B install -f pipeline-framework/pom.xml -DskipTests
 
 # Copy and install common module
 COPY common/ common/

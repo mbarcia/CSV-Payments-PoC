@@ -55,7 +55,7 @@ start_service "output-csv-file-processing-svc" "output-csv-file-processing-svc"
 
 sleep 10
 
-start_service "orchestrator-svc" "orchestrator-svc"
+#start_service "orchestrator-svc" "orchestrator-svc"
 
 echo "All services started in development mode."
 echo "Check .log files for output and .pid files for process IDs."

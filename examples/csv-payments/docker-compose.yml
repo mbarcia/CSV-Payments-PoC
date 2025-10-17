@@ -28,8 +28,6 @@ services:
     depends_on:
       input-csv-file-processing-svc:
         condition: service_healthy
-      data-persistence-svc:
-        condition: service_healthy
       payments-processing-svc:
         condition: service_healthy
       payment-status-svc:
@@ -270,8 +268,6 @@ services:
       - "3100:3100"
     networks:
       - csv-payments-network
-
-  orchestrator-svc:\n    build:\n      dockerfile: orchestrator-svc/Dockerfile\n    ports:\n      - \"8443:8443\"\n    environment:\n      - CSV_FOLDER_PATH=/app/csv\n      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_HOST=input-csv-file-processing-svc\n      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_INPUT_FILE_PORT=8444\n      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_HOST=payments-processing-svc\n      - QUARKUS_GRPC_CLIENTS_SEND_PAYMENT_RECORD_PORT=8445\n      - QUARKUS_GRPC_CLIENTS_PERSIST_ACK_PAYMENT_SENT_HOST=payments-processing-svc\n      - QUARKUS_GRPC_CLIENTS_PERSIST_ACK_PAYMENT_SENT_PORT=8445\n      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_HOST=payments-processing-svc\n      - QUARKUS_GRPC_CLIENTS_PROCESS_ACK_PAYMENT_SENT_PORT=8445\n      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_HOST=payment-status-svc\n      - QUARKUS_GRPC_CLIENTS_PROCESS_PAYMENT_STATUS_PORT=8446\n      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_HOST=output-csv-file-processing-svc\n      - QUARKUS_GRPC_CLIENTS_PROCESS_CSV_PAYMENTS_OUTPUT_FILE_PORT=8447\n      # Increase retry configuration\n      - CSV_POC_PROCESS_FILE_INITIAL_RETRY_DELAY=500\n      - CSV_POC_PROCESS_FILE_MAX_RETRIES=10\n      - CSV_POC_PROCESS_FILE_CONCURRENCY_LIMIT_RECORDS=2000\n    depends_on:\n      input-csv-file-processing-svc:\n        condition: service_healthy\n      payments-processing-svc:\n        condition: service_healthy\n      payment-status-svc:\n        condition: service_healthy\n      output-csv-file-processing-svc:\n        condition: service_healthy\n    volumes:\n      - ./data/csv:/app/csv:rw\n    healthcheck:\n      test: [\"CMD\", \"curl\", \"-k\", \"-f\", \"https://orchestrator-svc:8443/q/health\"]\n      interval: 5s\n      timeout: 2s\n      retries: 10\n      start_period: 3s\n    # Run once and exit\n    restart: \"no\"\n    networks:\n      - csv-payments-network
 
 volumes:
   postgres_data:

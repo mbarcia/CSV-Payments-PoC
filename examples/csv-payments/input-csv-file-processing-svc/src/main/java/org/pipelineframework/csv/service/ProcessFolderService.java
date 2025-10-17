@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
     inboundMapper = CsvFolderMapper.class,
     outboundMapper = CsvPaymentsInputFileMapper.class,
     grpcClient = "process-folder",
+    restEnabled = true,
     autoPersist = true,
     debug = true
 )

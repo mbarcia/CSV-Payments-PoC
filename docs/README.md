@@ -24,12 +24,13 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 
 ## Complete Documentation
 
-For complete documentation including detailed reference implementation, YAML configuration schema, and Canvas designer guide, see:
+For complete documentation including detailed reference implementation, YAML configuration schema, Canvas designer guide, and publishing information, see:
 
 - [Framework Overview](https://github.com/mbarcia/pipelineframework/blob/main/FRAMEWORK_OVERVIEW.md) - Complete architecture overview
 - [Reference Implementation](https://github.com/mbarcia/pipelineframework/blob/main/REFERENCE_IMPLEMENTATION.md) - Complete implementation guide
 - [YAML Configuration Schema](https://github.com/mbarcia/pipelineframework/blob/main/YAML_SCHEMA.md) - Complete YAML schema documentation
 - [Canvas Designer Guide](https://github.com/mbarcia/pipelineframework/blob/main/CANVAS_GUIDE.md) - Complete Canvas usage guide
+- [Publishing to Maven Central](https://github.com/mbarcia/pipelineframework/blob/main/PUBLISHING.md) - Guide to releasing and publishing the framework
 
 ## Documentation Structure
 

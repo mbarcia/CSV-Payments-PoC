@@ -80,5 +80,6 @@ To get started with The Pipeline Framework, explore these guides:
 - [YAML Configuration Schema](/YAML_SCHEMA.html): Complete YAML schema documentation
 - [Canvas Designer Guide](/CANVAS_GUIDE.html): Complete Canvas usage guide
 - [Java-Centered Types](/JAVA_CENTERED_TYPES.html): Java-first approach with protobuf mapping
+- [Publishing to Maven Central](/PUBLISHING.html): Guide to releasing and publishing the framework
 
 This approach reduces boilerplate code and ensures consistency across your pipeline steps.

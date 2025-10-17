@@ -48,15 +48,24 @@ public class OrchestratorApplication implements QuarkusApplication {
     @Override
     public int run(String... args) {
         CommandLine cmd = new CommandLine(this);
-        cmd.parseArgs(args);
-
-        if (input != null) {
-            executePipelineWithInput(input);
-            return 0; // Success exit code
-        } else {
-            System.err.println("Input parameter is required");
-            return 1; // Error exit code
+        try {
+            cmd.parseArgs(args);
+            if (cmd.getParseResult().isUsageHelpRequested()) {
+                cmd.usage(System.out);
+                return CommandLine.ExitCode.OK;
+            }
+            if (cmd.getParseResult().isVersionHelpRequested()) {
+                cmd.printVersionHelp(System.out);
+                return CommandLine.ExitCode.OK;
+            }
+        } catch (CommandLine.ParameterException e) {
+            System.err.println(e.getMessage());
+            cmd.usage(System.err);
+            return CommandLine.ExitCode.USAGE;
         }
+
+        executePipelineWithInput(input);
+        return CommandLine.ExitCode.OK;
     }
 
     // Execute the pipeline when arguments are properly parsed

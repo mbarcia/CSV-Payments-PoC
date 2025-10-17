@@ -207,6 +207,7 @@ my-pipeline-app/
 │   └── Dockerfile
 ├── orchestrator-svc/             # Orchestrator service
 │   ├── pom.xml
+│   ├── src/main/java/com/example/sample/orchestrator/OrchestratorApplication.java  # CLI application entry point
 │   └── Dockerfile
 ├── docker-compose.yml            # Service orchestration
 ├── up-docker.sh                  # Docker startup script
@@ -228,6 +229,57 @@ my-pipeline-app/
 - Use YAML file or Canvas designer to define steps
 - Specify cardinalities and data types
 - Define field mappings for each step
+
+### 2. Generated Orchestrator Application
+When the template generator creates the application, it generates an OrchestratorApplication class in the orchestrator module:
+
+- Located at `orchestrator-svc/src/main/java/.../orchestrator/OrchestratorApplication.java`
+- Annotated with `@CommandLine.Command` for CLI functionality and `@Dependent` for CDI
+- Extends `QuarkusApplication` to integrate with the Quarkus runtime
+- Includes a placeholder `getInputMulti()` method that users must implement after generation
+- Provides the entry point for pipeline execution with command-line arguments
+- Uses `PipelineExecutionService` to execute the pipeline with provided input
+
+The generated template includes:
+```java
+@Command(name = "orchestrator", mixinStandardHelpOptions = true, version = "1.0.0",
+         description = "Sample Pipeline App Orchestrator Service")
+@Dependent
+public class OrchestratorApplication implements QuarkusApplication {
+
+    @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", required = true)
+    String input;
+
+    @Inject
+    PipelineExecutionService pipelineExecutionService;
+
+    // ... main and run methods
+
+    private static Multi<DomainType> getInputMulti(String input) {
+        // TODO: User needs to implement this method after template generation
+        // Create and return appropriate Multi based on the input and first step requirements
+        throw new UnsupportedOperationException("Method getInputMulti needs to be implemented by user after template generation");
+    }
+}
+```
+
+After generation, users must implement the `getInputMulti()` method to convert their input parameter into the appropriate Multi stream for the first step in the pipeline.
+
+### 3. Generate Application
+- Run template generator to create full project
+- Generated code includes all necessary components
+- Observability stack is included by default
+
+### 4. Implement Business Logic
+- Fill in the `getInputMulti()` method in OrchestratorApplication
+- Fill in the `apply()` methods in generated service classes
+- Use reactive patterns with Uni/Multi as appropriate
+- Add domain-specific logic and validations
+
+### 5. Test and Deploy
+- Use generated Docker Compose for local testing
+- Deploy individual services as needed
+- Monitor with integrated observability tools
 
 ### 2. Generate Application
 - Run template generator to create full project

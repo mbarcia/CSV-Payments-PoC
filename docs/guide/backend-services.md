@@ -23,6 +23,17 @@ First, determine what type of step your service implements:
 
 ### 2. Create the Service Class
 
+### 3. Considerations for StepManyToOne with File Operations
+
+When implementing StepManyToOne steps that perform file operations (like CSV writing), special care must be taken with batching configuration:
+
+- OpenCSV and similar file writing libraries may not handle partial/batched writes properly
+- If only a partial batch of related records is available, the file writing operation may truncate the output
+- To avoid this issue, ensure that either:
+  - All related records are guaranteed to arrive within the batch timeout period, OR
+  - The batch size is configured to collect all related records before processing
+  - Consider using a different step type or approach for file operations that require all data to be available
+
 Create your service class with the `@PipelineStep` annotation:
 
 ```java

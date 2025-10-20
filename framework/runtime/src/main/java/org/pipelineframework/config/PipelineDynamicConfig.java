@@ -31,16 +31,16 @@ import java.util.concurrent.atomic.AtomicReference;
 public class PipelineDynamicConfig {
     
     private final AtomicReference<PipelineConfigValues> currentConfig = 
-        new AtomicReference<>(new PipelineConfigValues(1000, 3, 1000L));
+        new AtomicReference<>(new PipelineConfigValues(false, 3, 1000L));
 
     /**
      * Update the configuration values at runtime.
-     * @param concurrency new concurrency limit
+     * @param parallel new parallel processing flag
      * @param retryLimit new maximum retry attempts
      * @param retryWaitMs new initial retry delay in milliseconds
      */
-    public void updateConfig(int concurrency, int retryLimit, long retryWaitMs) {
-        currentConfig.set(new PipelineConfigValues(concurrency, retryLimit, retryWaitMs));
+    public void updateConfig(boolean parallel, int retryLimit, long retryWaitMs) {
+        currentConfig.set(new PipelineConfigValues(parallel, retryLimit, retryWaitMs));
     }
 
     /**
@@ -49,7 +49,7 @@ public class PipelineDynamicConfig {
      */
     public void updateConfig(PipelineInitialConfig staticConfig) {
         updateConfig(
-            staticConfig.concurrency(), 
+            staticConfig.parallel(), 
             staticConfig.retryLimit(), 
             staticConfig.retryWaitMs()
         );
@@ -59,12 +59,12 @@ public class PipelineDynamicConfig {
      * Immutable holder for configuration values.
      */
     private static class PipelineConfigValues {
-        final int concurrency;
+        final boolean parallel;
         final int retryLimit;
         final long retryWaitMs;
 
-        PipelineConfigValues(int concurrency, int retryLimit, long retryWaitMs) {
-            this.concurrency = concurrency;
+        PipelineConfigValues(boolean parallel, int retryLimit, long retryWaitMs) {
+            this.parallel = parallel;
             this.retryLimit = retryLimit;
             this.retryWaitMs = retryWaitMs;
         }
@@ -79,8 +79,8 @@ public class PipelineDynamicConfig {
         return Duration.ofMillis(currentConfig.get().retryWaitMs);
     }
     
-    public int getConcurrency() {
-        return currentConfig.get().concurrency;
+    public boolean getParallel() {
+        return currentConfig.get().parallel;
     }
     
     public boolean isDebug() {

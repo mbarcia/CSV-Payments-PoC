@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.pipelineframework.PipelineRunner;
 import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
+import org.pipelineframework.config.StepConfig;
 
 @QuarkusTest
 class PipelineRunnerTest {
@@ -192,7 +193,7 @@ class PipelineRunnerTest {
         RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(2);
 
         // Configure retry settings by initializing the step with proper configuration
-        LiveStepConfig liveConfig = new LiveStepConfig(new PipelineConfig());
+        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
         liveConfig.overrides().retryLimit(3).retryWait(Duration.ofMillis(10));
         step.initialiseWithConfig(liveConfig);
 
@@ -213,7 +214,7 @@ class PipelineRunnerTest {
         RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(3);
 
         // Configure retry settings - only 2 retries, but need 3 failures to pass
-        LiveStepConfig liveConfig = new LiveStepConfig(new PipelineConfig());
+        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
         liveConfig.overrides().retryLimit(2).retryWait(Duration.ofMillis(10));
         step.initialiseWithConfig(liveConfig);
 
@@ -235,7 +236,7 @@ class PipelineRunnerTest {
         RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(3);
 
         // Configure recovery and retry settings
-        LiveStepConfig liveConfig = new LiveStepConfig(new PipelineConfig());
+        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
         liveConfig
                 .overrides()
                 .recoverOnFailure(true)
@@ -262,7 +263,7 @@ class PipelineRunnerTest {
         TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
 
         // Configure the step before running it through the pipeline
-        LiveStepConfig liveConfig = new LiveStepConfig(new PipelineConfig());
+        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
         liveConfig.overrides().retryLimit(5).retryWait(Duration.ofMillis(100)).debug(true);
         step.initialiseWithConfig(liveConfig);
 
@@ -286,7 +287,7 @@ class PipelineRunnerTest {
 
         // Create a step with auto-persist enabled by initializing it properly
         TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
-        LiveStepConfig liveConfig = new LiveStepConfig(new PipelineConfig());
+        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
         liveConfig.overrides().autoPersist(true);
         step.initialiseWithConfig(liveConfig);
 

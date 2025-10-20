@@ -158,10 +158,14 @@ public class TestSteps {
          */
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
-            return failedItem.onItem().invoke(item ->
-                LOG.infof("Dead letter handled for item: %s, cause: %s", item, cause.getMessage())
-            );
-         }
+            return failedItem
+                    .onItem()
+                    .invoke(
+                            item ->
+                                    LOG.infof(
+                                            "Dead letter handled for item: %s, cause: %s",
+                                            item, cause.getMessage()));
+        }
 
         @Override
         public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {

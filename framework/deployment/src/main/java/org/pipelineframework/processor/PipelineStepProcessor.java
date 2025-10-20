@@ -166,11 +166,23 @@ public class PipelineStepProcessor extends AbstractProcessor {
         String serviceClassName = serviceClass.getSimpleName().toString();
         String clientStepClassName = serviceClassName.replace("Service", "") + CLIENT_STEP_SUFFIX;
         
-        // Create the class with ApplicationScoped annotation for CDI
+        // Create the class with Dependent annotation for CDI
         TypeSpec.Builder clientStepBuilder = TypeSpec.classBuilder(clientStepClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.enterprise.context", "ApplicationScoped"))
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.enterprise.context", "Dependent"))
                 .build());
+
+        // Add service class field, so we can recover the annotation at runtime
+        FieldSpec serviceClassField = FieldSpec.builder(
+                        Class.class,
+                        "ORIGINAL_SERVICE_CLASS",
+                        Modifier.PUBLIC,
+                        Modifier.STATIC,
+                        Modifier.FINAL)
+                .initializer("$T.class", serviceClass)
+                .build();
+
+        clientStepBuilder.addField(serviceClassField);
 
         // Add necessary imports as field declarations or annotations
         if (grpcStubType != null && !grpcStubType.toString().equals("void")) {
@@ -745,7 +757,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
         String inboundMapperFieldName = "inboundMapper";
         String outboundMapperFieldName = "outboundMapper";
         
-        if (inboundMapperType != null && !inboundMapperType.toString().equals("void")) {
+        if (!inboundMapperType.toString().equals("void")) {
             // Create field for inbound mapper
             String inboundMapperPackage = inboundMapperType.toString().substring(0, inboundMapperType.toString().lastIndexOf('.'));
             String inboundMapperSimpleName = inboundMapperType.toString().substring(inboundMapperType.toString().lastIndexOf('.') + 1);
@@ -762,7 +774,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
             resourceBuilder.addField(inboundMapperField);
         }
 
-        if (outboundMapperType != null && !outboundMapperType.toString().equals("void")) {
+        if (!outboundMapperType.toString().equals("void")) {
             // Create field for outbound mapper
             String outboundMapperPackage = outboundMapperType.toString().substring(0, outboundMapperType.toString().lastIndexOf('.'));
             String outboundMapperSimpleName = outboundMapperType.toString().substring(outboundMapperType.toString().lastIndexOf('.') + 1);
@@ -778,6 +790,17 @@ public class PipelineStepProcessor extends AbstractProcessor {
                 .build();
             resourceBuilder.addField(outboundMapperField);
         }
+
+        // Add logger field to the resource class (before process method)
+        FieldSpec loggerField = FieldSpec.builder(
+                        ClassName.get("org.jboss.logging", "Logger"),
+                        "logger")
+                .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+                .initializer("$T.getLogger($L.class)",
+                        ClassName.get("org.jboss.logging", "Logger"),
+                        resourceClassName)
+                .build();
+        resourceBuilder.addField(loggerField);
 
         // Determine input and output DTO types
         TypeName inputDtoClassName;
@@ -834,15 +857,18 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .returns(ClassName.get("org.jboss.resteasy.reactive", "RestResponse"))
             .addParameter(Exception.class, "ex")
             .beginControlFlow("if (ex instanceof $T)", IllegalArgumentException.class)
+                .addStatement("logger.warn(\"Invalid request\", ex)")
                 .addStatement("return $T.status($T.Status.BAD_REQUEST, \"Invalid request\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
                 ClassName.get("jakarta.ws.rs.core", "Response"))
             .nextControlFlow("else if (ex instanceof $T)", RuntimeException.class)
-            .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
+                .addStatement("logger.error(\"Unexpected error processing request\", ex)")
+                .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
                 ClassName.get("jakarta.ws.rs.core", "Response"))
             .nextControlFlow("else")
-            .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
+                .addStatement("logger.error(\"Unexpected error processing request\", ex)")
+                .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
                 ClassName.get("jakarta.ws.rs.core", "Response"))
             .endControlFlow()
@@ -1132,8 +1158,9 @@ public class PipelineStepProcessor extends AbstractProcessor {
             // Ensure the package has .dto in it if it doesn't already
             if (!modifiedPackageName.contains(".dto")) {
                 modifiedPackageName = modifiedPackageName + ".dto";
+            } else {
+                return modifiedPackageName + ".Dto";
             }
-            return modifiedPackageName + ".Dto";
         }
         
         return modifiedPackageName.isEmpty() ? simpleName + "Dto" : modifiedPackageName + "." + simpleName + "Dto";

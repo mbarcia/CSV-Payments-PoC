@@ -54,8 +54,8 @@ class StepManyToOneTest {
         }
 
         @Override
-        public long batchTimeoutMs() {
-            return 1000; // Default timeout
+        public Duration batchTimeout() {
+            return Duration.ofMillis(1000); // Default timeout
         }
     }
 

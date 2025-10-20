@@ -19,6 +19,7 @@ package org.pipelineframework.pipeline.step.manytoone;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.math.BigDecimal;
+import java.time.Duration;
 import org.pipelineframework.step.ConfigurableStep;
 import org.pipelineframework.step.StepManyToOne;
 
@@ -69,8 +70,8 @@ public class PaymentAggregationStep extends ConfigurableStep
     }
 
     @Override
-    public long batchTimeoutMs() {
-        return 1000; // 1 second timeout
+    public Duration batchTimeout() {
+        return Duration.ofMillis(1000); // 1 second timeout
     }
 
     @Override

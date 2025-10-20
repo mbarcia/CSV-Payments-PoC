@@ -33,7 +33,7 @@ class ConfigurationIntegrationTest {
         assertNotNull(defaults);
         assertEquals(3, defaults.retryLimit());
         assertEquals(Duration.ofMillis(200), defaults.retryWait());
-        assertEquals(4, defaults.concurrency());
+        assertFalse(defaults.parallel());
         assertFalse(defaults.debug());
         assertFalse(defaults.recoverOnFailure());
         assertFalse(defaults.runWithVirtualThreads());
@@ -47,11 +47,11 @@ class ConfigurationIntegrationTest {
         StepConfig config = new StepConfig();
 
         // When
-        config.retryLimit(10).concurrency(20).debug(true);
+        config.retryLimit(10).parallel(true).debug(true);
 
         // Then
         assertEquals(10, config.retryLimit());
-        assertEquals(20, config.concurrency());
+        assertTrue(config.parallel());
         assertTrue(config.debug());
         // Other properties should still use defaults
         assertEquals(Duration.ofMillis(200), config.retryWait());
@@ -80,7 +80,7 @@ class ConfigurationIntegrationTest {
     void testProfileConfiguration() {
         // Given
         PipelineConfig pipelineConfig = new PipelineConfig();
-        pipelineConfig.profile("custom", new StepConfig().retryLimit(7).concurrency(15));
+        pipelineConfig.profile("custom", new StepConfig().retryLimit(7).parallel(true));
         pipelineConfig.activate("custom");
 
         // When
@@ -88,7 +88,7 @@ class ConfigurationIntegrationTest {
 
         // Then
         assertEquals(7, activeConfig.retryLimit()); // from profile
-        assertEquals(15, activeConfig.concurrency()); // from profile
+        assertTrue(activeConfig.parallel()); // from profile
         assertEquals(Duration.ofMillis(200), activeConfig.retryWait()); // default
     }
 }

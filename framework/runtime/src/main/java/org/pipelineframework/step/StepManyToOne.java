@@ -50,8 +50,8 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
      *
      * @return The time window in milliseconds (default: 1000ms)
      */
-    default long batchTimeoutMs() {
-        return 1000;
+    default Duration batchTimeout() {
+        return Duration.ofMillis(1000);
     }
 
     /**
@@ -78,7 +78,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
         // Use configured batch size if available, otherwise use the default
         int batchSize = config != null ? config.batchSize() : this.batchSize();
         // Use configured batch timeout if available, otherwise use the default
-        long batchTimeoutMs = config != null ? config.batchTimeout().toMillis() : this.batchTimeoutMs();
+        Duration batchTimeout = config != null ? config.batchTimeout() : this.batchTimeout();
 
         // Apply overflow strategy to the input
         Multi<I> backpressuredInput = input;
@@ -91,39 +91,74 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
             backpressuredInput = backpressuredInput.onOverflow().buffer(128); // default buffer size
         }
 
-        Multi<Multi<I>> batches = backpressuredInput.group().intoLists().of(batchSize, Duration.ofMillis(batchTimeoutMs))
+        Multi<Multi<I>> batches = backpressuredInput.group().intoLists().of(batchSize, batchTimeout)
             .onItem().transform(list -> Multi.createFrom().iterable(list)); // convert List<I> to Multi<I> for applyBatchMulti
 
-        return batches
-            .onItem().transformToUniAndConcatenate(batch ->
-                applyBatchMulti(batch)
-                    .onItem().invoke(result -> {
-                        if (debug()) {
-                            LOG.debug(
-                                "Reactive Step {} processed batch into single output: {}",
-                                this.getClass().getSimpleName(), result
-                            );
-                        }
-                    })
-                    .onFailure().recoverWithUni(error -> {
-                        if (recoverOnFailure()) {
+        // Process batches using combination strategy to allow concurrent processing of different batches
+        if (effectiveConfig().parallel()) {
+            // Process batches concurrently and collect results
+            return batches
+                .onItem().transformToUniAndMerge(batch ->
+                    applyBatchMulti(batch)
+                        .onItem().invoke(result -> {
                             if (debug()) {
                                 LOG.debug(
-                                    "Reactive Step {}: failed batch: {}",
-                                    this.getClass().getSimpleName(), error.getMessage()
+                                    "Reactive Step {} processed batch into single output: {}",
+                                    this.getClass().getSimpleName(), result
                                 );
                             }
-                            return deadLetterBatch(batch, error);
-                        } else {
-                            return Uni.createFrom().failure(error);
-                        }
-                    })
-                )
-                .onFailure(t -> !(t instanceof NullPointerException)).retry()
-                .withBackOff(retryWait(), maxBackoff())
-                .withJitter(jitter() ? 0.5 : 0.0)
-                .atMost(retryLimit())
-                .filter(Objects::nonNull)
+                        })
+                        .onFailure().recoverWithUni(error -> {
+                            if (recoverOnFailure()) {
+                                if (debug()) {
+                                    LOG.debug(
+                                        "Reactive Step {}: failed batch: {}",
+                                        this.getClass().getSimpleName(), error.getMessage()
+                                    );
+                                }
+                                return deadLetterBatch(batch, error);
+                            } else {
+                                return Uni.createFrom().failure(error);
+                            }
+                        })
+                        .onFailure(t -> !(t instanceof NullPointerException)).retry()
+                        .withBackOff(retryWait(), maxBackoff())
+                        .withJitter(jitter() ? 0.5 : 0.0)
+                        .atMost(retryLimit())
+                    ).filter(Objects::nonNull)
+                    .collect().last();
+        } else {
+            // Process batches sequentially (backward compatibility)
+            return batches
+                .onItem().transformToUniAndConcatenate(batch ->
+                    applyBatchMulti(batch)
+                        .onItem().invoke(result -> {
+                            if (debug()) {
+                                LOG.debug(
+                                    "Reactive Step {} processed batch into single output: {}",
+                                    this.getClass().getSimpleName(), result
+                                );
+                            }
+                        })
+                        .onFailure().recoverWithUni(error -> {
+                            if (recoverOnFailure()) {
+                                if (debug()) {
+                                    LOG.debug(
+                                        "Reactive Step {}: failed batch: {}",
+                                        this.getClass().getSimpleName(), error.getMessage()
+                                    );
+                                }
+                                return deadLetterBatch(batch, error);
+                            } else {
+                                return Uni.createFrom().failure(error);
+                            }
+                        })
+                        .onFailure(t -> !(t instanceof NullPointerException)).retry()
+                        .withBackOff(retryWait(), maxBackoff())
+                        .withJitter(jitter() ? 0.5 : 0.0)
+                        .atMost(retryLimit())
+                ).filter(Objects::nonNull)
                 .collect().last();
+        }
     }
 }

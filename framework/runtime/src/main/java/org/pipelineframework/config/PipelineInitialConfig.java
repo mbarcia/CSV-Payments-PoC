@@ -44,11 +44,11 @@ public interface PipelineInitialConfig {
     Long retryWaitMs();
 
     /**
-     * Maximum concurrent operations.
-     * @return concurrency limit
+     * Enable parallel processing.
+     * @return true to enable parallel processing, false for sequential processing
      */
-    @WithDefault("4")
-    Integer concurrency();
+    @WithDefault("false")
+    Boolean parallel();
 
     /**
      * Enable debug logging.

@@ -18,6 +18,7 @@ package org.pipelineframework.step.blocking;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executors;
 import org.pipelineframework.step.Configurable;
@@ -51,8 +52,8 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
      *
      * @return The time window in milliseconds (default: 1000ms)
      */
-    default long batchTimeoutMs() {
-        return 1000;
+    default Duration batchTimeout() {
+        return Duration.ofMillis(1000);
     }
 
     /**
@@ -73,7 +74,7 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
         final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         final java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
         int batchSize = this.batchSize();
-        long batchTimeoutMs = this.batchTimeoutMs();
+        Duration batchTimeout = this.batchTimeout();
 
         // Apply overflow strategy to the input
         // default behavior - buffer with default capacity (no explicit overflow strategy needed)
@@ -86,38 +87,77 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
             backpressuredInput = backpressuredInput.onOverflow().drop();
         }
 
-        return backpressuredInput
-            .group().intoLists().of(batchSize, java.time.Duration.ofMillis(batchTimeoutMs))
-            .onItem().transformToUniAndConcatenate(list -> {
-                try {
-                    O result = applyBatchList(list);
+        Multi<List<I>> batches = backpressuredInput
+            .group().intoLists().of(batchSize, batchTimeout);
 
-                    if (debug()) {
-                        LOG.debug(
-                            "Blocking Step {} processed batch of {} items into single output: {}",
-                            this.getClass().getSimpleName(), list.size(), result
-                        );
-                    }
+        if (effectiveConfig().parallel()) {
+            // Process batches concurrently
+            return batches
+                .onItem().transformToUniAndMerge(list -> {
+                    try {
+                        O result = applyBatchList(list);
 
-                    return Uni.createFrom().item(result);
-                } catch (Exception e) {
-                    if (recoverOnFailure()) {
                         if (debug()) {
                             LOG.debug(
-                                "Blocking Step {}: failed batch: {}",
-                                this.getClass().getSimpleName(), e.getMessage()
+                                "Blocking Step {} processed batch of {} items into single output: {}",
+                                this.getClass().getSimpleName(), list.size(), result
                             );
                         }
-                        return deadLetterBatchList(list, e);
-                    } else {
-                        return Uni.createFrom().failure(e);
+
+                        return Uni.createFrom().item(result);
+                    } catch (Exception e) {
+                        if (recoverOnFailure()) {
+                            if (debug()) {
+                                LOG.debug(
+                                    "Blocking Step {}: failed batch: {}",
+                                    this.getClass().getSimpleName(), e.getMessage()
+                                );
+                            }
+                            return deadLetterBatchList(list, e);
+                        } else {
+                            return Uni.createFrom().failure(e);
+                        }
                     }
-                }
-            })
-            .onFailure(t -> !(t instanceof NullPointerException)).retry()
-            .withBackOff(retryWait(), maxBackoff())
-            .withJitter(jitter() ? 0.5 : 0.0)
-            .atMost(retryLimit())
+                })
+                .onFailure(t -> !(t instanceof NullPointerException)).retry()
+                .withBackOff(retryWait(), maxBackoff())
+                .withJitter(jitter() ? 0.5 : 0.0)
+                .atMost(retryLimit())
             .collect().last();
+        } else {
+            // Process batches sequentially (backward compatibility)
+            return batches
+                .onItem().transformToUniAndConcatenate(list -> {
+                    try {
+                        O result = applyBatchList(list);
+
+                        if (debug()) {
+                            LOG.debug(
+                                "Blocking Step {} processed batch of {} items into single output: {}",
+                                this.getClass().getSimpleName(), list.size(), result
+                            );
+                        }
+
+                        return Uni.createFrom().item(result);
+                    } catch (Exception e) {
+                        if (recoverOnFailure()) {
+                            if (debug()) {
+                                LOG.debug(
+                                    "Blocking Step {}: failed batch: {}",
+                                    this.getClass().getSimpleName(), e.getMessage()
+                                );
+                            }
+                            return deadLetterBatchList(list, e);
+                        } else {
+                            return Uni.createFrom().failure(e);
+                        }
+                    }
+                })
+                .onFailure(t -> !(t instanceof NullPointerException)).retry()
+                .withBackOff(retryWait(), maxBackoff())
+                .withJitter(jitter() ? 0.5 : 0.0)
+                .atMost(retryLimit())
+            .collect().last();
+        }
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.pipelineframework.orchestrator;
+package org.pipelineframework.csv.orchestrator;
 
 import io.quarkus.runtime.QuarkusApplication;
 import io.smallrye.mutiny.Multi;
@@ -35,7 +35,7 @@ import picocli.CommandLine.Option;
 @Dependent
 public class OrchestratorApplication implements QuarkusApplication {
 
-    @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", required = true)
+    @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", defaultValue = "")
     String input;
 
     @Inject
@@ -61,14 +61,20 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     // Execute the pipeline when arguments are properly parsed
     private void executePipelineWithInput(String input) {
+        Multi<InputCsvFileProcessingSvc.CsvFolder> inputMulti = getInputMulti(input);
+
+        // Execute the pipeline with the processed input using injected service
+        pipelineExecutionService.executePipeline(inputMulti)
+                .collect().asList()
+                .await().indefinitely();
+        
+        System.out.println("Pipeline execution completed");
+    }
+
+    private static Multi<InputCsvFileProcessingSvc.CsvFolder> getInputMulti(String input) {
         InputCsvFileProcessingSvc.CsvFolder csvFolder = InputCsvFileProcessingSvc.CsvFolder.newBuilder().setPath(input).build();
 
         // Create input Multi from the input parameter
-        Multi<InputCsvFileProcessingSvc.CsvFolder> inputMulti = Multi.createFrom().item(csvFolder);
-        
-        // Execute the pipeline with the processed input using injected service
-        pipelineExecutionService.executePipeline(inputMulti);
-        
-        System.out.println("Pipeline execution completed");
+        return Multi.createFrom().item(csvFolder);
     }
 }

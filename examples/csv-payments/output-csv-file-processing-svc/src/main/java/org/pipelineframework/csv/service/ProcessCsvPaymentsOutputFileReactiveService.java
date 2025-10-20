@@ -43,6 +43,14 @@ import org.slf4j.MDC;
  * The service uses the iterator-based write method from OpenCSV which provides better
  * streaming characteristics than list-based writing, even though we collect the stream
  * for compatibility with the library's API.
+ * <p>
+ * <b>Important Configuration Note:</b> This step uses StepManyToOne which inherently
+ * applies batching to group input streams. OpenCSV truncates files if partial data is
+ * written, so batching parameters are set very high to effectively disable batching:
+ * - A very large batchSize ensures all related payment outputs are collected together
+ * - A longer batchTimeoutMs allows sufficient time for all related records to arrive
+ * This effectively makes StepManyToOne behave like a single-stream processor for each
+ * set of related payment outputs corresponding to an output file.
  */
 @PipelineStep(
   order = 6,
@@ -59,8 +67,9 @@ import org.slf4j.MDC;
   grpcClient = "process-csv-payments-output-file",
   autoPersist = true,
   debug = true,
-  batchSize = 50,  // Larger batch size to ensure all related records are processed together
-  batchTimeoutMs = 10000L  // 10 second timeout to allow all related records to accumulate
+  parallel = false,
+  batchSize = 100000,  // Larger batch size to ensure all related records are processed together
+  batchTimeoutMs = 300000L  // 5 minutes. Beware OpenCSV will truncate the output file when this times out
 )
 @ApplicationScoped
 public class ProcessCsvPaymentsOutputFileReactiveService
@@ -148,12 +157,12 @@ public class ProcessCsvPaymentsOutputFileReactiveService
   }
 
   /**
-   * Create a CSV output file based on the first payment output in the stream.
+   * Creates a CsvPaymentsOutputFile based on a payment output.
    * <p>
    * Extracts the input file path from the payment output to determine where
    * the output file should be written.
    * 
-   * @param paymentOutput first payment output in the stream
+   * @param paymentOutput Usually the first payment output in the stream
    * @return CsvPaymentsOutputFile instance for writing
    * @throws IOException if there's an error creating the file
    */

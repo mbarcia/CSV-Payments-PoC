@@ -34,6 +34,7 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 @ApplicationScoped
 @PipelineStep(
@@ -95,10 +96,18 @@ public class ProcessFolderService implements org.pipelineframework.service.React
       return Multi.createFrom().empty();
     }
 
+    String serviceId = this.getClass().toString();
+
     return Multi.createFrom().iterable(
             Arrays.stream(csvFiles)
                     .map(CsvPaymentsInputFile::new)
                     .toList()
-    );
+    ).invoke(
+          file -> {
+            MDC.put("serviceId", serviceId);
+            LOG.info(
+                    "Executed command on {} --> {}", file.getFilepath(), file);
+            MDC.clear();
+          });
   }
 }

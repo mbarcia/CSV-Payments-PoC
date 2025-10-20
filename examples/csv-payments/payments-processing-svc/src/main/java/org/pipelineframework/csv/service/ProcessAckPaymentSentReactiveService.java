@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
         grpcClient = "process-ack-payment-sent",
         restEnabled = true,
         autoPersist = true,
+        parallel = true,
         debug = true
 )
 @ApplicationScoped

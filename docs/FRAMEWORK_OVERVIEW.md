@@ -55,7 +55,7 @@ The core innovation is the `@PipelineStep` annotation processor that automatical
 - **Interactive Mode**: Step-by-step CLI wizard to collect pipeline specifications with comprehensive type options
 - **YAML File Mode**: Generate applications from predefined YAML configuration files
 - **YAML Generation Mode**: Create sample configuration files for reference
-- **Mustache Templating**: Code generation using Mustache templates for all components
+- **Handlebars Templating**: Code generation using Handlebars templates for all components (migrated from Mustache)
 - **Complete Project Generation**: Creates full Maven multi-module projects with all necessary files
 - **Automatic Import Management**: Intelligent import generation based on used Java types
 - **MapStruct Integration**: Automatic conversion between Java DTOs and protobuf with intelligent built-in and custom converters
@@ -95,7 +95,7 @@ The template generator implements the original spec with significant enhancement
 - Field type mapping system with validation
 - Automatic inter-step type dependency tracking
 
-#### Template Engine (`MustacheTemplateEngine.java`)
+#### Template Engine (`HandlebarsTemplateEngine.java`)
 - Generates complete Maven multi-module project
 - Creates all necessary modules: parent, common, steps, orchestrator
 - Generates Java entities, DTOs, and mappers
@@ -147,11 +147,12 @@ The template generator implements the original spec with significant enhancement
 
 ### Project Structure
 
-#### Template Generator (`template-generator/`)
+#### Template Generator (`template-generator-node/`)
 - Interactive CLI for pipeline generation
 - YAML configuration support
-- Mustache templating engine
+- Handlebars templating engine (migrated from Mustache)
 - Complete project scaffolding
+- Unified template engine for both CLI and web UI
 
 #### Pipeline Core Library (`pipeline/`)
 - Reusable pipeline components

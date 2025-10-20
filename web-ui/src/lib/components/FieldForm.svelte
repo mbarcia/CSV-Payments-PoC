@@ -1,12 +1,13 @@
 <script>
   import { onMount } from 'svelte';
+  import GenericTypeConfigPopup from './GenericTypeConfigPopup.svelte';
 
   export let fields;
   // Default to Java-centered types if no fieldTypes provided
   export let fieldTypes = [
     'String', 'Integer', 'Long', 'Double', 'Boolean', 
     'UUID', 'BigDecimal', 'Currency', 'Path',
-    'List<String>', 'LocalDateTime', 'LocalDate', 'OffsetDateTime', 'ZonedDateTime', 'Instant', 'Duration', 'Period',
+    'List', 'Map', 'LocalDateTime', 'LocalDate', 'OffsetDateTime', 'ZonedDateTime', 'Instant', 'Duration', 'Period',
     'URI', 'URL', 'File', 'BigInteger', 'AtomicInteger', 'AtomicLong', 'Enum'
   ];
   export let type = 'input';
@@ -17,18 +18,26 @@
   export let onRemoveField;
   export let onUpdateField;
 
+  // State for generic type configuration popup
+  let showGenericConfig = false;
+  let currentFieldIndex = -1;
+  let currentGenericType = 'List';
+
+  // Filter out List and Map from the types shown in the generic type popup
+  let genericFieldTypes = fieldTypes.filter(type => type !== 'List' && type !== 'Map');
+
   let container;
 
   // Close modal when clicking outside
   onMount(() => {
     const handleClickOutside = (event) => {
-      if (container && !container.contains(event.target) && visible) {
+      if (container && !container.contains(event.target) && visible && !showGenericConfig) {
         onClose();
       }
     };
 
     const handleEscape = (event) => {
-      if (event.key === 'Escape' && visible) {
+      if (event.key === 'Escape' && visible && !showGenericConfig) {
         onClose();
       }
     };
@@ -40,12 +49,31 @@
       document.removeEventListener('keydown', handleEscape);
     };
   });
+
+  // Function to handle type change, including generic types
+  function handleTypeChange(fieldIndex, type) {
+    if (type === 'List' || type === 'Map') {
+      // Store context for the generic type popup
+      currentFieldIndex = fieldIndex;
+      currentGenericType = type;
+      
+      // Show the generic type configuration popup
+      showGenericConfig = true;
+      
+      // Prevent the field type from being updated to just 'List' or 'Map'
+      // We'll update it with the full generic type (e.g., 'List<String>') after confirmation
+      return false;
+    } else {
+      // For non-generic types, update directly
+      onUpdateField(fieldIndex, 'type', type);
+    }
+  }
 </script>
 
 {#if visible}
   <div 
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    on:click={onClose}
+    on:click={() => !showGenericConfig && onClose()}
   >
     <div 
       class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" 
@@ -88,12 +116,29 @@
                 />
                 <select 
                   bind:value={field.type}
-                  on:change={() => onUpdateField(fieldIndex, 'type', field.type)}
+                  on:change={(e) => {
+                    const selectedType = e.target.value;
+                    if (selectedType === 'List' || selectedType === 'Map') {
+                      // Store context for the generic type popup
+                      currentFieldIndex = fieldIndex;
+                      currentGenericType = selectedType;
+                      
+                      // Show the generic type configuration popup
+                      showGenericConfig = true;
+                    } else {
+                      // For non-generic types, update directly
+                      onUpdateField(fieldIndex, 'type', selectedType);
+                    }
+                  }}
                   class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {#each fieldTypes as fieldType}
                     <option value={fieldType}>{fieldType}</option>
                   {/each}
+                  <!-- Add dynamic generic types as options, if they exist -->
+                  {#if field.type && !fieldTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                    <option value={field.type} selected>{field.type}</option>
+                  {/if}
                 </select>
                 <button 
                   on:click={() => onRemoveField(fieldIndex)}
@@ -117,4 +162,20 @@
       </div>
     </div>
   </div>
+{/if}
+
+<!-- Generic Type Configuration Popup -->
+{#if showGenericConfig}
+  <GenericTypeConfigPopup
+    visible={showGenericConfig}
+    genericType={currentGenericType}
+    fieldTypes={genericFieldTypes}
+    selectedField={fields[currentFieldIndex]}
+    on:close={() => showGenericConfig = false}
+    on:confirm={(e) => {
+      const selectedType = e.detail.type;
+      onUpdateField(currentFieldIndex, 'type', selectedType);
+      showGenericConfig = false;
+    }}
+  />
 {/if}

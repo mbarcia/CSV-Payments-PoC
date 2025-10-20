@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { saveAs } from 'file-saver';
   import { load } from 'js-yaml';
+  import JSZip from 'jszip';
   import StepArrow from '$lib/components/StepArrow.svelte';
   import FieldForm from '$lib/components/FieldForm.svelte';
   import CombinedFieldForm from '$lib/components/CombinedFieldForm.svelte';
@@ -19,6 +20,9 @@
   let showInputForm = false;
   let currentStepIndex = -1;
   let currentFormType = '';
+  
+  // State for generation
+  let isGenerating = false;
   
   // State for confirmation dialog
   let showConfirmationDialog = false;
@@ -44,6 +48,33 @@
   
   // Function to check if a type is valid (scalar, Enum, or defined in previous steps)
   function isValidFieldType(type, currentStepIndex) {
+    // Trim whitespace from type
+    type = typeof type === 'string' ? type.trim() : type;
+    
+    // Check if it's a Map type (using pattern matching)
+    // Handles formats like: Map<String, Integer>, Map<List<String>, Integer>, etc.
+    if (typeof type === 'string' && /^Map<.+?, .+>$/.test(type)) {
+      // Additional check to ensure the type is properly closed
+      const openCount = (type.match(/</g) || []).length;
+      const closeCount = (type.match(/>/g) || []).length;
+      if (openCount !== closeCount) {
+        return false; // Malformed type with mismatched brackets
+      }
+      return true;
+    }
+    
+    // Check if it's a List type (using pattern matching)
+    // Handles formats like: List<String>, List<Map<String, Integer>>, etc.
+    if (typeof type === 'string' && /^List<.+>$/.test(type)) {
+      // Additional check to ensure the type is properly closed
+      const openCount = (type.match(/</g) || []).length;
+      const closeCount = (type.match(/>/g) || []).length;
+      if (openCount !== closeCount) {
+        return false; // Malformed type with mismatched brackets
+      }
+      return true;
+    }
+    
     // First check if it's a Java scalar type
     if (isJavaScalarType(type)) {
       return true;
@@ -71,7 +102,7 @@
     let allTypes = [
       'String', 'Integer', 'Long', 'Double', 'Boolean', 
       'UUID', 'BigDecimal', 'Currency', 'Path',
-      'List<String>', 'LocalDateTime', 'LocalDate', 'OffsetDateTime', 'ZonedDateTime', 'Instant', 'Duration', 'Period',
+      'List', 'Map', 'LocalDateTime', 'LocalDate', 'OffsetDateTime', 'ZonedDateTime', 'Instant', 'Duration', 'Period',
       'URI', 'URL', 'File', 'BigInteger', 'AtomicInteger', 'AtomicLong', 'Enum'
     ];
     
@@ -94,20 +125,26 @@
   // Add a new step
   function addStep() {
     const isSideEffect = false; // New steps default to ONE_TO_ONE
+    const stepNumber = config.steps.length + 1;
+    const stepName = `Step ${stepNumber}`;
+    // Convert step name to valid service name (lowercase, hyphens, svc suffix)
+    const serviceName = `${stepName.toLowerCase().replace(/\s+/g, '-')}-svc`;
+    const serviceNameCamel = stepName.replace(/\s+/g, '');
+    
     const newStep = {
-      name: `Step ${config.steps.length + 1}`,
-      serviceName: `step-${config.steps.length + 1}-svc`,
-      serviceNameCamel: `step${config.steps.length + 1}`,
+      name: stepName,
+      serviceName: serviceName,
+      serviceNameCamel: serviceNameCamel,
       cardinality: 'ONE_TO_ONE',
       stepType: 'StepOneToOne',
       inputTypeName: config.steps.length === 0 ? 'InputType' : config.steps[config.steps.length - 1].outputTypeName, // Pipeline connection
       inputTypeSimpleName: config.steps.length === 0 ? 'InputType' : config.steps[config.steps.length - 1].outputTypeSimpleName,
       inputFields: config.steps.length === 0 ? [] : [...config.steps[config.steps.length - 1].outputFields], // Copy output fields from previous step
-      outputTypeName: isSideEffect ? (config.steps.length === 0 ? 'InputType' : config.steps[config.steps.length - 1].outputTypeName) : `OutputType${config.steps.length + 1}`,
-      outputTypeSimpleName: isSideEffect ? (config.steps.length === 0 ? 'InputType' : config.steps[config.steps.length - 1].outputTypeSimpleName) : `OutputType${config.steps.length + 1}`,
+      outputTypeName: isSideEffect ? (config.steps.length === 0 ? 'InputType' : config.steps[config.steps.length - 1].outputTypeName) : `OutputType${stepNumber}`,
+      outputTypeSimpleName: isSideEffect ? (config.steps.length === 0 ? 'InputType' : config.steps[config.steps.length - 1].outputTypeSimpleName) : `OutputType${stepNumber}`,
       outputFields: isSideEffect ? (config.steps.length === 0 ? [] : [...config.steps[config.steps.length - 1].outputFields]) : [],
-      order: config.steps.length + 1,
-      grpcClientName: `Step${config.steps.length + 1}Svc`
+      order: stepNumber,
+      grpcClientName: `Step${stepNumber}Svc`
     };
     config.steps = [...config.steps, newStep];
     
@@ -234,7 +271,7 @@
     
     // Validate type if the property being updated is 'type'
     if (property === 'type' && !isValidFieldType(value, stepIndex)) {
-      alert(`Invalid type '${value}'. Valid types are: ${validProtoTypes.join(', ')}, or custom message types defined in previous steps.`);
+      alert(`Invalid type '${value}'. Valid types are: scalar types (String, Integer, Long, Double, Boolean, UUID, BigDecimal, Currency, Path, LocalDateTime, LocalDate, OffsetDateTime, ZonedDateTime, Instant, Duration, Period, URI, URL, File, BigInteger, AtomicInteger, AtomicLong), Enum, List<T> (e.g. List<String>), Map<K,V> (e.g. Map<String,Integer>), or custom message types defined in previous steps.`);
       return; // Don't proceed with the update
     }
     
@@ -358,6 +395,26 @@
     return javaTypeToProtoType(javaType);
   }
 
+  // Convert string to camelCase
+  function toCamelCase(input) {
+    const parts = input.trim().split(/\s+/);
+    let result = '';
+    
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (part.length > 0) {
+        if (i === 0) {
+          result += part.charAt(0).toLowerCase();
+        } else {
+          result += part.charAt(0).toUpperCase();
+        }
+        result += part.slice(1).toLowerCase();
+      }
+    }
+    
+    return result;
+  }
+
   // Generate YAML and download
   function downloadYaml() {
     // For now, create a simple YAML string to avoid complex escaping issues
@@ -403,6 +460,119 @@
     saveAs(blob, config.appName.replace(/\s+/g, '-') + '-config.yaml');
   }
 
+  // Generate YAML configuration content
+  function generateYamlConfig() {
+    // For now, create a simple YAML string to avoid complex escaping issues
+    let yamlContent = '---\n';
+    yamlContent += 'appName: "' + config.appName + '"\n';
+    yamlContent += 'basePackage: "' + config.basePackage + '"\n';
+    yamlContent += 'steps:\n';
+    
+    for (let i = 0; i < config.steps.length; i++) {
+      const step = config.steps[i];
+      yamlContent += '  - stepType: "' + step.stepType + '"\n';
+      yamlContent += '    serviceNameCamel: "' + step.serviceNameCamel + '"\n';
+      yamlContent += '    serviceName: "' + step.serviceName + '"\n';
+      yamlContent += '    cardinality: "' + step.cardinality + '"\n';
+      yamlContent += '    inputFields:\n';
+      
+      for (let j = 0; j < step.inputFields.length; j++) {
+        const field = step.inputFields[j];
+        yamlContent += '    - protoType: "' + field.protoType + '"\n';
+        yamlContent += '      name: "' + field.name + '"\n';
+        yamlContent += '      type: "' + field.type + '"\n';
+      }
+      
+      yamlContent += '    outputFields:\n';
+      
+      for (let k = 0; k < step.outputFields.length; k++) {
+        const field = step.outputFields[k];
+        yamlContent += '    - protoType: "' + field.protoType + '"\n';
+        yamlContent += '      name: "' + field.name + '"\n';
+        yamlContent += '      type: "' + field.type + '"\n';
+      }
+      
+      yamlContent += '    outputTypeName: "' + step.outputTypeName + '"\n';
+      yamlContent += '    inputTypeName: "' + step.inputTypeName + '"\n';
+      yamlContent += '    outputTypeSimpleName: "' + step.outputTypeSimpleName + '"\n';
+      yamlContent += '    grpcClientName: "' + step.grpcClientName + '"\n';
+      yamlContent += '    name: "' + step.name + '"\n';
+      yamlContent += '    inputTypeSimpleName: "' + step.inputTypeSimpleName + '"\n';
+      yamlContent += '    order: ' + step.order + '\n';
+    }
+
+    return yamlContent;
+  }
+
+  // Download the complete application as a ZIP file
+  async function downloadApplication() {
+    // Simple rate limiting to prevent abuse
+    const now = Date.now();
+    const lastDownload = localStorage.getItem('lastDownloadTime');
+    const minInterval = 5000; // 5 seconds minimum between downloads
+    
+    if (lastDownload && (now - parseInt(lastDownload)) < minInterval) {
+      const remaining = Math.ceil((minInterval - (now - parseInt(lastDownload))) / 1000);
+      alert(`Please wait ${remaining} seconds before downloading another application.`);
+      return;
+    }
+    
+    // Set generating state
+    isGenerating = true;
+    
+    try {
+      // Store the download time
+      localStorage.setItem('lastDownloadTime', now.toString());
+      
+      // First, check if BrowserTemplateEngine is available
+      if (typeof BrowserTemplateEngine === 'undefined') {
+        alert('Template engine not available. Please ensure all required scripts are loaded.');
+        return;
+      }
+
+      // Create a new instance of the browser template engine
+      const templateEngine = new BrowserTemplateEngine();
+      
+      // Prepare a ZIP file to store the generated application
+      const zip = new JSZip();
+      
+      // Create a file callback that adds files to the ZIP
+      const fileCallback = async (filePath, content) => {
+        zip.file(filePath, content);
+      };
+      
+      // Generate the complete application using the template engine
+      await templateEngine.generateApplication(
+        config.appName,
+        config.basePackage,
+        [...config.steps], // Use a copy to avoid potential mutation issues
+        fileCallback
+      );
+      
+      // Generate the YAML configuration and add it to the ZIP
+      const yamlContent = generateYamlConfig();
+      const configFileName = config.appName.replace(/\s+/g, '-') + '-canvas-config.yaml';
+      zip.file(configFileName, yamlContent);
+      
+      // Generate the ZIP file
+      const zipContent = await zip.generateAsync({ type: 'blob' });
+      
+      // Trigger the download
+      saveAs(
+        zipContent, 
+        config.appName.replace(/\s+/g, '-') + '-generated-app.zip'
+      );
+      
+      console.log('Application generated and downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating application:', error);
+      alert('Error generating application: ' + error.message);
+    } finally {
+      // Reset generating state
+      isGenerating = false;
+    }
+  }
+
   // Handle file upload
   async function handleFileUpload(event) {
     const file = event.target.files[0];
@@ -420,11 +590,64 @@
           throw new Error('Invalid configuration file: steps must be an array');
         }
         
-        // Validate each step has required fields
+        // Validate each step has required user-provided fields
         for (let i = 0; i < data.steps.length; i++) {
           const step = data.steps[i];
-          if (!step.serviceName || !step.serviceNameCamel || !step.cardinality) {
-            throw new Error(`Invalid configuration file: step ${i+1} is missing required fields (serviceName, serviceNameCamel, cardinality)`);
+          
+          if (!step.name) {
+            throw new Error(`Invalid configuration file: step ${i+1} is missing required field (name)`);
+          }
+          
+          if (!step.cardinality) {
+            throw new Error(`Invalid configuration file: step ${i+1} is missing required field (cardinality)`);
+          }
+          
+          if (!step.inputTypeName) {
+            throw new Error(`Invalid configuration file: step ${i+1} is missing required field (inputTypeName)`);
+          }
+          
+          if (!step.outputTypeName) {
+            throw new Error(`Invalid configuration file: step ${i+1} is missing required field (outputTypeName)`);
+          }
+          
+          if (!step.inputFields) {
+            step.inputFields = [];
+          } else if (!Array.isArray(step.inputFields)) {
+            throw new Error(`Invalid configuration file: step ${i+1} inputFields must be an array`);
+          }
+          
+          if (!step.outputFields) {
+            step.outputFields = [];
+          } else if (!Array.isArray(step.outputFields)) {
+            throw new Error(`Invalid configuration file: step ${i+1} outputFields must be an array`);
+          }
+          
+          // Compute missing computed fields if not present in the uploaded config
+          if (!step.serviceName) {
+            step.serviceName = step.name ? step.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() + '-svc' : `step-${i}-svc`;
+          }
+          
+          if (!step.serviceNameCamel) {
+            // Extract entity name from step name (e.g., "Process Customer" -> "Customer", "Validate Order" -> "Order")
+            let entityName = step.name 
+                ? step.name
+                    .replace('Process ', '')
+                    .replace('Validate ', '')
+                    .replace('Enrich ', '')
+                    .replace('Transform ', '')
+                    .replace('Filter ', '')
+                    .replace('Aggregate ', '')
+                    .replace('Sort ', '')
+                    .trim()
+                : `Step${i+1}`;
+            entityName = entityName.replace(/[^a-zA-Z0-9]/g, ' ').trim();
+            
+            // Convert to camelCase
+            const camelCaseName = toCamelCase(entityName);
+            const capitalizedCamelName = 
+                camelCaseName.charAt(0).toUpperCase() + camelCaseName.slice(1);
+            
+            step.serviceNameCamel = capitalizedCamelName;
           }
           
           if (!step.inputFields || !Array.isArray(step.inputFields)) {
@@ -443,6 +666,9 @@
             }
             // Validate that field.type is a valid Java scalar type or custom message type from a previous step
             if (!isValidFieldType(field.type, i)) {
+              // Additional check to log what specifically is wrong with the type
+              console.error(`Invalid field type detected: "${field.type}" in step ${i+1}, input field ${j+1}`);
+              console.error(`Type length: ${field.type.length}, ends with: "${field.type.slice(-10)}"`);
               throw new Error(`Invalid configuration file: input field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are Java scalar types or custom message types defined in previous steps.`);
             }
           }
@@ -454,6 +680,9 @@
             }
             // Validate that field.type is a valid Java scalar type or custom message type from a previous step
             if (!isValidFieldType(field.type, i)) {
+              // Additional check to log what specifically is wrong with the type
+              console.error(`Invalid field type detected: "${field.type}" in step ${i+1}, output field ${j+1}`);
+              console.error(`Type length: ${field.type.length}, ends with: "${field.type.slice(-10)}"`);
               throw new Error(`Invalid configuration file: output field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are Java scalar types or custom message types defined in previous steps.`);
             }
           }
@@ -594,6 +823,14 @@
     if (currentStepIndex !== -1) {
       const step = config.steps[currentStepIndex];
       step[property] = value;
+      
+      // If the property being updated is the step name, also update the service name
+      if (property === 'name') {
+        // Convert step name to valid service name (lowercase, hyphens, svc suffix)
+        step.serviceName = `${value.toLowerCase().replace(/\s+/g, '-')}-svc`;
+        step.serviceNameCamel = value.replace(/\s+/g, '');
+      }
+      
       config.steps[currentStepIndex] = { ...step };
       config = { ...config };
     }
@@ -650,10 +887,11 @@
     
     <div class="flex-grow">
       <button 
-        on:click={downloadYaml}
-        class="w-full mb-3 px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+        on:click={downloadApplication}
+        class="w-full mb-3 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm disabled:opacity-50"
+        disabled={isGenerating}
       >
-        Download YAML
+        {isGenerating ? 'Generating...' : 'Download Complete Java Application'}
       </button>
       
       <div class="mb-4">
@@ -777,6 +1015,7 @@
       on:removeField={(e) => formRemoveField(e.detail.type, e.detail.index)}
       on:updateField={(e) => formUpdateField(e.detail.type, e.detail.index, e.detail.property, e.detail.value)}
       on:typeChange={(e) => updateStepTypeProperty(e.detail.property, e.detail.value)}
+      on:stepNameChange={(e) => updateStepTypeProperty('name', e.detail.name)}
     />
   {/if}
   

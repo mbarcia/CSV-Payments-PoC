@@ -3,7 +3,7 @@
 The Pipeline Framework is a powerful tool for building reactive pipeline processing systems. It simplifies the development of distributed systems by providing a consistent way to create, configure, and deploy pipeline steps.
 
 <Callout type="tip" title="Visual Pipeline Designer">
-The Pipeline Framework includes a visual canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> that allows you to create and configure your pipelines using an intuitive drag-and-drop interface. This tool is particularly useful for designing complex pipeline architectures and understanding the flow between different steps.
+The Pipeline Framework includes a visual canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> that allows you to create and configure your pipelines using an intuitive drag-and-drop interface. Simply design your pipeline visually, click "Download Application", and you'll get a complete ZIP file with all the generated source code - no command-line tools needed!
 </Callout>
 
 ## Key Features
@@ -28,56 +28,10 @@ For complete documentation of the framework architecture, implementation details
 
 The framework allows you to define pipeline steps as simple classes annotated with `@PipelineStep`. The framework automatically generates the necessary adapters at build time, eliminating the need for manual configuration.
 
-# Introduction
-
-The Pipeline Framework is a powerful tool for building reactive pipeline processing systems. It simplifies the development of distributed systems by providing a consistent way to create, configure, and deploy pipeline steps.
-
-## Key Features
-
-- **Reactive Programming**: Built on top of Mutiny for non-blocking operations
-- **Visual Design Canvas**: Create and configure pipelines with the visual designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>
-- **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
-- **gRPC and REST Support**: Automatically generates adapters for both communication protocols
-- **Modular Design**: Clear separation between runtime and deployment components
-- **Auto-Generation**: Generates necessary infrastructure at build time
-- **Observability**: Built-in metrics, tracing, and logging support
-- **Error Handling**: Comprehensive error handling with DLQ support
-- **Concurrency Control**: Virtual threads and backpressure management
-
-## How It Works
-
-The framework allows you to define pipeline steps as simple classes annotated with `@PipelineStep`. The framework automatically generates the necessary adapters at build time, eliminating the need for manual configuration.
-
-```java
-@PipelineStep(
-   order = 1,
-   stub = MyGrpc.MyStub.class,
-   inboundMapper = FooRequestToDomainMapper.class,
-   outboundMapper = DomainToBarResponseMapper.class
-)
-public class MyPipelineStep implements StepOneToOne<FooRequest, BarResponse> {
-    @Override
-    public Uni<BarResponse> apply(Uni<FooRequest> request) {
-        // Your implementation here
-        return request.map(req -> {
-            // Transform the request
-            return new BarResponse();
-        });
-    }
-}
-```
-
-<Callout type="info" title="Getting Started">
-New to The Pipeline Framework? Start with our <a href="/guide/getting-started">Getting Started</a> guide to learn the basics.
-</Callout>
-
-## Guides
-
-To get started with The Pipeline Framework, explore these guides:
-
 ### Getting Started
-- [Getting Started](/guide/getting-started): Setting up the framework in your project
-- [Creating Pipeline Steps](/guide/creating-steps): Building your first pipeline steps
+- [Quick Start](/guide/quick-start): Get started quickly with the visual Canvas designer
+- [Canvas Designer Guide](/CANVAS_GUIDE.html): Complete guide to using the visual designer
+- [Using the Template Generator](/guide/using-template-generator): Advanced usage of the template generator
 
 ### Application Development
 - [Application Structure](/guide/application-structure): Structuring pipeline applications

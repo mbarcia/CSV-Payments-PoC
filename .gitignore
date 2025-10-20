@@ -49,8 +49,9 @@ docker-compose.orchestrator.local.yml
 *.log
 *.pid
 
-# VitePress build output
+# VitePress build output and cache
 docs/.vitepress/dist/
+docs/.vitepress/cache/
 
 # Web UI build output
 web-ui/build/
@@ -71,3 +72,6 @@ QWEN.md
 
 # Template generator
 /template-generator/test-output/
+template-generator-node/dist/
+test-generated-app/
+/template-generator-node/test-output/

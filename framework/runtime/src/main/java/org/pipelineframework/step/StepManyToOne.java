@@ -19,7 +19,6 @@ package org.pipelineframework.step;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
-import java.util.Objects;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.functional.ManyToOne;
 import org.slf4j.Logger;
@@ -125,7 +124,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
                         .withBackOff(retryWait(), maxBackoff())
                         .withJitter(jitter() ? 0.5 : 0.0)
                         .atMost(retryLimit())
-                    ).filter(Objects::nonNull)
+                    )
                     .collect().last();
         } else {
             // Process batches sequentially (backward compatibility)
@@ -157,7 +156,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
                         .withBackOff(retryWait(), maxBackoff())
                         .withJitter(jitter() ? 0.5 : 0.0)
                         .atMost(retryLimit())
-                ).filter(Objects::nonNull)
+                )
                 .collect().last();
         }
     }

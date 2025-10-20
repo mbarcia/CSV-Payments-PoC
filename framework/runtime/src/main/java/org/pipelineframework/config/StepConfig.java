@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class StepConfig {
 
     private final AtomicInteger retryLimit = new AtomicInteger(3);
-    private final AtomicReference<Duration> retryWait = new AtomicReference<>(Duration.ofMillis(200));
+    private final AtomicReference<Duration> retryWait = new AtomicReference<>(Duration.ofMillis(2000));
     private volatile boolean parallel = false; // Default is sequential processing
     private final AtomicInteger backpressureBufferCapacity = new AtomicInteger(1024);
     private final AtomicInteger batchSize = new AtomicInteger(10); // Default batch size
@@ -40,7 +40,7 @@ public class StepConfig {
     private volatile boolean debug = false;
     private volatile boolean recoverOnFailure = false;
     private volatile boolean runWithVirtualThreads = false;
-    private volatile boolean autoPersist = false;
+    private volatile boolean autoPersist = true;
     private volatile String backpressureStrategy = "BUFFER";
 
     private final AtomicReference<Duration> maxBackoff = new AtomicReference<>(Duration.ofSeconds(30));
@@ -65,7 +65,7 @@ public class StepConfig {
     
     /**
      * Base delay between retry attempts
-     * @return the retry wait duration (default: 200ms)
+     * @return the retry wait duration (default: 2000ms)
      */
     public Duration retryWait() { return retryWait.get(); }
 

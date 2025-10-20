@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class PipelineDynamicConfig {
     
     private final AtomicReference<PipelineConfigValues> currentConfig = 
-        new AtomicReference<>(new PipelineConfigValues(false, 3, 1000L));
+        new AtomicReference<>(new PipelineConfigValues(false, 3, 2000L));
 
     /**
      * Update the configuration values at runtime.

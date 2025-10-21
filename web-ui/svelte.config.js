@@ -36,11 +36,12 @@ export default defineConfig({
 		adapter: adapter({
 			pages: 'build',
 			assets: 'build',
-			fallback: 'index.html',
+			fallback: '404.html',
 			precompress: false,
 			strict: false
 		}),
 		prerender: {
+			concurrency: 4,
 			handleHttpError: ({ path, referrer, message }) => {
 				// Ignore favicon errors
 				if (path === '/favicon.png') {

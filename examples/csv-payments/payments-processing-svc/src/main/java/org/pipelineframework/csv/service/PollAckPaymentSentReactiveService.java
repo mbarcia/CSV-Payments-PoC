@@ -107,7 +107,7 @@ public class PollAckPaymentSentReactiveService
                 String serviceId = this.getClass().toString();
                 MDC.put("serviceId", serviceId);
                 LOG.info("Executed command on {} --> {}", detachedAckPaymentSent, result);
-                MDC.clear();
+                MDC.remove("serviceId");
               })
               .onFailure()
               .recoverWithUni(failure -> {
@@ -147,7 +147,7 @@ public class PollAckPaymentSentReactiveService
           String serviceId = this.getClass().toString();
           MDC.put("serviceId", serviceId);
           LOG.info("Executed command on {} --> {}", detachedAckPaymentSent, result);
-          MDC.clear();
+          MDC.remove("serviceId");
         })
         .onFailure()
         .recoverWithUni(failure -> {

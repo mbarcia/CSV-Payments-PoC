@@ -78,7 +78,7 @@ public class SendPaymentRecordReactiveService
     MDC.put("serviceId", serviceId);
     Logger logger = LoggerFactory.getLogger(this.getClass());
     logger.info("Executed command on {} --> {}", paymentRecord, result);
-    MDC.clear();
+    MDC.remove("serviceId");
 
     return result;
   }

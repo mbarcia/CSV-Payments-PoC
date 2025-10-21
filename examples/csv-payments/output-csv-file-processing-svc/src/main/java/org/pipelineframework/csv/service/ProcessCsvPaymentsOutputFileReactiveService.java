@@ -123,7 +123,7 @@ public class ProcessCsvPaymentsOutputFileReactiveService
                       MDC.put("serviceId", serviceId);
                       logger.info("Executed command on stream --> {} with {} records", 
                           file.getFilepath(), recordCount.get());
-                      MDC.clear();
+                      MDC.remove("serviceId");
                       return Uni.createFrom().item(file);
                     } catch (Exception e) {
                       // Try to close the file before propagating the error

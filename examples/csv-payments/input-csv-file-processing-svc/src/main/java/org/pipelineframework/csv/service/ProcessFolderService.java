@@ -107,7 +107,7 @@ public class ProcessFolderService implements org.pipelineframework.service.React
             MDC.put("serviceId", serviceId);
             LOG.info(
                     "Executed command on {} --> {}", file.getFilepath(), file);
-            MDC.clear();
+            MDC.remove("serviceId");
           });
   }
 }

@@ -94,12 +94,13 @@ public class ProcessCsvPaymentsInputReactiveService
                     return Multi.createFrom()
                         .iterable(iterable)
                         .runSubscriptionOn(executor)
+                        .onItem()
                         .invoke(
                             rec -> {
                               MDC.put("serviceId", serviceId);
                               logger.info(
                                   "Executed command on {} --> {}", input.getSourceName(), rec);
-                              MDC.clear();
+                              MDC.remove("serviceId");
                             });
                   } catch (IOException e) {
                     throw new RuntimeException("CSV processing error", e);

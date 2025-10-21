@@ -42,6 +42,10 @@ const TEMPLATES = ${JSON.stringify(templates, null, 2)};
 
 // Write the templates file
 const outputPath = path.join(__dirname, './dist/templates.js');
+const outputDir = path.dirname(outputPath);
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
 fs.writeFileSync(outputPath, jsContent);
 
 console.log('Templates have been packaged into dist/templates.js');

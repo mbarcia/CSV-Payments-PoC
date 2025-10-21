@@ -56,6 +56,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <enablePreview>true</enablePreview>
+        <pipeline.framework.version>0.9.0</pipeline.framework.version>
         <quarkus.platform.version>3.28.1</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
@@ -63,7 +64,6 @@
         <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.63.0</grpc.version>
         <pipeline.version>${pipeline.framework.version}</pipeline.version>
-        <pipeline.framework.version>0.9.0</pipeline.framework.version>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
     </properties>

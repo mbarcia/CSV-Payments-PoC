@@ -1,6 +1,6 @@
 # Publishing to Maven Central
 
-This document explains how to publish The Pipeline Framework to Maven Central and how to properly manage the project's versioning and release process.
+This document explains how to publish The Pipeline Framework to Maven Central and how to manage the project's versioning and release process properly.
 
 ## Table of Contents
 

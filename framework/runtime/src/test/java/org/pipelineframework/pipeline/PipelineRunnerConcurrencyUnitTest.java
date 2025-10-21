@@ -45,10 +45,12 @@ class PipelineRunnerConcurrencyUnitTest {
             callCount.incrementAndGet();
 
             // Simulate processing time that varies by input using Uni.delay for async behavior
-            Duration delay = input.equals("slow") ? Duration.ofMillis(500) : Duration.ofMillis(100); // slow item takes longer
-            
-            return Uni.createFrom().item("processed:" + input)
-                    .onItem().delayIt().by(delay);
+            Duration delay =
+                    input.equals("slow")
+                            ? Duration.ofMillis(500)
+                            : Duration.ofMillis(100); // slow item takes longer
+
+            return Uni.createFrom().item("processed:" + input).onItem().delayIt().by(delay);
         }
     }
 
@@ -105,8 +107,6 @@ class PipelineRunnerConcurrencyUnitTest {
         // But all should be processed
         assertEquals(3, step.callCount.get());
     }
-
-
 
     @Test
     void testBackwardCompatibilityWithParallelFalse() {

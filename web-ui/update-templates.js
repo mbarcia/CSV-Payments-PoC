@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#!/usr/bin/env node
-
 // Script to update the browser bundle with templates from the Node.js generator
 // This ensures the web UI uses the same templates as the Node.js CLI tool
 

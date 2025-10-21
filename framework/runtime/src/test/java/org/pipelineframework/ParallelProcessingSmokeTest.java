@@ -38,11 +38,9 @@ import org.pipelineframework.step.future.StepOneToOneCompletableFuture;
 @QuarkusTest
 class ParallelProcessingSmokeTest {
 
-    @Inject
-    PipelineRunner pipelineRunner;
+    @Inject PipelineRunner pipelineRunner;
 
-    @Inject
-    PipelineConfig pipelineConfig;
+    @Inject PipelineConfig pipelineConfig;
 
     private static class TestStepOneToOne extends ConfigurableStep
             implements StepOneToOne<String, String> {
@@ -69,11 +67,16 @@ class ParallelProcessingSmokeTest {
 
         @Override
         public CompletableFuture<String> applyAsync(String input) {
-            return CompletableFuture.supplyAsync(() -> {
-                    try { Thread.sleep(100); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
-                    int count = callCount.incrementAndGet();
-                    return "processed:" + input + "_count" + count;
-                });
+            return CompletableFuture.supplyAsync(
+                    () -> {
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                        int count = callCount.incrementAndGet();
+                        return "processed:" + input + "_count" + count;
+                    });
         }
     }
 

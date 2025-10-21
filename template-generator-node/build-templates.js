@@ -28,9 +28,14 @@ const templateFiles = fs.readdirSync(templatesDir);
 const templates = {};
 for (const file of templateFiles) {
     if (file.endsWith('.hbs')) {
-        const templateName = path.basename(file, '.hbs');
-        const templateContent = fs.readFileSync(path.join(templatesDir, file), 'utf8');
-        templates[templateName] = templateContent;
+        try {
+            const templateName = path.basename(file, '.hbs');
+            const templateContent = fs.readFileSync(path.join(templatesDir, file), 'utf8');
+            templates[templateName] = templateContent;
+        } catch (error) {
+            console.error(`Error reading template file ${file}: ${error.message}`);
+            process.exit(1);
+        }
     }
 }
 

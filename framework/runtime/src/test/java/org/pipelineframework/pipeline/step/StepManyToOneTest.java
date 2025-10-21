@@ -300,4 +300,26 @@ class StepManyToOneTest {
                 resultString.contains(
                         "payment_1_for_csv_file_X, payment_2_for_csv_file_X, payment_3_for_csv_file_X"));
     }
+
+    @Test
+    void testApplyMethodWithEmptyStream() {
+        // Given - Empty input stream
+        TestStep step = new TestStep();
+        Multi<String> input = Multi.createFrom().empty();
+
+        // When
+        Uni<String> result = step.applyReduce(input);
+
+        // Then - Should fail with IllegalArgumentException
+        io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =
+                result.subscribe()
+                        .withSubscriber(
+                                io.smallrye.mutiny.helpers.test.UniAssertSubscriber.create());
+        subscriber.awaitFailure(Duration.ofSeconds(5));
+        // Verify that the failure is an IllegalArgumentException with the expected message
+        Throwable failure = subscriber.getFailure();
+        assertNotNull(failure);
+        assertTrue(failure instanceof IllegalArgumentException);
+        assertEquals("Empty input not allowed for StepManyToOne", failure.getMessage());
+    }
 }

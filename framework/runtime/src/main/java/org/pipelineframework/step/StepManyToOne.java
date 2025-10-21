@@ -67,6 +67,19 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
             .onItem().transformToUni(_ -> Uni.createFrom().nullItem());
     }
 
+    /**
+     * Apply the step to reduce a stream of inputs to a single output.
+     * <p>
+     * This method batches the input stream and applies the {@link #applyBatchMulti(Multi)} method
+     * to each batch. The results of processing all batches are then reduced to a single output
+     * by returning the result of the last processed batch.
+     * <p>
+     * <b>Note:</b> If the input stream is empty, this method will fail with an 
+     * {@link IllegalArgumentException}. Empty input streams are not allowed for StepManyToOne operations.
+     *
+     * @param input The input stream to reduce to a single output
+     * @return A Uni containing the single output value, or a failure if the input is empty
+     */
     @Override
     default Uni<O> applyReduce(Multi<I> input) {
         Logger LOG = LoggerFactory.getLogger(this.getClass());
@@ -125,7 +138,8 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
                         .withJitter(jitter() ? 0.5 : 0.0)
                         .atMost(retryLimit())
                     )
-                    .collect().last();
+                    .collect().last()
+                    .onItem().ifNull().failWith(new IllegalArgumentException("Empty input not allowed for StepManyToOne"));
         } else {
             // Process batches sequentially (backward compatibility)
             return batches
@@ -157,7 +171,8 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
                         .withJitter(jitter() ? 0.5 : 0.0)
                         .atMost(retryLimit())
                 )
-                .collect().last();
+                .collect().last()
+                .onItem().ifNull().failWith(new IllegalArgumentException("Empty input not allowed for StepManyToOne"));
         }
     }
 }

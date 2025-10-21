@@ -26,11 +26,12 @@ if (typeof window !== 'undefined' && window.Handlebars) {
 }
 
 // Register helper for replacing characters in strings
-Handlebars.registerHelper('replace', function(str, find, replace) {
-    if (typeof str !== 'string') return str;
-    return str.replace(new RegExp(find, 'g'), replace);
+Handlebars.registerHelper('replace', function(str, find, repl) {
+  if (typeof str !== 'string') return str;
+  if (typeof find !== 'string') return str;
+  if (typeof str.replaceAll === 'function') return str.replaceAll(find, repl);
+  return str.split(find).join(repl);
 });
-
 // Register helper for converting to lowercase
 Handlebars.registerHelper('lowercase', function(str) {
     return typeof str === 'string' ? str.toLowerCase() : str;

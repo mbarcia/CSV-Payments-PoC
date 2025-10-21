@@ -43,6 +43,8 @@ for (const file of templateFiles) {
 const jsContent = `
 // Generated template collection
 const TEMPLATES = ${JSON.stringify(templates, null, 2)};
+
+module.exports = TEMPLATES;
 `;
 
 // Write the templates file

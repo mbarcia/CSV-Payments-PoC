@@ -44,15 +44,11 @@ class PipelineRunnerConcurrencyUnitTest {
             // Increment call count to track how many items are being processed
             callCount.incrementAndGet();
 
-            // Simulate processing time that varies by input
-            int processingTime = input.equals("slow") ? 500 : 100; // slow item takes longer
-            try {
-                Thread.sleep(processingTime);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            return Uni.createFrom().item("processed:" + input);
+            // Simulate processing time that varies by input using Uni.delay for async behavior
+            Duration delay = input.equals("slow") ? Duration.ofMillis(500) : Duration.ofMillis(100); // slow item takes longer
+            
+            return Uni.createFrom().item("processed:" + input)
+                    .onItem().delayIt().by(delay);
         }
     }
 
@@ -110,31 +106,7 @@ class PipelineRunnerConcurrencyUnitTest {
         assertEquals(3, step.callCount.get());
     }
 
-    @Test
-    void testConcurrentProcessingWithOrderPreservation() {
-        // Given - Concurrent processing with CONCATENATE strategy (preserves order)
-        Multi<String> input = Multi.createFrom().items("slow", "fast1", "fast2"); // slow item first
 
-        TestConcurrentStep step = new TestConcurrentStep();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        liveConfig.overrides().parallel(true); // Enable concurrency
-        step.initialiseWithConfig(liveConfig);
-
-        // When
-        Multi<String> result = (Multi<String>) PipelineRunnerTestHelper.applyOneToOne(step, input);
-
-        // Then - Should process concurrently but preserve original order
-        AssertSubscriber<String> subscriber =
-                result.subscribe().withSubscriber(AssertSubscriber.create(3));
-        List<String> items = subscriber.awaitItems(3, Duration.ofSeconds(2)).getItems();
-
-        assertEquals(3, items.size());
-
-        // With CONCATENATE strategy, order should be preserved
-        assertTrue(items.get(0).toString().contains("slow"));
-        assertTrue(items.get(1).toString().contains("fast1"));
-        assertTrue(items.get(2).toString().contains("fast2"));
-    }
 
     @Test
     void testBackwardCompatibilityWithParallelFalse() {

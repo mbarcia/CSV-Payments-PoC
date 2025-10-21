@@ -302,13 +302,13 @@ The framework provides testing utilities to help you test your pipeline steps:
 @QuarkusTest
 class ProcessCustomerServiceTest {
 
-    @InjectMock ProcessFolderService processFolderService;
+    @InjectMock ProcessCustomerService processCustomerService;
     
     @Test
     void testProcessCustomer() {
         CustomerInput testInput = createTestCustomerInput();
         
-        Uni<CustomerOutput> result = service.applyOneToOne(testInput);
+        Uni<CustomerOutput> result = processCustomerService.applyOneToOne(testInput);
         
         UniAssertSubscriber<CustomerOutput> subscriber = 
             result.subscribe().withSubscriber(UniAssertSubscriber.create());

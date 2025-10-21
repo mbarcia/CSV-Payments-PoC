@@ -22,7 +22,13 @@ const path = require('path');
 
 // Read all .hbs files from the templates directory
 const templatesDir = path.join(__dirname, './templates');
-const templateFiles = fs.readdirSync(templatesDir);
+let templateFiles;
+try {
+    templateFiles = fs.readdirSync(templatesDir);
+} catch (error) {
+    console.error(`Error reading templates directory '${templatesDir}': ${error.message}`);
+    process.exit(1);
+}
 
 // Create a JavaScript object with all templates
 const templates = {};

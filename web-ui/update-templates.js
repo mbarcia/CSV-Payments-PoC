@@ -47,7 +47,14 @@ for (const file of templateFiles) {
 }
 
 // Read the existing browser bundle
-const existingBundle = fs.readFileSync(webUiBundlePath, 'utf8');
+let existingBundle;
+try {
+    existingBundle = fs.readFileSync(webUiBundlePath, 'utf8');
+} catch (error) {
+    console.error(`Error reading browser bundle file '${webUiBundlePath}': ${error.message}`);
+    console.error('Full error:', error);
+    process.exit(1);
+}
 
 // Generate the template section of the JavaScript code
 const templatesJsContent = `// The templates are embedded as a JS object\nconst TEMPLATES = ${JSON.stringify(templates, null, 2)};`;
@@ -69,6 +76,12 @@ const afterTemplates = existingBundle.substring(templatesEnd);
 const newBundleContent = `${beforeTemplates}${templatesJsContent}\n\n${afterTemplates}`;
 
 // Write the updated bundle
-fs.writeFileSync(webUiBundlePath, newBundleContent);
+try {
+    fs.writeFileSync(webUiBundlePath, newBundleContent);
+} catch (error) {
+    console.error(`Error writing to browser bundle file '${webUiBundlePath}': ${error.message}`);
+    console.error('Full error:', error);
+    process.exit(1);
+}
 
 console.log('Templates have been updated in the browser bundle!');

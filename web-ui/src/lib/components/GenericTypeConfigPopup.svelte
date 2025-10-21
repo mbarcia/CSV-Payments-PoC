@@ -56,12 +56,11 @@
     role="dialog"
     aria-modal="true"
     on:click={() => dispatch('close')}
-    on:click|stopPropagation
   >
     <div 
       class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" 
       bind:this={container}
-      on:click|stopPropagation
+      on:click|stopPropagation={() => {}}
     >
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-lg font-semibold">Configure {genericType} Type</h3>

@@ -29,7 +29,7 @@ steps:
         type: String
         protoType: string
       - name: processedAt
-        type: String
+        type: LocalDateTime
         protoType: string
     batchSize: 10
     batchTimeoutMs: 1000

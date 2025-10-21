@@ -54,7 +54,7 @@ class StepTest {
 
         // When & Then
         assertEquals(3, step.retryLimit());
-        assertEquals(Duration.ofMillis(200), step.retryWait());
+        assertEquals(Duration.ofMillis(2000), step.retryWait());
         assertFalse(step.debug());
         assertFalse(step.recoverOnFailure());
         assertFalse(step.runWithVirtualThreads());

@@ -32,7 +32,7 @@ class ConfigurationIntegrationTest {
         // Then
         assertNotNull(defaults);
         assertEquals(3, defaults.retryLimit());
-        assertEquals(Duration.ofMillis(200), defaults.retryWait());
+        assertEquals(Duration.ofMillis(2000), defaults.retryWait());
         assertFalse(defaults.parallel());
         assertFalse(defaults.debug());
         assertFalse(defaults.recoverOnFailure());
@@ -54,7 +54,7 @@ class ConfigurationIntegrationTest {
         assertTrue(config.parallel());
         assertTrue(config.debug());
         // Other properties should still use defaults
-        assertEquals(Duration.ofMillis(200), config.retryWait());
+        assertEquals(Duration.ofMillis(2000), config.retryWait());
         assertFalse(config.recoverOnFailure());
     }
 
@@ -89,6 +89,6 @@ class ConfigurationIntegrationTest {
         // Then
         assertEquals(7, activeConfig.retryLimit()); // from profile
         assertTrue(activeConfig.parallel()); // from profile
-        assertEquals(Duration.ofMillis(200), activeConfig.retryWait()); // default
+        assertEquals(Duration.ofMillis(2000), activeConfig.retryWait()); // default
     }
 }

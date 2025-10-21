@@ -31,7 +31,7 @@ class StepConfigTest {
 
         // Then
         assertEquals(3, config.retryLimit());
-        assertEquals(Duration.ofMillis(200), config.retryWait());
+        assertEquals(Duration.ofMillis(2000), config.retryWait());
         assertFalse(config.parallel());
         assertFalse(config.debug());
         assertFalse(config.recoverOnFailure());

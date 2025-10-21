@@ -131,13 +131,26 @@ public class StepConfig {
      * @param v the retry limit
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig retryLimit(int v) { retryLimit.set(v); return this; }
+    public StepConfig retryLimit(int v) { 
+        if (v < 0) {
+            throw new IllegalArgumentException("retryLimit must be >= 0");
+        }
+        retryLimit.set(v); 
+        return this; 
+    }
     /**
      * Sets the base delay between retry attempts
      * @param v the retry wait duration
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig retryWait(Duration v) { retryWait.set(Objects.requireNonNull(v)); return this; }
+    public StepConfig retryWait(Duration v) { 
+        Objects.requireNonNull(v, "retryWait must not be null");
+        if (v.isNegative() || v.isZero()) {
+            throw new IllegalArgumentException("retryWait must be > 0");
+        }
+        retryWait.set(v); 
+        return this; 
+    }
     /**
      * Sets whether to enable parallel processing for this step
      * @param v true to enable parallel processing, false for sequential processing
@@ -149,19 +162,38 @@ public class StepConfig {
      * @param v the batch size
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig batchSize(int v) { batchSize.set(v); return this; }
+    public StepConfig batchSize(int v) { 
+        if (v <= 0) {
+            throw new IllegalArgumentException("batchSize must be > 0");
+        }
+        batchSize.set(v); 
+        return this; 
+    }
     /**
      * Sets the time window to wait before processing a batch
      * @param v the batch timeout duration
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig batchTimeout(Duration v) { batchTimeout.set(Objects.requireNonNull(v)); return this; }
+    public StepConfig batchTimeout(Duration v) { 
+        Objects.requireNonNull(v, "batchTimeout must not be null");
+        if (v.isNegative() || v.isZero()) {
+            throw new IllegalArgumentException("batchTimeout must be > 0");
+        }
+        batchTimeout.set(v); 
+        return this; 
+    }
     /**
      * Sets the backpressure buffer capacity
      * @param v the buffer capacity
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig backpressureBufferCapacity(int v) { backpressureBufferCapacity.set(v); return this; }
+    public StepConfig backpressureBufferCapacity(int v) { 
+        if (v < 0) {
+            throw new IllegalArgumentException("backpressureBufferCapacity must be >= 0");
+        }
+        backpressureBufferCapacity.set(v); 
+        return this; 
+    }
     /**
      * Sets whether to enable debug mode with additional logging
      * @param v true to enable debug mode, false to disable
@@ -197,7 +229,14 @@ public class StepConfig {
      * @param v the maximum backoff duration
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig maxBackoff(Duration v) { maxBackoff.set(Objects.requireNonNull(v)); return this; }
+    public StepConfig maxBackoff(Duration v) { 
+        Objects.requireNonNull(v, "maxBackoff must not be null");
+        if (v.isNegative() || v.isZero()) {
+            throw new IllegalArgumentException("maxBackoff must be > 0");
+        }
+        maxBackoff.set(v); 
+        return this; 
+    }
     /**
      * Sets whether to add jitter to backoff intervals
      * @param v true to enable jitter, false to disable

@@ -48,10 +48,10 @@ import java.util.Map;
 @Builder
 @JsonDeserialize(builder = {{className}}.{{className}}Builder.class)
 public class {{className}} {
-{{#unless hasIdField}}  public UUID id;
+{{#unless hasIdField}}  UUID id;
 {{/unless}}
 {{#each fields}}
-  public {{{this.type}}} {{this.name}};
+  {{{this.type}}} {{sanitizeJavaIdentifier this.name}};
 {{/each}}
 
   // Lombok will generate the builder, but Jackson needs to know how to interpret it

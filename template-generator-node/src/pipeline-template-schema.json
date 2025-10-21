@@ -51,7 +51,7 @@
                     },
                     {
                       "type": "string",
-                      "pattern": "^Map<.*?, .+>$"
+                      "pattern": "^Map<[A-Z][A-Za-z0-9]*, [A-Z][A-Za-z0-9]*>$"
                     }
                   ]
                 },
@@ -64,7 +64,7 @@
                     },
                     {
                       "type": "string",
-                      "pattern": "^map<.*?, .+>$"
+                      "pattern": "^map<[a-z][a-z0-9_]*, [a-z][a-z0-9_]*>$"
                     }
                   ]
                 }

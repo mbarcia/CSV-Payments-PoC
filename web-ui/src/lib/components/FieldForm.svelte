@@ -24,7 +24,7 @@
   let currentGenericType = 'List';
 
   // Filter out List and Map from the types shown in the generic type popup
-  let genericFieldTypes = fieldTypes.filter(type => type !== 'List' && type !== 'Map');
+  $: genericFieldTypes = fieldTypes.filter(t => t !== 'List' && t !== 'Map');
 
   let container;
 
@@ -51,11 +51,11 @@
   });
 
   // Function to handle type change, including generic types
-  function handleTypeChange(fieldIndex, type) {
-    if (type === 'List' || type === 'Map') {
+  function handleTypeChange(fieldIndex, newType) {
+    if (newType === 'List' || newType === 'Map') {
       // Store context for the generic type popup
       currentFieldIndex = fieldIndex;
-      currentGenericType = type;
+      currentGenericType = newType;
       
       // Show the generic type configuration popup
       showGenericConfig = true;
@@ -65,7 +65,7 @@
       return false;
     } else {
       // For non-generic types, update directly
-      onUpdateField?.(fieldIndex, 'type', type);
+      onUpdateField?.(fieldIndex, 'type', newType);
     }
   }
 </script>
@@ -78,10 +78,13 @@
     <div 
       class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" 
       bind:this={container}
-      on:click|stopPropagation
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fieldFormDialogTitle"
+      on:click|stopPropagation={() => {}}
     >
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">{title}</h3>
+        <h3 id="fieldFormDialogTitle" class="text-lg font-semibold">{title}</h3>
         <button 
           on:click={() => onClose?.()}
           class="text-gray-500 hover:text-gray-700"
@@ -116,20 +119,7 @@
                 />
                 <select 
                   bind:value={field?.type}
-                  on:change={(e) => {
-                    const selectedType = e.target.value;
-                    if (selectedType === 'List' || selectedType === 'Map') {
-                      // Store context for the generic type popup
-                      currentFieldIndex = fieldIndex;
-                      currentGenericType = selectedType;
-                      
-                      // Show the generic type configuration popup
-                      showGenericConfig = true;
-                    } else {
-                      // For non-generic types, update directly
-                      onUpdateField?.(fieldIndex, 'type', selectedType);
-                    }
-                  }}
+                  on:change={(e) => handleTypeChange(fieldIndex, e.target.value)}
                   class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {#each fieldTypes as fieldType}

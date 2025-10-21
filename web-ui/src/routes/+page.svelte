@@ -1,7 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { saveAs } from 'file-saver';
-  import { load } from 'js-yaml';
+  import { load, dump } from 'js-yaml';
   import JSZip from 'jszip';
   import StepArrow from '$lib/components/StepArrow.svelte';
   import FieldForm from '$lib/components/FieldForm.svelte';
@@ -462,46 +462,26 @@
 
   // Generate YAML configuration content
   function generateYamlConfig() {
-    // For now, create a simple YAML string to avoid complex escaping issues
-    let yamlContent = '---\n';
-    yamlContent += 'appName: "' + config.appName + '"\n';
-    yamlContent += 'basePackage: "' + config.basePackage + '"\n';
-    yamlContent += 'steps:\n';
-    
-    for (let i = 0; i < config.steps.length; i++) {
-      const step = config.steps[i];
-      yamlContent += '  - stepType: "' + step.stepType + '"\n';
-      yamlContent += '    serviceNameCamel: "' + step.serviceNameCamel + '"\n';
-      yamlContent += '    serviceName: "' + step.serviceName + '"\n';
-      yamlContent += '    cardinality: "' + step.cardinality + '"\n';
-      yamlContent += '    inputFields:\n';
-      
-      for (let j = 0; j < step.inputFields.length; j++) {
-        const field = step.inputFields[j];
-        yamlContent += '    - protoType: "' + field.protoType + '"\n';
-        yamlContent += '      name: "' + field.name + '"\n';
-        yamlContent += '      type: "' + field.type + '"\n';
-      }
-      
-      yamlContent += '    outputFields:\n';
-      
-      for (let k = 0; k < step.outputFields.length; k++) {
-        const field = step.outputFields[k];
-        yamlContent += '    - protoType: "' + field.protoType + '"\n';
-        yamlContent += '      name: "' + field.name + '"\n';
-        yamlContent += '      type: "' + field.type + '"\n';
-      }
-      
-      yamlContent += '    outputTypeName: "' + step.outputTypeName + '"\n';
-      yamlContent += '    inputTypeName: "' + step.inputTypeName + '"\n';
-      yamlContent += '    outputTypeSimpleName: "' + step.outputTypeSimpleName + '"\n';
-      yamlContent += '    grpcClientName: "' + step.grpcClientName + '"\n';
-      yamlContent += '    name: "' + step.name + '"\n';
-      yamlContent += '    inputTypeSimpleName: "' + step.inputTypeSimpleName + '"\n';
-      yamlContent += '    order: ' + step.order + '\n';
-    }
-
-    return yamlContent;
+    const minimal = {
+      appName: config.appName,
+      basePackage: config.basePackage,
+      steps: config.steps.map((s) => ({
+        stepType: s.stepType,
+        serviceNameCamel: s.serviceNameCamel,
+        serviceName: s.serviceName,
+        cardinality: s.cardinality,
+        inputFields: s.inputFields,
+        outputFields: s.outputFields,
+        outputTypeName: s.outputTypeName,
+        inputTypeName: s.inputTypeName,
+        outputTypeSimpleName: s.outputTypeSimpleName,
+        grpcClientName: s.grpcClientName,
+        name: s.name,
+        inputTypeSimpleName: s.inputTypeSimpleName,
+        order: s.order
+      }))
+    };
+    return dump(minimal, { lineWidth: -1 });
   }
 
   // Download the complete application as a ZIP file

@@ -271,6 +271,41 @@ Handlebars.registerHelper('isIdField', function(fieldName) {
     return fieldName === 'id';
 });
 
+// Register helper for sanitizing Java identifiers
+Handlebars.registerHelper('sanitizeJavaIdentifier', function(fieldName) {
+    if (typeof fieldName !== 'string') return fieldName;
+    
+    // Reserved words in Java that need to be escaped
+    const reservedWords = [
+        'abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch', 'char', 'class',
+        'const', 'continue', 'default', 'do', 'double', 'else', 'enum', 'extends', 'final',
+        'finally', 'float', 'for', 'goto', 'if', 'implements', 'import', 'instanceof', 'int',
+        'interface', 'long', 'native', 'new', 'package', 'private', 'protected', 'public',
+        'return', 'short', 'static', 'strictfp', 'super', 'switch', 'synchronized', 'this',
+        'throw', 'throws', 'transient', 'try', 'void', 'volatile', 'while', 'true', 'false', 'null'
+    ];
+    
+    // Check if it's a reserved word
+    if (reservedWords.includes(fieldName.toLowerCase())) {
+        return fieldName + '_';  // Append underscore to reserved words
+    }
+    
+    // Replace invalid characters with underscore
+    let sanitized = fieldName.replace(/[^a-zA-Z0-9_$]/g, '_');
+    
+    // Ensure it doesn't start with a number
+    if (sanitized.length > 0 && /\d/.test(sanitized[0])) {
+        sanitized = '_' + sanitized;
+    }
+    
+    // If it became empty (which shouldn't happen with real input), return a default name
+    if (sanitized === '') {
+        sanitized = 'field';
+    }
+    
+    return sanitized;
+});
+
 // Register helper for unless functionality
 Handlebars.registerHelper('unless', function(condition, options) {
     if (!condition) {

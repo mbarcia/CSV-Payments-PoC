@@ -13,6 +13,26 @@
   let valueType = 'String';
   let listType = 'String';
 
+  // Keep defaults in sync with available options when modal opens or props change
+  $: if (visible && fieldTypes?.length) {
+    const first = fieldTypes[0];
+    if (!fieldTypes.includes(listType)) listType = first;
+    if (!fieldTypes.includes(keyType)) keyType = first;
+    if (!fieldTypes.includes(valueType)) valueType = first;
+  }
+
+  // If editing an existing generic field, prefill from its type (e.g., "List<String>", "Map<String, Integer>")
+  $: if (visible && selectedField?.type) {
+    if (genericType === 'List') {
+      const m = selectedField.type.match(/^List<([^>]+)>$/);
+      if (m?.[1] && fieldTypes.includes(m[1])) listType = m[1];
+    } else if (genericType === 'Map') {
+      const m = selectedField.type.match(/^Map<([^,>]+),\s*([^>]+)>$/);
+      if (m?.[1] && fieldTypes.includes(m[1])) keyType = m[1];
+      if (m?.[2] && fieldTypes.includes(m[2])) valueType = m[2];
+    }
+  }
+
   let container;
 
   // Close modal when clicking outside
@@ -53,17 +73,18 @@
 {#if visible}
   <div 
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    role="dialog"
-    aria-modal="true"
     on:click={() => dispatch('close')}
   >
     <div 
       class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md" 
       bind:this={container}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="genericTypeDialogTitle"
       on:click|stopPropagation={() => {}}
     >
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">Configure {genericType} Type</h3>
+        <h3 id="genericTypeDialogTitle" class="text-lg font-semibold">Configure {genericType} Type</h3>
         <button 
           on:click={() => dispatch('close')}
           class="text-gray-500 hover:text-gray-700"

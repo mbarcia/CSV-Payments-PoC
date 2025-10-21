@@ -86,16 +86,15 @@ The template generator implements the original spec with significant enhancement
 
 ### Template Generator Architecture
 
-#### CLI Component (`TemplateGeneratorCli.java`)
-- Uses Picocli for command-line parsing
+#### CLI Component (`template-generator-node/bin/generate.js`)
+- Uses Commander.js for command-line parsing
 - Supports multiple execution modes:
-  - Interactive mode (`-i` or default)
-  - Configuration file mode (`-c config.yaml`)
-  - Sample config generation (`-g`)
+  - Generate from config file (`generate -c config.yaml`)
+  - Sample config generation (`sample-config`)
 - Field type mapping system with validation
 - Automatic inter-step type dependency tracking
 
-#### Template Engine (`HandlebarsTemplateEngine.java`)
+#### Template Engine (`template-generator-node/src/handlebars-template-engine.js`)
 - Generates complete Maven multi-module project
 - Creates all necessary modules: parent, common, steps, orchestrator
 - Generates Java entities, DTOs, and mappers

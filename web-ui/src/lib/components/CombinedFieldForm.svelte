@@ -38,7 +38,11 @@
     return allTypes;
   }
   export let formType = 'both'; // 'both', 'input', 'output', 'shared'
+  export let config; // full generator config (needed to include prior step types)
   export let visible = false;
+
+  // Reactive list of available types for this step
+  $: availableTypes = getAvailableFieldTypes(stepIndex, config);
 
   // State for generic type configuration popup
   let showGenericConfig = false;
@@ -108,10 +112,13 @@
     <div 
       class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-auto" 
       bind:this={container}
-      on:click|stopPropagation
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="combinedFieldFormDialogTitle"
+      on:click|stopPropagation={() => {}}
     >
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">
+        <h3 id="combinedFieldFormDialogTitle" class="text-lg font-semibold">
           {formType === 'shared' ? 'Shared Type Configuration' : 
            formType === 'both' ? `Step ${stepIndex + 1}: ${step?.name} Fields` : 
            `${formType === 'input' ? 'Input' : 'Output'} Fields - ${step?.name}`}
@@ -194,11 +201,11 @@
                       }}
                       class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     >
-                      {#each fieldTypes as fieldType}
+                      {#each availableTypes as fieldType}
                         <option value={fieldType}>{fieldType}</option>
                       {/each}
                       <!-- Add dynamic generic types as options, if they exist -->
-                      {#if field.type && !fieldTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                      {#if field.type && !availableTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
                         <option value={field.type} selected>{field.type}</option>
                       {/if}
                     </select>
@@ -269,11 +276,11 @@
                       }}
                       class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     >
-                      {#each fieldTypes as fieldType}
+                      {#each availableTypes as fieldType}
                         <option value={fieldType}>{fieldType}</option>
                       {/each}
                       <!-- Add dynamic generic types as options, if they exist -->
-                      {#if field.type && !fieldTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                      {#if field.type && !availableTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
                         <option value={field.type} selected>{field.type}</option>
                       {/if}
                     </select>
@@ -344,11 +351,11 @@
                     }}
                     class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {#each fieldTypes as fieldType}
+                    {#each availableTypes as fieldType}
                       <option value={fieldType}>{fieldType}</option>
                     {/each}
                     <!-- Add dynamic generic types as options, if they exist -->
-                    {#if field.type && !fieldTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                    {#if field.type && !availableTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
                       <option value={field.type} selected>{field.type}</option>
                     {/if}
                   </select>
@@ -431,11 +438,11 @@
                     }}
                     class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {#each fieldTypes as fieldType}
+                    {#each availableTypes as fieldType}
                       <option value={fieldType}>{fieldType}</option>
                     {/each}
                     <!-- Add dynamic generic types as options, if they exist -->
-                    {#if field.type && !fieldTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                    {#if field.type && !availableTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
                       <option value={field.type} selected>{field.type}</option>
                     {/if}
                   </select>

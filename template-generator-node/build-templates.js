@@ -45,6 +45,13 @@ for (const file of templateFiles) {
     }
 }
 
+// Validate that at least one template was found
+if (Object.keys(templates).length === 0) {
+    console.error(`Warning: No .hbs template files found in directory '${templatesDir}'`);
+    console.error('This may indicate a misconfiguration or missing template files.');
+    process.exit(1);
+}
+
 // Generate the JavaScript code as a string
 const jsContent = `
 // Generated template collection

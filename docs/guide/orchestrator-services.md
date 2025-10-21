@@ -15,7 +15,7 @@ Orchestrator services are responsible for:
 4. Handling the final output of the pipeline
 
 When you use the template generator to create a pipeline application, it automatically generates a complete orchestrator service with:
-- A CLI application class that extends `PipelineApplication`
+- A CLI application class that implements `QuarkusApplication`
 - Proper configuration in `application.properties`
 - Docker configuration for containerized deployment
 - Integration with the framework's pipeline execution engine
@@ -38,10 +38,20 @@ orchestrator-svc/
 
 ### OrchestratorApplication.java
 
-The generated orchestrator application extends `PipelineApplication` and includes a `getInputMulti()` method stub that needs to be implemented by the user. This method is responsible for provisioning input data to the pipeline:
+The generated orchestrator application implements `QuarkusApplication` and includes a `getInputMulti()` method stub that needs to be implemented by the user. This method is responsible for provisioning input data to the pipeline:
 
 ```java
 // orchestrator-svc/src/main/java/com/example/app/orchestrator/OrchestratorApplication.java
+import io.quarkus.runtime.QuarkusApplication;
+import io.smallrye.mutiny.Multi;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
+import org.pipelineframework.PipelineExecutionService;
+import com.example.app.common.domain.CustomerInput;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
 @Command(name = "orchestrator", mixinStandardHelpOptions = true, version = "1.0.0",
          description = "Sample Pipeline App Orchestrator Service")
 @Dependent
@@ -73,7 +83,7 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     // Execute the pipeline when arguments are properly parsed
     private void executePipelineWithInput(String input) {
-        Multi<{{firstInputTypeName}}> inputMulti = getInputMulti(input);
+        Multi<CustomerInput> inputMulti = getInputMulti(input);
 
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti)
@@ -85,11 +95,11 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     // This method needs to be implemented by the user after template generation
     // based on their specific input type and requirements
-    private static Multi<{{firstInputTypeName}}> getInputMulti(String input) {
+    private static Multi<CustomerInput> getInputMulti(String input) {
         // TODO: User needs to implement this method after template generation
         // Create and return appropriate Multi based on the input and first step requirements
         // For example:
-        // {{firstInputTypeName}} inputItem = new {{firstInputTypeName}}();
+        // CustomerInput inputItem = new CustomerInput();
         // inputItem.setField(input);
         // return Multi.createFrom().item(inputItem);
         
@@ -184,6 +194,9 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     @Inject
     PipelineExecutionService pipelineExecutionService;
+    
+    @Inject
+    CustomProcessingService customProcessingService; // Add your custom services as needed
 
     public static void main(String[] args) {
         io.quarkus.runtime.Quarkus.run(OrchestratorApplication.class, args);
@@ -195,7 +208,14 @@ public class OrchestratorApplication implements QuarkusApplication {
         cmd.parseArgs(args);
 
         if (input != null) {
+            // Custom pre-processing logic
+            customProcessingService.preProcess();
+            
             executePipelineWithInput(input);
+            
+            // Custom post-processing logic
+            customProcessingService.postProcess();
+            
             return 0; // Success exit code
         } else {
             System.err.println("Input parameter is required");
@@ -226,47 +246,68 @@ public class OrchestratorApplication implements QuarkusApplication {
 ## Manual Orchestrator Service Creation
 
 <Callout type="info" title="Advanced Users Only">
-The following section describes how to manually create orchestrator services for advanced users who need fine-grained control over their implementations. For most use cases, we recommend using the template generator.
+The following section describes how to manually create orchestrator services for advanced users who need capabilities beyond what the template generator provides. For most use cases, we recommend using the template generator.
 </Callout>
 
 ### 1. Implement Orchestrator Application
 
-Create your orchestrator service by implementing the QuarkusApplication interface with proper integration to the pipeline execution framework:
+Manual creation is useful when you need:
+
+- **Custom base classes or alternative frameworks** - Extending from custom base classes instead of using the generated structure
+- **Different CLI frameworks** - Using alternative command-line parsing libraries instead of Picocli
+- **Custom integration requirements** - Integration with existing systems that require different initialization patterns
+- **Fine-grained control** - Full control over the application lifecycle and pipeline execution flow
+
+The manual approach allows you to create a custom orchestrator by implementing the QuarkusApplication interface with direct integration to the pipeline execution framework:
 
 ```java
-// orchestrator-svc/src/main/java/com/example/app/orchestrator/CsvPaymentsApplication.java
-@Command(name = "csv-payments", mixinStandardHelpOptions = true, version = "1.0.0",
-         description = "Process CSV payment files")
+// orchestrator-svc/src/main/java/com/example/app/orchestrator/CustomOrchestratorApplication.java
+@Command(name = "custom-orchestrator", mixinStandardHelpOptions = true, version = "1.0.0",
+         description = "Custom orchestrator with specialized requirements")
 @Dependent
-public class CsvPaymentsApplication implements QuarkusApplication {
+public class CustomOrchestratorApplication implements QuarkusApplication {
 
-    @Option(names = {"-f", "--file"}, description = "Input CSV file path", required = true)
-    String inputFile;
+    @Option(names = {"-i", "--input"}, description = "Input source for the pipeline", required = true)
+    String inputSource;
 
     @Inject
     PipelineExecutionService pipelineExecutionService;
+    
+    // Add custom dependencies as needed
+    @Inject
+    CustomMetricsService metricsService;
 
     public static void main(String[] args) {
-        io.quarkus.runtime.Quarkus.run(CsvPaymentsApplication.class, args);
+        io.quarkus.runtime.Quarkus.run(CustomOrchestratorApplication.class, args);
     }
 
     @Override
     public int run(String... args) {
+        // Custom initialization logic can be added here before pipeline execution
+        metricsService.initialize();
+        
         CommandLine cmd = new CommandLine(this);
         cmd.parseArgs(args);
 
-        if (inputFile != null) {
-            executePipelineWithInput(inputFile);
+        if (inputSource != null) {
+            // Custom pre-processing logic
+            metricsService.startTimer();
+            
+            executePipelineWithInput(inputSource);
+            
+            // Custom post-processing logic
+            metricsService.reportMetrics();
+            
             return 0; // Success exit code
         } else {
-            System.err.println("Input file parameter is required");
+            System.err.println("Input source parameter is required");
             return 1; // Error exit code
         }
     }
 
     // Execute the pipeline when arguments are properly parsed
-    private void executePipelineWithInput(String inputFile) {
-        Multi<{{firstInputTypeName}}> inputMulti = getInputMulti(inputFile);
+    private void executePipelineWithInput(String inputSource) {
+        Multi<{{firstInputTypeName}}> inputMulti = getInputMulti(inputSource);
 
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti)
@@ -277,12 +318,15 @@ public class CsvPaymentsApplication implements QuarkusApplication {
     }
 
     // Implementation to convert your input into Multi stream
-    private static Multi<{{firstInputTypeName}}> getInputMulti(String inputFile) {
-        // TODO: Implement this method to read the input file and convert to Multi<{{firstInputTypeName}}>
-        // For example, process CSV file and return Multi stream of {{firstInputTypeName}} objects
-        throw new UnsupportedOperationException("Method getInputMulti needs to be implemented");
+    private static Multi<{{firstInputTypeName}}> getInputMulti(String inputSource) {
+        // Custom input processing logic specific to your requirements
+        // For example, reading from different sources: database, message queues, files, etc.
+        throw new UnsupportedOperationException("Method getInputMulti needs to be implemented with custom logic");
     }
 }
 ```
 
-[Rest of the original content...]
+**When to use manual creation vs. template generator:**
+
+- **Use the template generator** when you want a complete, standardized pipeline application with all the default functionality and observability features
+- **Use manual creation** when you need custom behaviors that are not supported by the template generator, such as custom dependency injection, non-standard initialization, or third-party integration requirements

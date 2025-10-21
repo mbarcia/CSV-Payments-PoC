@@ -212,7 +212,10 @@ class BrowserTemplateEngine {
     async generateParentPom(appName, basePackage, steps, fileCallback) {
         const context = {
             basePackage,
-            artifactId: appName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-'),
+            artifactId: appName
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, '-')
+              .replace(/^-+|-+$/g, ''),
             name: appName,
             steps
         };
@@ -433,6 +436,7 @@ class BrowserTemplateEngine {
     }
 
     async generateStepService(appName, basePackage, step, stepIndex, allSteps, fileCallback) {
+        // noinspection JSUnusedLocalSymbols
         const serviceNameForPackage = step.serviceName.replace('-svc', '').replace(/-/g, '_');
 
         // Add rootProjectName to step map

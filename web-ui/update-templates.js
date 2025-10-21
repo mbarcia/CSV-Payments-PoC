@@ -28,6 +28,7 @@ const nodeGeneratorPath = path.join(__dirname, '../template-generator-node');
 const templatesDir = path.join(nodeGeneratorPath, './templates');
 const webUiBundlePath = path.join(__dirname, './static/browser-bundle.js');
 
+try {
 // Read all .hbs files from the Node.js generator templates directory
 const templateFiles = fs.readdirSync(templatesDir);
 
@@ -39,6 +40,10 @@ for (const file of templateFiles) {
         const templateContent = fs.readFileSync(path.join(templatesDir, file), 'utf8');
         templates[templateName] = templateContent;
     }
+}
+} catch (error) {
+  console.error(`Error reading templates: ${error.message}`);
+  process.exit(1);
 }
 
 // Read the existing browser bundle

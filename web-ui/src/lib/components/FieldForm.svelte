@@ -112,13 +112,13 @@
               <div class="flex items-center gap-2">
                 <input 
                   type="text" 
-                  bind:value={field?.name}
-                  on:input={() => onUpdateField?.(fieldIndex, 'name', field?.name)}
+                  bind:value={field.name}
+                  on:input={() => onUpdateField?.(fieldIndex, 'name', field.name)}
                   class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Field name"
                 />
                 <select 
-                  bind:value={field?.type}
+                  bind:value={field.type}
                   on:change={(e) => handleTypeChange(fieldIndex, e.target.value)}
                   class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
@@ -126,8 +126,8 @@
                     <option value={fieldType}>{fieldType}</option>
                   {/each}
                   <!-- Add dynamic generic types as options, if they exist -->
-                  {#if field?.type && !fieldTypes.includes(field?.type) && (field?.type.startsWith('List<') || field?.type.startsWith('Map<'))}
-                    <option value={field?.type} selected>{field?.type}</option>
+                  {#if field.type && !fieldTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                    <option value={field.type} selected>{field.type}</option>
                   {/if}
                 </select>
                 <button 

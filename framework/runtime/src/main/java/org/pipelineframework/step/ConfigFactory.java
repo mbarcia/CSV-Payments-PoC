@@ -46,7 +46,6 @@ public class ConfigFactory {
             }
             overrides
                     .autoPersist(annotation.autoPersist())
-                    .debug(annotation.debug())
                     .recoverOnFailure(annotation.recoverOnFailure())
                     .backpressureBufferCapacity(annotation.backpressureBufferCapacity())
                     .backpressureStrategy(annotation.backpressureStrategy())

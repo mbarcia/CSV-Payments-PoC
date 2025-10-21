@@ -53,6 +53,11 @@ const outputDir = path.dirname(outputPath);
 if (!fs.existsSync(outputDir)) {
   fs.mkdirSync(outputDir, { recursive: true });
 }
-fs.writeFileSync(outputPath, jsContent);
+try {
+  fs.writeFileSync(outputPath, jsContent);
+} catch (error) {
+  console.error(`Error writing output file ${outputPath}: ${error.message}`);
+  process.exit(1);
+}
 
 console.log('Templates have been packaged into dist/templates.js');

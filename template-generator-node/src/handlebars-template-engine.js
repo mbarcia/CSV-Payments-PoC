@@ -368,7 +368,9 @@ class HandlebarsTemplateEngine {
             const previousStep = steps[i - 1];
             // Set the input type of the current step to the output type of the previous step
             currentStep.inputTypeName = previousStep.outputTypeName;
-            currentStep.inputFields = previousStep.outputFields; // Copy input fields from previous step's outputs
+            currentStep.inputFields = Array.isArray(previousStep.outputFields) 
+                ? previousStep.outputFields.map(field => ({...field}))  // Shallow copy each field object to avoid shared references
+                : previousStep.outputFields; // Copy input fields from previous step's outputs
         }
 
         // Create output directory

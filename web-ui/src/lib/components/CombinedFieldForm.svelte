@@ -31,7 +31,7 @@
   ];
   
   // Filter out List and Map from the types shown in the generic type popup
-  let genericFieldTypes = fieldTypes.filter(type => type !== 'List' && type !== 'Map');
+  $: genericFieldTypes = fieldTypes.filter((t) => t !== 'List' && t !== 'Map');
   
   // Function to get all available types including custom message types from previous steps
   function getAvailableFieldTypes(currentStepIndex, config) {

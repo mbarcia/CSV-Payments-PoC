@@ -573,6 +573,7 @@
       // First, check if BrowserTemplateEngine is available
       if (typeof BrowserTemplateEngine === 'undefined') {
         alert('Template engine not available. Please ensure all required scripts are loaded.');
+        isGenerating = false;
         return;
       }
 

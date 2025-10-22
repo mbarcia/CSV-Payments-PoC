@@ -159,10 +159,7 @@ class PipelineGenerator {
                 
                 // Convert to camelCase
                 const camelCaseName = this.toCamelCase(entityName);
-                const capitalizedCamelName = 
-                    camelCaseName.charAt(0).toUpperCase() + camelCaseName.slice(1);
-                
-                processedStep.serviceNameCamel = capitalizedCamelName;
+                processedStep.serviceNameCamel = camelCaseName.charAt(0).toUpperCase() + camelCaseName.slice(1);
             }
             
             if (!processedStep.serviceNameTitleCase) {
@@ -216,12 +213,13 @@ class PipelineGenerator {
     getStepTypeForCardinality(cardinality) {
         switch (cardinality) {
             case 'ONE_TO_ONE':
-            case 'SIDE_EFFECT':
                 return 'StepOneToOne';
             case 'EXPANSION':
                 return 'StepOneToMany';
             case 'REDUCTION':
                 return 'StepManyToOne';
+            case 'SIDE_EFFECT':
+                return 'StepSideEffect';
             default:
                 return 'StepOneToOne'; // default
         }

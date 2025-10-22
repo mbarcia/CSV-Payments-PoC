@@ -28,12 +28,12 @@ import lombok.*;
 @Builder
 @JsonDeserialize(builder = PaymentRecordDto.PaymentRecordDtoBuilder.class)
 public class PaymentRecordDto {
-  public UUID id;
-  public String csvId;
-  public String recipient;
-  public BigDecimal amount;
-  public Currency currency;
-  public Path csvPaymentsInputFilePath;
+  UUID id;
+  String csvId;
+  String recipient;
+  BigDecimal amount;
+  Currency currency;
+  Path csvPaymentsInputFilePath;
 
   // Lombok will generate the builder, but Jackson needs to know how to interpret it
   @JsonPOJOBuilder(withPrefix = "")

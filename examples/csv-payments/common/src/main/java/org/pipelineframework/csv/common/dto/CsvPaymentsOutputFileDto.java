@@ -27,9 +27,9 @@ import lombok.Value;
 @Builder
 @JsonDeserialize(builder = CsvPaymentsOutputFileDto.CsvPaymentsInputFileDtoBuilder.class)
 public class CsvPaymentsOutputFileDto {
-  public UUID id;
-  public Path filepath;
-  public Path csvFolderPath;
+  UUID id;
+  Path filepath;
+  Path csvFolderPath;
 
   // Lombok will generate the builder, but Jackson needs to know how to interpret it
   @JsonPOJOBuilder(withPrefix = "")

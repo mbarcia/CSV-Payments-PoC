@@ -5,7 +5,7 @@
     "dev": "vite dev",
     "update-templates": "node update-templates.js",
     "build": "npm run update-templates && node --max-old-space-size=4096 node_modules/vite/bin/vite.js build",
-    "build:cloudflare": "npm run update-templates && node --max-old-space-size=2048 node_modules/vite/bin/vite.js build && exit 0",
+    "build:cloudflare": "npm run update-templates && NODE_OPTIONS='--max-old-space-size=2048 --max-semi-space-size=128' sh -c 'vite build && node -e \"console.log(process.memoryUsage())\"; exit 0'",
     "build:static": "npm run update-templates && node --max-old-space-size=2048 node_modules/vite/bin/vite.js build && exit 0",
     "preview": "node --max-old-space-size=2048 node_modules/vite/bin/vite.js preview",
     "preview:cloudflare": "node --max-old-space-size=2048 node_modules/vite/bin/vite.js preview",

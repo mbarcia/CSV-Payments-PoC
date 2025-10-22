@@ -1,15 +1,30 @@
+<!--
+  - Copyright (c) 2023-2025 Mariano Barcia
+  -
+  - Licensed under the Apache License, Version 2.0 (the "License");
+  - you may not use this file except in compliance with the License.
+  - You may obtain a copy of the License at
+  -
+  -     http://www.apache.org/licenses/LICENSE-2.0
+  -
+  - Unless required by applicable law or agreed to in writing, software
+  - distributed under the License is distributed on an "AS IS" BASIS,
+  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  - See the License for the specific language governing permissions and
+  - limitations under the License.
+  -->
+
 <script>
-  import { onMount } from 'svelte';
-  import { saveAs } from 'file-saver';
-  import { load, dump } from 'js-yaml';
+  import {onMount} from 'svelte';
+  import {saveAs} from 'file-saver';
+  import {dump, load} from 'js-yaml';
   import JSZip from 'jszip';
   import StepArrow from '$lib/components/StepArrow.svelte';
-  import FieldForm from '$lib/components/FieldForm.svelte';
   import CombinedFieldForm from '$lib/components/CombinedFieldForm.svelte';
   import Connector from '$lib/components/Connector.svelte';
   import ConfirmationDialog from '$lib/components/ConfirmationDialog.svelte';
 
-    // Initialize with an empty configuration
+  // Initialize with an empty configuration
   let config = {
     appName: 'My Pipeline App',
     basePackage: 'com.example.mypipeline',
@@ -31,6 +46,18 @@
   let confirmationWarning = false;
   let pendingStepIndex = -1;
   let pendingCardinality = '';
+  
+  // State for app info dialog
+  let showAppInfoDialog = false;
+  let appInfoAppName = '';
+  let appInfoBasePackage = '';
+  
+  // State for upload confirmation dialog
+  let showUploadConfirmDialog = false;
+  let pendingUploadFile = null;
+  
+  // Map to track previous cardinality values
+  let prevCardinality = new Map();
   
   // State for animations
   let animatedStepIndex = -1;
@@ -129,7 +156,7 @@
     const stepName = `Step ${stepNumber}`;
     // Convert step name to valid service name (lowercase, hyphens, svc suffix)
     const serviceName = `${stepName.toLowerCase().replace(/\s+/g, '-')}-svc`;
-    const serviceNameCamel = stepName.replace(/\s+/g, '');
+    const serviceNameCamel = toCamelCase(stepName, { upperFirst: true });
     
     const newStep = {
       name: stepName,
@@ -338,6 +365,28 @@
     ];
     return scalarTypes.includes(javaType.toLowerCase());
   }
+  
+  // Check if a type is a List type
+  function isListType(javaType) {
+    if (!javaType || typeof javaType !== 'string') return false;
+    
+    // Simple list check (for basic List)
+    if (javaType === 'List') return true;
+    
+    // Pattern check for generic List (e.g. List<String>, List<MyCustomType>)
+    return /^List<.+>$/.test(javaType);
+  }
+  
+  // Check if a type is a Map type
+  function isMapType(javaType) {
+    if (!javaType || typeof javaType !== 'string') return false;
+    
+    // Simple map check (for basic Map)
+    if (javaType === 'Map') return true;
+    
+    // Pattern check for generic Map (e.g. Map<String,Integer>, Map<MyKey,MyValue>)
+    return /^Map<.+?, .+>$/.test(javaType);
+  }
 
   // Java to protobuf type mapping - only for scalar types
   function javaTypeToProtoType(javaType) {
@@ -395,20 +444,26 @@
     return javaTypeToProtoType(javaType);
   }
 
-  // Convert string to camelCase
-  function toCamelCase(input) {
+  // Convert string to camelCase (lowerCamelCase or UpperCamelCase/PascalCase)
+  function toCamelCase(input, options = {}) {
+    const { upperFirst = false } = options;
     const parts = input.trim().split(/\s+/);
     let result = '';
     
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       if (part.length > 0) {
+        let processedPart = part.charAt(0) + part.slice(1).toLowerCase();
         if (i === 0) {
-          result += part.charAt(0).toLowerCase();
+          // For the first part, apply upperFirst option if needed
+          processedPart = upperFirst 
+            ? processedPart.charAt(0).toUpperCase() + processedPart.slice(1)
+            : processedPart.charAt(0).toLowerCase() + processedPart.slice(1);
         } else {
-          result += part.charAt(0).toUpperCase();
+          // For subsequent parts, always capitalize the first letter
+          processedPart = processedPart.charAt(0).toUpperCase() + processedPart.slice(1);
         }
-        result += part.slice(1).toLowerCase();
+        result += processedPart;
       }
     }
     
@@ -422,7 +477,7 @@
     yamlContent += 'appName: \"' + config.appName + '\"\n';
     yamlContent += 'basePackage: \"' + config.basePackage + '\"\n';
     yamlContent += 'steps:\n';
-    
+
     for (let i = 0; i < config.steps.length; i++) {
       const step = config.steps[i];
       yamlContent += '  - stepType: \"' + step.stepType + '\"\n';
@@ -430,23 +485,23 @@
       yamlContent += '    serviceName: \"' + step.serviceName + '\"\n';
       yamlContent += '    cardinality: \"' + step.cardinality + '\"\n';
       yamlContent += '    inputFields:\n';
-      
+
       for (let j = 0; j < step.inputFields.length; j++) {
         const field = step.inputFields[j];
         yamlContent += '    - protoType: \"' + field.protoType + '\"\n';
         yamlContent += '      name: \"' + field.name + '\"\n';
         yamlContent += '      type: \"' + field.type + '\"\n';
       }
-      
+
       yamlContent += '    outputFields:\n';
-      
+
       for (let k = 0; k < step.outputFields.length; k++) {
         const field = step.outputFields[k];
         yamlContent += '    - protoType: \"' + field.protoType + '\"\n';
         yamlContent += '      name: \"' + field.name + '\"\n';
         yamlContent += '      type: \"' + field.type + '\"\n';
       }
-      
+
       yamlContent += '    outputTypeName: \"' + step.outputTypeName + '\"\n';
       yamlContent += '    inputTypeName: \"' + step.inputTypeName + '\"\n';
       yamlContent += '    outputTypeSimpleName: \"' + step.outputTypeSimpleName + '\"\n';
@@ -455,9 +510,6 @@
       yamlContent += '    inputTypeSimpleName: \"' + step.inputTypeSimpleName + '\"\n';
       yamlContent += '    order: ' + step.order + '\n';
     }
-
-    const blob = new Blob([yamlContent], { type: 'application/yaml' });
-    saveAs(blob, config.appName.replace(/\s+/g, '-') + '-config.yaml');
   }
 
   // Generate YAML configuration content
@@ -484,15 +536,32 @@
     return dump(minimal, { lineWidth: -1 });
   }
 
-  // Download the complete application as a ZIP file
-  async function downloadApplication() {
+  // Check if app name and base package are valid
+  function isAppInfoValid() {
+    return config.appName && config.appName.trim() !== '' && 
+           config.basePackage && config.basePackage.trim() !== '';
+  }
+  
+  // Show app info dialog to collect app name and package if not set
+  function showAppInfoDialogIfNeeded() {
+    if (!isAppInfoValid()) {
+      appInfoAppName = config.appName || 'My Pipeline App';
+      appInfoBasePackage = config.basePackage || 'com.example.mypipeline';
+      showAppInfoDialog = true;
+    } else {
+      startDownload();
+    }
+  }
+  
+  // Start the actual download process
+  async function startDownload() {
     // Simple rate limiting to prevent abuse
     const now = Date.now();
     const lastDownload = localStorage.getItem('lastDownloadTime');
     const minInterval = 5000; // 5 seconds minimum between downloads
     
-    if (lastDownload && (now - parseInt(lastDownload)) < minInterval) {
-      const remaining = Math.ceil((minInterval - (now - parseInt(lastDownload))) / 1000);
+    if (lastDownload && (now - parseInt(lastDownload, 10)) < minInterval) {
+      const remaining = Math.ceil((minInterval - (now - parseInt(lastDownload, 10))) / 1000);
       alert(`Please wait ${remaining} seconds before downloading another application.`);
       return;
     }
@@ -501,9 +570,6 @@
     isGenerating = true;
     
     try {
-      // Store the download time
-      localStorage.setItem('lastDownloadTime', now.toString());
-      
       // First, check if BrowserTemplateEngine is available
       if (typeof BrowserTemplateEngine === 'undefined') {
         alert('Template engine not available. Please ensure all required scripts are loaded.');
@@ -517,7 +583,7 @@
       const zip = new JSZip();
       
       // Create a file callback that adds files to the ZIP
-      const fileCallback = async (filePath, content) => {
+      const fileCallback = (filePath, content) => {
         zip.file(filePath, content);
       };
       
@@ -543,6 +609,9 @@
         config.appName.replace(/\s+/g, '-') + '-generated-app.zip'
       );
       
+      // Store the download time only after successful generation and download
+      localStorage.setItem('lastDownloadTime', now.toString());
+      
       console.log('Application generated and downloaded successfully!');
     } catch (error) {
       console.error('Error generating application:', error);
@@ -552,159 +621,209 @@
       isGenerating = false;
     }
   }
+  
+  // Download the complete application as a ZIP file
+  async function downloadApplication() {
+    showAppInfoDialogIfNeeded();
+  }
+  
+  // Handle app info dialog confirm
+  function handleAppInfoConfirm() {
+    config.appName = appInfoAppName;
+    config.basePackage = appInfoBasePackage;
+    showAppInfoDialog = false;
+    startDownload();
+  }
+  
+  // Handle app info dialog cancel
+  function handleAppInfoCancel() {
+    showAppInfoDialog = false;
+  }
 
+  // Show upload confirmation dialog if there are existing steps
+  function showUploadConfirmDialogIfNeeded(file) {
+    if (config.steps.length > 0) {
+      pendingUploadFile = file;
+      showUploadConfirmDialog = true;
+    } else {
+      // If no existing steps, proceed directly with upload
+      processUpload(file);
+    }
+  }
+  
+  // Process the upload after confirmation
+  async function processUpload(file) {
+    const text = await file.text();
+    try {
+      const data = load(text);
+      
+      // Validate the data structure
+      if (!data.appName || !data.basePackage || !data.steps) {
+        throw new Error('Invalid configuration file: missing required fields (appName, basePackage, steps)');
+      }
+      
+      if (!Array.isArray(data.steps)) {
+        throw new Error('Invalid configuration file: steps must be an array');
+      }
+      
+      // Validate each step has required user-provided fields
+      for (let i = 0; i < data.steps.length; i++) {
+        const step = data.steps[i];
+        
+        if (!step.name) {
+          throw new Error(`Invalid configuration file: step ${i+1} is missing required field (name)`);
+        }
+        
+        if (!step.cardinality) {
+          throw new Error(`Invalid configuration file: step ${i+1} is missing required field (cardinality)`);
+        }
+        
+        if (!step.inputTypeName) {
+          throw new Error(`Invalid configuration file: step ${i+1} is missing required field (inputTypeName)`);
+        }
+        
+        if (!step.outputTypeName) {
+          throw new Error(`Invalid configuration file: step ${i+1} is missing required field (outputTypeName)`);
+        }
+        
+        if (!step.inputFields) {
+          step.inputFields = [];
+        } else if (!Array.isArray(step.inputFields)) {
+          throw new Error(`Invalid configuration file: step ${i+1} inputFields must be an array`);
+        }
+        
+        if (!step.outputFields) {
+          step.outputFields = [];
+        } else if (!Array.isArray(step.outputFields)) {
+          throw new Error(`Invalid configuration file: step ${i+1} outputFields must be an array`);
+        }
+        
+        // Compute missing computed fields if not present in the uploaded config
+        if (!step.serviceName) {
+          step.serviceName = step.name ? step.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() + '-svc' : `step-${i}-svc`;
+        }
+        
+        if (!step.serviceNameCamel) {
+          // Extract entity name from step name (e.g., "Process Customer" -> "Customer", "Validate Order" -> "Order")
+          let entityName = step.name 
+              ? step.name
+                  .replace('Process ', '')
+                  .replace('Validate ', '')
+                  .replace('Enrich ', '')
+                  .replace('Transform ', '')
+                  .replace('Filter ', '')
+                  .replace('Aggregate ', '')
+                  .replace('Sort ', '')
+                  .trim()
+              : `Step${i+1}`;
+          entityName = entityName.replace(/[^a-zA-Z0-9]/g, ' ').trim();
+          
+          // Convert to camelCase
+          const capitalizedCamelName = toCamelCase(entityName, { upperFirst: true });
+          
+          step.serviceNameCamel = capitalizedCamelName;
+        }
+        
+        if (!step.inputFields || !Array.isArray(step.inputFields)) {
+          step.inputFields = [];
+        }
+        
+        if (!step.outputFields || !Array.isArray(step.outputFields)) {
+          step.outputFields = [];
+        }
+        
+        // Validate fields have required properties and valid types
+        for (let j = 0; j < step.inputFields.length; j++) {
+          const field = step.inputFields[j];
+          if (!field.name || !field.type || !field.protoType) {
+            throw new Error(`Invalid configuration file: input field ${j+1} in step ${i+1} is missing required properties (name, type, protoType)`);
+          }
+          // Validate that field.type is a valid Java scalar type or custom message type from a previous step
+          if (!isValidFieldType(field.type, i)) {
+            // Additional check to log what specifically is wrong with the type
+            console.error(`Invalid field type detected: "${field.type}" in step ${i+1}, input field ${j+1}`);
+            console.error(`Type length: ${field.type.length}, ends with: "${field.type.slice(-10)}"`);
+            throw new Error(`Invalid configuration file: input field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are Java scalar types or custom message types defined in previous steps.`);
+          }
+        }
+        
+        for (let j = 0; j < step.outputFields.length; j++) {
+          const field = step.outputFields[j];
+          if (!field.name || !field.type || !field.protoType) {
+            throw new Error(`Invalid configuration file: output field ${j+1} in step ${i+1} is missing required properties (name, type, protoType)`);
+          }
+          // Validate that field.type is a valid Java scalar type or custom message type from a previous step
+          if (!isValidFieldType(field.type, i)) {
+            // Additional check to log what specifically is wrong with the type
+            console.error(`Invalid field type detected: "${field.type}" in step ${i+1}, output field ${j+1}`);
+            console.error(`Type length: ${field.type.length}, ends with: "${field.type.slice(-10)}"`);
+            throw new Error(`Invalid configuration file: output field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are Java scalar types or custom message types defined in previous steps.`);
+          }
+        }
+        
+        // Set stepType based on cardinality
+        if (!step.stepType) {
+          switch (step.cardinality) {
+            case 'EXPANSION':
+              step.stepType = 'StepOneToMany';
+              break;
+            case 'REDUCTION':
+              step.stepType = 'StepManyToOne';
+              break;
+            case 'SIDE_EFFECT':
+              step.stepType = 'StepSideEffect';
+              break;
+            default:
+              step.stepType = 'StepOneToOne';
+              break;
+          }
+        }
+        
+        // For Side-Effect steps, ensure input and output types are aligned
+        if (step.cardinality === 'SIDE_EFFECT') {
+          step.outputTypeName = step.inputTypeName;
+          step.outputTypeSimpleName = step.inputTypeSimpleName;
+          step.outputFields = [...step.inputFields];
+        }
+      }
+      
+      config = data;
+      currentStepIndex = -1;
+      showInputForm = false;
+    } catch (e) {
+      alert('Error parsing YAML file: ' + e.message);
+    }
+  }
+  
   // Handle file upload
   async function handleFileUpload(event) {
     const file = event.target.files[0];
     if (file && (file.name.endsWith('.yaml') || file.name.endsWith('.yml'))) {
-      const text = await file.text();
-      try {
-        const data = load(text);
-        
-        // Validate the data structure
-        if (!data.appName || !data.basePackage || !data.steps) {
-          throw new Error('Invalid configuration file: missing required fields (appName, basePackage, steps)');
-        }
-        
-        if (!Array.isArray(data.steps)) {
-          throw new Error('Invalid configuration file: steps must be an array');
-        }
-        
-        // Validate each step has required user-provided fields
-        for (let i = 0; i < data.steps.length; i++) {
-          const step = data.steps[i];
-          
-          if (!step.name) {
-            throw new Error(`Invalid configuration file: step ${i+1} is missing required field (name)`);
-          }
-          
-          if (!step.cardinality) {
-            throw new Error(`Invalid configuration file: step ${i+1} is missing required field (cardinality)`);
-          }
-          
-          if (!step.inputTypeName) {
-            throw new Error(`Invalid configuration file: step ${i+1} is missing required field (inputTypeName)`);
-          }
-          
-          if (!step.outputTypeName) {
-            throw new Error(`Invalid configuration file: step ${i+1} is missing required field (outputTypeName)`);
-          }
-          
-          if (!step.inputFields) {
-            step.inputFields = [];
-          } else if (!Array.isArray(step.inputFields)) {
-            throw new Error(`Invalid configuration file: step ${i+1} inputFields must be an array`);
-          }
-          
-          if (!step.outputFields) {
-            step.outputFields = [];
-          } else if (!Array.isArray(step.outputFields)) {
-            throw new Error(`Invalid configuration file: step ${i+1} outputFields must be an array`);
-          }
-          
-          // Compute missing computed fields if not present in the uploaded config
-          if (!step.serviceName) {
-            step.serviceName = step.name ? step.name.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() + '-svc' : `step-${i}-svc`;
-          }
-          
-          if (!step.serviceNameCamel) {
-            // Extract entity name from step name (e.g., "Process Customer" -> "Customer", "Validate Order" -> "Order")
-            let entityName = step.name 
-                ? step.name
-                    .replace('Process ', '')
-                    .replace('Validate ', '')
-                    .replace('Enrich ', '')
-                    .replace('Transform ', '')
-                    .replace('Filter ', '')
-                    .replace('Aggregate ', '')
-                    .replace('Sort ', '')
-                    .trim()
-                : `Step${i+1}`;
-            entityName = entityName.replace(/[^a-zA-Z0-9]/g, ' ').trim();
-            
-            // Convert to camelCase
-            const camelCaseName = toCamelCase(entityName);
-            const capitalizedCamelName = 
-                camelCaseName.charAt(0).toUpperCase() + camelCaseName.slice(1);
-            
-            step.serviceNameCamel = capitalizedCamelName;
-          }
-          
-          if (!step.inputFields || !Array.isArray(step.inputFields)) {
-            step.inputFields = [];
-          }
-          
-          if (!step.outputFields || !Array.isArray(step.outputFields)) {
-            step.outputFields = [];
-          }
-          
-          // Validate fields have required properties and valid types
-          for (let j = 0; j < step.inputFields.length; j++) {
-            const field = step.inputFields[j];
-            if (!field.name || !field.type || !field.protoType) {
-              throw new Error(`Invalid configuration file: input field ${j+1} in step ${i+1} is missing required properties (name, type, protoType)`);
-            }
-            // Validate that field.type is a valid Java scalar type or custom message type from a previous step
-            if (!isValidFieldType(field.type, i)) {
-              // Additional check to log what specifically is wrong with the type
-              console.error(`Invalid field type detected: "${field.type}" in step ${i+1}, input field ${j+1}`);
-              console.error(`Type length: ${field.type.length}, ends with: "${field.type.slice(-10)}"`);
-              throw new Error(`Invalid configuration file: input field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are Java scalar types or custom message types defined in previous steps.`);
-            }
-          }
-          
-          for (let j = 0; j < step.outputFields.length; j++) {
-            const field = step.outputFields[j];
-            if (!field.name || !field.type || !field.protoType) {
-              throw new Error(`Invalid configuration file: output field ${j+1} in step ${i+1} is missing required properties (name, type, protoType)`);
-            }
-            // Validate that field.type is a valid Java scalar type or custom message type from a previous step
-            if (!isValidFieldType(field.type, i)) {
-              // Additional check to log what specifically is wrong with the type
-              console.error(`Invalid field type detected: "${field.type}" in step ${i+1}, output field ${j+1}`);
-              console.error(`Type length: ${field.type.length}, ends with: "${field.type.slice(-10)}"`);
-              throw new Error(`Invalid configuration file: output field ${j+1} in step ${i+1} has invalid type '${field.type}'. Valid types are Java scalar types or custom message types defined in previous steps.`);
-            }
-          }
-          
-          // Set stepType based on cardinality
-          if (!step.stepType) {
-            switch (step.cardinality) {
-              case 'EXPANSION':
-                step.stepType = 'StepOneToMany';
-                break;
-              case 'REDUCTION':
-                step.stepType = 'StepManyToOne';
-                break;
-              case 'SIDE_EFFECT':
-                step.stepType = 'StepSideEffect';
-                break;
-              default:
-                step.stepType = 'StepOneToOne';
-                break;
-            }
-          }
-          
-          // For Side-Effect steps, ensure input and output types are aligned
-          if (step.cardinality === 'SIDE_EFFECT') {
-            step.outputTypeName = step.inputTypeName;
-            step.outputTypeSimpleName = step.inputTypeSimpleName;
-            step.outputFields = [...step.inputFields];
-          }
-        }
-        
-        config = data;
-        currentStepIndex = -1;
-        showInputForm = false;
-      } catch (e) {
-        alert('Error parsing YAML file: ' + e.message);
-      }
+      showUploadConfirmDialogIfNeeded(file);
     }
+  }
+  
+  // Handle upload confirmation dialog confirm
+  function handleUploadConfirm() {
+    showUploadConfirmDialog = false;
+    if (pendingUploadFile) {
+      processUpload(pendingUploadFile);
+      pendingUploadFile = null;
+    }
+  }
+  
+  // Handle upload confirmation dialog cancel
+  function handleUploadCancel() {
+    showUploadConfirmDialog = false;
+    pendingUploadFile = null;
   }
 
   // Update step type when cardinality changes
-  function updateStepType(stepIndex) {
+  function updateStepType(stepIndex, newValue) {
     const step = config.steps[stepIndex];
+    const oldValue = step.cardinality;
+    prevCardinality.set(stepIndex, oldValue);
+    step.cardinality = newValue;
     
     // Check if we're converting to SIDE_EFFECT and there are existing output fields
     if (step.cardinality === 'SIDE_EFFECT' && step.outputFields && step.outputFields.length > 0) {
@@ -828,10 +947,13 @@
   // Handle confirmation dialog cancel
   function handleConfirmationCancel() {
     showConfirmationDialog = false;
-    // Reset the select box to the previous value if needed
     if (pendingStepIndex !== -1) {
       const step = config.steps[pendingStepIndex];
-      // We don't actually need to reset the UI since the user canceled
+      const old = prevCardinality.get(pendingStepIndex);
+      if (old) step.cardinality = old;
+      prevCardinality.delete(pendingStepIndex);
+      config.steps[pendingStepIndex] = { ...step };
+      config = { ...config };
       pendingStepIndex = -1;
       pendingCardinality = '';
     }
@@ -844,63 +966,33 @@
     }
   }
   
-  // Run cleanup when component unmounts
-  $: if (isDestroyed) {
-    cleanup();
-  }
-  
-  let isDestroyed = false;
-  
   // Set up cleanup for component destruction
   onMount(() => {
     return () => {
-      isDestroyed = true;
       cleanup();
     };
   });
 </script>
 
-<main class="flex h-screen bg-gray-100">
-  <!-- Metadata sidebar -->
-  <div class="w-64 bg-white shadow-lg p-4 overflow-y-auto flex flex-col">
-    <h1 class="text-xl font-bold mb-6 text-center">Pipeline Canvas</h1>
-    
-    <div class="flex-grow">
-      <button 
-        on:click={downloadApplication}
-        class="w-full mb-3 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm disabled:opacity-50"
-        disabled={isGenerating}
-      >
-        {isGenerating ? 'Generating...' : 'Download Complete Java Application'}
-      </button>
-      
-      <div class="mb-4">
-        <label class="block text-sm font-medium text-gray-700 mb-1">Upload Config:</label>
-        <input 
-          type="file" 
-          accept=".yaml,.yml"
-          on:change={handleFileUpload}
-          class="w-full text-sm"
-        />
-      </div>
-    </div>
-    
-    <div class="mt-auto pt-4 border-t border-gray-200">
-      <div class="mb-3">
+<main class="flex flex-col h-screen bg-gray-100">
+  <!-- App Name and Package Headers -->
+  <div class="p-4 bg-white shadow-sm">
+    <div class="flex flex-col md:flex-row md:items-center gap-4">
+      <div class="flex-1">
         <label class="block text-sm font-medium text-gray-700 mb-1">App Name</label>
         <input 
           type="text" 
           bind:value={config.appName}
-          class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />
       </div>
       
-      <div class="mb-3">
+      <div class="flex-1">
         <label class="block text-sm font-medium text-gray-700 mb-1">Base Package</label>
         <input 
           type="text" 
           bind:value={config.basePackage}
-          class="w-full px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
         />
       </div>
     </div>
@@ -912,69 +1004,110 @@
       {#if config.steps.length === 0}
         <div class="flex flex-col items-center justify-center h-full text-gray-500">
           <p class="text-lg mb-4">No steps yet. Add your first step to get started.</p>
-          <button 
-            on:click={addStep}
-            class="w-16 h-16 rounded-full bg-blue-600 text-white text-3xl flex items-center justify-center hover:bg-blue-700 shadow-lg"
-          >
-            +
-          </button>
+          
+          <div class="flex flex-col items-center">
+            <button 
+              on:click={addStep}
+              class="w-16 h-16 rounded-full bg-blue-600 text-white text-3xl flex items-center justify-center hover:bg-blue-700 shadow-lg flex-shrink-0 mb-4"
+            >
+              +
+            </button>
+            
+            <p class="text-gray-500 my-2">-- OR --</p>
+            
+            <div class="flex flex-col items-center">
+              <label class="text-sm text-gray-700 mb-1">Upload Config:</label>
+              <input 
+                type="file" 
+                accept=".yaml,.yml"
+                on:change={handleFileUpload}
+                class="w-full text-sm"
+              />
+            </div>
+          </div>
         </div>
       {:else}
-        <div class="flex items-center mt-8">
-          {#each config.steps as step, index}
-            <div class="flex flex-col items-center">
-              <StepArrow 
-                {step} 
-                {index}
-                isAnimating={index === animatedStepIndex}
-                on:clickStep={(e) => handleStepClick(e.detail.index, e.detail.side)}
-              />
-              
-              <!-- Step controls -->
-              <div class="mt-1 flex flex-col items-center">
-                <select 
-                  bind:value={step.cardinality}
-                  on:change={() => updateStepType(index)}
-                  class="text-xs px-1 py-1 border border-gray-300 rounded"
-                >
-                  {#each cardinalityOptions as option}
-                    <option value={option.value}>{option.label}</option>
-                  {/each}
-                </select>
-                <div class="flex space-x-1 mt-1">
-                  <input 
-                    type="text" 
-                    bind:value={step.name}
-                    class="text-xs w-20 px-1 py-1 border border-gray-300 rounded"
-                  />
-                  <button 
-                    on:click={() => removeStep(index)}
-                    class="text-xs px-1.5 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+        <!-- Container for steps - flex row for desktop, flex column for mobile -->
+        <div class="w-full flex justify-center">
+          <div class="flex md:flex-row flex-col items-center mt-8 w-full max-w-6xl overflow-x-auto pb-4">
+            {#each config.steps as step, index}
+              <div class="flex flex-col items-center my-2 mx-2 flex-shrink-0">
+                <StepArrow 
+                  {step} 
+                  {index}
+                  isAnimating={index === animatedStepIndex}
+                  on:clickStep={(e) => handleStepClick(e.detail.index, e.detail.side)}
+                />
+                
+                <!-- Step controls -->
+                <div class="mt-1 flex flex-col items-center">
+                  <select 
+                    value={step.cardinality}
+                    on:change={(e) => updateStepType(index, e.currentTarget.value)}
+                    class="text-xs px-1 py-1 border border-gray-300 rounded"
                   >
-                    Del
-                  </button>
+                    {#each cardinalityOptions as option}
+                      <option value={option.value}>{option.label}</option>
+                    {/each}
+                  </select>
+                  <div class="flex space-x-1 mt-1">
+                    <input 
+                      type="text" 
+                      bind:value={step.name}
+                      class="text-xs w-20 px-1 py-1 border border-gray-300 rounded"
+                    />
+                    <button 
+                      on:click={() => removeStep(index)}
+                      class="text-xs px-1.5 py-1 bg-red-600 text-white rounded hover:bg-red-700"
+                    >
+                      Del
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-            
-            <!-- Connector between steps -->
-            {#if index < config.steps.length - 1}
-              <Connector 
-                stepIndex={index + 1}
-                on:clickConnector={(e) => handleConnectorClick(e.detail.stepIndex, e.detail.side, e.detail.sharedType)}
-                sharedType={step.outputTypeName}
-              />
-            {:else}
-              <!-- Add Step button at the end -->
-              <button 
-                on:click={addStep}
-                class="w-12 h-12 rounded-full bg-blue-600 text-white text-2xl flex items-center justify-center hover:bg-blue-700 shadow-lg ml-4 self-center"
-                title="Add Step"
-              >
-                +
-              </button>
-            {/if}
-          {/each}
+              
+              <!-- Connector between steps -->
+              {#if index < config.steps.length - 1}
+                <Connector 
+                  stepIndex={index + 1}
+                  on:clickConnector={(e) => handleConnectorClick(e.detail.stepIndex, e.detail.side, e.detail.sharedType)}
+                  sharedType={step.outputTypeName}
+                  class="md:mx-4 my-2"
+                />
+              {:else}
+                <!-- Add Step button at the end -->
+                <div class="flex flex-col items-center ml-4 my-2">
+                  <button 
+                    on:click={addStep}
+                    class="w-12 h-12 rounded-full bg-blue-600 text-white text-2xl flex items-center justify-center hover:bg-blue-700 shadow-lg flex-shrink-0"
+                    title="Add Step"
+                  >
+                    +
+                  </button>
+                  <div class="mt-2 flex flex-col items-center">
+                    <label class="text-xs text-gray-700 mb-1">Upload Config:</label>
+                    <input 
+                      type="file" 
+                      accept=".yaml,.yml"
+                      on:change={handleFileUpload}
+                      class="w-full text-xs"
+                    />
+                  </div>
+                </div>
+              {/if}
+            {/each}
+          </div>
+        </div>
+        
+        <!-- Download button below the steps -->
+        <div class="mt-8 w-full max-w-4xl flex justify-center">
+          <button 
+            on:click={downloadApplication}
+            class="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-base disabled:opacity-50 w-full max-w-xs"
+            disabled={isGenerating}
+          >
+            {isGenerating ? 'Generating...' : 'Download Complete Java Application'}
+          </button>
         </div>
       {/if}
     </div>
@@ -1010,4 +1143,83 @@
     on:confirm={handleConfirmationConfirm}
     on:cancel={handleConfirmationCancel}
   />
+  
+  <!-- App Info Dialog -->
+  <div 
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    class:hidden={!showAppInfoDialog}
+  >
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div class="p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Application Information</h3>
+        <p class="text-gray-600 mb-4">Please provide the required information to generate your application:</p>
+        
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">App Name</label>
+            <input 
+              type="text" 
+              bind:value={appInfoAppName}
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="My Pipeline App"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Base Package</label>
+            <input 
+              type="text" 
+              bind:value={appInfoBasePackage}
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              placeholder="com.example.mypipeline"
+            />
+          </div>
+        </div>
+        
+        <div class="mt-6 flex justify-end space-x-3">
+          <button
+            on:click={handleAppInfoCancel}
+            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            on:click={handleAppInfoConfirm}
+            class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700"
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Upload Confirmation Dialog -->
+  <div 
+    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+    class:hidden={!showUploadConfirmDialog}
+  >
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+      <div class="p-6">
+        <h3 class="text-lg font-medium text-gray-900 mb-2">Confirm Upload</h3>
+        <p class="text-gray-600 mb-4">Uploading a new configuration will replace your current pipeline steps. Are you sure you want to continue?</p>
+        <p class="text-sm text-gray-500 mb-4">Note: You can save your current configuration before proceeding if needed.</p>
+        
+        <div class="mt-6 flex justify-end space-x-3">
+          <button
+            on:click={handleUploadCancel}
+            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancel
+          </button>
+          <button
+            on:click={handleUploadConfirm}
+            class="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
+          >
+            Yes, Replace Steps
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 </main>

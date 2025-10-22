@@ -21,7 +21,7 @@ import adapter from '@sveltejs/adapter-static';
 export default defineConfig({
 	plugins: [sveltekit()],
 	build: {
-		minify: false, // Disable minification to reduce memory usage
+		minify: 'esbuild', // fast and low memory
 		rollupOptions: {
 			output: {
 				// Reduce memory usage during build
@@ -31,6 +31,9 @@ export default defineConfig({
 		},
 		// Reduce memory usage
 		target: 'es2020',
+		// Limit memory usage during build
+		ssr: false,
+		assetsInlineLimit: 0 // prevents embedding large assets in JS bundles
 	},
 	kit: {
 		adapter: adapter({
@@ -41,7 +44,7 @@ export default defineConfig({
 			strict: false
 		}),
 		prerender: {
-			concurrency: 4,
+			concurrency: 1, // Reduce concurrency to save memory
 			handleHttpError: ({ path, referrer, message }) => {
 				// Ignore favicon errors
 				if (path === '/favicon.png') {

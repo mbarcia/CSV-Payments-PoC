@@ -28,12 +28,12 @@ const nodeGeneratorPath = path.join(__dirname, '../template-generator-node');
 const templatesDir = path.join(nodeGeneratorPath, './templates');
 const webUiBundlePath = path.join(__dirname, './static/browser-bundle.js');
 
-try {
 // Read all .hbs files from the Node.js generator templates directory
+let templates = {};
+try {
 const templateFiles = fs.readdirSync(templatesDir);
 
 // Create a JavaScript object with all templates
-const templates = {};
 for (const file of templateFiles) {
     if (file.endsWith('.hbs')) {
         const templateName = path.basename(file, '.hbs');

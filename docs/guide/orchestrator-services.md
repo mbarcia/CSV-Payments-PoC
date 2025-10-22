@@ -116,7 +116,7 @@ The generated orchestrator includes comprehensive configuration:
 
 ```properties
 # orchestrator-svc/src/main/resources/application.properties
-quarkus.package.main-class=com.example.sample.orchestrator.OrchestratorApplication
+quarkus.package.main-class=com.example.app.orchestrator.OrchestratorApplication
 
 # Pipeline Configuration
 pipeline.runtime.retry-limit=10
@@ -154,16 +154,16 @@ public class OrchestratorApplication implements QuarkusApplication {
     // ... other code ...
 
     // After template generation, implement this method to provision inputs:
-    private static Multi<{{firstInputTypeName}}> getInputMulti(String input) {
+    private static Multi<CustomerInput> getInputMulti(String input) {
         // Example implementation:
         // 1. Parse input string for file paths, database queries, or other input sources
         // 2. Convert to the appropriate domain objects for your pipeline
         // 3. Return a Multi stream of these objects
         
         // For example, if your input is a CSV file path:
-        List<{{firstInputTypeName}}> inputList = new ArrayList<>();
+        List<CustomerInput> inputList = new ArrayList<>();
         try (BufferedReader reader = Files.newBufferedReader(Paths.get(input))) {
-            // Process CSV and create {{firstInputTypeName}} objects
+            // Process CSV and create CustomerInput objects
             // inputList.add(...);
         } catch (IOException e) {
             throw new RuntimeException("Error reading input file", e);
@@ -225,7 +225,7 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     // Execute the pipeline when arguments are properly parsed
     private void executePipelineWithInput(String input) {
-        Multi<{{firstInputTypeName}}> inputMulti = // call getInputMulti(input) or custom input processing;
+        Multi<CustomerInput> inputMulti = // call getInputMulti(input) or custom input processing;
 
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti)
@@ -236,8 +236,8 @@ public class OrchestratorApplication implements QuarkusApplication {
     }
 
     // Implement this method to provision inputs:
-    private static Multi<{{firstInputTypeName}}> getInputMulti(String input) {
-        // Your implementation to convert input to Multi<{{firstInputTypeName}}>
+    private static Multi<CustomerInput> getInputMulti(String input) {
+        // Your implementation to convert input to Multi<CustomerInput>
         throw new UnsupportedOperationException("Method needs to be implemented");
     }
 }
@@ -307,7 +307,7 @@ public class CustomOrchestratorApplication implements QuarkusApplication {
 
     // Execute the pipeline when arguments are properly parsed
     private void executePipelineWithInput(String inputSource) {
-        Multi<{{firstInputTypeName}}> inputMulti = getInputMulti(inputSource);
+        Multi<CustomerInput> inputMulti = getInputMulti(inputSource);
 
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti)
@@ -318,7 +318,7 @@ public class CustomOrchestratorApplication implements QuarkusApplication {
     }
 
     // Implementation to convert your input into Multi stream
-    private static Multi<{{firstInputTypeName}}> getInputMulti(String inputSource) {
+    private static Multi<CustomerInput> getInputMulti(String inputSource) {
         // Custom input processing logic specific to your requirements
         // For example, reading from different sources: database, message queues, files, etc.
         throw new UnsupportedOperationException("Method getInputMulti needs to be implemented with custom logic");

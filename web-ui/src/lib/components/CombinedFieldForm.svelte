@@ -1,8 +1,24 @@
+<!--
+  - Copyright (c) 2023-2025 Mariano Barcia
+  -
+  - Licensed under the Apache License, Version 2.0 (the "License");
+  - you may not use this file except in compliance with the License.
+  - You may obtain a copy of the License at
+  -
+  -     http://www.apache.org/licenses/LICENSE-2.0
+  -
+  - Unless required by applicable law or agreed to in writing, software
+  - distributed under the License is distributed on an "AS IS" BASIS,
+  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  - See the License for the specific language governing permissions and
+  - limitations under the License.
+  -->
+
 <script>
-  import { onMount, createEventDispatcher } from 'svelte';
-  import GenericTypeConfigPopup from './GenericTypeConfigPopup.svelte';
-  
-  const dispatch = createEventDispatcher();
+    import {createEventDispatcher, onMount} from 'svelte';
+    import GenericTypeConfigPopup from './GenericTypeConfigPopup.svelte';
+
+    const dispatch = createEventDispatcher();
 
   export let step;
   export let stepIndex;
@@ -136,8 +152,8 @@
         <label class="block text-sm font-medium text-gray-700 mb-1">Step Name</label>
         <input
           type="text"
-          bind:value={step.name}
-          on:input={() => dispatch('stepNameChange', { stepIndex, name: step.name })}
+          value={step.name}
+          on:input={(e) => dispatch('stepNameChange', { stepIndex, name: e.target.value })}
           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="Enter step name"
         />
@@ -153,8 +169,8 @@
               <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
               <input 
                 type="text" 
-                bind:value={step.inputTypeName}
-                on:input={() => dispatch('typeChange', { property: 'inputTypeName', value: step.inputTypeName })}
+                value={step.inputTypeName}
+                on:input={(e) => dispatch('typeChange', { property: 'inputTypeName', value: e.target.value })}
                 class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -177,13 +193,13 @@
                   <div class="flex items-center gap-2">
                     <input 
                       type="text" 
-                      bind:value={field.name}
-                      on:input={() => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'name', value: field.name })}
+                      value={field.name}
+                      on:input={(e) => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'name', value: e.target.value })}
                       class="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       placeholder="Field name"
                     />
                     <select 
-                      bind:value={field.type}
+                      value={field.type}
                       on:change={(e) => {
                         const selectedType = e.target.value;
                         if (selectedType === 'List' || selectedType === 'Map') {
@@ -228,8 +244,8 @@
               <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
               <input 
                 type="text" 
-                bind:value={step.outputTypeName}
-                on:input={() => dispatch('typeChange', { property: 'outputTypeName', value: step.outputTypeName })}
+                value={step.outputTypeName}
+                on:input={(e) => dispatch('typeChange', { property: 'outputTypeName', value: e.target.value })}
                 class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -252,13 +268,13 @@
                   <div class="flex items-center gap-2">
                     <input 
                       type="text" 
-                      bind:value={field.name}
-                      on:input={() => dispatch('updateField', { type: 'output', index: fieldIndex, property: 'name', value: field.name })}
+                      value={field.name}
+                      on:input={(e) => dispatch('updateField', { type: 'output', index: fieldIndex, property: 'name', value: e.target.value })}
                       class="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       placeholder="Field name"
                     />
                     <select 
-                      bind:value={field.type}
+                      value={field.type}
                       on:change={(e) => {
                         const selectedType = e.target.value;
                         if (selectedType === 'List' || selectedType === 'Map') {
@@ -327,13 +343,13 @@
                 <div class="flex items-center gap-2">
                   <input 
                     type="text" 
-                    bind:value={field.name}
-                    on:input={() => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'name', value: field.name })}
+                    value={field.name}
+                    on:input={(e) => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'name', value: e.target.value })}
                     class="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder="Field name"
                   />
                   <select 
-                    bind:value={field.type}
+                    value={field.type}
                     on:change={(e) => {
                       const selectedType = e.target.value;
                       if (selectedType === 'List' || selectedType === 'Map') {
@@ -381,16 +397,16 @@
             <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
             <input 
               type="text" 
-              bind:value={step.inputTypeName}
-              on:input={() => dispatch('typeChange', { property: 'inputTypeName', value: step.inputTypeName })}
+              value={step.inputTypeName}
+              on:input={(e) => dispatch('typeChange', { property: 'inputTypeName', value: e.target.value })}
               class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {:else}
             <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
             <input 
               type="text" 
-              bind:value={step.outputTypeName}
-              on:input={() => dispatch('typeChange', { property: 'outputTypeName', value: step.outputTypeName })}
+              value={step.outputTypeName}
+              on:input={(e) => dispatch('typeChange', { property: 'outputTypeName', value: e.target.value })}
               class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {/if}
@@ -414,13 +430,13 @@
                 <div class="flex items-center gap-2">
                   <input 
                     type="text" 
-                    bind:value={field.name}
-                    on:input={() => dispatch('updateField', { type: formType, index: fieldIndex, property: 'name', value: field.name })}
+                    value={field.name}
+                    on:input={(e) => dispatch('updateField', { type: formType, index: fieldIndex, property: 'name', value: e.target.value })}
                     class="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder="Field name"
                   />
                   <select 
-                    bind:value={field.type}
+                    value={field.type}
                     on:change={(e) => {
                       const selectedType = e.target.value;
                       if (selectedType === 'List' || selectedType === 'Map') {

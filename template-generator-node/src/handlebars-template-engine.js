@@ -19,9 +19,10 @@ const path = require('path');
 const Handlebars = require('handlebars');
 
 // Register helper for replacing characters in strings
-Handlebars.registerHelper('replace', function(str, find, replace) {
-    if (typeof str !== 'string') return str;
-    return str.replace(new RegExp(find, 'g'), replace);
+Handlebars.registerHelper('replace', function(str, find, repl) {
+    if (typeof str !== 'string' || typeof find !== 'string') return str;
+    // Literal global replace
+    return str.split(find).join(repl);
 });
 
 // Register helper for converting to lowercase
@@ -62,21 +63,26 @@ Handlebars.registerHelper('listInnerType', function(type) {
     if (!type || !type.startsWith('List<') || !type.endsWith('>')) {
         return type;
     }
-    return type.substring(5, type.length - 1).toLowerCase();
+    return type.substring(5, type.length - 1).trim();
 });
 
 // Register helper for checking if a type is a map
 Handlebars.registerHelper('isMapType', function(type) {
-    return type && type.startsWith('Map<') && type.includes(', ');
+    if (!type || !type.startsWith('Map<') || !type.endsWith('>')) {
+        return false;
+    }
+    // Check if there's a comma inside the brackets
+    const innerContent = type.substring(4, type.length - 1);
+    return innerContent.includes(',');
 });
 
 // Register helper for extracting map key and value types
 // Register helper for extracting map key and value types
 Handlebars.registerHelper('mapKeyType', function(type) {
-    if (!type || !type.startsWith('Map<') || !type.includes(', ') || !type.endsWith('>')) {
+    if (!type || !type.startsWith('Map<') || !type.includes(',') || !type.endsWith('>')) {
         return 'string';
     }
-    const parts = type.substring(4, type.length - 1).split(', ');
+    const parts = type.substring(4, type.length - 1).split(',').map(s => s.trim());
     let keyType = parts[0] || 'string';
     // Convert Java types to protobuf types
     switch(keyType) {
@@ -88,6 +94,8 @@ Handlebars.registerHelper('mapKeyType', function(type) {
             return 'int64';
         case 'Double':
             return 'double';
+        case 'Float':
+            return 'float';
         case 'Boolean':
             return 'bool';
         case 'UUID':
@@ -127,16 +135,22 @@ Handlebars.registerHelper('mapKeyType', function(type) {
         case 'List<String>':
             return 'string';
         default:
-            return keyType.toLowerCase();
+            // Keys must be scalar; fall back to string
+            return 'string';
     }
 });
 
 // Register helper for extracting map value type
 Handlebars.registerHelper('mapValueType', function(type) {
-    if (!type || !type.startsWith('Map<') || !type.includes(', ') || !type.endsWith('>')) {
+    if (!type || !type.startsWith('Map<') || !type.endsWith('>')) {
         return 'string';
     }
-    const parts = type.substring(4, type.length - 1).split(', ');
+    // Check if there's a comma inside the brackets
+    const innerContent = type.substring(4, type.length - 1);
+    if (!innerContent.includes(',')) {
+        return 'string';
+    }
+    const parts = innerContent.split(',').map(s => s.trim());
     let valueType = parts[1] || 'string';
     // Convert Java types to protobuf types
     switch(valueType) {
@@ -148,6 +162,8 @@ Handlebars.registerHelper('mapValueType', function(type) {
             return 'int64';
         case 'Double':
             return 'double';
+        case 'Float':
+            return 'float';
         case 'Boolean':
             return 'bool';
         case 'UUID':
@@ -187,7 +203,8 @@ Handlebars.registerHelper('mapValueType', function(type) {
         case 'List<String>':
             return 'string';
         default:
-            return valueType.toLowerCase();
+            // Preserve message type names as-is
+            return valueType;
     }
 });
 
@@ -242,7 +259,7 @@ Handlebars.registerHelper('hasUtilFields', function(fields) {
 // Register helper to check if any field is a map type
 Handlebars.registerHelper('hasMapFields', function(fields) {
     if (!Array.isArray(fields)) return false;
-    return fields.some(field => field.type.startsWith('Map<'));
+    return fields.some(field => field && typeof field.type === 'string' && field.type.startsWith('Map<'));
 });
 
 Handlebars.registerHelper('hasIdField', function(fields) {
@@ -498,7 +515,7 @@ class HandlebarsTemplateEngine {
                 hasIoFields: this.hasImportFlag(step.inputFields, ['File']),
                 hasAtomicFields: this.hasImportFlag(step.inputFields, ['AtomicInteger', 'AtomicLong']),
                 hasUtilFields: this.hasImportFlag(step.inputFields, ['List<String>']),
-                hasMapFields: step.inputFields.some(field => field.type.startsWith('Map<')),
+                hasMapFields: this.hasMapType(step.inputFields),
                 hasIdField: step.inputFields.some(field => field.name === 'id')
             };
 
@@ -523,7 +540,7 @@ class HandlebarsTemplateEngine {
                 hasIoFields: this.hasImportFlag(step.outputFields, ['File']),
                 hasAtomicFields: this.hasImportFlag(step.outputFields, ['AtomicInteger', 'AtomicLong']),
                 hasUtilFields: this.hasImportFlag(step.outputFields, ['List<String>']),
-                hasMapFields: step.outputFields.some(field => field.type.startsWith('Map<')),
+                hasMapFields: this.hasMapType(step.outputFields),
                 hasIdField: step.outputFields.some(field => field.name === 'id')
             };
 
@@ -557,7 +574,7 @@ class HandlebarsTemplateEngine {
                 hasIoFields: this.hasImportFlag(step.inputFields, ['File']),
                 hasAtomicFields: this.hasImportFlag(step.inputFields, ['AtomicInteger', 'AtomicLong']),
                 hasUtilFields: this.hasImportFlag(step.inputFields, ['List<String>']),
-                hasMapFields: step.inputFields.some(field => field.type.startsWith('Map<')),
+                hasMapFields: this.hasMapType(step.inputFields),
                 hasIdField: step.inputFields.some(field => field.name === 'id')
             };
 
@@ -582,7 +599,7 @@ class HandlebarsTemplateEngine {
                 hasIoFields: this.hasImportFlag(step.outputFields, ['File']),
                 hasAtomicFields: this.hasImportFlag(step.outputFields, ['AtomicInteger', 'AtomicLong']),
                 hasUtilFields: this.hasImportFlag(step.outputFields, ['List<String>']),
-                hasMapFields: step.outputFields.some(field => field.type.startsWith('Map<')),
+                hasMapFields: this.hasMapType(step.outputFields),
                 hasIdField: step.outputFields.some(field => field.name === 'id')
             };
 
@@ -627,9 +644,13 @@ class HandlebarsTemplateEngine {
     }
 
     async generateStepService(appName, basePackage, step, outputPath, stepIndex, allSteps) {
-        const stepPath = path.join(outputPath, step.serviceName);
+        const safeServiceName = String(step.serviceName || '')
+          .toLowerCase()
+          .replace(/[^a-z0-9\-_]/g, '');
+        if (!safeServiceName) throw new Error('Invalid service name');
+        const stepPath = path.join(outputPath, safeServiceName);
         // Convert hyphens to underscores for valid Java package names
-        const serviceNameForPackage = step.serviceName.replace('-svc', '').replace(/-/g, '_');
+        const serviceNameForPackage = safeServiceName.replace('-svc', '').replace(/-/g, '_');
         await fs.ensureDir(path.join(stepPath, 'src/main/java', this.toPath(basePackage + '.' + serviceNameForPackage + '.service')));
 
         // Add rootProjectName to step map
@@ -675,9 +696,11 @@ class HandlebarsTemplateEngine {
         }
 
         // Use the serviceNameCamel field from the configuration to form the gRPC class names
-        const serviceNameCamel = step.serviceNameCamel;
+        const serviceNameCamel = step.serviceNameCamel ?? (step.serviceName || '').replace(/-svc$/, '').replace(/-([a-z])/g, (_, c) => c.toUpperCase());
         // Convert camelCase to PascalCase
-        const serviceNamePascal = serviceNameCamel.charAt(0).toUpperCase() + serviceNameCamel.slice(1);
+        const serviceNamePascal = serviceNameCamel
+          ? serviceNameCamel.charAt(0).toUpperCase() + serviceNameCamel.slice(1)
+          : this.formatForProtoClassName(step.serviceName);
 
         // Extract the entity name from the PascalCase service name to match proto service names
         const entityName = this.extractEntityName(serviceNamePascal);
@@ -797,23 +820,25 @@ class HandlebarsTemplateEngine {
         const upDockerContent = this.render('up-docker', context);
         const upDockerPath = path.join(outputPath, 'up-docker.sh');
         await fs.writeFile(upDockerPath, upDockerContent);
-        await fs.chmod(upDockerPath, '755'); // Make executable
+        await fs.chmod(upDockerPath, 0o755); // Make executable
 
         // Generate down-docker.sh
         const downDockerContent = this.render('down-docker', context);
         const downDockerPath = path.join(outputPath, 'down-docker.sh');
         await fs.writeFile(downDockerPath, downDockerContent);
-        await fs.chmod(downDockerPath, '755'); // Make executable
+        await fs.chmod(downDockerPath, 0o755); // Make executable
 
         // Generate up-local.sh
         const upLocalContent = this.render('up-local', context);
         const upLocalPath = path.join(outputPath, 'up-local.sh');
         await fs.writeFile(upLocalPath, upLocalContent);
+        await fs.chmod(upLocalPath, 0o755); // Make executable
 
         // Generate down-local.sh
         const downLocalContent = this.render('down-local', context);
         const downLocalPath = path.join(outputPath, 'down-local.sh');
         await fs.writeFile(downLocalPath, downLocalContent);
+        await fs.chmod(downLocalPath, 0o755); // Make executable
     }
 
     async generateObservabilityConfigs(outputPath) {
@@ -850,7 +875,7 @@ class HandlebarsTemplateEngine {
         const mvnwContent = this.render('mvnw', context);
         const mvnwPath = path.join(outputPath, 'mvnw');
         await fs.writeFile(mvnwPath, mvnwContent);
-        await fs.chmod(mvnwPath, '755'); // Make executable
+        await fs.chmod(mvnwPath, 0o755); // Make executable
 
         // Create mvnw.cmd (Windows)
         const mvnwCmdContent = this.render('mvnw-cmd', context);
@@ -914,7 +939,7 @@ wrapperUrl=https://repo.maven.apache.org/maven2/org/apache/maven/wrapper/maven-w
 
     hasMapType(fields) {
         if (!Array.isArray(fields)) return false;
-        return fields.some(field => field.type.startsWith('Map<'));
+        return fields.some(field => field && typeof field.type === 'string' && field.type.startsWith('Map<'));
     }
 
     formatForClassName(input) {

@@ -1,8 +1,24 @@
-<script>
-  import { onMount } from 'svelte';
-  import GenericTypeConfigPopup from './GenericTypeConfigPopup.svelte';
+<!--
+  - Copyright (c) 2023-2025 Mariano Barcia
+  -
+  - Licensed under the Apache License, Version 2.0 (the "License");
+  - you may not use this file except in compliance with the License.
+  - You may obtain a copy of the License at
+  -
+  -     http://www.apache.org/licenses/LICENSE-2.0
+  -
+  - Unless required by applicable law or agreed to in writing, software
+  - distributed under the License is distributed on an "AS IS" BASIS,
+  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  - See the License for the specific language governing permissions and
+  - limitations under the License.
+  -->
 
-  export let fields = [];
+<script>
+    import {onMount} from 'svelte';
+    import GenericTypeConfigPopup from './GenericTypeConfigPopup.svelte';
+
+    export let fields = [];
   // Default to Java-centered types if no fieldTypes provided
   export let fieldTypes = [
     'String', 'Integer', 'Long', 'Double', 'Boolean', 
@@ -60,9 +76,8 @@
       // Show the generic type configuration popup
       showGenericConfig = true;
       
-      // Prevent the field type from being updated to just 'List' or 'Map'
-      // We'll update it with the full generic type (e.g., 'List<String>') after confirmation
-      return false;
+      // Don't update the field type to just 'List' or 'Map'
+      // We'll update it with the full generic type (e.g., 'List<String>') after confirmation from the popup
     } else {
       // For non-generic types, update directly
       onUpdateField?.(fieldIndex, 'type', newType);
@@ -112,14 +127,14 @@
               <div class="flex items-center gap-2">
                 <input 
                   type="text" 
-                  bind:value={field.name}
-                  on:input={() => onUpdateField?.(fieldIndex, 'name', field.name)}
+                  value={field.name}
+                  on:input={(e) => onUpdateField?.(fieldIndex, 'name', e.target.value)}
                   class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Field name"
                 />
                 <select 
-                  bind:value={field.type}
-                  on:change={(e) => handleTypeChange(fieldIndex, e.target.value)}
+                  value={field?.type ?? ''}
+                  on:change={(e) => handleTypeChange(fieldIndex, e.currentTarget.value)}
                   class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   {#each fieldTypes as fieldType}

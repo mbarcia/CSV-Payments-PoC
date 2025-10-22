@@ -242,27 +242,29 @@ Create mapper classes for converting between gRPC, DTO, and domain types using M
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN
 )
-public interface CustomerInputMapper extends Mapper<CustomerInputGrpc, CustomerInputDto, CustomerInput> {
+public interface CsvPaymentsInputFileMapper extends Mapper<InputCsvFileProcessingSvc.CsvPaymentsInputFile, CsvPaymentsInputFileDto, CsvPaymentsInputFile> {
 
-    CustomerInputMapper INSTANCE = Mappers.getMapper(CustomerInputMapper.class);
+    CsvPaymentsInputFileMapper INSTANCE = Mappers.getMapper(CsvPaymentsInputFileMapper.class);
 
     // Domain ↔ DTO
     @Override
-    CustomerInputDto toDto(CustomerInput domain);
+    CsvPaymentsInputFileDto toDto(CsvPaymentsInputFile domain);
 
     @Override
-    CustomerInput fromDto(CustomerInputDto dto);
+    CsvPaymentsInputFile fromDto(CsvPaymentsInputFileDto dto);
 
     // DTO ↔ gRPC
     @Override
     @Mapping(target = "id", qualifiedByName = "uuidToString")
-    @Mapping(target = "email", qualifiedByName = "stringToString")
-    CustomerInputGrpc toGrpc(CustomerInputDto dto);
+    @Mapping(target = "filepath", qualifiedByName = "pathToString")
+    @Mapping(target = "csvFolderPath", qualifiedByName = "pathToString")
+    InputCsvFileProcessingSvc.CsvPaymentsInputFile toGrpc(CsvPaymentsInputFileDto dto);
 
     @Override
     @Mapping(target = "id", qualifiedByName = "stringToUUID")
-    @Mapping(target = "email", qualifiedByName = "stringToString")
-    CustomerInputDto fromGrpc(CustomerInputGrpc grpc);
+    @Mapping(target = "filepath", qualifiedByName = "stringToPath")
+    @Mapping(target = "csvFolderPath", qualifiedByName = "stringToPath")
+    CsvPaymentsInputFileDto fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile grpc);
 }
 ```
 

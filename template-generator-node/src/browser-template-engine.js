@@ -57,7 +57,13 @@ Handlebars.registerHelper('isSideEffect', function(cardinality) {
 
 // Register helper for checking if a type is a list
 Handlebars.registerHelper('isListType', function(type) {
-    return type && type.startsWith('List<');
+    if (!type || typeof type !== 'string') return false;
+    
+    // Simple list check (for basic List)
+    if (type === 'List') return true;
+    
+    // Pattern check for generic List (e.g. List<String>, List<MyCustomType>)
+    return type.startsWith('List<');
 });
 
 // Register helper for extracting list inner type
@@ -65,7 +71,18 @@ Handlebars.registerHelper('listInnerType', function(type) {
     if (!type || !type.startsWith('List<') || !type.endsWith('>')) {
         return type;
     }
-    return type.substring(5, type.length - 1).toLowerCase();
+    return type.substring(5, type.length - 1).trim();
+});
+
+// Register helper for checking if a type is a map
+Handlebars.registerHelper('isMapType', function(type) {
+    if (!type || typeof type !== 'string') return false;
+    
+    // Simple map check (for basic Map)
+    if (type === 'Map') return true;
+    
+    // Pattern check for generic Map (e.g. Map<String,Integer>, Map<MyKey,MyValue>)
+    return type.startsWith('Map<');
 });
 
 // Register helper for checking various import flags
@@ -173,7 +190,9 @@ class BrowserTemplateEngine {
             const previousStep = steps[i - 1];
             // Set the input type of the current step to the output type of the previous step
             currentStep.inputTypeName = previousStep.outputTypeName;
-            currentStep.inputFields = previousStep.outputFields; // Copy input fields from previous step's outputs
+            currentStep.inputFields = Array.isArray(previousStep.outputFields)
+              ? previousStep.outputFields.slice()
+              : previousStep.outputFields; // Shallow copy input fields from previous step's outputs
         }
 
         // Generate parent POM
@@ -482,9 +501,11 @@ class BrowserTemplateEngine {
         }
 
         // Use the serviceNameCamel field from the configuration to form the gRPC class names
-        const serviceNameCamel = step.serviceNameCamel;
+        const serviceNameCamel = step.serviceNameCamel ?? (step.serviceName || '').replace(/-svc$/, '').replace(/-([a-z])/g, (_, c) => c.toUpperCase());
         // Convert camelCase to PascalCase
-        const serviceNamePascal = serviceNameCamel.charAt(0).toUpperCase() + serviceNameCamel.slice(1);
+        const serviceNamePascal = serviceNameCamel
+          ? serviceNameCamel.charAt(0).toUpperCase() + serviceNameCamel.slice(1)
+          : this.formatForProtoClassName(step.serviceName);
 
         // Extract the entity name from the PascalCase service name to match proto service names
         const entityName = this.extractEntityName(serviceNamePascal);

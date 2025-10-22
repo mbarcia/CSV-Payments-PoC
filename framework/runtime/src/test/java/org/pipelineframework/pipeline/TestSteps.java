@@ -172,14 +172,13 @@ public class TestSteps {
          */
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
-            if (cause != null) {
-                LOG.info("Dead letter handled", cause);
-            } else {
-                LOG.info("Dead letter handled with null cause");
-            }
-            // For recovery, return the original item that was being processed
-            // The failedItem Uni contains the original input that caused the failure
-            return failedItem;
+            return failedItem
+                    .onItem()
+                    .invoke(
+                            item ->
+                                    LOG.infof(
+                                            "Dead letter handled for item: %s, cause: %s",
+                                            item, cause.getMessage()));
         }
 
         @Override

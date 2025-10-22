@@ -50,29 +50,32 @@ class ParallelProcessingSmokeTest {
         private final List<String> executionThreads = new java.util.ArrayList<>();
         private final List<String> results = new java.util.ArrayList<>();
 
-        public TestStepOneToOne() {
-        }
+        public TestStepOneToOne() {}
 
         @Override
         public Uni<String> applyOneToOne(String input) {
-            return Uni.createFrom().item(() -> {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-                
-                synchronized (this) {
-                    long ts = System.currentTimeMillis();
-                    String th = Thread.currentThread().getName();
-                    executionTimestamps.add(ts);
-                    executionThreads.add(th);
-                    int count = callCount.incrementAndGet();
-                    String result = "processed:" + input + "_count" + count;
-                    results.add(result);
-                    return result;
-                }
-            }).runSubscriptionOn(io.smallrye.mutiny.infrastructure.Infrastructure.getDefaultExecutor());
+            return Uni.createFrom()
+                    .item(
+                            () -> {
+                                try {
+                                    Thread.sleep(100);
+                                } catch (InterruptedException e) {
+                                    Thread.currentThread().interrupt();
+                                }
+
+                                synchronized (this) {
+                                    long ts = System.currentTimeMillis();
+                                    String th = Thread.currentThread().getName();
+                                    executionTimestamps.add(ts);
+                                    executionThreads.add(th);
+                                    int count = callCount.incrementAndGet();
+                                    String result = "processed:" + input + "_count" + count;
+                                    results.add(result);
+                                    return result;
+                                }
+                            })
+                    .runSubscriptionOn(
+                            io.smallrye.mutiny.infrastructure.Infrastructure.getDefaultExecutor());
         }
 
         public List<Long> getExecutionTimestamps() {
@@ -96,8 +99,7 @@ class ParallelProcessingSmokeTest {
         private final List<String> executionThreads = new java.util.ArrayList<>();
         private final List<String> results = new java.util.ArrayList<>();
 
-        public TestStepOneToOneCompletableFuture() {
-        }
+        public TestStepOneToOneCompletableFuture() {}
 
         @Override
         public CompletableFuture<String> applyAsync(String input) {
@@ -195,15 +197,22 @@ class ParallelProcessingSmokeTest {
         // Verify we have the expected number of executions
         assertEquals(3, executionThreads.size());
 
-        // (3) Assert total duration < 500 to prove parallel speedup (3 items * 100ms each sequentially = ~300ms, but with overhead and test environment variability)
+        // (3) Assert total duration < 500 to prove parallel speedup (3 items * 100ms each
+        // sequentially = ~300ms, but with overhead and test environment variability)
         long totalDuration = endTime - startTime;
-        assertTrue(totalDuration < 500, 
-                String.format("Expected parallel execution to be faster than sequential. Duration: %d ms", totalDuration));
+        assertTrue(
+                totalDuration < 500,
+                String.format(
+                        "Expected parallel execution to be faster than sequential. Duration: %d ms",
+                        totalDuration));
 
-        // (4) Assert at least two distinct thread names in executionThreads to prove work ran on multiple threads
+        // (4) Assert at least two distinct thread names in executionThreads to prove work ran on
+        // multiple threads
         long distinctThreadCount = executionThreads.stream().distinct().count();
-        assertTrue(distinctThreadCount >= 2, 
-                String.format("Expected at least 2 distinct threads, but got %d threads: %s", 
+        assertTrue(
+                distinctThreadCount >= 2,
+                String.format(
+                        "Expected at least 2 distinct threads, but got %d threads: %s",
                         distinctThreadCount, executionThreads));
     }
 
@@ -243,15 +252,22 @@ class ParallelProcessingSmokeTest {
         // Verify we have the expected number of executions
         assertEquals(3, executionThreads.size());
 
-        // (3) Assert total duration < 500 to prove parallel speedup (3 items * 100ms each sequentially = ~300ms, but with overhead and test environment variability)
+        // (3) Assert total duration < 500 to prove parallel speedup (3 items * 100ms each
+        // sequentially = ~300ms, but with overhead and test environment variability)
         long totalDuration = endTime - startTime;
-        assertTrue(totalDuration < 500, 
-                String.format("Expected parallel execution to be faster than sequential. Duration: %d ms", totalDuration));
+        assertTrue(
+                totalDuration < 500,
+                String.format(
+                        "Expected parallel execution to be faster than sequential. Duration: %d ms",
+                        totalDuration));
 
-        // (4) Assert at least two distinct thread names in executionThreads to prove work ran on multiple threads
+        // (4) Assert at least two distinct thread names in executionThreads to prove work ran on
+        // multiple threads
         long distinctThreadCount = executionThreads.stream().distinct().count();
-        assertTrue(distinctThreadCount >= 2, 
-                String.format("Expected at least 2 distinct threads, but got %d threads: %s", 
+        assertTrue(
+                distinctThreadCount >= 2,
+                String.format(
+                        "Expected at least 2 distinct threads, but got %d threads: %s",
                         distinctThreadCount, executionThreads));
     }
 }

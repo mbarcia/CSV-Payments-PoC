@@ -927,7 +927,7 @@
       if (property === 'name') {
         // Convert step name to valid service name (lowercase, hyphens, svc suffix)
         step.serviceName = `${value.toLowerCase().replace(/\s+/g, '-')}-svc`;
-        step.serviceNameCamel = value.replace(/\s+/g, '');
+        step.serviceNameCamel = toCamelCase(value, { upperFirst: true });
       }
       
       config.steps[currentStepIndex] = { ...step };

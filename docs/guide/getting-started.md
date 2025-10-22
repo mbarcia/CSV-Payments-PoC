@@ -212,8 +212,8 @@ Create a class that implements one of the step interfaces. Use the `inputGrpcTyp
    order = 1,
    inputType = CustomerInput.class,
    outputType = CustomerOutput.class,
-   inputGrpcType = ProcessCustomerService.CustomerInput.class,
-   outputGrpcType = ProcessCustomerService.CustomerOutput.class,
+   inputGrpcType = CustomerInput.class,
+   outputGrpcType = CustomerOutput.class,
    stepType = StepOneToOne.class,
    grpcStub = MutinyProcessCustomerServiceGrpc.MutinyProcessCustomerServiceStub.class,
    grpcImpl = MutinyProcessCustomerServiceGrpc.ProcessCustomerServiceImplBase.class,
@@ -242,7 +242,7 @@ Create mapper classes for converting between gRPC, DTO, and domain types using M
     uses = {CommonConverters.class},
     unmappedTargetPolicy = ReportingPolicy.WARN
 )
-public interface CsvPaymentsInputFileMapper extends Mapper<InputCsvFileProcessingSvc.CsvPaymentsInputFile, CsvPaymentsInputFileDto, CsvPaymentsInputFile> {
+public interface CsvPaymentsInputFileMapper extends Mapper<CsvPaymentsInputFile, CsvPaymentsInputFileDto, CsvPaymentsInputFile> {
 
     CsvPaymentsInputFileMapper INSTANCE = Mappers.getMapper(CsvPaymentsInputFileMapper.class);
 
@@ -258,13 +258,13 @@ public interface CsvPaymentsInputFileMapper extends Mapper<InputCsvFileProcessin
     @Mapping(target = "id", qualifiedByName = "uuidToString")
     @Mapping(target = "filepath", qualifiedByName = "pathToString")
     @Mapping(target = "csvFolderPath", qualifiedByName = "pathToString")
-    InputCsvFileProcessingSvc.CsvPaymentsInputFile toGrpc(CsvPaymentsInputFileDto dto);
+    CsvPaymentsInputFile toGrpc(CsvPaymentsInputFileDto dto);
 
     @Override
     @Mapping(target = "id", qualifiedByName = "stringToUUID")
     @Mapping(target = "filepath", qualifiedByName = "stringToPath")
     @Mapping(target = "csvFolderPath", qualifiedByName = "stringToPath")
-    CsvPaymentsInputFileDto fromGrpc(InputCsvFileProcessingSvc.CsvPaymentsInputFile grpc);
+    CsvPaymentsInputFileDto fromGrpc(CsvPaymentsInputFile grpc);
 }
 ```
 

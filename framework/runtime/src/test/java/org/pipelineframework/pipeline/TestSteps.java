@@ -55,27 +55,24 @@ public class TestSteps {
             // If so, preserve these as manual configuration
             if (!hasManualConfig && config != null) {
                 // Check if the incoming config has custom values
-                if (config.retryLimit()
-                                != new org.pipelineframework.config.StepConfig().retryLimit()
-                        || config.retryWait()
-                                != new org.pipelineframework.config.StepConfig().retryWait()
-                        || config.debug()
-                                != new org.pipelineframework.config.StepConfig().debug()) {
+                final org.pipelineframework.config.StepConfig defaultCfg =
+                        new org.pipelineframework.config.StepConfig();
+                if (config.retryLimit() != defaultCfg.retryLimit()
+                        || !java.util.Objects.equals(config.retryWait(), defaultCfg.retryWait())
+                        || config.debug() != defaultCfg.debug()) {
                     // This looks like manual configuration - save the values
                     setManualConfig(config.retryLimit(), config.retryWait(), config.debug());
                 }
             }
 
             if (hasManualConfig) {
-                // If we have manual config, apply it on top of the new config
-                super.initialiseWithConfig(config);
-                // Apply the manual overrides
                 if (config != null) {
                     config.overrides()
                             .retryLimit(manualRetryLimit)
                             .retryWait(manualRetryWait)
                             .debug(manualDebug);
                 }
+                super.initialiseWithConfig(config);
             } else {
                 super.initialiseWithConfig(config);
             }
@@ -140,10 +137,7 @@ public class TestSteps {
         private boolean manualRecoverOnFailure = false;
 
         public FailingStepBlocking() {
-            // Default constructor - no recovery
-            // Store the manual configuration right away
-            this.hasManualConfig = true;
-            this.manualRecoverOnFailure = false;
+            this(false);
         }
 
         public FailingStepBlocking(boolean shouldRecover) {
@@ -157,14 +151,7 @@ public class TestSteps {
             // Return the input wrapped in a Uni that fails - this way the input is preserved
             // for potential recovery by the deadLetter method
             return Uni.createFrom()
-                    .item(input)
-                    .onItem()
-                    .transformToUni(
-                            item ->
-                                    Uni.createFrom()
-                                            .failure(
-                                                    new RuntimeException(
-                                                            "Intentional failure for testing")));
+                    .failure(new RuntimeException("Intentional failure for testing"));
         }
 
         @Override
@@ -185,11 +172,14 @@ public class TestSteps {
          */
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
-            LOG.infof("Dead letter handled for cause: %s", cause.getMessage());
+            if (cause != null) {
+                LOG.info("Dead letter handled", cause);
+            } else {
+                LOG.info("Dead letter handled with null cause");
+            }
             // For recovery, return the original item that was being processed
             // The failedItem Uni contains the original input that caused the failure
-            // Using onItem().transform allows us to get the value and return it unchanged
-            return failedItem.onItem().transform(item -> item);
+            return failedItem;
         }
 
         @Override
@@ -198,14 +188,12 @@ public class TestSteps {
             // If so, preserve these as manual configuration (like AsyncFailNTimesStep)
             if (!hasManualConfig && config != null) {
                 // Check if the incoming config has custom values
-                if (config.retryLimit()
-                                != new org.pipelineframework.config.StepConfig().retryLimit()
-                        || config.retryWait()
-                                != new org.pipelineframework.config.StepConfig().retryWait()
-                        || config.debug() != new org.pipelineframework.config.StepConfig().debug()
-                        || config.recoverOnFailure()
-                                != new org.pipelineframework.config.StepConfig()
-                                        .recoverOnFailure()) {
+                final org.pipelineframework.config.StepConfig defaultCfg =
+                        new org.pipelineframework.config.StepConfig();
+                if (config.retryLimit() != defaultCfg.retryLimit()
+                        || !java.util.Objects.equals(config.retryWait(), defaultCfg.retryWait())
+                        || config.debug() != defaultCfg.debug()
+                        || config.recoverOnFailure() != defaultCfg.recoverOnFailure()) {
                     // This looks like manual configuration - save the values
                     setManualConfig(
                             config.retryLimit(),
@@ -216,9 +204,6 @@ public class TestSteps {
             }
 
             if (hasManualConfig) {
-                // If we have manual config, apply it on top of the new config
-                super.initialiseWithConfig(config);
-                // Apply the manual overrides
                 if (config != null) {
                     config.overrides()
                             .retryLimit(manualRetryLimit)
@@ -226,13 +211,12 @@ public class TestSteps {
                             .debug(manualDebug)
                             .recoverOnFailure(manualRecoverOnFailure);
                 }
-            } else {
                 super.initialiseWithConfig(config);
-                // Apply the recovery setting after the config is properly set up
+            } else {
                 if (config != null) {
-                    // Use manualRecoverOnFailure which was set at construction time
                     config.overrides().recoverOnFailure(manualRecoverOnFailure);
                 }
+                super.initialiseWithConfig(config);
             }
         }
 

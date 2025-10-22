@@ -40,7 +40,7 @@ public interface PipelineInitialConfig {
      * Base delay between retries in milliseconds.
      * @return retry delay in milliseconds
      */
-    @WithDefault("200")
+    @WithDefault("2000")
     Long retryWaitMs();
 
     /**

@@ -80,7 +80,7 @@
     
     // Check if it's a Map type (using pattern matching)
     // Handles formats like: Map<String, Integer>, Map<List<String>, Integer>, etc.
-    if (typeof type === 'string' && /^Map<.+?, .+>$/.test(type)) {
+    if (typeof type === 'string' && /^Map<.+?,\s*.+>$/.test(type)) {
       // Additional check to ensure the type is properly closed
       const openCount = (type.match(/</g) || []).length;
       const closeCount = (type.match(/>/g) || []).length;

@@ -92,25 +92,28 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
 
   public Uni<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
       DomainIn entity = fromGrpc(grpcRequest);
-    
-      Uni<DomainIn> persistenceUni;
-      if (isAutoPersistenceEnabled()) {
-        LOG.debug("Auto-persistance is enabled");
-        persistenceUni = persistenceManager.persist(entity);
-      }
-      else {
-        LOG.debug("Auto-persistance is disabled");
-        persistenceUni = Uni.createFrom().item(entity);
-      }
 
-      return persistenceUni
-        .onItem().transformToUni(persistedEntity -> 
-            getService()
-                .process(persistedEntity)
-                .onItem()
-                .transform(this::toGrpc)
-                .onFailure()
-                .transform(new throwStatusRuntimeExceptionFunction())
-        );
+      Uni<DomainOut> processedResult = getService()
+          .process(entity);
+
+      // If auto-persistence is enabled, persist the input entity after successful processing
+      if (isAutoPersistenceEnabled()) {
+        LOG.debug("Auto-persistence is enabled, will persist input after processing");
+        
+        return processedResult
+            .onItem().call(result -> 
+                // Persist the input entity after successful processing
+                persistenceManager.persist(entity)
+                    .replaceWith(result) // Replace with the originally processed result
+            )
+            .onItem().transform(this::toGrpc)
+            .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+      } else {
+        LOG.debug("Auto-persistence is disabled");
+        
+        return processedResult
+            .onItem().transform(this::toGrpc)
+            .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+      }
   }
 }

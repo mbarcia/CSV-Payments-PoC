@@ -17,18 +17,23 @@
 package org.pipelineframework.grpc;
 
 import io.smallrye.mutiny.Multi;
-import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
-import org.pipelineframework.service.ReactiveStreamingClientService;
+import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+/**
+ * Adapter for gRPC bidirectional streaming services that handle N-N (many-to-many) cardinality.
+ * This adapter takes a stream of input messages and returns a stream of output messages,
+ * suitable for bidirectional streaming scenarios where both client and server can send
+ * multiple messages to each other.
+ */
+public abstract class GrpcServiceBidirectionalStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceClientStreamingAdapter.class);
+  private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceBidirectionalStreamingAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;
@@ -43,7 +48,7 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
     this.persistenceManager = persistenceManager;
   }
 
-  protected abstract ReactiveStreamingClientService<DomainIn, DomainOut> getService();
+  protected abstract ReactiveBidirectionalStreamingService<DomainIn, DomainOut> getService();
 
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
@@ -70,36 +75,51 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
     return config != null && config.autoPersist();
   }
 
-  public Uni<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
+  /**
+   * Process a bidirectional stream where multiple input messages are received
+   * and multiple output messages are produced, handling N-N (many-to-many) cardinality.
+   * This method handles bidirectional gRPC streaming where both client and server
+   * can send multiple messages to each other.
+   * 
+   * @param requestStream the stream of input requests
+   * @return a stream of output responses
+   */
+  public Multi<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
     Multi<DomainIn> domainStream = requestStream.onItem().transform(this::fromGrpc);
     
-    // Cache the stream so it can be subscribed to multiple times
+    // Cache the stream so it can be subscribed to multiple times if needed
     Multi<DomainIn> cachedStream = domainStream.cache();
 
-    // Process the stream to get the result
-    Uni<DomainOut> processedResult = getService()
-        .process(cachedStream); // Multi<DomainIn> → Uni<DomainOut>
+    // Process the stream to produce a stream of outputs
+    Multi<DomainOut> processedStream = getService()
+        .process(cachedStream); // Multi<DomainIn> → Multi<DomainOut>
 
     // If auto-persistence is enabled, persist the input entities after successful processing
     if (isAutoPersistenceEnabled()) {
       LOG.debug("Auto-persistence is enabled, will persist inputs after processing");
       
-      return processedResult
-          .onItem().call(result -> 
-              // Persist all input items after successful processing (using cached stream)
-              // This prevents duplicate persistence on retries after failures
-              cachedStream
-                  .onItem().transformToUniAndConcatenate(persistenceManager::persist)
-                  .collect().asList() // Wait for all persist operations to complete
-                  .replaceWith(result) // Replace with the originally processed result
-          )
-          .onItem().transform(this::toGrpc) // Uni<GrpcOut>
+      // Subscribe to the cached stream to persist each input item after the whole stream has been processed
+      // We don't block the main stream while doing persistence
+      cachedStream
+          .onItem().transformToUniAndConcatenate(persistenceManager::persist)
+          .onFailure().recoverWithItem((Throwable t) -> {
+              LOG.warn("Failed to persist input item: {}", t.getMessage());
+              return null;
+          })
+          .filter(item -> item != null) // Filter out null items after recovery
+          .subscribe().with(
+              item -> LOG.debug("Persisted input item: {}", item),
+              failure -> LOG.warn("Persistence failed for item: {}", failure.getMessage())
+          );
+      
+      return processedStream
+          .onItem().transform(this::toGrpc) // Multi<GrpcOut>
           .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     } else {
       LOG.debug("Auto-persistence is disabled");
       
-      return processedResult
-          .onItem().transform(this::toGrpc) // Uni<GrpcOut>
+      return processedStream
+          .onItem().transform(this::toGrpc) // Multi<GrpcOut>
           .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     }
   }

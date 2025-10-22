@@ -33,6 +33,7 @@ const httpsAxios = axios.create({
 // Service endpoints - going through Kong API Gateway
 const INPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/input-processing';
 const PAYMENTS_PROCESSING_SVC = 'https://localhost:8843/api/v1/payments-processing';
+const PROCESS_ACK_PAYMENT_SENT_REACTIVE_SVC = 'https://localhost:8843/api/v1/process-ack-payment-sent-reactive/process';
 const PAYMENT_STATUS_SVC = 'https://localhost:8843/api/v1/payment-status';
 const OUTPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/output-processing';
 
@@ -147,7 +148,7 @@ class OptimizedRestOrchestrationService {
 
             const processAckResponse = await this.processWithRetry(
                 () => httpsAxios.post(
-                    `${PAYMENTS_PROCESSING_SVC}/process-ack-payment`,
+                    PROCESS_ACK_PAYMENT_SENT_REACTIVE_SVC,
                     ackPayment,
                     { 
                       headers: { 'Content-Type': 'application/json' }

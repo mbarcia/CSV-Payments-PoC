@@ -44,10 +44,10 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
     }
 
     /**
-     * The time window in milliseconds to wait before processing a batch,
+     * The time window to wait before processing a batch,
      * even if the batch size hasn't been reached.
      *
-     * @return The time window in milliseconds (default: 1000ms)
+     * @return The time window duration (default: 1000ms)
      */
     default Duration batchTimeout() {
         return Duration.ofMillis(1000);

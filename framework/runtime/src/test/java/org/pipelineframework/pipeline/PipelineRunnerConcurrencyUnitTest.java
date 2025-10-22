@@ -17,7 +17,6 @@
 package org.pipelineframework.pipeline;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -132,20 +131,11 @@ class PipelineRunnerConcurrencyUnitTest {
         assertEquals(2, step.callCount.get());
     }
 
-    // Helper class to access private methods for testing
+    // Helper class to access package-private methods for testing
     static class PipelineRunnerTestHelper {
         public static Object applyOneToOne(Object step, Object current) {
-            try {
-                java.lang.reflect.Method method =
-                        org.pipelineframework.PipelineRunner.class.getDeclaredMethod(
-                                "applyOneToOneUnchecked",
-                                org.pipelineframework.step.StepOneToOne.class,
-                                Object.class);
-                method.setAccessible(true);
-                return method.invoke(null, step, current);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+            return org.pipelineframework.PipelineRunner.applyOneToOneUnchecked(
+                    (org.pipelineframework.step.StepOneToOne<String, String>) step, current);
         }
     }
 }

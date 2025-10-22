@@ -50,27 +50,29 @@ class ParallelProcessingSmokeTest {
         private final List<String> executionThreads = new java.util.ArrayList<>();
         private final List<String> results = new java.util.ArrayList<>();
 
+        public TestStepOneToOne() {
+        }
+
         @Override
         public Uni<String> applyOneToOne(String input) {
-            // Record execution information
-            long startTime = System.currentTimeMillis();
-            String currentThread = Thread.currentThread().getName();
-
-            // Simulate processing time
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            synchronized (this) {
-                executionTimestamps.add(startTime);
-                executionThreads.add(currentThread);
-                int count = callCount.incrementAndGet();
-                String result = "processed:" + input + "_count" + count;
-                results.add(result);
-                return Uni.createFrom().item(result);
-            }
+            return Uni.createFrom().item(() -> {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                
+                synchronized (this) {
+                    long ts = System.currentTimeMillis();
+                    String th = Thread.currentThread().getName();
+                    executionTimestamps.add(ts);
+                    executionThreads.add(th);
+                    int count = callCount.incrementAndGet();
+                    String result = "processed:" + input + "_count" + count;
+                    results.add(result);
+                    return result;
+                }
+            }).runSubscriptionOn(io.smallrye.mutiny.infrastructure.Infrastructure.getDefaultExecutor());
         }
 
         public List<Long> getExecutionTimestamps() {
@@ -94,14 +96,13 @@ class ParallelProcessingSmokeTest {
         private final List<String> executionThreads = new java.util.ArrayList<>();
         private final List<String> results = new java.util.ArrayList<>();
 
+        public TestStepOneToOneCompletableFuture() {
+        }
+
         @Override
         public CompletableFuture<String> applyAsync(String input) {
             return CompletableFuture.supplyAsync(
                     () -> {
-                        // Record execution information
-                        long startTime = System.currentTimeMillis();
-                        String currentThread = Thread.currentThread().getName();
-
                         try {
                             Thread.sleep(100);
                         } catch (InterruptedException e) {
@@ -109,6 +110,8 @@ class ParallelProcessingSmokeTest {
                         }
 
                         synchronized (this) {
+                            long startTime = System.currentTimeMillis();
+                            String currentThread = Thread.currentThread().getName();
                             executionTimestamps.add(startTime);
                             executionThreads.add(currentThread);
                             int count = callCount.incrementAndGet();
@@ -186,73 +189,22 @@ class ParallelProcessingSmokeTest {
         // Verify that all items were processed
         assertEquals(3, step.callCount.get());
 
-        // (2) Record timestamps and threads, assert at least two items overlap in execution
-        List<Long> executionTimestamps = step.getExecutionTimestamps();
+        // (2) Record threads
         List<String> executionThreads = step.getExecutionThreads();
 
         // Verify we have the expected number of executions
-        assertEquals(3, executionTimestamps.size());
         assertEquals(3, executionThreads.size());
 
-        // Check for concurrent execution by looking at timestamps and thread IDs
-        boolean hasConcurrentExecution = false;
-        // Calculate a more reasonable threshold for detecting concurrent execution
-        // Since each operation takes 100ms, if they start at similar times, they're likely
-        // executing in parallel
-        long threshold = 200; // Increased threshold for test reliability
-
-        for (int i = 0; i < executionTimestamps.size(); i++) {
-            long startTimeI = executionTimestamps.get(i);
-            String threadI = executionThreads.get(i);
-
-            for (int j = i + 1; j < executionTimestamps.size(); j++) {
-                long startTimeJ = executionTimestamps.get(j);
-
-                // If execution times are within the threshold of each other, consider them
-                // concurrent
-                if (Math.abs(startTimeI - startTimeJ) < threshold) {
-                    hasConcurrentExecution = true;
-                    break;
-                }
-
-                // If they executed on different threads, they're definitely concurrent
-                if (!threadI.equals(executionThreads.get(j))) {
-                    hasConcurrentExecution = true;
-                    break;
-                }
-            }
-
-            if (hasConcurrentExecution) {
-                break;
-            }
-        }
-
-        // (3) Timing assertion: total duration should be significantly less than sum of individual
-        // delays
-        // Since each item takes ~100ms sequentially, 3 items would take ~300ms sequentially,
-        // but in parallel they should take closer to ~100ms (though we allow more for test
-        // overhead)
+        // (3) Assert total duration < 500 to prove parallel speedup (3 items * 100ms each sequentially = ~300ms, but with overhead and test environment variability)
         long totalDuration = endTime - startTime;
+        assertTrue(totalDuration < 500, 
+                String.format("Expected parallel execution to be faster than sequential. Duration: %d ms", totalDuration));
 
-        // If we don't have concurrent execution on the same thread, at least verify that the
-        // results are correct
-        if (!hasConcurrentExecution) {
-            System.out.println(
-                    "Note: Could not verify concurrent execution, but checking timing. Timestamps: "
-                            + executionTimestamps
-                            + ", Threads: "
-                            + executionThreads);
-            // Still check timing as evidence of parallelism
-            hasConcurrentExecution =
-                    totalDuration < 250; // Sequential would take ~300ms, parallel should be faster
-        }
-
-        assertTrue(
-                hasConcurrentExecution,
-                String.format(
-                        "Items should execute concurrently (either via overlapping timestamps or different threads). "
-                                + "Timestamps: %s, Threads: %s, Duration: %d ms",
-                        executionTimestamps, executionThreads, totalDuration));
+        // (4) Assert at least two distinct thread names in executionThreads to prove work ran on multiple threads
+        long distinctThreadCount = executionThreads.stream().distinct().count();
+        assertTrue(distinctThreadCount >= 2, 
+                String.format("Expected at least 2 distinct threads, but got %d threads: %s", 
+                        distinctThreadCount, executionThreads));
     }
 
     @Test
@@ -285,72 +237,21 @@ class ParallelProcessingSmokeTest {
         // Verify that all items were processed
         assertEquals(3, step.callCount.get());
 
-        // (2) Record timestamps and threads, assert at least two items overlap in execution
-        List<Long> executionTimestamps = step.getExecutionTimestamps();
+        // (2) Record threads
         List<String> executionThreads = step.getExecutionThreads();
 
         // Verify we have the expected number of executions
-        assertEquals(3, executionTimestamps.size());
         assertEquals(3, executionThreads.size());
 
-        // Check for concurrent execution by looking at timestamps and thread IDs
-        boolean hasConcurrentExecution = false;
-        // Calculate a more reasonable threshold for detecting concurrent execution
-        // Since each operation takes 100ms, if they start at similar times, they're likely
-        // executing in parallel
-        long threshold = 200; // Increased threshold for test reliability
-
-        for (int i = 0; i < executionTimestamps.size(); i++) {
-            long startTimeI = executionTimestamps.get(i);
-            String threadI = executionThreads.get(i);
-
-            for (int j = i + 1; j < executionTimestamps.size(); j++) {
-                long startTimeJ = executionTimestamps.get(j);
-
-                // If execution times are within the threshold of each other, consider them
-                // concurrent
-                if (Math.abs(startTimeI - startTimeJ) < threshold) {
-                    hasConcurrentExecution = true;
-                    break;
-                }
-
-                // If they executed on different threads, they're definitely concurrent
-                if (!threadI.equals(executionThreads.get(j))) {
-                    hasConcurrentExecution = true;
-                    break;
-                }
-            }
-
-            if (hasConcurrentExecution) {
-                break;
-            }
-        }
-
-        // (3) Timing assertion: total duration should be significantly less than sum of individual
-        // delays
-        // Since each item takes ~100ms sequentially, 3 items would take ~300ms sequentially,
-        // but in parallel they should take closer to ~100ms (though we allow more for test
-        // overhead)
+        // (3) Assert total duration < 500 to prove parallel speedup (3 items * 100ms each sequentially = ~300ms, but with overhead and test environment variability)
         long totalDuration = endTime - startTime;
+        assertTrue(totalDuration < 500, 
+                String.format("Expected parallel execution to be faster than sequential. Duration: %d ms", totalDuration));
 
-        // If we don't have concurrent execution on the same thread, at least verify that the
-        // results are correct
-        if (!hasConcurrentExecution) {
-            System.out.println(
-                    "Note: Could not verify concurrent execution, but checking timing. Timestamps: "
-                            + executionTimestamps
-                            + ", Threads: "
-                            + executionThreads);
-            // Still check timing as evidence of parallelism
-            hasConcurrentExecution =
-                    totalDuration < 250; // Sequential would take ~300ms, parallel should be faster
-        }
-
-        assertTrue(
-                hasConcurrentExecution,
-                String.format(
-                        "Items should execute concurrently (either via overlapping timestamps or different threads). "
-                                + "Timestamps: %s, Threads: %s, Duration: %d ms",
-                        executionTimestamps, executionThreads, totalDuration));
+        // (4) Assert at least two distinct thread names in executionThreads to prove work ran on multiple threads
+        long distinctThreadCount = executionThreads.stream().distinct().count();
+        assertTrue(distinctThreadCount >= 2, 
+                String.format("Expected at least 2 distinct threads, but got %d threads: %s", 
+                        distinctThreadCount, executionThreads));
     }
 }

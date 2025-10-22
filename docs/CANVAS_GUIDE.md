@@ -90,9 +90,15 @@ Visit https://app.pipelineframework.org in your web browser.
 
 ### Download Configuration
 - Click the "Download YAML" button to get the pipeline configuration
-- The YAML file can be used with the template generator
+- The YAML file can be used with the template generator for advanced scenarios
 - Configuration includes all steps, types, and field definitions
-- Ready to use with the command line generator
+- Ready to use with the command line generator if needed
+
+### Download Complete Application
+- Click the "Download Application" button to get a ZIP file containing your complete generated application
+- The ZIP includes all source code, configuration files, and build scripts
+- No additional generation step is needed - the application is ready to build and run
+- Perfect for immediately starting development
 
 ### Upload Configuration
 - Click "Upload Configuration" to load an existing YAML file
@@ -170,14 +176,14 @@ Visit https://app.pipelineframework.org in your web browser.
 ## Export and Import
 
 ### Export Options
-- Download complete YAML configuration
-- Copy configuration to clipboard
-- Save for later use
+- **Download Application**: Get a complete ZIP file with your generated application (recommended for most users)
+- **Download YAML**: Get the configuration file for advanced usage or template generator
+- **Copy configuration to clipboard**: For quick sharing
+- **Save for later use**: Keep your design for future reference
 
 ### Import Options
-- Load from existing YAML file
-- Resume work from saved configuration
-- Share configurations across projects
+- **Load from existing YAML file**: Resume work from saved configuration
+- **Share configurations across projects**: Reuse pipeline designs
 
 ## Tips and Tricks
 

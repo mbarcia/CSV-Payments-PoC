@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "vite dev",
-    "build": "NODE_OPTIONS='--max-old-space-size=4096' vite build",
-    "build:cloudflare": "NODE_OPTIONS='--max-old-space-size=2048 --max-semi-space-size=128 --max-old-space-size=1920' sh -c 'vite build; exit 0'",
-    "build:static": "NODE_OPTIONS='--max-old-space-size=2048 --max-semi-space-size=128 --max-old-space-size=1920' sh -c 'vite build; exit 0'",
-    "preview": "vite preview",
+    "update-templates": "node update-templates.js",
+    "build": "npm run update-templates && node --max-old-space-size=4096 node_modules/vite/bin/vite.js build",
+    "build:cloudflare": "npm run update-templates && NODE_OPTIONS='--max-old-space-size=2048 --max-semi-space-size=128' sh -c 'vite build && node -e \"console.log(process.memoryUsage())\"; exit 0'",
+    "build:static": "npm run update-templates && node --max-old-space-size=2048 node_modules/vite/bin/vite.js build && exit 0",
+    "preview": "node --max-old-space-size=2048 node_modules/vite/bin/vite.js preview",
+    "preview:cloudflare": "node --max-old-space-size=2048 node_modules/vite/bin/vite.js preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "check:watch": "svelte-check --tsconfig ./tsconfig.json --watch"
   },
@@ -27,6 +29,8 @@
   "type": "module",
   "dependencies": {
     "file-saver": "^2.0.5",
-    "js-yaml": "^4.1.0"
+    "handlebars": "^4.7.8",
+    "js-yaml": "^4.1.0",
+    "jszip": "^3.10.1"
   }
 }

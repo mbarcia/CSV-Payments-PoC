@@ -1,6 +1,6 @@
 # Creating Orchestrator Services
 
-This guide explains how to create orchestrator services using The Pipeline Framework, which coordinate and execute the complete pipeline of backend services.
+This guide explains how orchestrator services work in The Pipeline Framework and how they are automatically generated when you use the template generator to create pipeline applications.
 
 <Callout type="tip" title="Visual Orchestrator Configuration">
 Use the Canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> to visually configure your orchestrator services. The Canvas allows you to define the complete pipeline flow, including input sources, step connections, and output handlers, without writing complex orchestration code.
@@ -14,455 +14,319 @@ Orchestrator services are responsible for:
 3. Coordinating the flow between pipeline steps
 4. Handling the final output of the pipeline
 
+When you use the template generator to create a pipeline application, it automatically generates a complete orchestrator service with:
+- A CLI application class that implements `QuarkusApplication`
+- Proper configuration in `application.properties`
+- Docker configuration for containerized deployment
+- Integration with the framework's pipeline execution engine
+
 The Pipeline Framework automatically generates the core pipeline execution logic when backend services are annotated with `@PipelineStep`, leaving orchestrator services to focus on input provisioning and output handling.
 
-## Orchestrator Service Creation
+## Generated Orchestrator Service Structure
 
-### 1. Extend PipelineApplication
+When the template generator creates an application, it generates an orchestrator service with the following structure:
 
-Create your orchestrator service by extending the framework's `PipelineApplication`:
+```text
+orchestrator-svc/
+├── pom.xml                           # Service POM with framework dependencies
+├── src/main/java/
+│   └── com/example/app/orchestrator/
+│       └── OrchestratorApplication.java  # Main CLI application class with input provisioning stub
+└── src/main/resources/
+    └── application.properties            # Service configuration
+```
+
+### OrchestratorApplication.java
+
+The generated orchestrator application implements `QuarkusApplication` and includes a `getInputMulti()` method stub that needs to be implemented by the user. This method is responsible for provisioning input data to the pipeline:
 
 ```java
-// orchestrator-svc/src/main/java/com/example/app/orchestrator/CsvPaymentsApplication.java
-@QuarkusMain
-@CommandLine.Command(
-    name = "csv-payments",
-    mixinStandardHelpOptions = true,
-    version = "1.0.0",
-    description = "Process CSV payment files")
-public class CsvPaymentsApplication extends PipelineApplication implements Runnable, QuarkusApplication {
+// orchestrator-svc/src/main/java/com/example/app/orchestrator/OrchestratorApplication.java
+import io.quarkus.runtime.QuarkusApplication;
+import io.smallrye.mutiny.Multi;
+import jakarta.enterprise.context.Dependent;
+import jakarta.inject.Inject;
+import org.pipelineframework.PipelineExecutionService;
+import com.example.app.common.domain.CustomerInput;
+import picocli.CommandLine;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Option;
+
+@Command(name = "orchestrator", mixinStandardHelpOptions = true, version = "1.0.0",
+         description = "Sample Pipeline App Orchestrator Service")
+@Dependent
+public class OrchestratorApplication implements QuarkusApplication {
+
+    @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", required = true)
+    String input;
 
     @Inject
-    ProcessFolderService processFolderService;
-
-    @Inject
-    SystemExiter exiter;
-
-    @CommandLine.Option(
-        names = {"-c", "--csv-folder"},
-        description = "The folder path containing CSV payment files",
-        defaultValue = "${env:CSV_FOLDER_PATH:-csv/}")
-    String csvFolder;
+    PipelineExecutionService pipelineExecutionService;
 
     public static void main(String[] args) {
-        Quarkus.run(CsvPaymentsApplication.class, args);
+        io.quarkus.runtime.Quarkus.run(OrchestratorApplication.class, args);
     }
 
     @Override
     public int run(String... args) {
-        return new CommandLine(this).execute(args);
-    }
+        CommandLine cmd = new CommandLine(this);
+        cmd.parseArgs(args);
 
-    @Override
-    public void run() {
-        processPipeline(csvFolder);
-    }
-}
-```
-
-### 2. Implement Input Provisioning
-
-Provide the initial input data for the pipeline:
-
-```java
-@Override
-public void processPipeline(String input) {
-    LOG.info("Starting pipeline processing for folder: {}", input);
-
-    try {
-        // Convert input (folder path) to stream of domain objects
-        Stream<CsvPaymentsInputFile> inputFileStream = processFolderService.process(input);
-        
-        // Convert to reactive Multi
-        Multi<CsvPaymentsInputFile> inputMulti = Multi.createFrom().iterable(inputFileStream::iterator);
-        
-        // Execute the pipeline with the input
-        executePipeline(inputMulti, List.of(/* steps - automatically populated by annotation processor */));
-        
-    } catch (Exception e) {
-        LOG.error("Error during pipeline processing", e);
-        exiter.exit(1);
-    }
-}
-```
-
-## Understanding Generated Pipeline Applications
-
-When backend services are annotated with `@PipelineStep`, The Pipeline Framework's annotation processor automatically generates a `GeneratedPipelineApplication` class that:
-
-1. Extends your orchestrator service
-2. Automatically discovers all `@PipelineStep` annotated services
-3. Creates and injects the required step instances
-4. Builds the complete pipeline in the correct order
-
-The generated application looks something like this:
-
-```java
-// This class is auto-generated by the annotation processor
-@ApplicationScoped
-public class GeneratedPipelineApplication extends CsvPaymentsApplication {
-    
-    @Inject
-    Step1 step1;
-    
-    @Inject
-    Step2 step2;
-    
-    @Inject
-    Step3 step3;
-    
-    @Override
-    public void processPipeline(String input) {
-        // Call parent method for input processing
-        super.processPipeline(input);
-    }
-    
-    @Override
-    protected void executePipeline(Multi<?> input, List<Object> steps) {
-        // Add all discovered steps to the pipeline
-        List<Object> allSteps = new ArrayList<>(steps);
-        allSteps.addAll(Arrays.asList(step1, step2, step3));
-        
-        // Delegate to parent implementation
-        super.executePipeline(input, allSteps);
-    }
-}
-```
-
-## Input Processing Service
-
-Create a service to handle input data preparation:
-
-```java
-// orchestrator-svc/src/main/java/com/example/app/orchestrator/service/ProcessFolderService.java
-@ApplicationScoped
-public class ProcessFolderService {
-
-    @Inject
-    HybridResourceLoader resourceLoader;
-
-    public Stream<CsvPaymentsInputFile> process(String csvFolderPath) throws URISyntaxException {
-        LOG.info("Reading CSV folder from path: {}", csvFolderPath);
-
-        URL resource = resourceLoader.getResource(csvFolderPath);
-        if (resource == null) {
-            LOG.warn("CSV folder not found: {}", csvFolderPath);
-            resourceLoader.diagnoseResourceAccess(csvFolderPath);
-            throw new IllegalArgumentException(
-                MessageFormat.format("CSV folder not found: {0}", csvFolderPath));
-        }
-
-        File directory = new File(resource.toURI());
-        if (!directory.exists() || !directory.isDirectory()) {
-            throw new IllegalArgumentException(
-                MessageFormat.format(
-                    "CSV path is not a valid directory: {0}", directory.getAbsolutePath()));
-        }
-
-        File[] csvFiles = directory.listFiles((_, name) -> name.toLowerCase().endsWith(".csv"));
-        if (csvFiles == null || csvFiles.length == 0) {
-            LOG.warn("No CSV files found in {}", csvFolderPath);
-            resourceLoader.diagnoseResourceAccess(csvFolderPath);
-            return Stream.empty();
-        }
-
-        return Stream.of(csvFiles)
-            .map(CsvPaymentsInputFile::new);
-    }
-}
-```
-
-## Pipeline Execution Flow
-
-### 1. Input Preparation
-The orchestrator prepares the initial input data:
-
-```java
-@Override
-public void processPipeline(String input) {
-    LOG.info("Starting pipeline processing for folder: {}", input);
-
-    try {
-        // Step 1: Prepare input data
-        Stream<CsvPaymentsInputFile> inputFileStream = processFolderService.process(input);
-        
-        // Step 2: Convert to reactive stream
-        Multi<CsvPaymentsInputFile> inputMulti = Multi.createFrom().iterable(inputFileStream::iterator);
-        
-        // Step 3: Execute pipeline (steps automatically injected by generated application)
-        executePipeline(inputMulti, List.of());
-        
-    } catch (Exception e) {
-        handleError(e);
-    }
-}
-```
-
-### 2. Pipeline Execution
-The framework executes the pipeline with all discovered steps:
-
-```java
-protected void executePipeline(Multi<?> input, List<Object> steps) {
-    LOG.info("PIPELINE BEGINS processing");
-
-    StopWatch watch = new StopWatch();
-    watch.start();
-
-    // Configure pipeline profiles
-    pipelineConfig.defaults().retryLimit(3).debug(false);
-    pipelineConfig.profile("dev", new StepConfig().retryLimit(1).debug(true));
-    pipelineConfig.profile("prod", new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)));
-
-    try {
-        Object result = pipelineRunner.run(
-                input,
-                steps  // This includes both provided steps and auto-discovered steps
-        );
-
-        Multi<?> multiResult;
-        if (result instanceof Multi) {
-            multiResult = (Multi<?>) result;
-        } else if (result instanceof Uni) {
-            multiResult = ((Uni<?>) result).toMulti();
+        if (input != null) {
+            executePipelineWithInput(input);
+            return 0; // Success exit code
         } else {
-            throw new IllegalStateException("PipelineRunner returned unexpected type: " + result.getClass());
+            System.err.println("Input parameter is required");
+            return 1; // Error exit code
         }
-
-        multiResult
-            .subscribe()
-            .with(
-                _ -> {
-                    LOG.info("Processing completed.");
-                    watch.stop();
-                    LOG.info(
-                        "✅ PIPELINE FINISHED processing in {} seconds",
-                        watch.getTime(TimeUnit.SECONDS));
-                    signalCompletion();
-                },
-                failure -> {
-                    LOG.error(MessageFormat.format("Error: {0}", failure.getMessage()));
-                    watch.stop();
-                    LOG.error(
-                        "❌ PIPELINE FAILED after {} seconds",
-                        watch.getTime(TimeUnit.SECONDS),
-                        failure);
-                    signalFailure(failure);
-                });
-
-    } catch (Exception e) {
-        watch.stop();
-        LOG.error(
-            "❌ PIPELINE ABORTED after {} seconds",
-            watch.getTime(TimeUnit.SECONDS),
-            e);
-        signalFailure(e);
     }
-}
-```
 
-## Command Line Interface
+    // Execute the pipeline when arguments are properly parsed
+    private void executePipelineWithInput(String input) {
+        Multi<CustomerInput> inputMulti = getInputMulti(input);
 
-### Options Configuration
-Configure command line options for your orchestrator:
+        // Execute the pipeline with the processed input using injected service
+        pipelineExecutionService.executePipeline(inputMulti)
+            .collect().asList()
+            .await().indefinitely();
 
-```java
-@CommandLine.Option(
-    names = {"-c", "--csv-folder"},
-    description = "The folder path containing CSV payment files",
-    defaultValue = "${env:CSV_FOLDER_PATH:-csv/}")
-String csvFolder;
-
-@CommandLine.Option(
-    names = {"-d", "--debug"},
-    description = "Enable debug mode",
-    defaultValue = "false")
-boolean debugMode;
-
-@CommandLine.Option(
-    names = {"-p", "--profile"},
-    description = "Active profile (dev, prod, etc.)",
-    defaultValue = "dev")
-String profile;
-```
-
-### Help Documentation
-Provide clear help documentation:
-
-```java
-@CommandLine.Command(
-    name = "csv-payments",
-    mixinStandardHelpOptions = true,
-    version = "1.0.0",
-    description = "Process CSV payment files through a reactive pipeline")
-public class CsvPaymentsApplication extends PipelineApplication {
-    // Implementation
-}
-```
-
-## Error Handling
-
-### Graceful Error Handling
-Handle errors gracefully in your orchestrator:
-
-```java
-private void handleError(Exception e) {
-    LOG.error("Pipeline execution failed", e);
-    
-    // Determine exit code based on error type
-    int exitCode = 1;
-    if (e instanceof IllegalArgumentException) {
-        exitCode = 2;  // Bad input
-    } else if (e instanceof FileNotFoundException) {
-        exitCode = 3;  // File not found
+        System.out.println("Pipeline execution completed");
     }
-    
-    // Log error details
-    LOG.error("Exiting with code: {}", exitCode);
-    
-    // Exit gracefully
-    exiter.exit(exitCode);
-}
 
-private void signalCompletion() {
-    LOG.info("Pipeline execution completed successfully");
-    exiter.exit(0);
-}
-
-private void signalFailure(Throwable error) {
-    LOG.error("Pipeline execution failed: {}", error.getMessage(), error);
-    exiter.exit(1);
-}
-```
-
-## Testing
-
-### Unit Testing
-Test your orchestrator service logic:
-
-```java
-@QuarkusTest
-class CsvPaymentsApplicationTest {
-
-    @InjectMock
-    ProcessFolderService processFolderService;
-
-    @InjectMock
-    SystemExiter exiter;
-
-    @Test
-    void testProcessPipelineWithValidInput() throws Exception {
-        // Arrange
-        String testFolder = "test-folder";
-        List<CsvPaymentsInputFile> testFiles = createTestFiles();
+    // This method needs to be implemented by the user after template generation
+    // based on their specific input type and requirements
+    private static Multi<CustomerInput> getInputMulti(String input) {
+        // TODO: User needs to implement this method after template generation
+        // Create and return appropriate Multi based on the input and first step requirements
+        // For example:
+        // CustomerInput inputItem = new CustomerInput();
+        // inputItem.setField(input);
+        // return Multi.createFrom().item(inputItem);
         
-        when(processFolderService.process(testFolder))
-            .thenReturn(testFiles.stream());
-
-        // Act
-        CsvPaymentsApplication app = new CsvPaymentsApplication();
-        app.processPipeline(testFolder);
-
-        // Assert
-        verify(processFolderService).process(testFolder);
-        // Additional assertions...
-    }
-
-    @Test
-    void testProcessPipelineWithInvalidInput() throws Exception {
-        // Arrange
-        String invalidFolder = "invalid-folder";
-        when(processFolderService.process(invalidFolder))
-            .thenThrow(new IllegalArgumentException("Folder not found"));
-
-        // Act & Assert
-        assertThrows(IllegalArgumentException.class, () -> {
-            CsvPaymentsApplication app = new CsvPaymentsApplication();
-            app.processPipeline(invalidFolder);
-        });
-    }
-
-    private List<CsvPaymentsInputFile> createTestFiles() {
-        // Create test data
-        return Arrays.asList(/* test files */);
+        throw new UnsupportedOperationException("Method getInputMulti needs to be implemented by user after template generation");
     }
 }
 ```
 
-### Integration Testing
-Test the complete pipeline execution:
-
-```java
-@QuarkusTest
-class PipelineExecutionIntegrationTest {
-
-    @Test
-    void testFullPipelineExecution() {
-        // Test the complete pipeline with all steps
-        // This would involve setting up test data and verifying the output
-    }
-}
-```
-
-## Configuration
+**Important**: After template generation, you must implement the `getInputMulti()` method to define how your application provisions input data to the pipeline. This method should parse your input parameters and create the appropriate `Multi` stream of objects required by your first pipeline step.
 
 ### Application Properties
-Configure orchestrator behavior through application properties:
+
+The generated orchestrator includes comprehensive configuration:
 
 ```properties
-# application.properties
-# Pipeline configuration
-pipeline.runtime.retry-limit=3
+# orchestrator-svc/src/main/resources/application.properties
+quarkus.package.main-class=com.example.app.orchestrator.OrchestratorApplication
+
+# Pipeline Configuration
+pipeline.runtime.retry-limit=10
 pipeline.runtime.retry-wait-ms=500
-pipeline.runtime.concurrency=2000
 pipeline.runtime.debug=false
 pipeline.runtime.recover-on-failure=false
-pipeline.runtime.run-with-virtual-threads=true
+pipeline.runtime.run-with-virtual-threads=false
 pipeline.runtime.auto-persist=true
 pipeline.runtime.max-backoff=30000
 pipeline.runtime.jitter=false
 
-# gRPC clients
-quarkus.grpc.clients.process-csv-payments-input-file.host=localhost
-quarkus.grpc.clients.process-csv-payments-input-file.port=8444
-quarkus.grpc.clients.process-csv-payments-input-file.plain-text=false
-quarkus.grpc.clients.process-csv-payments-input-file.use-quarkus-grpc-client=true
-quarkus.grpc.clients.process-csv-payments-input-file.tls.enabled=true
+# gRPC client configurations for each service
+quarkus.grpc.clients.processCustomer.host=process-customer-svc
+quarkus.grpc.clients.processCustomer.port=8444
+quarkus.grpc.clients.processCustomer.plain-text=false
+quarkus.grpc.clients.processCustomer.use-quarkus-grpc-client=true
+quarkus.grpc.clients.processCustomer.tls.enabled=true
+
+# ... additional service configurations
 ```
 
-### Environment Variables
-Use environment variables for configuration:
+## Customizing Generated Orchestrator Services
 
-```bash
-# Set CSV folder path
-export CSV_FOLDER_PATH="/path/to/csv/files"
+While the template generator creates a complete orchestrator service, you can customize it for your specific needs:
 
-# Set pipeline configuration
-export PIPELINE_RETRY_LIMIT=5
-export PIPELINE_DEBUG=true
+### 1. Implement Input Provisioning
+
+The template generates a `getInputMulti()` method stub that you must implement to provision inputs to your pipeline. This method converts your command-line input parameters into the appropriate `Multi` stream:
+
+```java
+// orchestrator-svc/src/main/java/com/example/app/orchestrator/OrchestratorApplication.java
+@Dependent
+public class OrchestratorApplication implements QuarkusApplication {
+
+    // ... other code ...
+
+    // After template generation, implement this method to provision inputs:
+    private static Multi<CustomerInput> getInputMulti(String input) {
+        // Example implementation:
+        // 1. Parse input string for file paths, database queries, or other input sources
+        // 2. Convert to the appropriate domain objects for your pipeline
+        // 3. Return a Multi stream of these objects
+        
+        // For example, if your input is a CSV file path:
+        List<CustomerInput> inputList = new ArrayList<>();
+        try (BufferedReader reader = Files.newBufferedReader(Paths.get(input))) {
+            // Process CSV and create CustomerInput objects
+            // inputList.add(...);
+        } catch (IOException e) {
+            throw new RuntimeException("Error reading input file", e);
+        }
+        
+        return Multi.createFrom().iterable(inputList);
+    }
+}
 ```
 
-## Best Practices
+### 2. Customize OrchestratorApplication
 
-### Design Principles
-1. **Separation of Concerns**: Keep orchestrator focused on coordination
-2. **Input Flexibility**: Support multiple input sources (files, databases, APIs)
-3. **Output Handling**: Provide clear output handling and reporting
-4. **Error Resilience**: Handle failures gracefully with proper error reporting
+Add custom logic to the generated `OrchestratorApplication`. You can modify command-line options or add additional processing:
 
-### Performance Considerations
-1. **Efficient Input Processing**: Process input data efficiently
-2. **Memory Management**: Manage memory usage for large datasets
-3. **Concurrency Control**: Control pipeline concurrency appropriately
-4. **Resource Cleanup**: Ensure proper resource cleanup
+```java
+@Command(name = "orchestrator", mixinStandardHelpOptions = true, version = "1.0.0",
+         description = "My Custom Pipeline App Orchestrator Service")
+@Dependent
+public class OrchestratorApplication implements QuarkusApplication {
 
-### Observability
-1. **Structured Logging**: Use structured logging with trace IDs
-2. **Metrics Collection**: Collect and expose pipeline metrics
-3. **Health Checks**: Implement health check endpoints
-4. **Tracing**: Enable distributed tracing for pipeline steps
+    @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", required = true)
+    String input;
+    
+    // Add custom command-line options
+    @Option(names = {"--custom-option"},
+            description = "A custom option for this orchestrator")
+    String customOption;
 
-### Deployment
-1. **Containerization**: Package as Docker containers
-2. **Configuration Management**: Use externalized configuration
-3. **Monitoring**: Implement monitoring and alerting
-4. **Scaling**: Design for horizontal scaling when needed
+    @Inject
+    PipelineExecutionService pipelineExecutionService;
+    
+    @Inject
+    CustomProcessingService customProcessingService; // Add your custom services as needed
+
+    public static void main(String[] args) {
+        io.quarkus.runtime.Quarkus.run(OrchestratorApplication.class, args);
+    }
+
+    @Override
+    public int run(String... args) {
+        CommandLine cmd = new CommandLine(this);
+        cmd.parseArgs(args);
+
+        if (input != null) {
+            // Custom pre-processing logic
+            customProcessingService.preProcess();
+            
+            executePipelineWithInput(input);
+            
+            // Custom post-processing logic
+            customProcessingService.postProcess();
+            
+            return 0; // Success exit code
+        } else {
+            System.err.println("Input parameter is required");
+            return 1; // Error exit code
+        }
+    }
+
+    // Execute the pipeline when arguments are properly parsed
+    private void executePipelineWithInput(String input) {
+        Multi<CustomerInput> inputMulti = getInputMulti(input);
+
+        // Execute the pipeline with the processed input using injected service
+        pipelineExecutionService.executePipeline(inputMulti)
+            .collect().asList()
+            .await().indefinitely();
+
+        System.out.println("Pipeline execution completed");
+    }
+
+    // Implement this method to provision inputs:
+    private static Multi<CustomerInput> getInputMulti(String input) {
+        // Your implementation to convert input to Multi<CustomerInput>
+        throw new UnsupportedOperationException("Method needs to be implemented");
+    }
+}
+```
+
+## Manual Orchestrator Service Creation
+
+<Callout type="info" title="Advanced Users Only">
+The following section describes how to manually create orchestrator services for advanced users who need capabilities beyond what the template generator provides. For most use cases, we recommend using the template generator.
+</Callout>
+
+### 1. Implement Orchestrator Application
+
+Manual creation is useful when you need:
+
+- **Custom base classes or alternative frameworks** - Extending from custom base classes instead of using the generated structure
+- **Different CLI frameworks** - Using alternative command-line parsing libraries instead of Picocli
+- **Custom integration requirements** - Integration with existing systems that require different initialization patterns
+- **Fine-grained control** - Full control over the application lifecycle and pipeline execution flow
+
+The manual approach allows you to create a custom orchestrator by implementing the QuarkusApplication interface with direct integration to the pipeline execution framework:
+
+```java
+// orchestrator-svc/src/main/java/com/example/app/orchestrator/CustomOrchestratorApplication.java
+@Command(name = "custom-orchestrator", mixinStandardHelpOptions = true, version = "1.0.0",
+         description = "Custom orchestrator with specialized requirements")
+@Dependent
+public class CustomOrchestratorApplication implements QuarkusApplication {
+
+    @Option(names = {"-i", "--input"}, description = "Input source for the pipeline", required = true)
+    String inputSource;
+
+    @Inject
+    PipelineExecutionService pipelineExecutionService;
+    
+    // Add custom dependencies as needed
+    @Inject
+    CustomMetricsService metricsService;
+
+    public static void main(String[] args) {
+        io.quarkus.runtime.Quarkus.run(CustomOrchestratorApplication.class, args);
+    }
+
+    @Override
+    public int run(String... args) {
+        // Custom initialization logic can be added here before pipeline execution
+        metricsService.initialize();
+        
+        CommandLine cmd = new CommandLine(this);
+        cmd.parseArgs(args);
+
+        if (inputSource != null) {
+            // Custom pre-processing logic
+            metricsService.startTimer();
+            
+            executePipelineWithInput(inputSource);
+            
+            // Custom post-processing logic
+            metricsService.reportMetrics();
+            
+            return 0; // Success exit code
+        } else {
+            System.err.println("Input source parameter is required");
+            return 1; // Error exit code
+        }
+    }
+
+    // Execute the pipeline when arguments are properly parsed
+    private void executePipelineWithInput(String inputSource) {
+        Multi<CustomerInput> inputMulti = getInputMulti(inputSource);
+
+        // Execute the pipeline with the processed input using injected service
+        pipelineExecutionService.executePipeline(inputMulti)
+            .collect().asList()
+            .await().indefinitely();
+
+        System.out.println("Pipeline execution completed");
+    }
+
+    // Implementation to convert your input into Multi stream
+    private static Multi<CustomerInput> getInputMulti(String inputSource) {
+        // Custom input processing logic specific to your requirements
+        // For example, reading from different sources: database, message queues, files, etc.
+        throw new UnsupportedOperationException("Method getInputMulti needs to be implemented with custom logic");
+    }
+}
+```
+
+**When to use manual creation vs. template generator:**
+
+- **Use the template generator** when you want a complete, standardized pipeline application with all the default functionality and observability features
+- **Use manual creation** when you need custom behaviors that are not supported by the template generator, such as custom dependency injection, non-standard initialization, or third-party integration requirements

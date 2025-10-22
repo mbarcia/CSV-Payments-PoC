@@ -11,10 +11,16 @@ This document provides a comprehensive reference implementation of The Pipeline 
 First, generate a sample configuration file:
 
 ```bash
-java -jar template-generator-1.0.0.jar --generate-config
+pipeline-template-generator --generate-config
 ```
 
 This creates `sample-pipeline-config.yaml` with a complete example configuration.
+
+Alternatively, if you're using the JAR file:
+
+```bash
+java -jar template-generator-1.0.0.jar --generate-config
+```
 
 ### 2. Customize Configuration
 

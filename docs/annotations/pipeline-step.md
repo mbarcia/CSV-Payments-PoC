@@ -37,7 +37,7 @@ Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny 
 - `retryWait`: The retry wait time for this step
 - `maxBackoff`: The maximum backoff time for this step
 - `jitter`: Whether to enable jitter for this step
-- `concurrency`: The concurrency limit for this step
+- `parallel`:  Whether to enable parallel processing for this step
 
 ### Example
 
@@ -65,7 +65,7 @@ Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny 
    retryWait = "PT500MS",
    maxBackoff = "PT30S",
    jitter = true,
-   concurrency = 1000,
+   parallel = true,
    batchSize = 50,
    batchTimeoutMs = 5000
 )

@@ -41,7 +41,7 @@ public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configur
         return Collections.emptyList();
     }
 
-    default boolean runWithVirtualThreads() { return false; }
+	default boolean runWithVirtualThreads() { return false; }
     
     @Override
     default Multi<O> apply(Multi<I> input) {

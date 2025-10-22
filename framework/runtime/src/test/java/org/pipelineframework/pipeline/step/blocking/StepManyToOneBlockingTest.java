@@ -81,10 +81,10 @@ class StepManyToOneBlockingTest {
         TestStepBlocking step = new TestStepBlocking();
 
         // When
-        long batchTimeoutMs = step.batchTimeoutMs();
+        Duration batchTimeout = step.batchTimeout();
 
         // Then
-        assertEquals(1000, batchTimeoutMs);
+        assertEquals(Duration.ofMillis(1000), batchTimeout);
     }
 
     @Test

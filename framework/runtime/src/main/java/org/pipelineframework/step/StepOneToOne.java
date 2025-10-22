@@ -26,11 +26,11 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Interface for one-to-one pipeline steps that transform a single input item to a single output item asynchronously.
- *
+
  * <p>This interface represents a 1 -> 1 (async) transformation where each input item
  * is processed to produce exactly one output item. The processing is asynchronous,
  * returning a Uni that emits the transformed result.</p>
- *
+
  * @param <I> the type of input item
  * @param <O> the type of output item
  */
@@ -41,7 +41,7 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
      * @return a Uni that emits the transformed output item
      */
     Uni<O> applyOneToOne(I in);
-    
+
     @Override
     default Uni<O> apply(Uni<I> input) {
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
@@ -68,7 +68,9 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
                     return Uni.createFrom().failure(new NullPointerException("Step returned null Uni"));
                 }
 
-                if (liveConfig().runWithVirtualThreads()) {
+                // Check if we should run with virtual threads
+                boolean useVirtualThreads = runWithVirtualThreads();
+                if (useVirtualThreads) {
                     result = result.runSubscriptionOn(vThreadExecutor);
                 }
 

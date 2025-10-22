@@ -30,10 +30,10 @@ package org.pipelineframework.step;
 public interface StepSideEffect<I> extends Configurable, StepOneToOne<I, I>, DeadLetterQueue<I, I> {
 
     /**
-     * The maximum number of in-flight items per upstream item for this side effect step.
-     * @return the maximum number of concurrent operations (defaults to 1)
+     * Whether to enable parallel processing for this side effect step.
+     * @return true if parallel processing is enabled, false for sequential processing (defaults to false)
      */
-    default int concurrency() { return 1; } // max in-flight items per upstream item
+    default boolean parallel() { return false; } // enable parallel processing
 
     /**
      * Indicates whether this step should run with virtual threads.

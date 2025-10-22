@@ -16,6 +16,7 @@
 
 package org.pipelineframework.annotation;
 
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -185,4 +186,11 @@ public @interface PipelineStep {
      * @return the time window in milliseconds for this step
      */
     long batchTimeoutMs() default 1000L;
+
+    /**
+     * Whether to enable parallel processing for this step (default=false)
+     * When true, enables concurrent processing of multiple items within the same stream.
+     * @return true if parallel processing should be enabled, false otherwise
+     */
+    boolean parallel() default false;
 }

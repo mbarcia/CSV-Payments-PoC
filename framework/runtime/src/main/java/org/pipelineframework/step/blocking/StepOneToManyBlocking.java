@@ -40,9 +40,7 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
 
     List<O> applyList(I in);
 
-    default int concurrency() { return 1; }
-
-    default boolean runWithVirtualThreads() { return false; }
+	default boolean runWithVirtualThreads() { return false; }
 
     @Override
     default Multi<O> apply(Uni<I> inputUni) {
@@ -70,4 +68,5 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
                     }
                 });
             });
-    }}
+    }
+}

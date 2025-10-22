@@ -70,7 +70,7 @@ public final class PipelineConfig {
                 .autoPersist(base.autoPersist())
                 .retryLimit(base.retryLimit())
                 .retryWait(base.retryWait())
-                .concurrency(base.concurrency())
+                .parallel(base.parallel())
                 .debug(base.debug())
                 .recoverOnFailure(base.recoverOnFailure())
                 .runWithVirtualThreads(base.runWithVirtualThreads())

@@ -25,8 +25,8 @@ import org.slf4j.LoggerFactory;
 /** N -> N */
 public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, DeadLetterQueue<I, O> {
     Multi<O> applyTransform(Multi<I> input);
-    
-    @Override
+
+	@Override
     default Multi<O> apply(Multi<I> input) {
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
         final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();

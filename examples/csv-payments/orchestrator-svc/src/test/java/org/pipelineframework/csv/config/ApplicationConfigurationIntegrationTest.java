@@ -36,25 +36,25 @@ class ApplicationConfigurationIntegrationTest {
         // Save original defaults
         StepConfig originalDefaults = pipelineConfig.defaults();
         int originalRetryLimit = originalDefaults.retryLimit();
-        int originalConcurrency = originalDefaults.concurrency();
+        boolean originalParallel = originalDefaults.parallel();
         boolean originalDebug = originalDefaults.debug();
 
         try {
             // Set global defaults (simulating application.properties)
-            pipelineConfig.defaults().retryLimit(3).concurrency(4).debug(false);
+            pipelineConfig.defaults().retryLimit(3).parallel(true).debug(false);
 
             // For this test, we'll just verify we can access the injected steps
             // and that they have the expected default configuration
             assertNotNull(pipelineConfig.defaults());
             assertEquals(3, pipelineConfig.defaults().retryLimit());
-            assertEquals(4, pipelineConfig.defaults().concurrency());
+            assertTrue(pipelineConfig.defaults().parallel());
             assertFalse(pipelineConfig.defaults().debug());
         } finally {
             // Restore original defaults
             pipelineConfig
                     .defaults()
                     .retryLimit(originalRetryLimit)
-                    .concurrency(originalConcurrency)
+                    .parallel(originalParallel)
                     .debug(originalDebug);
         }
     }

@@ -45,7 +45,7 @@ public class PipelineConfigInitializer {
      */
     void onStart(@Observes StartupEvent event) {
         LOG.info("Initializing pipeline configuration");
-        LOG.info("Concurrency: {}", staticConfig.concurrency());
+        LOG.info("Parallel: {}", staticConfig.parallel());
         LOG.info("Retry limit: {}", staticConfig.retryLimit());
         LOG.info("Retry wait: {}ms", staticConfig.retryWaitMs());
         

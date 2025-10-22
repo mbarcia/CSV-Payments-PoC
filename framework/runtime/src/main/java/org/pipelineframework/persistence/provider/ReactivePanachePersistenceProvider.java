@@ -48,26 +48,24 @@ public class ReactivePanachePersistenceProvider implements PersistenceProvider<P
 
         if (entity instanceof PanacheEntityBase panacheEntity) {
             LOG.debug("About to persist entity: {}", entity);
-            
-            // Use a try-catch approach for handling duplicate keys
-            // Since we can't access the id field directly from PanacheEntityBase
-            return Panache.withTransaction(() -> 
-                panacheEntity.persistAndFlush()
-                    .replaceWith(panacheEntity)
+
+            return Panache.withTransaction(() ->
+                            panacheEntity.persistAndFlush()
+                                    .replaceWith(panacheEntity)
+                    )
                     .onFailure().recoverWithUni(failure -> {
-                        LOG.debug("Error during persist, checking for duplicate key: {}", failure.getMessage());
-                        
-                        // If it's a duplicate key violation, we can return the original entity safely
+                        LOG.debug("Error during persist: {}", failure.getMessage());
+
                         if (isDuplicateKeyError(failure)) {
-                            LOG.debug("Duplicate key error detected, returning entity without persisting");
+                            LOG.debug("Duplicate key detected, ignoring persist and returning entity");
+                            // Retry outside of transaction, return entity safely
                             return Uni.createFrom().item(panacheEntity);
                         }
-                        
-                        // For other errors, log and return the entity
-                        LOG.error("Failed to persist {}: {}", entity.getClass().getSimpleName(), failure.getMessage(), failure);
-                        return Uni.createFrom().item(panacheEntity);
-                    })
-            );
+
+                        LOG.error("Unexpected persistence failure for {}: {}",
+                                entity.getClass().getSimpleName(), failure.getMessage(), failure);
+                        return Uni.createFrom().failure(failure);
+                    });
         } else {
             LOG.debug("Skipped non-Panache entity");
         }

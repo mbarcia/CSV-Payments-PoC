@@ -47,6 +47,7 @@ import org.slf4j.MDC;
   grpcClient = "send-payment-record",
   restEnabled = true,
   autoPersist = true,
+  parallel = true,
   debug = true
 )
 @ApplicationScoped
@@ -71,13 +72,13 @@ public class SendPaymentRecordReactiveService
             .setPaymentRecordId(paymentRecord.getId());
 
     Uni<AckPaymentSent> result =
-        Uni.createFrom().item(paymentProviderServiceMock.sendPayment(request));
+            Uni.createFrom().item(() -> paymentProviderServiceMock.sendPayment(request));
 
     String serviceId = this.getClass().toString();
     MDC.put("serviceId", serviceId);
     Logger logger = LoggerFactory.getLogger(this.getClass());
     logger.info("Executed command on {} --> {}", paymentRecord, result);
-    MDC.clear();
+    MDC.remove("serviceId");
 
     return result;
   }

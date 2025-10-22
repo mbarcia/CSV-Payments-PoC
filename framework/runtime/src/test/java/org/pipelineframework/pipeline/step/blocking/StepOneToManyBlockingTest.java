@@ -58,15 +58,15 @@ class StepOneToManyBlockingTest {
     }
 
     @Test
-    void testDefaultConcurrency() {
+    void testDefaultParallel() {
         // Given
         TestStepBlocking step = new TestStepBlocking();
 
         // When
-        int concurrency = step.concurrency();
+        boolean parallel = step.parallel();
 
         // Then
-        assertEquals(1, concurrency);
+        assertFalse(parallel);
     }
 
     @Test

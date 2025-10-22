@@ -19,6 +19,7 @@ package org.pipelineframework.pipeline.step.future;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.AssertSubscriber;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -71,15 +72,15 @@ class StepOneToOneCompletableFutureTest {
     }
 
     @Test
-    void testDefaultConcurrency() {
+    void testDefaultParallel() {
         // Given
         TestStepFuture step = new TestStepFuture();
 
         // When
-        int concurrency = step.concurrency();
+        boolean parallel = step.parallel();
 
         // Then
-        assertEquals(1, concurrency);
+        assertFalse(parallel);
     }
 
     @Test
@@ -104,7 +105,7 @@ class StepOneToOneCompletableFutureTest {
         Multi<String> result =
                 input.onItem()
                         .transformToUniAndConcatenate(
-                                item -> step.apply(io.smallrye.mutiny.Uni.createFrom().item(item)));
+                                item -> step.apply(Uni.createFrom().item(item)));
 
         // Then
         AssertSubscriber<String> subscriber =

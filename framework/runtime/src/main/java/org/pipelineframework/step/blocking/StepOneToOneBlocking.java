@@ -32,7 +32,5 @@ import org.pipelineframework.step.StepOneToOne;
 public interface StepOneToOneBlocking<I, O> extends StepOneToOne<I, O> {
     Uni<O> apply(I in);
 
-    default int concurrency() { return 1; } // max in-flight items per upstream item
-
-    default boolean runWithVirtualThreads() { return true; }
+	default boolean runWithVirtualThreads() { return true; }
 }

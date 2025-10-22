@@ -21,7 +21,6 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 import lombok.Getter;
 import org.pipelineframework.annotation.PipelineStep;
-import org.pipelineframework.csv.common.domain.*;
 import org.pipelineframework.csv.common.domain.AckPaymentSent;
 import org.pipelineframework.csv.common.domain.PaymentOutput;
 import org.pipelineframework.csv.common.domain.PaymentRecord;
@@ -48,6 +47,7 @@ import org.slf4j.MDC;
     outboundMapper = PaymentOutputMapper.class,
     grpcClient = "process-payment-status",
     autoPersist = true,
+    parallel = true,
     debug = true,
     restEnabled = true
 )
@@ -87,7 +87,7 @@ public class ProcessPaymentStatusReactiveService
                   Logger logger = LoggerFactory.getLogger(this.getClass());
                   MDC.put("serviceId", serviceId);
                   logger.info("Executed command on {} --> {}", paymentStatus, result);
-                  MDC.clear();
+                  MDC.remove("serviceId");
                 });
   }
 }

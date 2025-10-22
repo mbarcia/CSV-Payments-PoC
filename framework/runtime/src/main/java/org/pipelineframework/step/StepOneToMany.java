@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 /** 1 -> N */
 public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, DeadLetterQueue<I, O> {
     Multi<O> applyOneToMany(I in);
-    
-    @Override
+
+	@Override
     default Multi<O> apply(Uni<I> input) {
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
         final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();

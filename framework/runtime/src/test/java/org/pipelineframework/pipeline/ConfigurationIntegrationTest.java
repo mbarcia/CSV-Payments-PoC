@@ -62,8 +62,8 @@ class ConfigurationIntegrationTest {
             // Check default values
             StepConfig defaults = pipelineConfig.defaults();
             assertEquals(3, defaults.retryLimit());
-            assertEquals(Duration.ofMillis(200), defaults.retryWait());
-            assertEquals(4, defaults.concurrency());
+            assertEquals(Duration.ofMillis(2000), defaults.retryWait());
+            assertFalse(defaults.parallel());
             assertFalse(defaults.debug());
             assertFalse(defaults.recoverOnFailure());
             assertFalse(defaults.runWithVirtualThreads());

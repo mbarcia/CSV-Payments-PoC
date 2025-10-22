@@ -31,7 +31,7 @@ The `@PipelineStep` annotation is used to mark a class as a pipeline step. This 
 - `retryWait`: The retry wait time for this step
 - `maxBackoff`: The maximum backoff time for this step
 - `jitter`: Whether to enable jitter for this step
-- `concurrency`: The concurrency limit for this step
+- `parallel`:  Whether to enable parallel processing for this step
 
 ## Example Usage
 
@@ -61,7 +61,8 @@ The `@PipelineStep` annotation is used to mark a class as a pipeline step. This 
    jitter = true,
    concurrency = 1000,
    batchSize = 50,
-   batchTimeoutMs = 5000
+   batchTimeoutMs = 5000,
+   parallel = true
 )
 @ApplicationScoped
 public class ProcessPaymentService implements StepOneToOne<PaymentRecord, PaymentStatus> {

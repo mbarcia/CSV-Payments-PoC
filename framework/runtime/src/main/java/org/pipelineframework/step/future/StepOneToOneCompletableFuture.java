@@ -43,9 +43,7 @@ public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Con
         return ForkJoinPool.commonPool(); 
     }
 
-    default int concurrency() { return 1; } // max in-flight items per upstream item
-
-    default boolean runWithVirtualThreads() { return false; }
+	default boolean runWithVirtualThreads() { return false; }
 
     @Override
     default Uni<O> apply(Uni<I> inputUni) {

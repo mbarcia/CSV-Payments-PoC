@@ -15,10 +15,10 @@
   -->
 
 <script>
-    import {createEventDispatcher, onMount} from 'svelte';
-    import GenericTypeConfigPopup from './GenericTypeConfigPopup.svelte';
+  import {createEventDispatcher, onMount} from 'svelte';
+  import GenericTypeConfigPopup from './GenericTypeConfigPopup.svelte';
 
-    const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher();
 
   export let step;
   export let stepIndex;
@@ -100,12 +100,12 @@
   }
 
   // Function to handle type change, including generic types
-  function handleTypeChange(fieldIndex, type, side) {
+  function handleTypeChange(fieldIndex, type, sideName) {
     if (type === 'List' || type === 'Map') {
       // Store context for the generic type popup
       currentFieldIndex = fieldIndex;
       currentFieldType = type;
-      currentFieldSide = side;
+      currentFieldSide = sideName;
       
       // Show the generic type configuration popup
       showGenericConfig = true;
@@ -115,7 +115,7 @@
       return false;
     } else {
       // For non-generic types, update directly
-      dispatch('updateField', { type: side, index: fieldIndex, property: 'type', value: type });
+      dispatch('updateField', { type: sideName, index: fieldIndex, property: 'type', value: type });
     }
   }
 </script>
@@ -202,18 +202,7 @@
                       value={field.type}
                       on:change={(e) => {
                         const selectedType = e.target.value;
-                        if (selectedType === 'List' || selectedType === 'Map') {
-                          // Store context for the generic type popup
-                          currentFieldIndex = fieldIndex;
-                          currentFieldType = selectedType;
-                          currentFieldSide = 'input';
-                          
-                          // Show the generic type configuration popup
-                          showGenericConfig = true;
-                        } else {
-                          // For non-generic types, update directly
-                          dispatch('updateField', { type: 'input', index: fieldIndex, property: 'type', value: selectedType });
-                        }
+                        handleTypeChange(fieldIndex, selectedType, 'input');
                       }}
                       class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     >
@@ -277,18 +266,7 @@
                       value={field.type}
                       on:change={(e) => {
                         const selectedType = e.target.value;
-                        if (selectedType === 'List' || selectedType === 'Map') {
-                          // Store context for the generic type popup
-                          currentFieldIndex = fieldIndex;
-                          currentFieldType = selectedType;
-                          currentFieldSide = 'output';
-                          
-                          // Show the generic type configuration popup
-                          showGenericConfig = true;
-                        } else {
-                          // For non-generic types, update directly
-                          dispatch('updateField', { type: 'output', index: fieldIndex, property: 'type', value: selectedType });
-                        }
+                        handleTypeChange(fieldIndex, selectedType, 'output');
                       }}
                       class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     >
@@ -320,8 +298,8 @@
             <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
             <input 
               type="text" 
-              bind:value={step.inputTypeName}
-              on:input={() => dispatch('typeChange', { property: 'inputTypeName', value: step.inputTypeName })}
+              value={step.inputTypeName}
+              on:input={(e) => dispatch('typeChange', { property: 'inputTypeName', value: e.target.value })}
               class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Shared type name"
             />
@@ -352,18 +330,7 @@
                     value={field.type}
                     on:change={(e) => {
                       const selectedType = e.target.value;
-                      if (selectedType === 'List' || selectedType === 'Map') {
-                        // Store context for the generic type popup
-                        currentFieldIndex = fieldIndex;
-                        currentFieldType = selectedType;
-                        currentFieldSide = 'input';
-                        
-                        // Show the generic type configuration popup
-                        showGenericConfig = true;
-                      } else {
-                        // For non-generic types, update directly
-                        dispatch('updateField', { type: 'input', index: fieldIndex, property: 'type', value: selectedType });
-                      }
+                      handleTypeChange(fieldIndex, selectedType, 'input');
                     }}
                     class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
@@ -439,18 +406,7 @@
                     value={field.type}
                     on:change={(e) => {
                       const selectedType = e.target.value;
-                      if (selectedType === 'List' || selectedType === 'Map') {
-                        // Store context for the generic type popup
-                        currentFieldIndex = fieldIndex;
-                        currentFieldType = selectedType;
-                        currentFieldSide = formType;
-                        
-                        // Show the generic type configuration popup
-                        showGenericConfig = true;
-                      } else {
-                        // For non-generic types, update directly
-                        dispatch('updateField', { type: formType, index: fieldIndex, property: 'type', value: selectedType });
-                      }
+                      handleTypeChange(fieldIndex, selectedType, formType);
                     }}
                     class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >

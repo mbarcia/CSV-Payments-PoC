@@ -225,7 +225,7 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     // Execute the pipeline when arguments are properly parsed
     private void executePipelineWithInput(String input) {
-        Multi<CustomerInput> inputMulti = // call getInputMulti(input) or custom input processing;
+        Multi<CustomerInput> inputMulti = getInputMulti(input);
 
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti)

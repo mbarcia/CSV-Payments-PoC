@@ -156,7 +156,7 @@
     const stepName = `Step ${stepNumber}`;
     // Convert step name to valid service name (lowercase, hyphens, svc suffix)
     const serviceName = `${stepName.toLowerCase().replace(/\s+/g, '-')}-svc`;
-    const serviceNameCamel = toCamelCase(stepName, { upperFirst: true });
+    const serviceNameCamel = toCamelCase(stepName.replace(/\s+/g, ''), { upperFirst: true });
     
     const newStep = {
       name: stepName,

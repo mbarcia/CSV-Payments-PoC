@@ -184,7 +184,7 @@ public class PipelineRunner implements AutoCloseable {
     }
 
     @SuppressWarnings({"unchecked"})
-    private static <I, O> Object applyOneToOneUnchecked(org.pipelineframework.step.StepOneToOne<I, O> step, Object current) {
+    public static <I, O> Object applyOneToOneUnchecked(org.pipelineframework.step.StepOneToOne<I, O> step, Object current) {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {

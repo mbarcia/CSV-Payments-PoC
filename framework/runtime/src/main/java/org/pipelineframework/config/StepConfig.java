@@ -188,8 +188,8 @@ public class StepConfig {
      * @return this StepConfig instance for method chaining
      */
     public StepConfig backpressureBufferCapacity(int v) { 
-        if (v < 0) {
-            throw new IllegalArgumentException("backpressureBufferCapacity must be >= 0");
+        if (v <= 0) {
+            throw new IllegalArgumentException("backpressureBufferCapacity must be > 0");
         }
         backpressureBufferCapacity.set(v); 
         return this; 
@@ -223,7 +223,15 @@ public class StepConfig {
      * @param v the backpressure strategy
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig backpressureStrategy(String v) { backpressureStrategy = v; return this; }
+    public StepConfig backpressureStrategy(String v) {
+        Objects.requireNonNull(v, "backpressureStrategy must not be null");
+        String norm = v.trim().toUpperCase();
+        if (!norm.equals("BUFFER") && !norm.equals("DROP")) {
+            throw new IllegalArgumentException("backpressureStrategy must be BUFFER or DROP");
+        }
+        backpressureStrategy = norm;
+        return this;
+    }
     /**
      * Sets the maximum backoff duration when using exponential backoff
      * @param v the maximum backoff duration
@@ -246,7 +254,7 @@ public class StepConfig {
 
     @Override
     public String toString() {
-        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, parallel={2}, debug={3}, recoverOnFailure={4}, maxBackoff={5}, jitter={6}, autoPersist={7}, batchSize={8}, batchTimeout={9}, backpressureBufferCapacity={10}'}'",
+        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, parallel={2}, debug={3}, recoverOnFailure={4}, maxBackoff={5}, jitter={6}, autoPersist={7}, batchSize={8}, batchTimeout={9}, backpressureBufferCapacity={10}, backpressureStrategy={11}'}'",
                 retryLimit(),
                 retryWait(),
                 parallel,
@@ -257,6 +265,7 @@ public class StepConfig {
                 autoPersist,
                 batchSize(),
                 batchTimeout(),
-                backpressureBufferCapacity());
+                backpressureBufferCapacity(),
+                backpressureStrategy());
     }
 }

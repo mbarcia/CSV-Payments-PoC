@@ -53,7 +53,8 @@ import org.slf4j.MDC;
     grpcImpl = org.pipelineframework.csv.grpc.MutinyProcessCsvPaymentsInputStreamServiceGrpc.ProcessCsvPaymentsInputStreamServiceImplBase.class,
     inboundMapper = CsvPaymentsInputStreamMapper.class,
     outboundMapper = PaymentRecordMapper.class,
-    grpcClient = "process-csv-payments-input-stream"
+    grpcClient = "process-csv-payments-input-stream",
+    restEnabled = true
 )
 @ApplicationScoped
 public class ProcessCsvPaymentsInputStreamService

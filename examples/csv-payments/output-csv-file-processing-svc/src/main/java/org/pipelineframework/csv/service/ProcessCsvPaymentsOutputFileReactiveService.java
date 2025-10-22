@@ -66,6 +66,7 @@ import org.slf4j.MDC;
   outboundMapper = CsvPaymentsOutputFileMapper.class,
   grpcClient = "process-csv-payments-output-file",
   autoPersist = true,
+  restEnabled = true,
   debug = true,
   parallel = false,
   batchSize = 100000,  // Larger batch size to ensure all related records are processed together

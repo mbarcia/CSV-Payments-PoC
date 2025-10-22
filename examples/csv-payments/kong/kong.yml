@@ -22,7 +22,7 @@ services:
         protocols:
           - https
         paths:
-          - /api/v1/input-processing
+          - /api/v1/process-csv-payments-input-reactive/process
         strip_path: false
     plugins:
       - name: cors
@@ -67,11 +67,17 @@ services:
     url: https://payments-processing-svc:8445
     protocol: https
     routes:
-      - name: payments-processing-svc-rest-route
+      - name: process-ack-payment-sent-svc-rest-route
         protocols:
           - https
         paths:
-          - /api/v1/payments-processing
+          - /api/v1/process-ack-payment-sent-reactive/process
+        strip_path: false
+      - name: send-payment-svc-rest-route
+        protocols:
+          - https
+        paths:
+          - /api/v1/send-payment-record-reactive/process
         strip_path: false
     plugins:
       - name: cors
@@ -156,7 +162,7 @@ services:
         protocols:
           - https
         paths:
-          - /api/v1/payment-status
+          - /api/v1/process-payment-status-reactive/process
         strip_path: false
     plugins:
       - name: cors
@@ -205,7 +211,7 @@ services:
         protocols:
           - https
         paths:
-          - /api/v1/output-processing
+          - /api/v1/process-csv-payments-output-file-reactive/process
         strip_path: false
     plugins:
       - name: cors

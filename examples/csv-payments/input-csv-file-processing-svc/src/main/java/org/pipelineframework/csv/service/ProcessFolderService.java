@@ -50,6 +50,7 @@ import org.slf4j.MDC;
     inboundMapper = CsvFolderMapper.class,
     outboundMapper = CsvPaymentsInputFileMapper.class,
     grpcClient = "process-folder",
+    restEnabled = true,
     autoPersist = true,
     debug = true
 )

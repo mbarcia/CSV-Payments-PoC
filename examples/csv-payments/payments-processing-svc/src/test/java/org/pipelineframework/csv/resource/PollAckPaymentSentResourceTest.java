@@ -138,6 +138,8 @@ class PollAckPaymentSentResourceTest {
                 .when()
                 .post("/api/v1/payments-processing/poll-ack-payment")
                 .then()
-                .statusCode(500); // Missing required fields results in 500 due to NPE in mapper
+                .statusCode(
+                        500); // Missing required fields results in 400 Bad request due to NPE in
+        // mapper
     }
 }

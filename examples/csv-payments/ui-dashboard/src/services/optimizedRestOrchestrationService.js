@@ -31,11 +31,11 @@ const httpsAxios = axios.create({
 // For Node.js (testing), we can configure the agent
 
 // Service endpoints - going through Kong API Gateway
-const INPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/input-processing';
-const PAYMENTS_PROCESSING_SVC = 'https://localhost:8843/api/v1/payments-processing';
-const PROCESS_ACK_PAYMENT_SENT_REACTIVE_SVC = 'https://localhost:8843/api/v1/process-ack-payment-sent-reactive/process';
-const PAYMENT_STATUS_SVC = 'https://localhost:8843/api/v1/payment-status';
-const OUTPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/output-processing';
+const INPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/process-csv-payments-input-reactive/process';
+const SEND_PAYMENT_SVC = 'https://localhost:8843/api/v1/send-payment-record-reactive/process';
+const PROCESS_ACK_PAYMENT_SENT_SVC = 'https://localhost:8843/api/v1/payments-processing/process';
+const PAYMENT_STATUS_SVC = 'https://localhost:8843/api/v1/process-payment-status-reactive/process';
+const OUTPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/process-csv-payments-output-file-reactive/process';
 
 class OptimizedRestOrchestrationService {
   async processFile(file, onStatsUpdate) {
@@ -135,7 +135,7 @@ class OptimizedRestOrchestrationService {
             // In browser environments, we can't configure httpsAgent directly
             // Certificate handling is done by the browser
             const sendResponse = await httpsAxios.post(
-                `${PAYMENTS_PROCESSING_SVC}/send-payment`,
+                `${SEND_PAYMENT_SVC}`,
                 record,
                 { 
                   headers: { 'Content-Type': 'application/json' },
@@ -148,7 +148,7 @@ class OptimizedRestOrchestrationService {
 
             const processAckResponse = await this.processWithRetry(
                 () => httpsAxios.post(
-                    PROCESS_ACK_PAYMENT_SENT_REACTIVE_SVC,
+                    `${PROCESS_ACK_PAYMENT_SENT_SVC}`,
                     ackPayment,
                     { 
                       headers: { 'Content-Type': 'application/json' }
@@ -162,9 +162,9 @@ class OptimizedRestOrchestrationService {
             updateStats('status');
 
             // Process payment status
-            console.log('Processing payment status to:', `${PAYMENT_STATUS_SVC}/process`);
+            console.log('Processing payment status to:', `${PAYMENT_STATUS_SVC}`);
             const statusResponse = await httpsAxios.post(
-                `${PAYMENT_STATUS_SVC}/process`,
+                `${PAYMENT_STATUS_SVC}`,
                 paymentStatus,
                 { 
                   headers: { 'Content-Type': 'application/json' }
@@ -219,13 +219,13 @@ class OptimizedRestOrchestrationService {
       onStatsUpdate({ ...stats }); // Always update for final reset
 
       // Process and download the output file
-      console.log('Processing output file with', paymentOutputs.length, 'records to:', `${OUTPUT_PROCESSING_SVC}/process`);
+      console.log('Processing output file with', paymentOutputs.length, 'records to:', `${OUTPUT_PROCESSING_SVC}`);
       
       // Instead of returning a download URL, we'll make a direct request to get the file
       // and let the browser handle the download
       try {
         const response = await httpsAxios.post(
-          `${OUTPUT_PROCESSING_SVC}/process`,
+          `${OUTPUT_PROCESSING_SVC}`,
           paymentOutputs,
           { 
             headers: { 'Content-Type': 'application/json' },
@@ -324,7 +324,7 @@ class OptimizedRestOrchestrationService {
       };
 
       // Send the request
-      xhr.open('POST', `${INPUT_PROCESSING_SVC}/process`);
+      xhr.open('POST', `${INPUT_PROCESSING_SVC}`);
       const formData = new FormData();
       formData.append('file', file);
       formData.append('filename', file.name);

@@ -10,8 +10,8 @@ hero:
     alt: The Pipeline Framework
   actions:
     - theme: brand
-      text: Get Started
-      link: /guide/getting-started
+      text: Quick Start
+      link: /guide/quick-start
     - theme: alt
       text: View on GitHub
       link: https://github.com/mbarcia/pipelineframework
@@ -33,7 +33,7 @@ features:
 ---
 
 <Callout type="tip" title="Visual Pipeline Designer Available">
-The Pipeline Framework includes a visual canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> that allows you to create and configure your pipelines using an intuitive drag-and-drop interface. This tool makes it easier to visualize the flow between steps and manage complex pipeline configurations.
+The Pipeline Framework includes a visual canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> that allows you to create and configure your pipelines using an intuitive drag-and-drop interface. Simply design your pipeline visually, click "Download Application", and you'll get a complete ZIP file with all the generated source code - no command-line tools needed!
 </Callout>
 
 ## Introduction
@@ -53,7 +53,7 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 
 ## Getting Started
 
-New to The Pipeline Framework? Start with our [Getting Started](/guide/getting-started) guide to learn the basics.
+New to The Pipeline Framework? Start with our [Quick Start](/guide/quick-start) guide to learn the basics using the visual Canvas designer.
 
 ## Guides
 
@@ -80,5 +80,6 @@ To get started with The Pipeline Framework, explore these guides:
 - [YAML Configuration Schema](/YAML_SCHEMA.html): Complete YAML schema documentation
 - [Canvas Designer Guide](/CANVAS_GUIDE.html): Complete Canvas usage guide
 - [Java-Centered Types](/JAVA_CENTERED_TYPES.html): Java-first approach with protobuf mapping
+- [Publishing to Maven Central](/PUBLISHING.html): Guide to releasing and publishing the framework
 
 This approach reduces boilerplate code and ensures consistency across your pipeline steps.

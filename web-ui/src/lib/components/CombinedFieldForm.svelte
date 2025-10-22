@@ -1,6 +1,23 @@
+<!--
+  - Copyright (c) 2023-2025 Mariano Barcia
+  -
+  - Licensed under the Apache License, Version 2.0 (the "License");
+  - you may not use this file except in compliance with the License.
+  - You may obtain a copy of the License at
+  -
+  -     http://www.apache.org/licenses/LICENSE-2.0
+  -
+  - Unless required by applicable law or agreed to in writing, software
+  - distributed under the License is distributed on an "AS IS" BASIS,
+  - WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  - See the License for the specific language governing permissions and
+  - limitations under the License.
+  -->
+
 <script>
-  import { onMount, createEventDispatcher } from 'svelte';
-  
+  import {createEventDispatcher, onMount} from 'svelte';
+  import GenericTypeConfigPopup from './GenericTypeConfigPopup.svelte';
+
   const dispatch = createEventDispatcher();
 
   export let step;
@@ -9,9 +26,12 @@
   export let fieldTypes = [
     'String', 'Integer', 'Long', 'Double', 'Boolean', 
     'UUID', 'BigDecimal', 'Currency', 'Path',
-    'List<String>', 'LocalDateTime', 'LocalDate', 'OffsetDateTime', 'ZonedDateTime', 'Instant', 'Duration', 'Period',
+    'List', 'Map', 'LocalDateTime', 'LocalDate', 'OffsetDateTime', 'ZonedDateTime', 'Instant', 'Duration', 'Period',
     'URI', 'URL', 'File', 'BigInteger', 'AtomicInteger', 'AtomicLong', 'Enum'
   ];
+  
+  // Filter out List and Map from the types shown in the generic type popup
+  $: genericFieldTypes = fieldTypes.filter((t) => t !== 'List' && t !== 'Map');
   
   // Function to get all available types including custom message types from previous steps
   function getAvailableFieldTypes(currentStepIndex, config) {
@@ -34,20 +54,31 @@
     return allTypes;
   }
   export let formType = 'both'; // 'both', 'input', 'output', 'shared'
+  export let config; // full generator config (needed to include prior step types)
   export let visible = false;
+
+  // Reactive list of available types for this step
+  $: availableTypes = getAvailableFieldTypes(stepIndex, config);
+
+  // State for generic type configuration popup
+  let showGenericConfig = false;
+  let genericType = 'List';
+  let currentFieldIndex = -1;
+  let currentFieldType = '';
+  let currentFieldSide = '';
 
   let container;
 
   // Close modal when clicking outside
   onMount(() => {
     const handleClickOutside = (event) => {
-      if (container && !container.contains(event.target) && visible) {
+      if (container && !container.contains(event.target) && visible && !showGenericConfig) {
         dispatch('close');
       }
     };
 
     const handleEscape = (event) => {
-      if (event.key === 'Escape' && visible) {
+      if (event.key === 'Escape' && visible && !showGenericConfig) {
         dispatch('close');
       }
     };
@@ -59,20 +90,51 @@
       document.removeEventListener('keydown', handleEscape);
     };
   });
+
+  // Function to get the current field based on side and index
+  function getCurrentField() {
+    if (currentFieldIndex === -1) return null;
+    return (currentFieldSide === 'input' || currentFieldSide === 'shared') 
+      ? step.inputFields[currentFieldIndex] 
+      : step.outputFields[currentFieldIndex];
+  }
+
+  // Function to handle type change, including generic types
+  function handleTypeChange(fieldIndex, type, sideName) {
+    if (type === 'List' || type === 'Map') {
+      // Store context for the generic type popup
+      currentFieldIndex = fieldIndex;
+      currentFieldType = type;
+      currentFieldSide = sideName;
+      
+      // Show the generic type configuration popup
+      showGenericConfig = true;
+      
+      // Prevent the field type from being updated to just 'List' or 'Map'
+      // We'll update it with the full generic type (e.g., 'List<String>') after confirmation
+      return false;
+    } else {
+      // For non-generic types, update directly
+      dispatch('updateField', { type: sideName, index: fieldIndex, property: 'type', value: type });
+    }
+  }
 </script>
 
 {#if visible}
   <div 
     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    on:click={() => dispatch('close')}
+    on:click={() => !showGenericConfig && dispatch('close')}
   >
     <div 
       class="bg-white rounded-lg shadow-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-auto" 
       bind:this={container}
-      on:click|stopPropagation
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="combinedFieldFormDialogTitle"
+      on:click|stopPropagation={() => {}}
     >
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-semibold">
+        <h3 id="combinedFieldFormDialogTitle" class="text-lg font-semibold">
           {formType === 'shared' ? 'Shared Type Configuration' : 
            formType === 'both' ? `Step ${stepIndex + 1}: ${step?.name} Fields` : 
            `${formType === 'input' ? 'Input' : 'Output'} Fields - ${step?.name}`}
@@ -85,6 +147,18 @@
         </button>
       </div>
       
+      <!-- Add editable step name field -->
+      <div class="mb-4">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Step Name</label>
+        <input
+          type="text"
+          value={step.name}
+          on:input={(e) => dispatch('stepNameChange', { stepIndex, name: e.target.value })}
+          class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder="Enter step name"
+        />
+      </div>
+      
       {#if formType === 'both'}
         <!-- Two-column layout for Input and Output Types -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -95,8 +169,8 @@
               <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
               <input 
                 type="text" 
-                bind:value={step.inputTypeName}
-                on:input={() => dispatch('typeChange', { property: 'inputTypeName', value: step.inputTypeName })}
+                value={step.inputTypeName}
+                on:input={(e) => dispatch('typeChange', { property: 'inputTypeName', value: e.target.value })}
                 class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -119,19 +193,26 @@
                   <div class="flex items-center gap-2">
                     <input 
                       type="text" 
-                      bind:value={field.name}
-                      on:input={() => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'name', value: field.name })}
+                      value={field.name}
+                      on:input={(e) => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'name', value: e.target.value })}
                       class="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       placeholder="Field name"
                     />
                     <select 
-                      bind:value={field.type}
-                      on:change={() => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'type', value: field.type })}
+                      value={field.type}
+                      on:change={(e) => {
+                        const selectedType = e.target.value;
+                        handleTypeChange(fieldIndex, selectedType, 'input');
+                      }}
                       class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     >
-                      {#each fieldTypes as fieldType}
+                      {#each availableTypes as fieldType}
                         <option value={fieldType}>{fieldType}</option>
                       {/each}
+                      <!-- Add dynamic generic types as options, if they exist -->
+                      {#if field.type && !availableTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                        <option value={field.type} selected>{field.type}</option>
+                      {/if}
                     </select>
                     <button 
                       on:click={() => dispatch('removeField', { type: 'input', index: fieldIndex })}
@@ -152,8 +233,8 @@
               <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
               <input 
                 type="text" 
-                bind:value={step.outputTypeName}
-                on:input={() => dispatch('typeChange', { property: 'outputTypeName', value: step.outputTypeName })}
+                value={step.outputTypeName}
+                on:input={(e) => dispatch('typeChange', { property: 'outputTypeName', value: e.target.value })}
                 class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -176,19 +257,26 @@
                   <div class="flex items-center gap-2">
                     <input 
                       type="text" 
-                      bind:value={field.name}
-                      on:input={() => dispatch('updateField', { type: 'output', index: fieldIndex, property: 'name', value: field.name })}
+                      value={field.name}
+                      on:input={(e) => dispatch('updateField', { type: 'output', index: fieldIndex, property: 'name', value: e.target.value })}
                       class="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                       placeholder="Field name"
                     />
                     <select 
-                      bind:value={field.type}
-                      on:change={() => dispatch('updateField', { type: 'output', index: fieldIndex, property: 'type', value: field.type })}
+                      value={field.type}
+                      on:change={(e) => {
+                        const selectedType = e.target.value;
+                        handleTypeChange(fieldIndex, selectedType, 'output');
+                      }}
                       class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     >
-                      {#each fieldTypes as fieldType}
+                      {#each availableTypes as fieldType}
                         <option value={fieldType}>{fieldType}</option>
                       {/each}
+                      <!-- Add dynamic generic types as options, if they exist -->
+                      {#if field.type && !availableTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                        <option value={field.type} selected>{field.type}</option>
+                      {/if}
                     </select>
                     <button 
                       on:click={() => dispatch('removeField', { type: 'output', index: fieldIndex })}
@@ -210,8 +298,8 @@
             <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
             <input 
               type="text" 
-              bind:value={step.inputTypeName}
-              on:input={() => dispatch('typeChange', { property: 'inputTypeName', value: step.inputTypeName })}
+              value={step.inputTypeName}
+              on:input={(e) => dispatch('typeChange', { property: 'inputTypeName', value: e.target.value })}
               class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Shared type name"
             />
@@ -233,19 +321,26 @@
                 <div class="flex items-center gap-2">
                   <input 
                     type="text" 
-                    bind:value={field.name}
-                    on:input={() => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'name', value: field.name })}
+                    value={field.name}
+                    on:input={(e) => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'name', value: e.target.value })}
                     class="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder="Field name"
                   />
                   <select 
-                    bind:value={field.type}
-                    on:change={() => dispatch('updateField', { type: 'input', index: fieldIndex, property: 'type', value: field.type })}
+                    value={field.type}
+                    on:change={(e) => {
+                      const selectedType = e.target.value;
+                      handleTypeChange(fieldIndex, selectedType, 'input');
+                    }}
                     class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {#each fieldTypes as fieldType}
+                    {#each availableTypes as fieldType}
                       <option value={fieldType}>{fieldType}</option>
                     {/each}
+                    <!-- Add dynamic generic types as options, if they exist -->
+                    {#if field.type && !availableTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                      <option value={field.type} selected>{field.type}</option>
+                    {/if}
                   </select>
                   <button 
                     on:click={() => dispatch('removeField', { type: 'input', index: fieldIndex })}
@@ -269,16 +364,16 @@
             <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
             <input 
               type="text" 
-              bind:value={step.inputTypeName}
-              on:input={() => dispatch('typeChange', { property: 'inputTypeName', value: step.inputTypeName })}
+              value={step.inputTypeName}
+              on:input={(e) => dispatch('typeChange', { property: 'inputTypeName', value: e.target.value })}
               class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {:else}
             <label class="block text-sm font-medium text-gray-700 mr-2 w-32">Type Name:</label>
             <input 
               type="text" 
-              bind:value={step.outputTypeName}
-              on:input={() => dispatch('typeChange', { property: 'outputTypeName', value: step.outputTypeName })}
+              value={step.outputTypeName}
+              on:input={(e) => dispatch('typeChange', { property: 'outputTypeName', value: e.target.value })}
               class="flex-1 px-3 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {/if}
@@ -302,19 +397,26 @@
                 <div class="flex items-center gap-2">
                   <input 
                     type="text" 
-                    bind:value={field.name}
-                    on:input={() => dispatch('updateField', { type: formType, index: fieldIndex, property: 'name', value: field.name })}
+                    value={field.name}
+                    on:input={(e) => dispatch('updateField', { type: formType, index: fieldIndex, property: 'name', value: e.target.value })}
                     class="flex-1 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                     placeholder="Field name"
                   />
                   <select 
-                    bind:value={field.type}
-                    on:change={() => dispatch('updateField', { type: formType, index: fieldIndex, property: 'type', value: field.type })}
+                    value={field.type}
+                    on:change={(e) => {
+                      const selectedType = e.target.value;
+                      handleTypeChange(fieldIndex, selectedType, formType);
+                    }}
                     class="px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                   >
-                    {#each fieldTypes as fieldType}
+                    {#each availableTypes as fieldType}
                       <option value={fieldType}>{fieldType}</option>
                     {/each}
+                    <!-- Add dynamic generic types as options, if they exist -->
+                    {#if field.type && !availableTypes.includes(field.type) && (field.type.startsWith('List<') || field.type.startsWith('Map<'))}
+                      <option value={field.type} selected>{field.type}</option>
+                    {/if}
                   </select>
                   <button 
                     on:click={() => dispatch('removeField', { type: formType, index: fieldIndex })}
@@ -341,4 +443,20 @@
       </div>
     </div>
   </div>
+{/if}
+
+<!-- Generic Type Configuration Popup -->
+{#if showGenericConfig}
+  <GenericTypeConfigPopup
+    visible={showGenericConfig}
+    genericType={currentFieldType}
+    fieldTypes={genericFieldTypes}
+    selectedField={getCurrentField()}
+    on:close={() => showGenericConfig = false}
+    on:confirm={(e) => {
+      const selectedType = e.detail.type;
+      dispatch('updateField', { type: currentFieldSide, index: currentFieldIndex, property: 'type', value: selectedType });
+      showGenericConfig = false;
+    }}
+  />
 {/if}

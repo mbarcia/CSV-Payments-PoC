@@ -24,7 +24,6 @@
 
     <modules>
         <module>common</module>
-        <module>../../framework</module>
         <module>input-csv-file-processing-svc</module>
         <module>payments-processing-svc</module>
         <module>payment-status-svc</module>
@@ -43,7 +42,8 @@
         <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.63.0</grpc.version>
         <version.jandex>3.5.0</version.jandex>
-        <pipeline.version>0.9.0</pipeline.version>
+        <pipeline.version>${pipeline.framework.version}</pipeline.version>
+        <pipeline.framework.version>0.9.0</pipeline.framework.version>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
     </properties>
@@ -55,6 +55,14 @@
                 <groupId>${quarkus.platform.group-id}</groupId>
                 <artifactId>${quarkus.platform.artifact-id}</artifactId>
                 <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Pipeline Framework BOM -->
+            <dependency>
+                <groupId>org.pipelineframework</groupId>
+                <artifactId>framework-parent</artifactId>
+                <version>${pipeline.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -87,6 +95,16 @@
                     <artifactId>protobuf-java</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.pipelineframework</groupId>
+            <artifactId>pipelineframework</artifactId>
+            <version>${pipeline.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.pipelineframework</groupId>
+            <artifactId>pipelineframework-deployment</artifactId>
+            <version>${pipeline.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>

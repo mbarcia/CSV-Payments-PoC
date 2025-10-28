@@ -33,6 +33,7 @@ public class PersistenceManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(PersistenceManager.class);
 
+    @SuppressWarnings("rawtypes")
     private List<PersistenceProvider<?>> providers;
 
     @Inject
@@ -41,7 +42,7 @@ public class PersistenceManager {
     @PostConstruct
     void init() {
         this.providers = providerInstance.stream().toList();
-        LOG.info("Initialized {} persistence providers", providers.size());
+        LOG.info("Initialised {} persistence providers", providers.size());
     }
 
     /**
@@ -52,13 +53,17 @@ public class PersistenceManager {
      */
     public <T> Uni<T> persist(T entity) {
         if (entity == null) {
+            LOG.debug("Entity is null, returning empty Uni");
             return Uni.createFrom().item((T) null);
         }
 
+        LOG.debug("Entity to persist: {}", entity.getClass().getName());
         for (PersistenceProvider<?> provider : providers) {
             if (provider.supports(entity)) {
                 @SuppressWarnings("unchecked")
                 PersistenceProvider<T> p = (PersistenceProvider<T>) provider;
+                LOG.debug("About to persist with provider: {}", provider.getClass().getName());
+
                 return p.persist(entity);
             }
         }

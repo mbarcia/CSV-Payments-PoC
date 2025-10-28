@@ -11,5 +11,5 @@ message CsvPaymentsOutputFile {
 }
 
 service ProcessCsvPaymentsOutputFileService {
-  rpc remoteProcess(stream PaymentOutput) returns (CsvPaymentsOutputFile);
+  rpc remoteProcess(stream PaymentOutput) returns (stream CsvPaymentsOutputFile);
 }

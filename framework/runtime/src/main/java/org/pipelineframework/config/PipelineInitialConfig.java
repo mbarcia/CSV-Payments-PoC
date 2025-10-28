@@ -87,8 +87,8 @@ public interface PipelineInitialConfig {
 
     /**
      * Enable automatic persistence of step inputs.
-     * @return true to enable auto-persistence, false otherwise
+     * @return true to enable auto-persistence, false otherwise (default)
      */
-    @WithDefault("true")
+    @WithDefault("false")
     Boolean autoPersist();
 }

@@ -46,10 +46,10 @@ import org.slf4j.MDC;
     inboundMapper = PaymentStatusMapper.class,
     outboundMapper = PaymentOutputMapper.class,
     grpcClient = "process-payment-status",
+    restEnabled = true,
     autoPersist = true,
     parallel = true,
-    debug = true,
-    restEnabled = true
+    debug = true
 )
 @ApplicationScoped
 @Getter

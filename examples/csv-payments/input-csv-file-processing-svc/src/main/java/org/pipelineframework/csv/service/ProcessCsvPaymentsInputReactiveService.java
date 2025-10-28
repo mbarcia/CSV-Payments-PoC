@@ -50,10 +50,9 @@ import org.slf4j.MDC;
     inboundMapper = CsvPaymentsInputFileMapper.class,
     outboundMapper = PaymentRecordMapper.class,
     grpcClient = "process-csv-payments-input-file",
-    restEnabled = true,
     autoPersist = true,
+    parallel = true,
     backpressureBufferCapacity = 10000, // the default is only 128
-    parallel = false,
     debug = true
 )
 @ApplicationScoped
@@ -94,7 +93,7 @@ public class ProcessCsvPaymentsInputReactiveService
 
                     return Multi.createFrom()
                         .iterable(iterable)
-                        .runSubscriptionOn(executor)
+//                        .runSubscriptionOn(executor)
                         .onItem()
                         .invoke(
                             rec -> {

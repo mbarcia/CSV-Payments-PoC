@@ -69,7 +69,7 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
     }
 
     @Override
-    default Uni<O> applyReduce(Multi<I> input) {
+    default Uni<O> apply(Multi<I> input) {
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
         final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         final java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;

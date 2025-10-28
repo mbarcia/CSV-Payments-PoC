@@ -32,11 +32,12 @@ import org.slf4j.MDC;
 public class PollAckPaymentSentReactiveService
     implements ReactiveService<AckPaymentSent, PaymentStatus> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PollAckPaymentSentReactiveService.class);
-
-  private final Executor executor;
-  private final PaymentProviderService paymentProviderServiceMock;
-  private final PaymentProviderConfig config;
+    private static final Logger LOG = LoggerFactory.getLogger(PollAckPaymentSentReactiveService.class);
+    private final Executor executor;
+    private final PaymentProviderService paymentProviderServiceMock;
+    private final PaymentProviderConfig config;
+    @Inject
+    io.vertx.mutiny.core.Vertx vertx;
 
   @Inject
   public PollAckPaymentSentReactiveService(
@@ -52,7 +53,8 @@ public class PollAckPaymentSentReactiveService
 
   @Override
   public Uni<PaymentStatus> process(AckPaymentSent detachedAckPaymentSent) {
-    return process(detachedAckPaymentSent, true); // Default to using virtual threads
+    // Do NOT use virtual threads if setting autoPersist
+    return process(detachedAckPaymentSent, true);
   }
 
   /**
@@ -121,38 +123,41 @@ public class PollAckPaymentSentReactiveService
 
   private Uni<PaymentStatus> processWithoutVirtualThreads(AckPaymentSent detachedAckPaymentSent) {
     long time = (long) (Math.random() * config.waitMilliseconds());
-    LOG.info("Started polling...(for {}ms)", time);
-    LOG.debug("Thread: {} isVirtual? {}", Thread.currentThread(), Thread.currentThread().isVirtual());
+    LOG.info("Started polling... (for {}ms)", time);
+    LOG.debug(
+        "Thread: {} isVirtual? {}", Thread.currentThread(), Thread.currentThread().isVirtual());
 
-    // Simulate delay without virtual threads (this might block the event loop, but it's for REST calls)
-    LOG.debug("About to sleep for {}ms", time);
-    try {
-      Thread.sleep(time); // simulate delay
-      LOG.info("Finished polling (--> {}ms)", time);
-    } catch (InterruptedException e) {
-      LOG.error("InterruptedException while sleeping: {}", e.getMessage(), e);
-      Thread.currentThread().interrupt(); // Restore interrupt status
-      return Uni.createFrom().failure(new RuntimeException(e));
-    }
+    // Run the blocking part inside Vert.x.executeBlocking()
+    return vertx.executeBlocking(
+        () -> {
+          try {
+            LOG.debug("Sleeping for {}ms", time);
+            Thread.sleep(time);
+            LOG.info("Finished polling ({}ms)", time);
 
-    return Uni.createFrom().item(() -> {
-          LOG.debug("Calling paymentProviderServiceMock.getPaymentStatus");
-          return paymentProviderServiceMock.getPaymentStatus(detachedAckPaymentSent);
-        })
-        .onItem()
-        .invoke(result -> {
-          LOG.debug("Received PaymentStatus: id={}, reference={}, status={}",
-              result.getId(), result.getReference(), result.getStatus());
+            LOG.debug("Calling paymentProviderServiceMock.getPaymentStatus");
+            PaymentStatus result =
+                paymentProviderServiceMock.getPaymentStatus(detachedAckPaymentSent);
 
-          String serviceId = this.getClass().toString();
-          MDC.put("serviceId", serviceId);
-          LOG.info("Executed command on {} --> {}", detachedAckPaymentSent, result);
-          MDC.remove("serviceId");
-        })
-        .onFailure()
-        .recoverWithUni(failure -> {
-          LOG.error("Failed to process AckPaymentSent", failure);
-          return Uni.createFrom().failure(failure);
+            LOG.debug(
+                "Received PaymentStatus: id={}, reference={}, status={}",
+                result.getId(),
+                result.getReference(),
+                result.getStatus());
+
+            String serviceId = this.getClass().toString();
+            MDC.put("serviceId", serviceId);
+            LOG.info("Executed command on {} --> {}", detachedAckPaymentSent, result);
+            MDC.remove("serviceId");
+
+            return result;
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted while simulating delay", e);
+          } catch (Throwable t) {
+            LOG.error("Error processing AckPaymentSent", t);
+            throw new RuntimeException(t);
+          }
         });
-  }
+        }
 }

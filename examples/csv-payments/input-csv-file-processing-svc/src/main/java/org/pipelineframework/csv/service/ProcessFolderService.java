@@ -50,8 +50,8 @@ import org.slf4j.MDC;
     inboundMapper = CsvFolderMapper.class,
     outboundMapper = CsvPaymentsInputFileMapper.class,
     grpcClient = "process-folder",
-    restEnabled = true,
     autoPersist = true,
+    parallel = true,
     debug = true
 )
 public class ProcessFolderService implements org.pipelineframework.service.ReactiveStreamingService<CsvFolder, CsvPaymentsInputFile> {
@@ -63,6 +63,7 @@ public class ProcessFolderService implements org.pipelineframework.service.React
 
   public Multi<CsvPaymentsInputFile> process(CsvFolder csvFolder) {
     Path csvFolderPath = csvFolder.getPath();
+
     LOG.info("Reading CSV folder from path: {}", csvFolderPath);
 
     URL resource = resourceLoader.getResource(String.valueOf(csvFolderPath));

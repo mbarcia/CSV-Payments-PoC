@@ -104,6 +104,6 @@ public class PipelineDynamicConfig {
     }
     
     public boolean isAutoPersist() {
-        return true; // Default value - auto-persistence enabled by default
+        return false; // Default value - auto-persistence disabled by default
     }
 }

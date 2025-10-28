@@ -30,8 +30,8 @@ public class HybridResourceLoader implements ResourceLoader {
 
   private static final Logger LOG = LoggerFactory.getLogger(HybridResourceLoader.class);
 
-  // Configurable external directory - defaults to \"./csv\" relative to working directory
-  @ConfigProperty(defaultValue = "./csv")
+  // Configurable external directory - defaults to "./" (current directory) relative to working directory
+  @ConfigProperty(defaultValue = "./")
   String externalCsvDir;
 
   // Resolved external directory
@@ -114,13 +114,14 @@ public class HybridResourceLoader implements ResourceLoader {
       return file;
     }
 
-    // Special case: if the path is exactly the same as the externalCsvDir, 
+    // Special case: if the path is exactly the same as the resolved external directory's name,
     // return the resolvedExternalCsvDir directly
-    if (path.equals(externalCsvDir)) {
-      return new File(resolvedExternalCsvDir);
+    File resolvedDir = new File(resolvedExternalCsvDir);
+    if (path.equals(resolvedDir.getName())) {
+      return resolvedDir;
     }
 
-    // For relative paths, resolve against configured external directory
+    // For relative paths, resolve against resolved external directory
     return new File(resolvedExternalCsvDir, path);
   }
 

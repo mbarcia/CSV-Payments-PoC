@@ -67,6 +67,20 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
                         LOG.debug("Blocking Step {} emitted item: {}", this.getClass().getSimpleName(), o);
                     }
                 });
+            })
+            .onFailure(t -> !(t instanceof NullPointerException)).retry()
+            .withBackOff(retryWait(), maxBackoff())
+            .withJitter(jitter() ? 0.5 : 0.0)
+            .atMost(retryLimit())
+            .onFailure().invoke(t -> {
+                if (debug()) {
+                    LOG.info(
+                        "Blocking Step {} completed all retries ({} attempts) with failure: {}",
+                        this.getClass().getSimpleName(),
+                        retryLimit(),
+                        t.getMessage()
+                    );
+                }
             });
     }
 }

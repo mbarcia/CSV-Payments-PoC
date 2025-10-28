@@ -30,14 +30,15 @@ import org.jboss.logging.Logger;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.PipelineStepsConfig;
 import org.pipelineframework.step.*;
-import org.pipelineframework.step.functional.ManyToMany;
+import org.pipelineframework.step.blocking.StepOneToManyBlocking;
 import org.pipelineframework.step.functional.ManyToOne;
+import org.pipelineframework.step.future.StepOneToOneCompletableFuture;
 
 @ApplicationScoped
 @Unremovable
 public class PipelineRunner implements AutoCloseable {
 
-    private static final Logger LOG = Logger.getLogger(PipelineRunner.class);
+    private static final Logger logger = Logger.getLogger(PipelineRunner.class);
 
     @Inject
     ConfigFactory configFactory;
@@ -57,7 +58,7 @@ public class PipelineRunner implements AutoCloseable {
         List<Object> steps = loadPipelineSteps();
         
         if (steps.isEmpty()) {
-            LOG.warn("No steps available to execute - pipeline will not process data");
+            logger.warn("No steps available to execute - pipeline will not process data");
         }
         
         return run(input, steps);
@@ -82,7 +83,7 @@ public class PipelineRunner implements AutoCloseable {
 
         for (Object step : steps) {
             if (step == null) {
-                LOG.warn("Warning: Found null step in configuration, skipping...");
+                logger.warn("Warning: Found null step in configuration, skipping...");
                 continue;
             }
             
@@ -95,19 +96,19 @@ public class PipelineRunner implements AutoCloseable {
             }
 
             Class<?> clazz = step.getClass();
-            LOG.debugf("Step class: %s", clazz.getName());
+            logger.debugf("Step class: %s", clazz.getName());
             for (Class<?> iface : clazz.getInterfaces()) {
-                LOG.debugf("Implements: %s", iface.getName());
+                logger.debugf("Implements: %s", iface.getName());
             }
 
             switch (step) {
                 case StepOneToOne stepOneToOne -> current = applyOneToOneUnchecked(stepOneToOne, current);
+                case StepOneToOneCompletableFuture stepFuture -> current = applyOneToOneFutureUnchecked(stepFuture, current);
                 case StepOneToMany stepOneToMany -> current = applyOneToManyUnchecked(stepOneToMany, current);
-                case org.pipelineframework.step.blocking.StepOneToManyBlocking stepOneToManyBlocking -> current = applyOneToManyBlockingUnchecked(stepOneToManyBlocking, current);
-                case org.pipelineframework.step.future.StepOneToOneCompletableFuture stepFuture -> current = applyOneToOneFutureUnchecked(stepFuture, current);
+                case StepOneToManyBlocking stepOneToManyBlocking -> current = applyOneToManyBlockingUnchecked(stepOneToManyBlocking, current);
                 case ManyToOne manyToOne -> current = applyManyToOneUnchecked(manyToOne, current);
-                case ManyToMany manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
-                default -> LOG.errorf("Step not recognised: %s", step.getClass().getName());
+                case StepManyToMany manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
+                default -> logger.errorf("Step not recognised: %s", step.getClass().getName());
             }
         }
 
@@ -152,10 +153,10 @@ public class PipelineRunner implements AutoCloseable {
                 }
             }
 
-            LOG.debugf("Loaded %d pipeline steps from application properties", steps.size());
+            logger.debugf("Loaded %d pipeline steps from application properties", steps.size());
             return steps;
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to load configuration: %s", e.getMessage());
+            logger.errorf(e, "Failed to load configuration: %s", e.getMessage());
             return Collections.emptyList();
         }
     }
@@ -170,7 +171,7 @@ public class PipelineRunner implements AutoCloseable {
     private Object createStepFromConfig(String stepName, org.pipelineframework.config.PipelineStepsConfig.StepConfig config) {
         String stepClassName = config.className();
         if (stepClassName == null) {
-            LOG.errorf("No class specified for pipeline step: %s", stepName);
+            logger.errorf("No class specified for pipeline step: %s", stepName);
             return null;
         }
 
@@ -178,13 +179,30 @@ public class PipelineRunner implements AutoCloseable {
             Class<?> stepClass = Thread.currentThread().getContextClassLoader().loadClass(stepClassName);
             return Arc.container().instance(stepClass).get();
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
+            logger.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
             return null;
         }
     }
 
     @SuppressWarnings({"unchecked"})
-    public static <I, O> Object applyOneToOneUnchecked(org.pipelineframework.step.StepOneToOne<I, O> step, Object current) {
+    public static <I, O> Object applyOneToOneUnchecked(StepOneToOne<I, O> step, Object current) {
+        if (current instanceof Uni<?>) {
+            return step.apply((Uni<I>) current);
+        } else if (current instanceof Multi<?>) {
+            if (step.parallel()) {
+                logger.debugf("Applying step %s (flatMap)", step.getClass());
+                return ((Multi<I>) current).flatMap(item -> step.apply(Uni.createFrom().item(item)).toMulti());
+            } else {
+                logger.debugf("Applying step %s (concatMap)", step.getClass());
+                return ((Multi<I>) current).concatMap(item -> step.apply(Uni.createFrom().item(item)).toMulti());
+            }
+        } else {
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepOneToOne: {0}", current));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <I, O> Object applyOneToOneFutureUnchecked(StepOneToOneCompletableFuture<I, O> step, Object current) {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {
@@ -194,75 +212,68 @@ public class PipelineRunner implements AutoCloseable {
                 return ((Multi<I>) current).concatMap(item -> step.apply(Uni.createFrom().item(item)).toMulti());
             }
         } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToOne: {0}", current));
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepOneToOneCompletableFuture: {0}", current));
         }
     }
 
     @SuppressWarnings({"unchecked"})
-    private static <I, O> Object applyOneToManyBlockingUnchecked(org.pipelineframework.step.blocking.StepOneToManyBlocking<I, O> step, Object current) {
+    private static <I, O> Object applyOneToManyBlockingUnchecked(StepOneToManyBlocking<I, O> step, Object current) {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {
             if (step.parallel()) {
+                logger.debugf("Applying step %s (flatMap)", step.getClass());
                 return ((Multi<I>) current).flatMap(item -> step.apply(Uni.createFrom().item(item)));
             } else {
+                logger.debugf("Applying step %s (concatMap)", step.getClass());
                 return ((Multi<I>) current).concatMap(item -> step.apply(Uni.createFrom().item(item)));
             }
         } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToManyBlocking: {0}", current));
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepOneToManyBlocking: {0}", current));
         }
     }
 
     @SuppressWarnings({"unchecked"})
-    private static <I, O> Object applyOneToManyUnchecked(org.pipelineframework.step.StepOneToMany<I, O> step, Object current) {
+    private static <I, O> Object applyOneToManyUnchecked(StepOneToMany<I, O> step, Object current) {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {
             if (step.parallel()) {
+                logger.debugf("Applying step %s (flatMap)", step.getClass());
                 return ((Multi<I>) current).flatMap(item -> step.apply(Uni.createFrom().item(item)));
             } else {
+                logger.debugf("Applying step %s (concatMap)", step.getClass());
                 return ((Multi<I>) current).concatMap(item -> step.apply(Uni.createFrom().item(item)));
             }
         } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToManyBlocking: {0}", current));
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepOneToMany: {0}", current));
         }
     }
 
     @SuppressWarnings("unchecked")
     private static <I, O> Object applyManyToOneUnchecked(ManyToOne<I, O> step, Object current) {
         if (current instanceof Multi<?>) {
-            return step.applyReduce((Multi<I>) current);
-        } else if (current instanceof Uni<?>) {
-            // convert Uni to Multi and call applyReduce
-            return step.applyReduce(((Uni<I>) current).toMulti());
-        } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for ManyToOne: {0}", current));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <I, O> Object applyOneToOneFutureUnchecked(org.pipelineframework.step.future.StepOneToOneCompletableFuture<I, O> step, Object current) {
-        if (current instanceof Uni<?>) {
-            return step.apply((Uni<I>) current);
-        } else if (current instanceof Multi<?>) {
-            if (step.parallel()) {
-                return ((Multi<I>) current).flatMap(item -> step.apply(Uni.createFrom().item(item)).toMulti());
-            } else {
-                return ((Multi<I>) current).concatMap(item -> step.apply(Uni.createFrom().item(item)).toMulti());
-            }
-        } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToOneCompletableFuture: {0}", current));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <I, O> Object applyManyToManyUnchecked(ManyToMany<I, O> step, Object current) {
-        if (current instanceof Multi<?>) {
             return step.apply((Multi<I>) current);
         } else if (current instanceof Uni<?>) {
+            // convert Uni to Multi and call apply
             return step.apply(((Uni<I>) current).toMulti());
         } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for ManyToMany: {0}", current));
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepManyToOne: {0}", current));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <I, O> Object applyManyToManyUnchecked(StepManyToMany<I, O> step, Object current) {
+        if (current instanceof Uni<?>) {
+            // Single async source — convert to Multi and process
+            return step.apply(((Uni<I>) current).toMulti());
+        } else if (current instanceof Multi<?> c) {
+            logger.debugf("Applying many-to-many step %s on full stream", step.getClass());
+            // ✅ Just pass the whole stream to the step
+            return step.apply((Multi<I>) c);
+        } else {
+            throw new IllegalArgumentException(MessageFormat.format(
+                    "Unsupported current type for StepManyToMany: {0}", current));
         }
     }
 

@@ -76,6 +76,16 @@ public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configur
             .withBackOff(retryWait(), maxBackoff())
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())
+            .onFailure().invoke(t -> {
+                if (debug()) {
+                    System.out.printf(
+                        "Blocking Step %s completed all retries (%d attempts) with failure: %s%n",
+                        this.getClass().getSimpleName(),
+                        retryLimit(),
+                        t.getMessage()
+                    );
+                }
+            })
             .onItem().invoke(o -> {
                 if (debug()) {
                     System.out.printf("Blocking Step %s streamed item: %s%n",

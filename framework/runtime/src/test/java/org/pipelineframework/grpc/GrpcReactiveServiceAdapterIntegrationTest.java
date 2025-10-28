@@ -19,8 +19,10 @@ package org.pipelineframework.grpc;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
+import jakarta.inject.Inject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -32,11 +34,14 @@ import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveService;
 import org.pipelineframework.service.TestReactiveService;
 
+@QuarkusTest
 class GrpcReactiveServiceAdapterIntegrationTest {
 
     @Mock private PersistenceManager mockPersistenceManager;
 
-    private GrpcReactiveServiceAdapter<Object, Object, TestEntity, TestResult> adapter;
+    @Inject GrpcReactiveServiceAdapter adapter;
+
+    //    private GrpcReactiveServiceAdapter<Object, Object, TestEntity, TestResult> adapter;
 
     private static class TestGrpcRequest {}
 
@@ -46,29 +51,29 @@ class GrpcReactiveServiceAdapterIntegrationTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        // Use reflection to inject the mock persistence manager
-        adapter =
-                new GrpcReactiveServiceAdapter<>() {
-                    @Override
-                    protected ReactiveService<TestEntity, TestResult> getService() {
-                        return new TestReactiveService();
-                    }
-
-                    @Override
-                    protected TestEntity fromGrpc(Object grpcIn) {
-                        return new TestEntity("test", "description");
-                    }
-
-                    @Override
-                    protected Object toGrpc(TestResult domainOut) {
-                        return new TestGrpcResponse();
-                    }
-
-                    @Override
-                    protected StepConfig getStepConfig() {
-                        return new StepConfig().autoPersist(true);
-                    }
-                };
+        //        // Use reflection to inject the mock persistence manager
+        //        adapter =
+        //                new GrpcReactiveServiceAdapter<>() {
+        //                    @Override
+        //                    protected ReactiveService<TestEntity, TestResult> getService() {
+        //                        return new TestReactiveService();
+        //                    }
+        //
+        //                    @Override
+        //                    protected TestEntity fromGrpc(Object grpcIn) {
+        //                        return new TestEntity("test", "description");
+        //                    }
+        //
+        //                    @Override
+        //                    protected Object toGrpc(TestResult domainOut) {
+        //                        return new TestGrpcResponse();
+        //                    }
+        //
+        //                    @Override
+        //                    protected StepConfig getStepConfig() {
+        //                        return new StepConfig().autoPersist(true);
+        //                    }
+        //                };
 
         try {
             java.lang.reflect.Field field =

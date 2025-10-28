@@ -32,22 +32,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @PipelineStep(
-        order = 4,
-        inputType = AckPaymentSent.class,
-        outputType = PaymentStatus.class,
-        inputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.AckPaymentSent.class,
-        outputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.PaymentStatus.class,
-        stepType = org.pipelineframework.step.StepOneToOne.class,
-        backendType = GrpcReactiveServiceAdapter.class,
-        grpcStub = MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub.class,
-        grpcImpl = MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase.class,
-        inboundMapper = AckPaymentSentMapper.class,
-        outboundMapper = PaymentStatusMapper.class,
-        grpcClient = "process-ack-payment-sent",
-        restEnabled = true,
-        autoPersist = true,
-        parallel = true,
-        debug = true
+    order = 4,
+    inputType = AckPaymentSent.class,
+    outputType = PaymentStatus.class,
+    inputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.AckPaymentSent.class,
+    outputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.PaymentStatus.class,
+    stepType = org.pipelineframework.step.StepOneToOne.class,
+    backendType = GrpcReactiveServiceAdapter.class,
+    grpcStub = MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub.class,
+    grpcImpl = MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase.class,
+    inboundMapper = AckPaymentSentMapper.class,
+    outboundMapper = PaymentStatusMapper.class,
+    grpcClient = "process-ack-payment-sent",
+    restEnabled = true,
+    autoPersist = false,
+    parallel = true,
+    debug = true
 )
 @ApplicationScoped
 @Getter
@@ -67,7 +67,7 @@ public class ProcessAckPaymentSentReactiveService
 
   @Override
   public Uni<PaymentStatus> process(AckPaymentSent ackPaymentSent) {
-    return process(ackPaymentSent, true); // Default to using virtual threads
+    return process(ackPaymentSent, false);
   }
 
   /**

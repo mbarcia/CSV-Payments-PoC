@@ -16,6 +16,7 @@
 
 package org.pipelineframework.grpc;
 
+import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import org.pipelineframework.annotation.StepConfigProvider;
@@ -27,6 +28,7 @@ import org.pipelineframework.step.ConfigurableStep;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
   private static final Logger LOG = LoggerFactory.getLogger(GrpcReactiveServiceAdapter.class);
@@ -91,29 +93,21 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
   }
 
   public Uni<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
-      DomainIn entity = fromGrpc(grpcRequest);
+    DomainIn entity = fromGrpc(grpcRequest);
+    // Panache.withTransaction(...) creates the correct Vert.x context and transaction
+    return Panache.withTransaction(() -> {
+      Uni<DomainOut> processedResult = getService().process(entity);
 
-      Uni<DomainOut> processedResult = getService()
-          .process(entity);
+      Uni<DomainOut> withPersistence = isAutoPersistenceEnabled()
+              ? processedResult.onItem().call(_ ->
+              // If auto-persistence is enabled, persist the input entity after successful processing
+              persistenceManager.persist(entity)
+      )
+              : processedResult;
 
-      // If auto-persistence is enabled, persist the input entity after successful processing
-      if (isAutoPersistenceEnabled()) {
-        LOG.debug("Auto-persistence is enabled, will persist input after processing");
-        
-        return processedResult
-            .onItem().call(result -> 
-                // Persist the input entity after successful processing
-                persistenceManager.persist(entity)
-                    .replaceWith(result) // Replace with the originally processed result
-            )
-            .onItem().transform(this::toGrpc)
-            .onFailure().transform(new throwStatusRuntimeExceptionFunction());
-      } else {
-        LOG.debug("Auto-persistence is disabled");
-        
-        return processedResult
-            .onItem().transform(this::toGrpc)
-            .onFailure().transform(new throwStatusRuntimeExceptionFunction());
-      }
+      return withPersistence
+              .onItem().transform(this::toGrpc)
+              .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+    });
   }
 }

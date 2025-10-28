@@ -21,24 +21,25 @@ import jakarta.enterprise.context.ApplicationScoped;
 import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
 
 /**
- * Example implementation of a bidirectional streaming service.
- * This service demonstrates N-N (many-to-many) cardinality where 
- * multiple input messages can generate multiple output messages.
+ * Example implementation of a bidirectional streaming service. This service demonstrates N-N
+ * (many-to-many) cardinality where multiple input messages can generate multiple output messages.
  */
 @ApplicationScoped
-public class ExampleBidirectionalStreamingService implements ReactiveBidirectionalStreamingService<String, String> {
+public class ExampleBidirectionalStreamingService
+        implements ReactiveBidirectionalStreamingService<String, String> {
 
     @Override
     public Multi<String> process(Multi<String> processableObj) {
         // Example: For each input, generate multiple outputs
         return processableObj
-            .onItem().transformToMulti(item -> 
-                Multi.createFrom().items(
-                    "processed_" + item + "_part1",
-                    "processed_" + item + "_part2",
-                    "processed_" + item + "_part3"
-                )
-            )
-            .concatenate(); // Flatten the multi of multis into a single multi
+                .onItem()
+                .transformToMulti(
+                        item ->
+                                Multi.createFrom()
+                                        .items(
+                                                "processed_" + item + "_part1",
+                                                "processed_" + item + "_part2",
+                                                "processed_" + item + "_part3"))
+                .concatenate(); // Flatten the multi of multis into a single multi
     }
 }

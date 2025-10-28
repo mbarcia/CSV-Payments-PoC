@@ -40,7 +40,7 @@ public class StepConfig {
     private volatile boolean debug = false;
     private volatile boolean recoverOnFailure = false;
     private volatile boolean runWithVirtualThreads = false;
-    private volatile boolean autoPersist = true;
+    private volatile boolean autoPersist = false;
     private volatile String backpressureStrategy = "BUFFER";
 
     private final AtomicReference<Duration> maxBackoff = new AtomicReference<>(Duration.ofSeconds(30));

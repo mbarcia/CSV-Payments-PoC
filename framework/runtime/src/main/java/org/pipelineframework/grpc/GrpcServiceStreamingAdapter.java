@@ -16,6 +16,7 @@
 
 package org.pipelineframework.grpc;
 
+import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import org.pipelineframework.config.StepConfig;
@@ -25,6 +26,7 @@ import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
   private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceStreamingAdapter.class);
@@ -71,32 +73,28 @@ public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, Dom
 
   public Multi<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
     DomainIn entity = fromGrpc(grpcRequest);
-    
-    Multi<DomainOut> processedResult = getService()
-        .process(entity); // Multi<DomainOut>
+    Multi<DomainOut> processedResult = getService().process(entity); // Multi<DomainOut>
 
-    // If auto-persistence is enabled, persist the input entity after successful processing
-    if (isAutoPersistenceEnabled()) {
-      LOG.debug("Auto-persistence is enabled, will persist input after processing");
-      
-      return processedResult
-          .onItem().call(result -> 
-              // Persist the input entity after successful processing
-              persistenceManager.persist(entity)
-                  .replaceWith(result) // Replace with the originally processed result
-          )
-          .onItem()
-          .transform(this::toGrpc) // Multi<GrpcOut>
-          .onFailure()
-          .transform(new throwStatusRuntimeExceptionFunction());
-    } else {
+    if (!isAutoPersistenceEnabled()) {
       LOG.debug("Auto-persistence is disabled");
-      
       return processedResult
-          .onItem()
-          .transform(this::toGrpc) // Multi<GrpcOut>
-          .onFailure()
-          .transform(new throwStatusRuntimeExceptionFunction());
+              .onItem().transform(this::toGrpc)
+              .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     }
+
+    LOG.debug("Auto-persistence is enabled, will persist input after stream completes");
+
+    return processedResult
+            // After the stream completes successfully
+            .onCompletion().call(() ->
+                    // Panache.withTransaction(...) creates the correct Vert.x context and transaction
+                    Panache.withTransaction(() ->
+                            persistenceManager.persist(entity)
+                                    .replaceWithVoid()
+                    )
+            )
+            // Continue with the normal outbound transformation
+            .onItem().transform(this::toGrpc)
+            .onFailure().transform(new throwStatusRuntimeExceptionFunction());
   }
 }

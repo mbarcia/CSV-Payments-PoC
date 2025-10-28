@@ -157,7 +157,7 @@ public class ManyToOneStepsTest {
             implements ManyToOne<TestPaymentEntity, PaymentSummary> {
 
         @Override
-        public io.smallrye.mutiny.Uni<PaymentSummary> applyReduce(
+        public io.smallrye.mutiny.Uni<PaymentSummary> apply(
                 io.smallrye.mutiny.Multi<TestPaymentEntity> input) {
             // Aggregate all payments into a single summary
             return input.collect()

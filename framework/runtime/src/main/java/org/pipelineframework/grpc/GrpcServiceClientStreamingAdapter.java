@@ -16,9 +16,11 @@
 
 package org.pipelineframework.grpc;
 
+import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingClientService;
@@ -26,6 +28,7 @@ import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
   private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceClientStreamingAdapter.class);
@@ -71,36 +74,50 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
   }
 
   public Uni<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
+    // 1️⃣ Convert incoming gRPC messages to domain objects
     Multi<DomainIn> domainStream = requestStream.onItem().transform(this::fromGrpc);
-    
-    // Cache the stream so it can be subscribed to multiple times
+
+    // 2️⃣ Cache the incoming stream (so it can be re-subscribed for persistence)
     Multi<DomainIn> cachedStream = domainStream.cache();
 
-    // Process the stream to get the result
-    Uni<DomainOut> processedResult = getService()
-        .process(cachedStream); // Multi<DomainIn> → Uni<DomainOut>
+    // 3️⃣ Process all items → single domain result
+    Uni<DomainOut> processedResult = getService().process(cachedStream); // Multi<DomainIn> → Uni<DomainOut>
 
-    // If auto-persistence is enabled, persist the input entities after successful processing
-    if (isAutoPersistenceEnabled()) {
-      LOG.debug("Auto-persistence is enabled, will persist inputs after processing");
-      
-      return processedResult
-          .onItem().call(result -> 
-              // Persist all input items after successful processing (using cached stream)
-              // This prevents duplicate persistence on retries after failures
-              cachedStream
-                  .onItem().transformToUniAndConcatenate(persistenceManager::persist)
-                  .collect().asList() // Wait for all persist operations to complete
-                  .replaceWith(result) // Replace with the originally processed result
-          )
-          .onItem().transform(this::toGrpc) // Uni<GrpcOut>
-          .onFailure().transform(new throwStatusRuntimeExceptionFunction());
-    } else {
+    if (!isAutoPersistenceEnabled()) {
       LOG.debug("Auto-persistence is disabled");
-      
       return processedResult
-          .onItem().transform(this::toGrpc) // Uni<GrpcOut>
-          .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+              .onItem().transform(this::toGrpc)
+              .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     }
+
+    LOG.debug("Auto-persistence is enabled, will persist all inputs after successful processing");
+
+    // 4️⃣ After processing completes successfully, persist all inputs inside one transaction
+    return processedResult
+            .onItem().call(result ->
+                    Panache.withTransaction(() ->
+                        cachedStream
+                                // Persist each DomainIn sequentially inside this transaction
+                                .onItem().transformToUniAndConcatenate(persistenceManager::persist)
+                                .collect().asList()
+                                // Replace with original result when done
+                                .replaceWith(result)
+                    )
+                    // Optionally, retry on transient DB issues
+                    .onFailure(this::isTransientDbError)
+                    .retry().withBackOff(Duration.ofMillis(200), Duration.ofSeconds(2)).atMost(3)
+            )
+            .onItem().transform(this::toGrpc)
+            .onFailure().transform(new throwStatusRuntimeExceptionFunction());
+  }
+
+  private boolean isTransientDbError(Throwable failure) {
+    String msg = failure.getMessage();
+    return msg != null && (
+            msg.contains("connection refused") ||
+                    msg.contains("connection closed") ||
+                    msg.contains("timeout")
+    );
   }
 }
+

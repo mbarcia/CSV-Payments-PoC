@@ -8,7 +8,7 @@ The orchestrator-svc is responsible for processing CSV files containing payment 
 
 ```mermaid
 graph TD
-    A[Orchestrator Service] --> B[CsvPaymentsApplication]
+    A[Orchestrator Service] --> B[OrchestratorApplication]
     B --> C[OrchestratorService]
     C --> D[ProcessFolderService]
     C --> E[ProcessFileService]
@@ -36,7 +36,28 @@ graph TD
 The service processes CSV files containing payment records, coordinating with other services via gRPC to handle each step of the payment processing pipeline.
 
 ### Entry Point
-The main entry point is `CsvPaymentsApplication.java`, which uses Picocli for command-line argument parsing. It accepts a folder path containing CSV files as input (defaulting to an internal `csv/` directory if not specified).
+The main entry point is `OrchestratorApplication.java`, which uses Picocli for command-line argument parsing. It accepts a folder path containing CSV files as input via the `-i` or `--input` option.
+
+#### Input Configuration Options
+The application supports multiple ways to specify the input:
+
+1. **Command-line argument** (highest priority):
+   ```bash
+   java -jar app.jar -i /path/to/input
+   ```
+
+2. **Environment variable** (fallback when command-line argument not provided):
+   ```bash
+   PIPELINE_INPUT=/path/to/input java -jar app.jar
+   # Or when running with quarkus:dev
+   PIPELINE_INPUT=/path/to/input ./mvnw quarkus:dev
+   ```
+
+The application checks for these options in the following priority:
+1. Command-line argument (`-i` or `--input`) - highest priority
+2. Environment variable (`PIPELINE_INPUT`) - used when command-line argument is not provided
+
+When running in dev mode via IDE, make sure the environment variable is properly set in your run configuration.
 
 ### External Interfaces
 

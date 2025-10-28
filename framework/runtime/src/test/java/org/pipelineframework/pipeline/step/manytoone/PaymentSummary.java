@@ -16,14 +16,10 @@
 
 package org.pipelineframework.pipeline.step.manytoone;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 import java.math.BigDecimal;
 
-@Entity
 public class PaymentSummary {
-    @Id @GeneratedValue private Long id;
+    private Long id;
 
     private int totalPayments;
     private BigDecimal totalAmount;

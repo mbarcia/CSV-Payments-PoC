@@ -17,6 +17,7 @@
 package org.pipelineframework.csv.service;
 
 import io.smallrye.mutiny.Uni;
+import io.vertx.mutiny.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
@@ -45,7 +46,6 @@ import org.slf4j.MDC;
   inboundMapper = PaymentRecordMapper.class,
   outboundMapper = AckPaymentSentMapper.class,
   grpcClient = "send-payment-record",
-  restEnabled = true,
   autoPersist = true,
   parallel = true,
   debug = true
@@ -71,9 +71,15 @@ public class SendPaymentRecordReactiveService
             .setPaymentRecord(paymentRecord)
             .setPaymentRecordId(paymentRecord.getId());
 
-    Uni<AckPaymentSent> result =
-            Uni.createFrom().item(() -> paymentProviderServiceMock.sendPayment(request));
-
+    // Execute blocking call while staying in the same Vert.x context
+    Uni<AckPaymentSent> result = Vertx.currentContext().executeBlocking(
+        () -> {
+          // Blocking network call
+          return paymentProviderServiceMock.sendPayment(request);
+        }
+    );    
+    
+    
     String serviceId = this.getClass().toString();
     MDC.put("serviceId", serviceId);
     Logger logger = LoggerFactory.getLogger(this.getClass());

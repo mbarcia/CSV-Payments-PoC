@@ -81,7 +81,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
      * @return A Uni containing the single output value, or a failure if the input is empty
      */
     @Override
-    default Uni<O> applyReduce(Multi<I> input) {
+    default Uni<O> apply(Multi<I> input) {
         Logger LOG = LoggerFactory.getLogger(this.getClass());
         
         // Retrieve configuration

@@ -83,7 +83,17 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
                 .onFailure(t -> !(t instanceof NullPointerException)).retry()
                 .withBackOff(retryWait(), maxBackoff())
                 .withJitter(jitter() ? 0.5 : 0.0)
-                .atMost(retryLimit());
+                .atMost(retryLimit())
+                .onFailure().invoke(t -> {
+                    if (debug()) {
+                        LOG.info(
+                            "Step {} completed all retries ({} attempts) with failure: {}",
+                            this.getClass().getSimpleName(),
+                            retryLimit(),
+                            t.getMessage()
+                        );
+                    }
+                });
 
             return uni
             .onItem().invoke(i -> {

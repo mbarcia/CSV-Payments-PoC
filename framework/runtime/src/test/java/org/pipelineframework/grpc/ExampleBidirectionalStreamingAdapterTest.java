@@ -29,11 +29,13 @@ import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
 
 class ExampleBidirectionalStreamingAdapterTest {
 
-    static class TestBidirectionalAdapter extends GrpcServiceBidirectionalStreamingAdapter<String, String, String, String> {
-        
+    static class TestBidirectionalAdapter
+            extends GrpcServiceBidirectionalStreamingAdapter<String, String, String, String> {
+
         private final ReactiveBidirectionalStreamingService<String, String> service;
 
-        public TestBidirectionalAdapter(ReactiveBidirectionalStreamingService<String, String> service) {
+        public TestBidirectionalAdapter(
+                ReactiveBidirectionalStreamingService<String, String> service) {
             this.service = service;
         }
 
@@ -51,7 +53,7 @@ class ExampleBidirectionalStreamingAdapterTest {
         protected String toGrpc(String domainOut) {
             return "grpc_" + domainOut;
         }
-        
+
         @Override
         protected StepConfig getStepConfig() {
             return new StepConfig().autoPersist(false);
@@ -62,29 +64,29 @@ class ExampleBidirectionalStreamingAdapterTest {
     void testExampleBidirectionalAdapter() throws ExecutionException, InterruptedException {
         ExampleBidirectionalStreamingService service = new ExampleBidirectionalStreamingService();
         TestBidirectionalAdapter adapter = new TestBidirectionalAdapter(service);
-        
+
         // Create input stream with 2 items
         Multi<String> input = Multi.createFrom().items("input1", "input2");
-        
+
         // Process through adapter
         Multi<String> result = adapter.remoteProcess(input);
-        
+
         // Collect results
         List<String> results = new ArrayList<>();
         CompletableFuture<Void> completion = new CompletableFuture<>();
-        
-        result.subscribe().with(
-            item -> results.add(item),
-            failure -> completion.completeExceptionally(failure),
-            () -> completion.complete(null)
-        );
-        
+
+        result.subscribe()
+                .with(
+                        item -> results.add(item),
+                        failure -> completion.completeExceptionally(failure),
+                        () -> completion.complete(null));
+
         // Wait for completion
         completion.get();
-        
+
         // Each input generates 3 outputs, so we should have 6 total outputs
         assertEquals(6, results.size());
-        
+
         // Verify the expected outputs
         assertTrue(results.contains("grpc_processed_domain_input1_part1"));
         assertTrue(results.contains("grpc_processed_domain_input1_part2"));

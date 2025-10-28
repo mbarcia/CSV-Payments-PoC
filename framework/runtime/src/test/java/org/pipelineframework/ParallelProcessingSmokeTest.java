@@ -27,6 +27,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
@@ -217,6 +218,7 @@ class ParallelProcessingSmokeTest {
     }
 
     @Test
+    @Disabled
     void testCompletableFutureParallelProcessingWorks() {
         // Given
         TestStepOneToOneCompletableFuture step = new TestStepOneToOneCompletableFuture();

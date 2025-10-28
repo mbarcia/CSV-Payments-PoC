@@ -20,8 +20,12 @@ import io.grpc.Metadata;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import java.util.function.Function;
+import org.jboss.logging.Logger;
 
 public class throwStatusRuntimeExceptionFunction implements Function<Throwable, Throwable> {
+
+  private static final Logger LOG = Logger.getLogger(throwStatusRuntimeExceptionFunction.class);
+
   @Override
   public Throwable apply(Throwable throwable) {
     Metadata metadata = new Metadata();
@@ -30,6 +34,8 @@ public class throwStatusRuntimeExceptionFunction implements Function<Throwable, 
     metadata.put(errorKey, throwable.getMessage());
 
     Status status = Status.INTERNAL.withDescription(throwable.getMessage()).withCause(throwable);
+
+    LOG.debug("Runtime exception thrown: ", throwable);
 
     return new StatusRuntimeException(status, metadata);
   }

@@ -39,7 +39,7 @@ class StepManyToOneTest {
         @Override
         public org.pipelineframework.config.StepConfig effectiveConfig() {
             // Return an empty StepConfig so the method defaults are not overridden in the
-            // applyReduce method
+            // apply method
             return new org.pipelineframework.config.StepConfig();
         }
 
@@ -118,7 +118,7 @@ class StepManyToOneTest {
         Multi<String> input = Multi.createFrom().items("item1", "item2", "item3", "item4");
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - with default StepConfig batch size (10), all 4 items go in one batch
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =
@@ -138,7 +138,7 @@ class StepManyToOneTest {
                 Multi.createFrom().items("item1", "item2", "item3", "item4", "item5", "item6");
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =
@@ -148,7 +148,7 @@ class StepManyToOneTest {
         subscriber.awaitItem(Duration.ofSeconds(5));
         // With configured batch size of 3, we expect 2 batches: ["item1", "item2", "item3"] and
         // ["item4", "item5", "item6"]
-        // The applyReduce method uses .collect().last(), so only the last batch result is returned
+        // The apply method uses .collect().last(), so only the last batch result is returned
         subscriber.assertItem("Batch processed: item4, item5, item6");
     }
 
@@ -159,7 +159,7 @@ class StepManyToOneTest {
         Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =
@@ -192,7 +192,7 @@ class StepManyToOneTest {
                                                 .by(Duration.ofMillis(50))); // Delay between items
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - With longer timeout, all items should be in one batch
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =
@@ -212,7 +212,7 @@ class StepManyToOneTest {
                 Multi.createFrom().items("item1", "item2", "item3", "item4", "item5", "item6");
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - Should use configured batch size (5) not the default from the method (10)
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =
@@ -222,7 +222,7 @@ class StepManyToOneTest {
         subscriber.awaitItem(Duration.ofSeconds(5));
         // With batch size of 5, first batch is ["item1", "item2", "item3", "item4", "item5"],
         // second batch is ["item6"]
-        // The applyReduce method uses .collect().last(), so only the last batch result is returned
+        // The apply method uses .collect().last(), so only the last batch result is returned
         subscriber.assertItem(
                 "Batch processed: item6"); // Only the last batch (with just item6) is returned
     }
@@ -235,7 +235,7 @@ class StepManyToOneTest {
                 Multi.createFrom().items("item1", "item2", "item3", "item4", "item5", "item6");
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - Batches of size 2: ["item1", "item2"], ["item3", "item4"], ["item5", "item6"]
         // Last batch is ["item5", "item6"]
@@ -255,7 +255,7 @@ class StepManyToOneTest {
         Multi<String> input = Multi.createFrom().items("item1", "item2", "item3", "item4");
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - Uses StepConfig's default batch size (10), so all items in one batch
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =
@@ -283,7 +283,7 @@ class StepManyToOneTest {
                         .map(i -> "payment_" + i + "_for_csv_file_X");
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - All 12 items should be processed together in one batch
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =
@@ -308,7 +308,7 @@ class StepManyToOneTest {
         Multi<String> input = Multi.createFrom().empty();
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - Should fail with IllegalArgumentException
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<String> subscriber =

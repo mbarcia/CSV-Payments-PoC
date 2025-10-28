@@ -21,36 +21,31 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.csv.common.domain.*;
 import org.pipelineframework.csv.common.mapper.CsvPaymentsOutputFileMapper;
 import org.pipelineframework.csv.common.mapper.PaymentOutputMapper;
-import org.pipelineframework.service.ReactiveStreamingClientService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
+import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
 
 /**
- * Reactive service for processing streams of payment outputs and writing them to CSV files.
+ * Reactive bidirectional streaming service for processing streams of payment outputs and writing them to CSV files.
  * <p>
- * This service implements a reactive streaming pattern using Mutiny, but with a pragmatic
- * approach to file writing:
- * 1. It collects the stream into a list to work with OpenCSV's iterator-based write method
- * 2. File I/O operations run on the event loop thread since they're not a bottleneck
- * 3. As the terminal operation in the pipeline, it doesn't create backpressure issues
+ * This service implements a reactive bidirectional streaming pattern using Mutiny, with the following characteristics:
+ * 1. Groups payment outputs by input file path to handle multiple output files in order
+ * 2. Each related group of payment outputs (belonging to the same input file) is written to its corresponding output file
+ * 3. sbc.write() will truncate each file when invoked
+ * 4. File I/O operations run on the event loop thread since they're not a bottleneck
+ * 5. As the terminal operation in the pipeline, it doesn't create backpressure issues
  * <p>
  * The service uses the iterator-based write method from OpenCSV which provides better
- * streaming characteristics than list-based writing, even though we collect the stream
- * for compatibility with the library's API.
- * <p>
- * <b>Important Configuration Note:</b> This step uses StepManyToOne which inherently
- * applies batching to group input streams. OpenCSV truncates files if partial data is
- * written, so batching parameters are set very high to effectively disable batching:
- * - A very large batchSize ensures all related payment outputs are collected together
- * - A longer batchTimeoutMs allows sufficient time for all related records to arrive
- * This effectively makes StepManyToOne behave like a single-stream processor for each
- * set of related payment outputs corresponding to an output file.
+ * streaming characteristics than list-based writing.
  */
 @PipelineStep(
   order = 6,
@@ -58,103 +53,116 @@ import org.slf4j.MDC;
   outputType = CsvPaymentsOutputFile.class,
   inputGrpcType = org.pipelineframework.csv.grpc.PaymentStatusSvc.PaymentOutput.class,
   outputGrpcType = org.pipelineframework.csv.grpc.OutputCsvFileProcessingSvc.CsvPaymentsOutputFile.class,
-  stepType = org.pipelineframework.step.StepManyToOne.class,
-  backendType = org.pipelineframework.grpc.GrpcServiceClientStreamingAdapter.class,
+  stepType = org.pipelineframework.step.StepManyToMany.class,
+  backendType = org.pipelineframework.grpc.GrpcServiceBidirectionalStreamingAdapter.class,
   grpcStub = org.pipelineframework.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc.MutinyProcessCsvPaymentsOutputFileServiceStub.class,
   grpcImpl = org.pipelineframework.csv.grpc.MutinyProcessCsvPaymentsOutputFileServiceGrpc.ProcessCsvPaymentsOutputFileServiceImplBase.class,
   inboundMapper = PaymentOutputMapper.class,
   outboundMapper = CsvPaymentsOutputFileMapper.class,
   grpcClient = "process-csv-payments-output-file",
+  parallel = true,
   autoPersist = true,
-  restEnabled = true,
-  debug = true,
-  parallel = false,
-  batchSize = 100000,  // Larger batch size to ensure all related records are processed together
-  batchTimeoutMs = 300000L  // 5 minutes. Beware OpenCSV will truncate the output file when this times out
+  debug = true
 )
 @ApplicationScoped
 public class ProcessCsvPaymentsOutputFileReactiveService
-    implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
+    implements ReactiveBidirectionalStreamingService<PaymentOutput, CsvPaymentsOutputFile> {
 
   /**
-   * Process a stream of payment outputs and write them to a CSV file.
+   * Process a stream of payment outputs and write them to CSV files in sequence.
    * <p>
    * Implementation notes:
-   * - Collects the stream to a list to work with OpenCSV's iterator-based write method
+   * - Groups payment outputs by input file path to handle multiple output files in order
+   * - Each related group of payment outputs (belonging to the same input file) is written to its corresponding output file
+   * - Files are written using OpenCSV's iterator-based write method for better streaming characteristics
+   * - sbc.write() will truncate each file when invoked
    * - File I/O operations run on the event loop thread since they're not a bottleneck
    * - As the terminal operation in the service pipeline, it doesn't create backpressure
    * - Uses try-with-resources to ensure proper file cleanup
-   * 
-   * @param paymentOutputList stream of payment outputs to process
-   * @return Uni containing the generated CSV file information
+   *
+   * @param paymentOutputMulti stream of payment outputs to process
+   * @return Multi containing the generated CSV file information for each input file
    */
   @Override
-  public Uni<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputList) {
-    Logger logger = LoggerFactory.getLogger(getClass());
-    String serviceId = this.getClass().toString();
+  public Multi<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputMulti) {
+      Logger logger = Logger.getLogger(getClass());
+      String serviceId = this.getClass().toString();
 
-    return paymentOutputList
-        .collect()
-        .asList()
-        .onItem()
-        .transformToUni(
-            paymentOutputs -> {
-              // Handle empty stream case
-              if (paymentOutputs.isEmpty()) {
-                logger.info("No payment outputs to process");
-                return Uni.createFrom().item((CsvPaymentsOutputFile) null);
-              }
-              
-              // Track the number of records for partial write detection
-              final AtomicInteger recordCount = new AtomicInteger(0);
-              
-              return Uni.createFrom()
-                  .deferred(() -> createOutputFile(paymentOutputs.getFirst(), logger))
-                  .onFailure()
-                  .recoverWithUni(failure -> {
-                    logger.error("Failed to create output file", failure);
-                    return Uni.createFrom().failure(new RuntimeException("Failed to create output file", failure));
-                  })
-                  .onItem()
-                  .transformToUni(file -> {
-                    try {
-                      // Use iterator-based write method for better streaming characteristics
-                      file.getSbc().write(paymentOutputs.iterator());
-                      recordCount.set(paymentOutputs.size());
-                      MDC.put("serviceId", serviceId);
-                      logger.info("Executed command on stream --> {} with {} records", 
-                          file.getFilepath(), recordCount.get());
-                      MDC.remove("serviceId");
-                      return Uni.createFrom().item(file);
-                    } catch (Exception e) {
-                      // Try to close the file before propagating the error
-                      try {
-                        file.close();
-                      } catch (Exception closeException) {
-                        logger.warn("Failed to close output file", closeException);
-                      }
-                      // Propagate the error
-                      return Uni.createFrom().failure(new RuntimeException(e));
-                    }
-                  })
-                  .onItem()
-                  .call(file -> Uni.createFrom().item(() -> {
-                    try {
-                      file.close(); // Properly close the resource
-                    } catch (Exception e) {
-                      logger.warn("Failed to close output file", e);
-                    }
-                    return null;
-                  }))
-                  .onFailure()
-                  .recoverWithUni(failure -> {
-                    // Log the number of records processed before failure
-                    logger.error("Failed to write output file after processing {} records", 
-                        recordCount.get(), failure);
-                    return Uni.createFrom().failure(new RuntimeException("Failed to write output file after processing " + 
-                        recordCount.get() + " records.", failure));
-                  });
-            });
+      return paymentOutputMulti
+              .collect().asList()
+              .onItem().transformToMulti(paymentOutputs -> {
+                  if (paymentOutputs.isEmpty()) {
+                      logger.info("No payment outputs to process");
+                      return Multi.createFrom().empty();
+                  }
+
+                  // Group by input file path
+                  Map<Path, List<PaymentOutput>> groupedOutputs =
+                          paymentOutputs.stream()
+                                  .collect(Collectors.groupingBy(po -> po.getPaymentStatus()
+                                          .getAckPaymentSent()
+                                          .getPaymentRecord()
+                                          .getCsvPaymentsInputFilePath()
+                                          .toAbsolutePath()
+                                          .normalize()));
+
+                  logger.infof("Grouped %d file(s)", groupedOutputs.size());
+                  groupedOutputs.forEach((k, v) ->
+                          logger.infof("File %s has %d records", k, v.size()));
+
+                  return Multi.createFrom().iterable(groupedOutputs.entrySet())
+                          .flatMap(entry -> {
+                              Path inputFile = entry.getKey();
+                              List<PaymentOutput> outputsForFile = entry.getValue();
+
+                              if (outputsForFile.isEmpty()) {
+                                  return Multi.createFrom().empty();
+                              }
+
+                              final AtomicInteger recordCount = new AtomicInteger(0);
+
+                              // Reactive creation and writing of file
+                              Uni<CsvPaymentsOutputFile> writeUni = Uni.createFrom().deferred(() -> {
+                                  try {
+                                      CsvPaymentsOutputFile file = getCsvPaymentsOutputFile(outputsForFile.get(0));
+                                      file.getSbc().write(outputsForFile.iterator());
+                                      recordCount.set(outputsForFile.size());
+
+                                      MDC.put("serviceId", serviceId);
+                                      logger.infof("Executed command on stream --> %s with %d records",
+                                              file.getFilepath(), recordCount.get());
+                                      MDC.remove("serviceId");
+
+                                      return Uni.createFrom().item(file);
+                                  } catch (Exception e) {
+                                      logger.errorf("Failed to write output file: %s", inputFile, e);
+                                      // Emit a placeholder / DLQ record so stream continues
+                                      // TODO
+	                                  CsvPaymentsOutputFile dlqFile = null;
+	                                  try {
+		                                  dlqFile = new CsvPaymentsOutputFile(inputFile);
+	                                  } catch (IOException ex) {
+		                                  throw new RuntimeException(ex);
+	                                  }
+//                                      dlqFile.setError(e); // your class can have an 'error' field
+//                                      return Uni.createFrom().item(dlqFile);
+                                      return Uni.createFrom().item(dlqFile);
+                                  }
+                              });
+
+                              return writeUni
+                                      .onItem().call(file -> Uni.createFrom().item(() -> {
+                                          try {
+                                              if (file != null) file.close();
+                                          } catch (Exception e) {
+                                              logger.warnf("Failed to close output file: %s", file.getFilepath(), e);
+                                          }
+                                          return null;
+                                      }))
+                                      .toMulti();
+                          });
+              })
+              .filter(Objects::nonNull); // drop nulls just in case
   }
 
   /**
@@ -180,17 +188,5 @@ public class ProcessCsvPaymentsOutputFileReactiveService
 
     return new CsvPaymentsOutputFile(csvPaymentsInputFilePath);
   }
-  
-  /**
-   * Creates an output file and handles any IOException that might occur.
-   * This method exists to properly handle the checked exception in a reactive context.
-   */
-  private Uni<CsvPaymentsOutputFile> createOutputFile(PaymentOutput paymentOutput, Logger logger) {
-    try {
-      return Uni.createFrom().item(this.getCsvPaymentsOutputFile(paymentOutput));
-    } catch (IOException e) {
-      logger.error("Failed to create output file due to IO error", e);
-      return Uni.createFrom().failure(new RuntimeException("Failed to create output file due to IO error", e));
-    }
-  }
+
 }

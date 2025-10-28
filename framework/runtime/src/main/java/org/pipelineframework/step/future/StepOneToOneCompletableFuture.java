@@ -71,6 +71,16 @@ public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Con
             .withBackOff(retryWait(), maxBackoff())
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())
+            .onFailure().invoke(t -> {
+                if (debug()) {
+                    LOG.info(
+                        "Step {} completed all retries ({} attempts) with failure: {}",
+                        this.getClass().getSimpleName(),
+                        retryLimit(),
+                        t.getMessage()
+                    );
+                }
+            })
             // debug logging
             .onItem().invoke(i -> {
                 if (debug()) {

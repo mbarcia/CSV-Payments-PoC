@@ -17,7 +17,6 @@
 package org.pipelineframework.step;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -89,7 +88,7 @@ class StepManyToOneConcurrencyTest {
         step.initialiseWithConfig(liveConfig);
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - Should complete successfully
         String output = result.await().atMost(Duration.ofSeconds(5));
@@ -113,7 +112,7 @@ class StepManyToOneConcurrencyTest {
         step.initialiseWithConfig(liveConfig);
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - Should complete successfully, potentially faster due to concurrent processing
         String output = result.await().atMost(Duration.ofSeconds(5));
@@ -137,7 +136,7 @@ class StepManyToOneConcurrencyTest {
         step.initialiseWithConfig(liveConfig);
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - Should complete successfully
         String output = result.await().atMost(Duration.ofSeconds(5));
@@ -160,7 +159,7 @@ class StepManyToOneConcurrencyTest {
         step.initialiseWithConfig(liveConfig);
 
         // When
-        Uni<String> result = step.applyReduce(input);
+        Uni<String> result = step.apply(input);
 
         // Then - Should complete successfully, potentially faster due to concurrent processing
         String output = result.await().atMost(Duration.ofSeconds(5));

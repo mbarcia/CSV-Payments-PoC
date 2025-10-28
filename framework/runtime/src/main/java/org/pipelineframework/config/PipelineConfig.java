@@ -30,7 +30,7 @@ public final class PipelineConfig {
     public PipelineConfig() {
         // initialize with a default profile
         StepConfig defaultConfig = new StepConfig();
-        defaultConfig.autoPersist(true); // Enable auto-persistence by default
+        defaultConfig.autoPersist(false); // Disable auto-persistence by default
         profiles.put("default", defaultConfig);
 
         // sync with Quarkus profile

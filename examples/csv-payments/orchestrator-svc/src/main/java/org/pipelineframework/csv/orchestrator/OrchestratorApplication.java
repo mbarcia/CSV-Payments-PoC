@@ -20,6 +20,7 @@ import io.quarkus.runtime.QuarkusApplication;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.Dependent;
 import jakarta.inject.Inject;
+import java.util.concurrent.Callable;
 import org.pipelineframework.PipelineExecutionService;
 import org.pipelineframework.csv.grpc.InputCsvFileProcessingSvc;
 import picocli.CommandLine;
@@ -33,9 +34,13 @@ import picocli.CommandLine.Option;
 @Command(name = "orchestrator", mixinStandardHelpOptions = true, version = "1.0.0",
          description = "CSV Payments Orchestrator Service")
 @Dependent
-public class OrchestratorApplication implements QuarkusApplication {
+public class OrchestratorApplication implements QuarkusApplication, Callable<Integer> {
 
-    @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", defaultValue = "")
+    @Option(
+        names = {"-i", "--input"}, 
+        description = "Input value for the pipeline",
+        defaultValue = "csv"
+    )
     String input;
 
     @Inject
@@ -47,21 +52,22 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     @Override
     public int run(String... args) {
-        CommandLine cmd = new CommandLine(this);
-        cmd.parseArgs(args);
-
-        if (input != null) {
-            executePipelineWithInput(input);
-            return 0; // Success exit code
-        } else {
-            System.err.println("Input parameter is required");
-            return 1; // Error exit code
-        }
+        return new CommandLine(this).execute(args);
     }
 
-    // Execute the pipeline when arguments are properly parsed
-    private void executePipelineWithInput(String input) {
-        Multi<InputCsvFileProcessingSvc.CsvFolder> inputMulti = getInputMulti(input);
+    public Integer call() {
+        // Use command line option if provided, otherwise fall back to environment variable
+        String actualInput = input;
+        if (actualInput == null || actualInput.trim().isEmpty()) {
+            actualInput = System.getenv("PIPELINE_INPUT");
+        }
+        
+        if (actualInput == null || actualInput.trim().isEmpty()) {
+            System.out.println("Input parameter is empty");
+            return CommandLine.ExitCode.USAGE;
+        }
+        
+        Multi<InputCsvFileProcessingSvc.CsvFolder> inputMulti = getInputMulti(actualInput);
 
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti)
@@ -69,6 +75,7 @@ public class OrchestratorApplication implements QuarkusApplication {
                 .await().indefinitely();
         
         System.out.println("Pipeline execution completed");
+        return CommandLine.ExitCode.OK;
     }
 
     private static Multi<InputCsvFileProcessingSvc.CsvFolder> getInputMulti(String input) {

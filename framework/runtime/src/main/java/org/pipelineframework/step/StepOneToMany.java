@@ -65,6 +65,16 @@ public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, Dead
         .onFailure(t -> !(t instanceof NullPointerException)).retry()
         .withBackOff(retryWait(), maxBackoff())
         .withJitter(jitter() ? 0.5 : 0.0)
-        .atMost(retryLimit());
+        .atMost(retryLimit())
+        .onFailure().invoke(t -> {
+            if (debug()) {
+                LOG.info(
+                    "Step {} completed all retries ({} attempts) with failure: {}",
+                    this.getClass().getSimpleName(),
+                    retryLimit(),
+                    t.getMessage()
+                );
+            }
+        });
     }
 }

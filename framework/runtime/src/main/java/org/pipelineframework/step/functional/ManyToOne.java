@@ -33,5 +33,5 @@ public interface ManyToOne<I, O> {
      * @param input The input stream
      * @return A Uni that completes with the transformed output item
      */
-    Uni<O> applyReduce(Multi<I> input);
+    Uni<O> apply(Multi<I> input);
 }

@@ -151,6 +151,41 @@ public class ProcessCsvPaymentsOutputFileReactiveService
 - Consider the trade-offs between memory usage (larger batches) versus correctness (avoiding file truncation)
 - For file operations that require all related data to be available, carefully tune the batching parameters to match your data patterns
 
+**Updated Approach for Complete File Processing**: In some cases, especially where file truncation is an issue, it may be more appropriate to collect all related records before processing them. This ensures that OpenCSV's `write()` method receives all records for a file at once, avoiding truncation issues. The approach involves collecting the entire stream first and then grouping by output file:
+
+```java
+@Override
+public Multi<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputMulti) {
+    // Collect all elements first, then group by file path to ensure all records 
+    // for a file are processed together, preventing file truncation issues
+    return paymentOutputMulti
+        .collect()
+        .asList()
+        .onItem()
+        .transformToMulti(paymentOutputs -> {
+            // Group the collected list by input file path
+            java.util.Map<java.nio.file.Path, java.util.List<PaymentOutput>> groupedOutputs = 
+                paymentOutputs.stream()
+                    .collect(java.util.stream.Collectors.groupingBy(paymentOutput -> {
+                        // Extract the input file path to group related records
+                        PaymentStatus paymentStatus = paymentOutput.getPaymentStatus();
+                        AckPaymentSent ackPaymentSent = paymentStatus.getAckPaymentSent();
+                        PaymentRecord paymentRecord = ackPaymentSent.getPaymentRecord();
+                        return paymentRecord.getCsvPaymentsInputFilePath().getFileName();
+                    }));
+            
+            // Process each group of related records together
+            return Multi.createFrom().iterable(groupedOutputs.entrySet())
+                .flatMap(entry -> {
+                    // Process all records in the group together
+                    java.util.List<PaymentOutput> outputsForFile = entry.getValue();
+                    // Write all records to the same file in a single operation to prevent truncation
+                    return writeToFile(outputsForFile, entry.getKey());
+                });
+        });
+}
+```
+
 ### 4. Many-to-Many (N→N) - Multiple Inputs to Multiple Outputs
 - **Use case**: Transform a stream of items where each may produce multiple outputs
 - **Example**: Filter and transform a stream of records

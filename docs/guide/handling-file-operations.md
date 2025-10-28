@@ -12,23 +12,23 @@ The Pipeline Framework automatically generates REST adapters when you use the `r
 When you use:
 ```java
 @PipelineStep(
-    inputType = PaymentOutput.class,
-    outputType = CsvPaymentsOutputFile.class,
+    inputType = InputType.class,
+    outputType = OutputFileType.class,
     restEnabled = true
 )
-public class ProcessCsvPaymentsOutputFileReactiveService implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
+public class ProcessFileReactiveService implements ReactiveStreamingClientService<InputType, OutputFileType> {
     // ...
 }
 ```
 
 The framework generates a resource like:
 ```java
-@Path("/api/v1/process-csv-payments-output-file-reactive")
-public class ProcessCsvPaymentsOutputFileResource {
+@Path("/api/v1/process-file-reactive")
+public class ProcessFileResource {
     // Standard process method for DTOs
     @POST
     @Path("/process")
-    public Uni<CsvPaymentsOutputFileDto> process(Multi<PaymentOutputDto> inputDtos) {
+    public Uni<OutputFileTypeDto> process(Multi<InputTypeDto> inputDtos) {
         // Implementation using mappers and service
     }
     
@@ -44,30 +44,30 @@ public class ProcessCsvPaymentsOutputFileResource {
 For specialized operations like file downloads, you might need to complement the generated resource with custom endpoints:
 
 ```java
-@Path("/api/v1/process-csv-payments-output-file-reactive")
-public class ProcessCsvPaymentsOutputFileRestResource {
+@Path("/api/v1/process-file-reactive")
+public class ProcessFileRestResource {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ProcessCsvPaymentsOutputFileRestResource.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProcessFileRestResource.class);
     
     @Inject
-    ProcessCsvPaymentsOutputFileReactiveService domainService;
+    ProcessFileReactiveService domainService;
     
     @POST
     @Path("/process-download")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Uni<Response> processAndDownload(List<PaymentOutputDto> request) {
+    public Uni<Response> processAndDownload(List<InputTypeDto> request) {
         // Convert DTOs to domain objects
-        Multi<PaymentOutput> domainInput = Multi.createFrom().iterable(request)
-            .onItem().transform(paymentOutputMapper::fromDto);
+        Multi<InputType> domainInput = Multi.createFrom().iterable(request)
+            .onItem().transform(inputTypeMapper::fromDto);
         
         // Process data using the same service
-        Uni<CsvPaymentsOutputFile> domainResult = domainService.process(domainInput);
+        Uni<OutputFileType> domainResult = domainService.process(domainInput);
         
         return domainResult
             .onItem().transformToUni(file -> createFileDownloadResponse(file));
     }
     
-    private Uni<Response> createFileDownloadResponse(CsvPaymentsOutputFile file) {
+    private Uni<Response> createFileDownloadResponse(OutputFileType file) {
         java.nio.file.Path filePath = file.getFilepath();
         String fileName = filePath.getFileName().toString();
         
@@ -105,13 +105,13 @@ Keep both the generated resource for standard operations and create custom resou
 ```java
 // In your service class - generate standard REST endpoints
 @PipelineStep(
-    inputType = PaymentOutput.class,
-    outputType = CsvPaymentsOutputFile.class,
-    inboundMapper = PaymentOutputMapper.class,
-    outboundMapper = CsvPaymentsOutputFileMapper.class,
+    inputType = InputType.class,
+    outputType = OutputFileType.class,
+    inboundMapper = InputTypeMapper.class,
+    outboundMapper = OutputFileTypeMapper.class,
     restEnabled = true  // This will generate the standard resource
 )
-public class ProcessCsvPaymentsOutputFileReactiveService implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
+public class ProcessFileReactiveService implements ReactiveStreamingClientService<InputType, OutputFileType> {
     // Your service business logic
 }
 
@@ -120,7 +120,7 @@ public class ProcessCsvPaymentsOutputFileReactiveService implements ReactiveStre
 public class CustomFileProcessingResource {
     
     @Inject
-    ProcessCsvPaymentsOutputFileReactiveService domainService;
+    ProcessFileReactiveService domainService;
     
     @POST
     @Path("/download")
@@ -140,7 +140,7 @@ For common patterns, you can implement custom handling by keeping the generated 
 public class FileDownloadService {
     
     @Inject
-    ProcessCsvPaymentsOutputFileReactiveService domainService;
+    ProcessFileReactiveService domainService;
 
     // Generic file download endpoint that can work with multiple service types
     public <T, S> Uni<Response> createDownloadResponse(
@@ -182,6 +182,6 @@ public class FileDownloadService {
 
 ## Example Implementation
 
-For a complete implementation, see the CSV Payments example where manual resources handle file download operations while the framework generates standard DTO processing endpoints.
+For a complete implementation, see the reference implementation where manual resources handle file download operations while the framework generates standard DTO processing endpoints.
 
 This approach provides the best of both worlds: automatic generation for standard operations and custom handling for specialized requirements.

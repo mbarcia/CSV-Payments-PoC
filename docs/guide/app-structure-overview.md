@@ -32,7 +32,7 @@ my-pipeline-application/
 │       └── main/java/
 │           └── com/example/app/orchestrator/
 │               ├── service/         # Pipeline execution service
-│               └── CsvPaymentsApplication.java
+│               └── OrchestratorApplication.java
 ├── step-one-svc/                     # First pipeline step
 │   ├── pom.xml
 │   └── src/

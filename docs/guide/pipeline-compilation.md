@@ -81,23 +81,62 @@ public class ProcessPaymentServiceStep implements StepOneToOne<PaymentRecord, Pa
 }
 ```
 
-#### c) Pipeline Application
-An orchestrator that includes all discovered steps:
+#### c) Orchestrator Application
+The orchestrator is generated from a template that implements QuarkusApplication and Callable:
 
 ```java
-// Generated: GeneratedPipelineApplication.java
-@ApplicationScoped
-public class GeneratedPipelineApplication extends PipelineApplication {
+// Generated: OrchestratorApplication.java (from template)
+@CommandLine.Command(
+    name = "orchestrator",
+    mixinStandardHelpOptions = true,
+    version = "1.0.0",
+    description = "{{appName}} Orchestrator Service")
+@Dependent
+public class OrchestratorApplication implements QuarkusApplication, Callable<Integer> {
+
+    @Option(
+        names = {"-i", "--input"}, 
+        description = "Input value for the pipeline",
+        defaultValue = ""
+    )
+    String input;
+
     @Inject
-    ProcessPaymentServiceStep step0;
+    PipelineExecutionService pipelineExecutionService;
+
+    @Override
+    public int run(String... args) {
+        return new CommandLine(this).execute(args);
+    }
+
+    public Integer call() {
+        // Use command line option if provided, otherwise fall back to environment variable
+        String actualInput = input;
+        if (actualInput == null || actualInput.trim().isEmpty()) {
+            actualInput = System.getenv("PIPELINE_INPUT");
+        }
+        
+        if (actualInput == null || actualInput.trim().isEmpty()) {
+            System.err.println("Input parameter is required");
+            return CommandLine.ExitCode.USAGE;
+        }
+        
+        Multi<{{firstInputTypeName}}> inputMulti = getInputMulti(actualInput);
+
+        // Execute the pipeline with the processed input using injected service
+        pipelineExecutionService.executePipeline(inputMulti)
+            .collect().asList()
+            .await().indefinitely();
+
+        System.out.println("Pipeline execution completed");
+        return CommandLine.ExitCode.OK;
+    }
     
-    @Inject
-    SendPaymentServiceStep step1;
-    
-    @Inject
-    ProcessAckPaymentServiceStep step2;
-    
-    // Generated pipeline execution logic
+    // This method needs to be implemented by the user after template generation
+    // based on their specific input type and requirements
+    private Multi<{{firstInputTypeName}}> getInputMulti(String input) {
+        // User implementation required
+    }
 }
 ```
 
@@ -178,30 +217,34 @@ public class ServiceNameStep implements StepOneToOne<DomainIn, DomainOut> {
 }
 ```
 
-### Pipeline Application Generation
+### Orchestrator Application Structure
 
-The pipeline application orchestrates all steps:
+The orchestrator application coordinates pipeline execution by using the PipelineExecutionService to connect all generated steps:
 
 ```java
-// Generated class structure
-@ApplicationScoped
-public class GeneratedPipelineApplication extends PipelineApplication {
+// Orchestrator application that coordinates execution
+@CommandLine.Command(...)
+public class OrchestratorApplication implements QuarkusApplication, Callable<Integer> {
     
-    // Injected steps in order
-    @Inject ProcessPaymentServiceStep step0;
-    @Inject SendPaymentServiceStep step1;
-    @Inject ProcessAckPaymentServiceStep step2;
+    @Inject
+    PipelineExecutionService pipelineExecutionService;
     
-    @Override
-    public void processPipeline(String input) {
-        // Create input stream
+    public Integer call() {
+        // Create input stream from input parameter
         Multi<DomainInput> inputStream = createInputStream(input);
         
-        // Execute pipeline with all steps
-        executePipeline(inputStream, Arrays.asList(step0, step1, step2));
+        // Execute pipeline using the injected service
+        // The service discovers all registered step implementations through dependency injection
+        pipelineExecutionService.executePipeline(inputStream)
+            .collect().asList()
+            .await().indefinitely();
+            
+        return CommandLine.ExitCode.OK;
     }
 }
 ```
+
+The actual pipeline execution is handled by the PipelineExecutionService which discovers all available step implementations through the StepsRegistry.
 
 ## Build Process Integration
 
@@ -232,7 +275,7 @@ The annotation processor runs during the `compile` phase:
 [INFO] [org.pipelineframework.processor.PipelineProcessor] Generated SendPaymentServiceStep
 [INFO] [org.pipelineframework.processor.PipelineProcessor] Generated ProcessAckPaymentServiceGrpcService
 [INFO] [org.pipelineframework.processor.PipelineProcessor] Generated ProcessAckPaymentServiceStep
-[INFO] [org.pipelineframework.processor.PipelineProcessor] Generated GeneratedPipelineApplication
+[INFO] [org.pipelineframework.processor.PipelineProcessor] Generated step implementations and service adapters
 ```
 
 ## Generated Code Verification
@@ -351,8 +394,10 @@ quarkus.log.category."org.pipelineframework.processor".level=TRACE
 
 #### Verify Generated Classes
 ```bash
-# Check that classes were generated
-ls target/classes/org/pipelineframework/pipeline/GeneratedPipelineApplication.class
+# Check that step classes were generated
+find target/classes -name "*Step.class" | head -5
+# Check that gRPC service classes were generated
+find target/classes -name "*GrpcService.class" | head -5
 ```
 
 #### Clean and Rebuild

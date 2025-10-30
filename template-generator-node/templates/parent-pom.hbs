@@ -20,14 +20,13 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <enablePreview>true</enablePreview>
-        <quarkus.platform.version>3.28.1</quarkus.platform.version>
+        <quarkus.platform.version>3.28.5</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.63.0</grpc.version>
         <version.jandex>3.5.0</version.jandex>
         <pipeline.version>0.9.0</pipeline.version>
-        <pipeline.generate-cli>false</pipeline.generate-cli>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
     </properties>
@@ -42,46 +41,16 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <!-- Explicitly manage protobuf-java version to ensure consistency -->
+            <!-- Pipeline Framework BOM -->
             <dependency>
-                <groupId>com.google.protobuf</groupId>
-                <artifactId>protobuf-java</artifactId>
-                <version>${protobuf.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-protobuf</artifactId>
-                <version>${grpc.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.grpc</groupId>
-                <artifactId>grpc-stub</artifactId>
-                <version>${grpc.version}</version>
+                <groupId>org.pipelineframework</groupId>
+                <artifactId>framework-parent</artifactId>
+                <version>${pipeline.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc-protoc-plugin</artifactId>
-            <version>3.28.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.protobuf</groupId>
-                    <artifactId>protobuf-java</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>2.20.0</version>
-        </dependency>
-    </dependencies>
 
     <build>
         <pluginManagement>
@@ -129,12 +98,17 @@
                         </compilerArgs>
                     </configuration>
                 </plugin>
+                <!-- 
+                The annotation processor automatically handles generation of gRPC services and client steps 
+                based on the @PipelineStep annotation. Generation type (client vs server) is determined by 
+                the pipeline.generate-cli property. -->
                 <plugin>
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-maven-plugin</artifactId>
                     <version>${quarkus.platform.version}</version>
                     <configuration>
                         <jvmArgs>--enable-preview</jvmArgs>
+                        <sourceDir>${project.build.directory}/generated-sources/annotations</sourceDir>
                     </configuration>
                     <executions>
                         <execution>
@@ -204,8 +178,16 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>3.5.1</version>
                     <configuration>
-                        <argLine>--enable-preview -XX:+EnableDynamicAgentLoading</argLine>
+                        <argLine>--enable-preview</argLine>
                     </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>integration-test</goal>
+                                <goal>verify</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>io.smallrye</groupId>

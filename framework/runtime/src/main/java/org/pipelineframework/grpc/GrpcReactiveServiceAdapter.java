@@ -105,6 +105,8 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
       )
               : processedResult;
 
+      LOG.debug("Auto-persistence is disabled");
+
       return withPersistence
               .onItem().transform(this::toGrpc)
               .onFailure().transform(new throwStatusRuntimeExceptionFunction());

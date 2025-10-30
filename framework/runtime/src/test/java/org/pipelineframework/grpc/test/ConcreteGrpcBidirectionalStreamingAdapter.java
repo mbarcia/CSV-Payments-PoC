@@ -1,0 +1,72 @@
+/*
+ * Copyright (c) 2023-2025 Mariano Barcia
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.pipelineframework.grpc.test;
+
+import io.smallrye.mutiny.Multi;
+import jakarta.enterprise.context.ApplicationScoped;
+import org.pipelineframework.config.StepConfig;
+import org.pipelineframework.grpc.GrpcServiceBidirectionalStreamingAdapter;
+import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
+
+@ApplicationScoped
+public class ConcreteGrpcBidirectionalStreamingAdapter
+        extends GrpcServiceBidirectionalStreamingAdapter<String, String, String, String> {
+
+    private boolean autoPersist = true;
+
+    public void setAutoPersistence(boolean autoPersist) {
+        this.autoPersist = autoPersist;
+    }
+
+    @Override
+    protected ReactiveBidirectionalStreamingService<String, String> getService() {
+        return new TestBidirectionalStreamingService();
+    }
+
+    @Override
+    protected String fromGrpc(String grpcIn) {
+        return "domain_" + grpcIn;
+    }
+
+    @Override
+    protected String toGrpc(String domainOut) {
+        return "grpc_" + domainOut;
+    }
+
+    @Override
+    protected StepConfig getStepConfig() {
+        return new StepConfig().autoPersist(autoPersist);
+    }
+
+    // Public methods for testing
+    public String testFromGrpc(String grpcIn) {
+        return fromGrpc(grpcIn);
+    }
+
+    public String testToGrpc(String domainOut) {
+        return toGrpc(domainOut);
+    }
+
+    // Test service implementation
+    private static class TestBidirectionalStreamingService
+            implements ReactiveBidirectionalStreamingService<String, String> {
+        @Override
+        public Multi<String> process(Multi<String> input) {
+            return input.onItem().transform(item -> "result_" + item.replace("input_", ""));
+        }
+    }
+}

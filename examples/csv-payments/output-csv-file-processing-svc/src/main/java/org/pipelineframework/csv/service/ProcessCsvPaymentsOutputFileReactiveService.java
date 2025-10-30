@@ -16,6 +16,8 @@
 
 package org.pipelineframework.csv.service;
 
+import com.opencsv.exceptions.CsvDataTypeMismatchException;
+import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -124,7 +126,7 @@ public class ProcessCsvPaymentsOutputFileReactiveService
                               // Reactive creation and writing of file
                               Uni<CsvPaymentsOutputFile> writeUni = Uni.createFrom().deferred(() -> {
                                   try {
-                                      CsvPaymentsOutputFile file = getCsvPaymentsOutputFile(outputsForFile.get(0));
+                                      CsvPaymentsOutputFile file = getCsvPaymentsOutputFile(outputsForFile.getFirst());
                                       file.getSbc().write(outputsForFile.iterator());
                                       recordCount.set(outputsForFile.size());
 
@@ -134,19 +136,18 @@ public class ProcessCsvPaymentsOutputFileReactiveService
                                       MDC.remove("serviceId");
 
                                       return Uni.createFrom().item(file);
+                                  } catch (IOException e) {
+                                      logger.errorf("Failed to create output file: %s", inputFile, e);
+                                      return Uni.createFrom().nullItem();
+                                  } catch (CsvDataTypeMismatchException e) {
+                                      logger.errorf("CSV data type mismatch: %s", inputFile, e);
+                                      return Uni.createFrom().nullItem();
+                                  } catch (CsvRequiredFieldEmptyException e) {
+                                      logger.errorf("A required field is empty: %s", inputFile, e);
+                                      return Uni.createFrom().nullItem();
                                   } catch (Exception e) {
                                       logger.errorf("Failed to write output file: %s", inputFile, e);
-                                      // Emit a placeholder / DLQ record so stream continues
-                                      // TODO
-	                                  CsvPaymentsOutputFile dlqFile = null;
-	                                  try {
-		                                  dlqFile = new CsvPaymentsOutputFile(inputFile);
-	                                  } catch (IOException ex) {
-		                                  throw new RuntimeException(ex);
-	                                  }
-//                                      dlqFile.setError(e); // your class can have an 'error' field
-//                                      return Uni.createFrom().item(dlqFile);
-                                      return Uni.createFrom().item(dlqFile);
+                                      return Uni.createFrom().nullItem();
                                   }
                               });
 

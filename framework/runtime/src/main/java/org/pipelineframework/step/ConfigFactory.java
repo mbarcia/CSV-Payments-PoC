@@ -20,7 +20,6 @@ import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.lang.reflect.Field;
-import java.time.Duration;
 import java.util.Objects;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.config.LiveStepConfig;
@@ -49,8 +48,6 @@ public class ConfigFactory {
                     .recoverOnFailure(annotation.recoverOnFailure())
                     .backpressureBufferCapacity(annotation.backpressureBufferCapacity())
                     .backpressureStrategy(annotation.backpressureStrategy())
-                    .batchSize(annotation.batchSize())
-                    .batchTimeout(Duration.ofMillis(annotation.batchTimeoutMs()))
                     .debug(annotation.debug())
                     .parallel(annotation.parallel());
 	    } catch (NoSuchFieldException e) {

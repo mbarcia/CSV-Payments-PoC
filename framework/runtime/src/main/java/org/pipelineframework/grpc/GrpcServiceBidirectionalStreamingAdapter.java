@@ -109,11 +109,7 @@ public abstract class GrpcServiceBidirectionalStreamingAdapter<
   public Multi<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
     Multi<DomainIn> domainStream = requestStream
             .onItem()
-            .transform(this::fromGrpc)
-            .plug(m -> m
-                    .onSubscription().invoke(() -> logger.info("Subscribed to grpcRequests"))
-                    .onCompletion().invoke(() -> logger.info("grpcRequests completed"))
-            );;
+            .transform(this::fromGrpc);
 
     // Cache so we can re-consume the stream for persistence later ("hot" and "shared")
     Multi<DomainIn> cachedStream = domainStream.cache();

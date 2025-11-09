@@ -258,7 +258,7 @@ The framework is suitable for:
 - Event-driven architectures
 - Microservice orchestration
 - Real-time data transformation
-- Batch processing systems
+
 
 ## Conclusion
 

@@ -51,45 +51,7 @@ sequentially.
 
 Hence, the more "downstream" you can push the `parallel = false` moment, the faster the pipeline will process streams.
 
-## Batch Processing Configuration
 
-For `StepManyToOne` steps, you can configure batch processing behavior through the `@PipelineStep` annotation:
-
-```java
-@PipelineStep(
-    batchSize = 50,           // Collect up to 50 items before processing
-    batchTimeoutMs = 5000,    // Or process after 5 seconds, whichever comes first
-    parallel = true           // Process batches concurrently
-)
-```
-
-### Batch Processing Parameters
-
-- **`batchSize`**: The maximum number of items to collect in a batch before processing begins. For related records (such as all PaymentOutput records from the same CSV file), set this to a value larger than the expected number of related items to ensure they are processed together.
-
-- **`batchTimeoutMs`**: The maximum time (in milliseconds) to wait for additional items to accumulate in a batch. Even if the batch size hasn't been reached, processing will begin after this timeout expires.
-
-- **`parallel`**: When `true`, this enables concurrent processing of batches:
-  - **`true`**: Process batches concurrently, maximizing throughput. This strategy starts multiple batches at the same time, which can significantly improve performance but does not preserve the order of batch completion.
-  - **`false`**: Process batches sequentially, preserving order. This strategy waits for each batch to complete before starting the next one, ensuring deterministic processing order.
-
-### Choosing the Right Strategy
-
-Choose `parallel = true` when you need maximum performance and the order of batch processing is not important. Choose `parallel = false` when you need to maintain predictable ordering of batch results.
-
-## Parallel Processing Configuration
-
-For any step type, you can configure parallel processing to process multiple items from the same stream concurrently using the `@PipelineStep` annotation:
-
-```java
-@PipelineStep(
-    parallel = true          // Enable parallel processing for this step
-)
-```
-
-### Parallel Processing Parameters
-
-- **`parallel`**: Controls whether to enable parallel processing for this step. Default is `false` (sequential processing). When set to `true`, the service can process multiple items simultaneously, dramatically improving throughput when some items take longer than others. For example, in a payment processing service, if one payment takes 10 seconds but others take 1 second, setting `parallel = true` allows the fast payments to complete without waiting for the slow ones.
 
 ## Understanding Pipeline Step Cardinalities
 
@@ -124,39 +86,37 @@ public class ProcessPaymentService implements StepOneToOne<PaymentRecord, Paymen
 ### 3. Many-to-One (N→1) - Multiple Inputs to Single Output
 - **Use case**: Aggregate multiple related items into a single result
 - **Example**: Collect payment outputs and write them to a single CSV file
-- **Parallelism**: Batch-level parallelism with `parallel` parameter
-- **Best for**: Batch aggregation operations that can benefit from concurrent batch processing
+- **Parallelism**: Processing-level parallelism with `parallel` parameter
+- **Best for**: Aggregation operations that can benefit from concurrent processing
 
 ```java
 @PipelineStep(
     stepType = StepManyToOne.class,
-    batchSize = 50,  // Collect up to 50 payment outputs before writing to CSV
-    batchTimeoutMs = 5000,  // Or write after 5 seconds even if batch isn't full
-    parallel = true  // Process different batches concurrently
+    parallel = true  // Process with concurrent capabilities
 )
 public class ProcessCsvPaymentsOutputFileReactiveService 
     implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
     
     @Override
     public Uni<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputList) {
-        // All payment outputs in a batch are processed together
-        // With parallel=true, different batches can be processed concurrently
+        // Process all payment outputs to generate a single CSV file
+        // With parallel=true, different processing tasks can be executed concurrently
         return writeToFile(paymentOutputList);
     }
 }
 ```
 
-**Important Consideration for File Operations**: When using StepManyToOne for file writing operations (like CSV generation), be aware that the batching mechanism can cause issues with libraries like OpenCSV. If a batch does not contain all records related to a single output file, the file writing operation may truncate the file. When configuring `batchSize` and `batchTimeoutMs` for file operations:
-- Ensure values are set to capture ALL related records for a single output file
-- Consider the trade-offs between memory usage (larger batches) versus correctness (avoiding file truncation)
-- For file operations that require all related data to be available, carefully tune the batching parameters to match your data patterns
+**Important Consideration for File Operations**: When using StepManyToOne for file writing operations (like CSV generation), ensure all related records are available before starting the write operation. Some file writing libraries like OpenCSV may truncate files if data is provided in chunks. When implementing file processing operations:
+- Collect all related records before starting the file writing operation
+- Consider the trade-offs between memory usage (storing more records) versus correctness (avoiding file truncation)
+- For file operations that require all related data to be available, ensure your implementation collects all necessary data before processing
 
-**Updated Approach for Complete File Processing**: In some cases, especially where file truncation is an issue, it may be more appropriate to collect all related records before processing them. This ensures that OpenCSV's `write()` method receives all records for a file at once, avoiding truncation issues. The approach involves collecting the entire stream first and then grouping by output file:
+**Approach for Complete File Processing**: It may be more appropriate to collect all related records before processing them. This ensures that file writing operations receive all records for a file at once, avoiding truncation issues:
 
 ```java
 @Override
 public Multi<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputMulti) {
-    // Collect all elements first, then group by file path to ensure all records 
+    // Collect all elements before processing to ensure all records 
     // for a file are processed together, preventing file truncation issues
     return paymentOutputMulti
         .collect()
@@ -189,7 +149,7 @@ public Multi<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputMu
 ### 4. Many-to-Many (N→N) - Multiple Inputs to Multiple Outputs
 - **Use case**: Transform a stream of items where each may produce multiple outputs
 - **Example**: Filter and transform a stream of records
-- **Parallelism**: Item-level and batch-level parallelism available
+- **Parallelism**: Item-level parallelism available
 
 ## Practical Example: CSV Payments Pipeline Optimization
 
@@ -223,43 +183,14 @@ public class SendPaymentRecordReactiveService
 }
 ```
 
-### Scenario: Processing Multiple CSV Files Concurrently
-1. **Multiple CSV files** arrive for processing
-2. **Each file** contains related payment records that should be processed together
-3. **Goal**: Don't wait for one file to finish before starting the next
-
-### Solution: Use Batch-Level Parallelism in Output Processing
-```java
-@PipelineStep(
-    order = 6,
-    stepType = StepManyToOne.class,
-    batchSize = 50,  // Process up to 50 payment outputs together in one batch
-    batchTimeoutMs = 10000,  // Wait 10 seconds to collect related records
-    parallel = true  // Process different batches concurrently
-)
-public class ProcessCsvPaymentsOutputFileReactiveService 
-    implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
-    
-    @Override
-    public Uni<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputList) {
-        // All payment outputs from the same CSV file are processed together in a batch
-        // With parallel=true, different batches (from different files) 
-        // can be processed concurrently
-        return writeToFile(paymentOutputList);
-    }
-}
-```
-
 ## Performance Optimization Guidelines
 
 ### For Item-Level Processing (1→1 Steps):
 1. **Set `parallel = true`** to enable concurrent processing of multiple input items
 2. **Monitor system resources** under load to determine optimal concurrency level
 
-### For Batch Processing (N→1 Steps):
-1. **Set `batchSize`** to match typical group sizes (e.g., CSV file record counts)
-2. **Set `batchTimeoutMs`** to prevent indefinite waiting for batch completion
-3. **Use `parallel = true`** to process different batches concurrently
+### For Aggregation Processing (N→1 Steps):
+1. **Use `parallel = true`** to enable concurrent processing when beneficial
 
 ### Monitoring and Tuning:
 - Start with conservative parallelism values and increase gradually

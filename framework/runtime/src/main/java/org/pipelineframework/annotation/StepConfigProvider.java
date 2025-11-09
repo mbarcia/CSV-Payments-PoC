@@ -16,7 +16,6 @@
 
 package org.pipelineframework.annotation;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.pipelineframework.config.StepConfig;
@@ -49,8 +48,6 @@ public class StepConfigProvider {
                     .recoverOnFailure(annotation.recoverOnFailure())
                     .backpressureBufferCapacity(annotation.backpressureBufferCapacity())
                     .backpressureStrategy(annotation.backpressureStrategy())
-                    .batchSize(annotation.batchSize())
-                    .batchTimeout(Duration.ofMillis(annotation.batchTimeoutMs()))
                     .parallel(annotation.parallel());
                 return config;
             } else {

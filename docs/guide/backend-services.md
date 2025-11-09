@@ -25,14 +25,10 @@ First, determine what type of step your service implements:
 
 ### 3. Considerations for StepManyToOne with File Operations
 
-When implementing StepManyToOne steps that perform file operations (like CSV writing), special care must be taken with batching configuration:
+When implementing StepManyToOne steps that perform file operations (like CSV writing), special care must be taken:
 
-- OpenCSV and similar file writing libraries may not handle partial/batched writes properly
-- If only a partial batch of related records is available, the file writing operation may truncate the output
-- To avoid this issue, ensure that either:
-  - All related records are guaranteed to arrive within the batch timeout period, OR
-  - The batch size is configured to collect all related records before processing
-  - Consider using a different step type or approach for file operations that require all data to be available
+- OpenCSV and similar file writing libraries may require all related records to be available before writing
+- Consider using appropriate step types for file operations that require all data to be available
 
 Create your service class with the `@PipelineStep` annotation:
 
@@ -58,28 +54,6 @@ public class ProcessPaymentService implements StepOneToOne<PaymentRecord, Paymen
     public Uni<PaymentStatus> applyOneToOne(PaymentRecord paymentRecord) {
         // Implementation here
         return Uni.createFrom().item(/* processed payment status */);
-
-### 3. Configure Batching for StepManyToOne Steps
-
-For `StepManyToOne` steps, you can configure batching behavior using the `batchSize` and `batchTimeoutMs` parameters in the `@PipelineStep` annotation:
-
-```java
-@PipelineStep(
-    order = 6,
-    inputType = PaymentOutput.class,
-    outputType = CsvPaymentsOutputFile.class,
-    stepType = StepManyToOne.class,
-    batchSize = 50,        // Collect up to 50 items before processing
-    batchTimeoutMs = 5000  // Or process after 5 seconds, whichever comes first
-)
-@ApplicationScoped
-public class ProcessCsvPaymentsOutputFileService implements StepManyToOne<PaymentOutput, CsvPaymentsOutputFile> {
-    // Implementation here
-}
-```
-
-This is particularly useful when you need to ensure that related records (such as all PaymentOutput records from the same CSV file) are processed together in a single batch. By setting a sufficiently large batch size and timeout, you can guarantee that all related records are collected before processing begins.
-
     }
 }
 ```

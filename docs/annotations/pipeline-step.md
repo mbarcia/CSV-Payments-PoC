@@ -17,8 +17,7 @@ The `@PipelineStep` annotation marks a class as a pipeline step and enables auto
 - `backendType`: The backend adapter type (GenericGrpcReactiveServiceAdapter, etc.)
 - `backpressureBufferCapacity`: The buffer capacity for backpressure handling (default: 1024)
 - `backpressureStrategy`: The backpressure strategy ("BUFFER", "DROP"; default: "BUFFER")
-- `batchSize`: The batch size for collecting inputs before processing (default: 10). For StepManyToOne steps, this controls how many input items are collected before the batch is processed. Set to a value larger than the expected number of related items to ensure they are processed together.
-- `batchTimeoutMs`: The time window in milliseconds to wait before processing a batch, even if the batch size hasn't been reached (default: 1000ms). For StepManyToOne steps, this controls how long to wait for additional items to accumulate in a batch.
+
 
 Note: The "ERROR" strategy is not available in Mutiny 2.9.4. By default, Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
 - `grpcStub`: The gRPC stub class for this pipeline step

@@ -46,7 +46,7 @@ class ProcessAckPaymentSentReactiveServiceTest {
         // Given
         PaymentStatus expectedStatus = new PaymentStatus();
 
-        when(pollAckPaymentSentReactiveService.process(ackPaymentSent, true))
+        when(pollAckPaymentSentReactiveService.process(ackPaymentSent))
                 .thenReturn(Uni.createFrom().item(expectedStatus));
 
         // When

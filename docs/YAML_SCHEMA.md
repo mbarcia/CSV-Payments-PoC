@@ -62,15 +62,7 @@ Example:
 parallel: true
 ```
 
-### Batch Processing Configuration (for REDUCTION steps)
 
-For steps with `cardinality: REDUCTION`, the following batch processing configuration properties are available:
-
-### `batchSize` (integer, optional)
-The maximum number of items to collect in a batch before processing begins (default: 10). For related records (such as all PaymentOutput records from the same CSV file), set this to a value larger than the expected number of related items to ensure they are processed together.
-
-### `batchTimeoutMs` (integer, optional)  
-The maximum time (in milliseconds) to wait for additional items to accumulate in a batch (default: 1000ms). Even if the batch size hasn't been reached, processing will begin after this timeout expires.
 
 ### Additional Generated Properties
 The following properties are automatically generated from the step name:

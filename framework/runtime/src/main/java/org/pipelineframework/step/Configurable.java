@@ -39,8 +39,6 @@ public interface Configurable {
     default int backpressureBufferCapacity() { return effectiveConfig().backpressureBufferCapacity(); }
     default String backpressureStrategy() { return effectiveConfig().backpressureStrategy(); }
     default boolean parallel() { return effectiveConfig().parallel(); }
-    default int batchSize() { return effectiveConfig().batchSize();}
-    default Duration batchTimeout() { return effectiveConfig().batchTimeout(); }
 
     /**
      * Get the live configuration for this step that can be modified at runtime

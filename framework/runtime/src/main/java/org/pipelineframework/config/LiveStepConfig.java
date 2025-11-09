@@ -94,14 +94,6 @@ public final class LiveStepConfig extends StepConfig {
         return !overrides().backpressureStrategy().equals(super.backpressureStrategy()) ? 
                overrides().backpressureStrategy() : currentDefaults().backpressureStrategy();
     }
-    @Override public int batchSize() {
-        return overrides().batchSize() != super.batchSize() ?
-                overrides().batchSize() : currentDefaults().batchSize();
-    }
-    @Override public Duration batchTimeout() {
-        Duration o = overrides().batchTimeout();
-        return !o.equals(super.batchTimeout()) ? o : currentDefaults().batchTimeout();
-    }
     @Override public boolean parallel() {
         return overrides().parallel() != super.parallel() ? 
                overrides().parallel() : currentDefaults().parallel();

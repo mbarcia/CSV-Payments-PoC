@@ -34,8 +34,6 @@ public class StepConfig {
     private final AtomicReference<Duration> retryWait = new AtomicReference<>(Duration.ofMillis(2000));
     private volatile boolean parallel = false; // Default is sequential processing
     private final AtomicInteger backpressureBufferCapacity = new AtomicInteger(1024);
-    private final AtomicInteger batchSize = new AtomicInteger(10); // Default batch size
-    private final AtomicReference<Duration> batchTimeout = new AtomicReference<>(Duration.ofMillis(1000)); // Default batch timeout
 
     private volatile boolean debug = false;
     private volatile boolean recoverOnFailure = false;
@@ -75,17 +73,7 @@ public class StepConfig {
      */
     public int backpressureBufferCapacity() { return backpressureBufferCapacity.get(); }
 
-    /**
-     * The batch size for collecting inputs before processing
-     * @return the batch size (default: 10)
-     */
-    public int batchSize() { return batchSize.get(); }
-    
-    /**
-     * The time window to wait before processing a batch
-     * @return the batch timeout duration (default: 1000ms)
-     */
-    public Duration batchTimeout() { return batchTimeout.get(); }
+
 
     /**
      * Backpressure strategy to use when buffering items ("BUFFER", "DROP")
@@ -157,31 +145,7 @@ public class StepConfig {
      * @return this StepConfig instance for method chaining
      */
     public StepConfig parallel(boolean v) { parallel = v; return this; }
-    /**
-     * Sets the batch size for collecting inputs before processing
-     * @param v the batch size
-     * @return this StepConfig instance for method chaining
-     */
-    public StepConfig batchSize(int v) { 
-        if (v <= 0) {
-            throw new IllegalArgumentException("batchSize must be > 0");
-        }
-        batchSize.set(v); 
-        return this; 
-    }
-    /**
-     * Sets the time window to wait before processing a batch
-     * @param v the batch timeout duration
-     * @return this StepConfig instance for method chaining
-     */
-    public StepConfig batchTimeout(Duration v) { 
-        Objects.requireNonNull(v, "batchTimeout must not be null");
-        if (v.isNegative() || v.isZero()) {
-            throw new IllegalArgumentException("batchTimeout must be > 0");
-        }
-        batchTimeout.set(v); 
-        return this; 
-    }
+
     /**
      * Sets the backpressure buffer capacity
      * @param v the buffer capacity
@@ -254,7 +218,7 @@ public class StepConfig {
 
     @Override
     public String toString() {
-        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, parallel={2}, debug={3}, recoverOnFailure={4}, maxBackoff={5}, jitter={6}, autoPersist={7}, batchSize={8}, batchTimeout={9}, backpressureBufferCapacity={10}, backpressureStrategy={11}'}'",
+        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, parallel={2}, debug={3}, recoverOnFailure={4}, maxBackoff={5}, jitter={6}, autoPersist={7}, backpressureBufferCapacity={8}, backpressureStrategy={9}'}'",
                 retryLimit(),
                 retryWait(),
                 parallel,
@@ -263,8 +227,6 @@ public class StepConfig {
                 maxBackoff(),
                 jitter,
                 autoPersist,
-                batchSize(),
-                batchTimeout(),
                 backpressureBufferCapacity(),
                 backpressureStrategy());
     }

@@ -21,6 +21,8 @@ import io.vertx.mutiny.core.Vertx;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
+import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.csv.common.domain.AckPaymentSent;
 import org.pipelineframework.csv.common.domain.PaymentRecord;
@@ -29,9 +31,6 @@ import org.pipelineframework.csv.common.mapper.PaymentRecordMapper;
 import org.pipelineframework.csv.common.mapper.SendPaymentRequestMapper;
 import org.pipelineframework.csv.grpc.MutinySendPaymentRecordServiceGrpc;
 import org.pipelineframework.service.ReactiveService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 @PipelineStep(
   order = 3,
@@ -57,8 +56,12 @@ public class SendPaymentRecordReactiveService
   private final PaymentProviderServiceMock paymentProviderServiceMock;
 
   @Inject
-  public SendPaymentRecordReactiveService(PaymentProviderServiceMock paymentProviderServiceMock) {
+  Vertx vertx;
+
+  @Inject
+  public SendPaymentRecordReactiveService(PaymentProviderServiceMock paymentProviderServiceMock, Vertx vertx) {
     this.paymentProviderServiceMock = paymentProviderServiceMock;
+    this.vertx = vertx;
   }
 
   @Override
@@ -72,7 +75,7 @@ public class SendPaymentRecordReactiveService
             .setPaymentRecordId(paymentRecord.getId());
 
     // Execute blocking call while staying in the same Vert.x context
-    Uni<AckPaymentSent> result = Vertx.currentContext().executeBlocking(
+    Uni<AckPaymentSent> result = vertx.executeBlocking(
         () -> {
           // Blocking network call
           return paymentProviderServiceMock.sendPayment(request);
@@ -82,8 +85,8 @@ public class SendPaymentRecordReactiveService
     
     String serviceId = this.getClass().toString();
     MDC.put("serviceId", serviceId);
-    Logger logger = LoggerFactory.getLogger(this.getClass());
-    logger.info("Executed command on {} --> {}", paymentRecord, result);
+    Logger logger = Logger.getLogger(this.getClass());
+    logger.infof("Executed command on %s --> %s", paymentRecord, result);
     MDC.remove("serviceId");
 
     return result;

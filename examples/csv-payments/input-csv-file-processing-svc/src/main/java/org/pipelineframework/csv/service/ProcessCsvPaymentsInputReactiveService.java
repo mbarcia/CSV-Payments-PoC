@@ -93,7 +93,10 @@ public class ProcessCsvPaymentsInputReactiveService
 
                     return Multi.createFrom()
                         .iterable(iterable)
-//                        .runSubscriptionOn(executor)
+                    return Multi.createFrom()
+                        .iterable(iterable)
+                        .runSubscriptionOn(executor)
+                        .onItem()
                         .onItem()
                         .invoke(
                             rec -> {

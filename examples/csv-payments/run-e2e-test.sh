@@ -444,8 +444,8 @@ verify_database_persistence() {
 
     # Create test output directory
     echo "Creating test output directory: $TEST_OUTPUT_DIR"
+    rm -rf "$TEST_OUTPUT_DIR"
     mkdir -p "$TEST_OUTPUT_DIR"
-
     # Create test CSV files
     create_test_csv_files
     

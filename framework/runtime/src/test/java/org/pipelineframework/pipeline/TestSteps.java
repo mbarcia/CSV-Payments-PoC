@@ -135,6 +135,7 @@ public class TestSteps {
         private java.time.Duration manualRetryWait = null;
         private boolean manualDebug = false;
         private boolean manualRecoverOnFailure = false;
+        private boolean manualRecoverOnFailureSet = false; // Sentinel to track if constructor set the value
 
         public FailingStepBlocking() {
             this(false);
@@ -142,6 +143,7 @@ public class TestSteps {
 
         public FailingStepBlocking(boolean shouldRecover) {
             this.manualRecoverOnFailure = shouldRecover;
+            this.manualRecoverOnFailureSet = true; // Mark that constructor explicitly set this value
         }
         @Override
         public Uni<String> apply(String input) {
@@ -186,16 +188,19 @@ public class TestSteps {
                 // Check if the incoming config has custom values
                 final org.pipelineframework.config.StepConfig defaultCfg =
                         new org.pipelineframework.config.StepConfig();
+                boolean hasConfigRecoverOnFailure = config.recoverOnFailure() != defaultCfg.recoverOnFailure();
                 if (config.retryLimit() != defaultCfg.retryLimit()
                         || !java.util.Objects.equals(config.retryWait(), defaultCfg.retryWait())
                         || config.debug() != defaultCfg.debug()
-                        || config.recoverOnFailure() != defaultCfg.recoverOnFailure()) {
+                        || hasConfigRecoverOnFailure) {
                     // This looks like manual configuration - save the values
+                    // Only set recoverOnFailure from config if constructor didn't set it
+                    boolean recoverOnFailureToUse = manualRecoverOnFailureSet ? manualRecoverOnFailure : config.recoverOnFailure();
                     setManualConfig(
                             config.retryLimit(),
                             config.retryWait(),
                             config.debug(),
-                            config.recoverOnFailure());
+                            recoverOnFailureToUse);
                 }
             }
 
@@ -210,7 +215,12 @@ public class TestSteps {
                 super.initialiseWithConfig(config);
             } else {
                 if (config != null) {
-                    config.overrides().recoverOnFailure(manualRecoverOnFailure);
+                    // Only apply config's recoverOnFailure if constructor didn't set it
+                    if (!manualRecoverOnFailureSet) {
+                        config.overrides().recoverOnFailure(config.recoverOnFailure());
+                    } else {
+                        config.overrides().recoverOnFailure(manualRecoverOnFailure);
+                    }
                 }
                 super.initialiseWithConfig(config);
             }
@@ -226,7 +236,10 @@ public class TestSteps {
             this.manualRetryLimit = retryLimit;
             this.manualRetryWait = retryWait;
             this.manualDebug = debug;
-            this.manualRecoverOnFailure = recoverOnFailure;
+            // Only update manualRecoverOnFailure if it wasn't set by constructor
+            if (!manualRecoverOnFailureSet) {
+                this.manualRecoverOnFailure = recoverOnFailure;
+            }
         }
     }
 }

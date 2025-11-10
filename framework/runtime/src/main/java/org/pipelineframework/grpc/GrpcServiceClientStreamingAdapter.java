@@ -77,14 +77,10 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
     // 1️⃣ Convert incoming gRPC messages to domain objects
     Multi<DomainIn> domainStream = requestStream.onItem().transform(this::fromGrpc);
 
-    // 2️⃣ Cache the incoming stream (so it can be re-subscribed for persistence)
-    Multi<DomainIn> cachedStream = domainStream.cache();
-
-    // 3️⃣ Process all items → single domain result
-    Uni<DomainOut> processedResult = getService().process(cachedStream); // Multi<DomainIn> → Uni<DomainOut>
-
     if (!isAutoPersistenceEnabled()) {
       LOG.debug("Auto-persistence is disabled");
+      // Pass the original streaming Multi directly to the service (no buffering)
+      Uni<DomainOut> processedResult = getService().process(domainStream);
       return processedResult
               .onItem().transform(this::toGrpc)
               .onFailure().transform(new throwStatusRuntimeExceptionFunction());
@@ -92,7 +88,13 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
 
     LOG.debug("Auto-persistence is enabled, will persist all inputs after successful processing");
 
-    // 4️⃣ After processing completes successfully, persist all inputs inside one transaction
+    // Only create a cached stream when auto-persistence is enabled
+    Multi<DomainIn> cachedStream = domainStream.cache();
+
+    // Process all items → single domain result using the cached stream
+    Uni<DomainOut> processedResult = getService().process(cachedStream); // Multi<DomainIn> → Uni<DomainOut>
+
+    // After processing completes successfully, persist all inputs inside one transaction
     return processedResult
             .onItem().call(result ->
                     Panache.withTransaction(() ->

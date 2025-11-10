@@ -114,6 +114,13 @@ public class HybridResourceLoader implements ResourceLoader {
       return file;
     }
 
+    // Special case: if the path is exactly the same as the resolved external directory's name,
+    // return the resolvedExternalCsvDir directly
+    File resolvedDir = new File(resolvedExternalCsvDir);
+    if (path.equals(resolvedDir.getName())) {
+      return resolvedDir;
+    }
+
     // For relative paths, resolve against resolved external directory
     return new File(resolvedExternalCsvDir, path);
   }

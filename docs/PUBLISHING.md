@@ -50,7 +50,7 @@ To comply with Maven's requirement that the `<version>` element in project POMs 
     <version>1.6.0</version>
     <configuration>
         <updatePomFile>true</updatePomFile>
-        <flattenMode>resolveCiFriendliesOnly</flattenMode>
+        <flattenMode>oss</flattenMode>
     </configuration>
     <executions>
         <execution>
@@ -71,7 +71,7 @@ To comply with Maven's requirement that the `<version>` element in project POMs 
 </plugin>
 ```
 
-This configuration generates a `.flattened-pom.xml` file with all properties resolved to their literal values during the build process, which is then used by Maven for publishing and other operations.
+This configuration generates a `.flattened-pom.xml` file with all properties resolved to their literal values during the build process. This full property resolution is required for Maven Central publishing to ensure that the published artifacts have all dependencies with literal versions instead of property placeholders.
 
 ## Maven Central Publishing Setup
 

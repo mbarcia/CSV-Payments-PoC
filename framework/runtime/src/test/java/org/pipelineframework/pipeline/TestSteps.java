@@ -133,7 +133,7 @@ public class TestSteps {
         private boolean hasManualConfig = false;
         private int manualRetryLimit = -1;
         private java.time.Duration manualRetryWait = null;
-                private boolean manualDebug = false;
+        private boolean manualDebug = false;
         private boolean manualRecoverOnFailure = false;
 
         public FailingStepBlocking() {

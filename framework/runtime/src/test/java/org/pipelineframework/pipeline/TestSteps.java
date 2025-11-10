@@ -131,9 +131,9 @@ public class TestSteps {
             implements StepOneToOneBlocking<String, String> {
         // Configuration preservation fields like in AsyncFailNTimesStep
         private boolean hasManualConfig = false;
-        private int manualRetryLimit = 3;
-        private java.time.Duration manualRetryWait = java.time.Duration.ofMillis(10);
-        private boolean manualDebug = false;
+        private int manualRetryLimit = -1;
+        private java.time.Duration manualRetryWait = null;
+                private boolean manualDebug = false;
         private boolean manualRecoverOnFailure = false;
 
         public FailingStepBlocking() {
@@ -141,11 +141,8 @@ public class TestSteps {
         }
 
         public FailingStepBlocking(boolean shouldRecover) {
-            // Store the manual configuration right away
-            this.hasManualConfig = true;
             this.manualRecoverOnFailure = shouldRecover;
         }
-
         @Override
         public Uni<String> apply(String input) {
             // Return the input wrapped in a Uni that fails - this way the input is preserved

@@ -38,8 +38,15 @@ public class PipelineDynamicConfig {
      * @param parallel new parallel processing flag
      * @param retryLimit new maximum retry attempts
      * @param retryWaitMs new initial retry delay in milliseconds
+     * @throws IllegalArgumentException if retryLimit or retryWaitMs are negative
      */
     public void updateConfig(boolean parallel, int retryLimit, long retryWaitMs) {
+        if (retryLimit < 0) {
+            throw new IllegalArgumentException("Retry limit must be non-negative, got: " + retryLimit);
+        }
+        if (retryWaitMs < 0) {
+            throw new IllegalArgumentException("Retry wait time must be non-negative, got: " + retryWaitMs);
+        }
         currentConfig.set(new PipelineConfigValues(parallel, retryLimit, retryWaitMs));
     }
 

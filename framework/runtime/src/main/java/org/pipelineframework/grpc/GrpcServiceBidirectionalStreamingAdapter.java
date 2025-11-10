@@ -111,25 +111,25 @@ public abstract class GrpcServiceBidirectionalStreamingAdapter<
             .onItem()
             .transform(this::fromGrpc);
 
-    // Cache so we can re-consume the stream for persistence later ("hot" and "shared")
-    Multi<DomainIn> cachedStream = domainStream.cache();
-
-    // Step 1: process the stream (N inputs → N outputs)
-    // Ensures the whole downstream chain (including grouping & writing) executes once,
-    // and any further subscribers just see the cached results.
-    Multi<DomainOut> processedStream = getService().process(cachedStream).cache();
-
     if (!isAutoPersistenceEnabled()) {
       logger.debug("Auto-persistence is DISABLED — normal stream processing only");
 
-      return processedStream
+      return getService().process(domainStream)
           .onItem()
           .transform(this::toGrpc)
           .onFailure()
           .transform(new throwStatusRuntimeExceptionFunction());
     }
 
+    // Cache so we can re-consume the stream for persistence later ("hot" and "shared")
+    // Only cache when auto-persistence is enabled
+    Multi<DomainIn> cachedStream = domainStream.cache();
+
     logger.debug("Auto-persistence is ENABLED — will persist inputs after full stream completion");
+
+    // Step 1: process the stream (N inputs → N outputs)
+    // Process without caching the output to avoid unbounded memory growth
+    Multi<DomainOut> processedStream = getService().process(cachedStream);
 
     // Step 2: After stream finishes successfully, persist all inputs (once)
     return processedStream

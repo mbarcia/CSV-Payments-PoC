@@ -22,7 +22,6 @@ import static org.mockito.Mockito.*;
 
 import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Multi;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -138,9 +137,8 @@ class GrpcServiceBidirectionalStreamingAdapterTest {
         // Execute the test with bypassed transaction mechanism
         Multi<String> result = adapter.remoteProcess(input);
 
-        // Collect results
-        List<String> results = new ArrayList<>();
-        result.subscribe().with(results::add);
+        // Collect results with blocking wait
+        List<String> results = result.collect().asList().await().indefinitely();
 
         // Verify results
         assertEquals(2, results.size());
@@ -173,9 +171,8 @@ class GrpcServiceBidirectionalStreamingAdapterTest {
         // Execute the test with bypassed transaction mechanism
         Multi<String> result = adapter.remoteProcess(input);
 
-        // Collect results
-        List<String> results = new ArrayList<>();
-        result.subscribe().with(results::add);
+        // Collect results with blocking wait
+        List<String> results = result.collect().asList().await().indefinitely();
 
         // Verify results
         assertEquals(2, results.size());

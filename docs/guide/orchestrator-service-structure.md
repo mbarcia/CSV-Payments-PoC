@@ -18,7 +18,7 @@ public class OrchestratorApplication implements QuarkusApplication, Callable<Int
     @Option(
         names = {"-i", "--input"}, 
         description = "Input value for the pipeline",
-        defaultValue = "${sys:quarkus.pipeline.input:-${env.PIPELINE_INPUT}}"
+        defaultValue = "${sys:quarkus.pipeline.input:-${env:PIPELINE_INPUT}}"
     )
     String input;
 

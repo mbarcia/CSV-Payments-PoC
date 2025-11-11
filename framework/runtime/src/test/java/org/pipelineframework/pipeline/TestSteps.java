@@ -139,7 +139,7 @@ public class TestSteps {
                 false; // Sentinel to track if constructor set the value
 
         public FailingStepBlocking() {
-            this(false);
+            // Leave recoverOnFailure to be driven by configuration unless explicitly set
         }
 
         public FailingStepBlocking(boolean shouldRecover) {

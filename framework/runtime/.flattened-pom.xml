@@ -19,7 +19,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.pipelineframework</groupId>
   <artifactId>pipelineframework</artifactId>
-  <version>0.9.0</version>
+  <version>0.9.0-SNAPSHOT</version>
   <name>The Pipeline Framework Extension (Runtime)</name>
   <description>Runtime module for The Pipeline Framework Extension</description>
   <url>https://pipelineframework.org/pipelineframework/</url>
@@ -56,25 +56,25 @@
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
-      <version>3.12.0</version>
+      <version>3.18.0</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-config-yaml</artifactId>
-      <version>3.28.5</version>
+      <version>3.29.2</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-smallrye-context-propagation</artifactId>
-      <version>3.28.5</version>
+      <version>3.29.2</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-picocli</artifactId>
-      <version>3.28.5</version>
+      <version>3.29.2</version>
       <scope>compile</scope>
       <optional>true</optional>
     </dependency>
@@ -93,7 +93,7 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-grpc</artifactId>
-      <version>3.28.5</version>
+      <version>3.29.2</version>
       <scope>compile</scope>
       <exclusions>
         <exclusion>
@@ -123,13 +123,13 @@
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-rest-jackson</artifactId>
-      <version>3.28.5</version>
+      <version>3.29.2</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-hibernate-reactive-panache</artifactId>
-      <version>3.28.5</version>
+      <version>3.29.2</version>
       <scope>compile</scope>
     </dependency>
   </dependencies>

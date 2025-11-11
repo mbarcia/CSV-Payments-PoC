@@ -38,7 +38,7 @@
         <dependency>
             <groupId>org.pipelineframework</groupId>
             <artifactId>pipelineframework</artifactId>
-            <version>${pipeline.version}</version>
+            <version>${version.pipeline}</version>
         </dependency>
         <!-- Hibernate -->
         <dependency>

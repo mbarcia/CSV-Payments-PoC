@@ -39,9 +39,15 @@ jobs:
           </settings>
           EOF
 
-      - name: Verify and test
-        run: ./mvnw verify -DskipTests=false
+      # Install built framework artifacts to local repository first so examples can find them
+      - name: Install framework to local repository
+        run: ./mvnw clean install -DskipTests -pl framework -P release
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
+      # Build and publish remaining artifacts (including examples that depend on framework)
       - name: Build and publish
         run: ./mvnw clean deploy -Prelease -B -U
         env:
@@ -54,3 +60,14 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
+          body: |
+            ## Release ${{ github.ref_name }}
+            
+            This release includes the following changes:
+            - Auto-generated release notes from commit history
+            
+            See the full changelog for more details.
+            
+            ### Artifacts
+            - Published to Maven Central Repository
+            - Available from standard Maven repositories

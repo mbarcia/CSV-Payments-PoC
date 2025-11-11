@@ -23,7 +23,7 @@
 
     <groupId>org.pipelineframework</groupId>
     <artifactId>framework-parent</artifactId>
-    <version>0.9.0</version>
+    <version>0.9.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>The Pipeline Framework (Parent)</name>
     <description>A Quarkus extension for building reactive pipeline processing systems</description>
@@ -56,13 +56,12 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <enablePreview>true</enablePreview>
-        <quarkus.platform.version>3.28.5</quarkus.platform.version>
+        <quarkus.platform.version>3.29.2</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <version.jandex>3.5.0</version.jandex>
-        <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.75.0</grpc.version>
-        <pipeline.version>0.9.0</pipeline.version>
+        <version.pipeline>0.9.0-SNAPSHOT</version.pipeline>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
     </properties>
@@ -224,7 +223,7 @@
                         </execution>
                     </executions>
                     <configuration>
-                        <deployment>org.pipelineframework:pipelineframework-deployment:${pipeline.version}</deployment>
+                        <deployment>org.pipelineframework:pipelineframework-deployment:${version.pipeline}</deployment>
                     </configuration>
                 </plugin>
             </plugins>
@@ -257,14 +256,12 @@
                 </executions>
             </plugin>
             
+
             <!-- Versions Maven Plugin for consistent version management across modules -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>versions-maven-plugin</artifactId>
-                <version>2.16.2</version>
-                <configuration>
-                    <generateBackupPoms>false</generateBackupPoms>
-                </configuration>
+                <version>2.19.1</version>
             </plugin>
             
             <!-- Release Plugin for automating releases to Maven Central -->
@@ -272,13 +269,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>3.0.1</version>
-                <configuration>
-                    <autoVersionSubmodules>true</autoVersionSubmodules>
-                    <useReleaseProfile>false</useReleaseProfile>
-                    <releaseProfiles>release</releaseProfiles>
-                    <goals>deploy</goals>
-                    <tagNameFormat>v@{project.version}</tagNameFormat>
-                </configuration>
             </plugin>
         </plugins>
     </build>

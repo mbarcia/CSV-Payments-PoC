@@ -135,7 +135,8 @@ public class TestSteps {
         private java.time.Duration manualRetryWait = null;
         private boolean manualDebug = false;
         private boolean manualRecoverOnFailure = false;
-        private boolean manualRecoverOnFailureSet = false; // Sentinel to track if constructor set the value
+        private boolean manualRecoverOnFailureSet =
+                false; // Sentinel to track if constructor set the value
 
         public FailingStepBlocking() {
             this(false);
@@ -143,8 +144,10 @@ public class TestSteps {
 
         public FailingStepBlocking(boolean shouldRecover) {
             this.manualRecoverOnFailure = shouldRecover;
-            this.manualRecoverOnFailureSet = true; // Mark that constructor explicitly set this value
+            this.manualRecoverOnFailureSet =
+                    true; // Mark that constructor explicitly set this value
         }
+
         @Override
         public Uni<String> apply(String input) {
             // Return the input wrapped in a Uni that fails - this way the input is preserved
@@ -188,14 +191,18 @@ public class TestSteps {
                 // Check if the incoming config has custom values
                 final org.pipelineframework.config.StepConfig defaultCfg =
                         new org.pipelineframework.config.StepConfig();
-                boolean hasConfigRecoverOnFailure = config.recoverOnFailure() != defaultCfg.recoverOnFailure();
+                boolean hasConfigRecoverOnFailure =
+                        config.recoverOnFailure() != defaultCfg.recoverOnFailure();
                 if (config.retryLimit() != defaultCfg.retryLimit()
                         || !java.util.Objects.equals(config.retryWait(), defaultCfg.retryWait())
                         || config.debug() != defaultCfg.debug()
                         || hasConfigRecoverOnFailure) {
                     // This looks like manual configuration - save the values
                     // Only set recoverOnFailure from config if constructor didn't set it
-                    boolean recoverOnFailureToUse = manualRecoverOnFailureSet ? manualRecoverOnFailure : config.recoverOnFailure();
+                    boolean recoverOnFailureToUse =
+                            manualRecoverOnFailureSet
+                                    ? manualRecoverOnFailure
+                                    : config.recoverOnFailure();
                     setManualConfig(
                             config.retryLimit(),
                             config.retryWait(),

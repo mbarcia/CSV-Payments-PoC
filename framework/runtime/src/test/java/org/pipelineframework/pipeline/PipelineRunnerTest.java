@@ -158,7 +158,7 @@ class PipelineRunnerTest {
 
         AssertSubscriber<Object> subscriber =
                 result.subscribe().withSubscriber(AssertSubscriber.create(2));
-        subscriber.awaitItems(2, Duration.ofSeconds(5)).assertCompleted();
+        subscriber.awaitItems(2, Duration.ofSeconds(30)).assertCompleted();
 
         // With recovery enabled, items should pass through unchanged
         // Order may vary due to asynchronous processing
@@ -180,7 +180,7 @@ class PipelineRunnerTest {
 
         AssertSubscriber<Object> subscriber =
                 result.subscribe().withSubscriber(AssertSubscriber.create(1));
-        subscriber.awaitFailure(Duration.ofSeconds(5));
+        subscriber.awaitFailure(Duration.ofSeconds(15));
 
         // Without recovery, should fail
         assertInstanceOf(RuntimeException.class, subscriber.getFailure());

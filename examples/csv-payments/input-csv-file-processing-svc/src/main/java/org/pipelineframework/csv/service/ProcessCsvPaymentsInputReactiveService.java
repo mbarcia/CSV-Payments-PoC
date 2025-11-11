@@ -76,8 +76,9 @@ public class ProcessCsvPaymentsInputReactiveService
             Unchecked.supplier(
                 () -> {
                   try {
+                    var reader = input.openReader();
                     var csvReader =
-                        new CsvToBeanBuilder<PaymentRecord>(input.openReader())
+                        new CsvToBeanBuilder<PaymentRecord>(reader)
                             .withType(PaymentRecord.class)
                             .withMappingStrategy(input.veryOwnStrategy())
                             .withSeparator(',')
@@ -100,7 +101,15 @@ public class ProcessCsvPaymentsInputReactiveService
                               logger.info(
                                   "Executed command on {} --> {}", input.getSourceName(), rec);
                               MDC.remove("serviceId");
-                            });
+                        })
+                        .onTermination()
+                        .invoke(() -> {
+                          try {
+                            reader.close();
+                          } catch (IOException e) {
+                            logger.warn("Failed to close CSV reader", e);
+                          }
+                        });
                   } catch (IOException e) {
                     throw new RuntimeException("CSV processing error", e);
                   }

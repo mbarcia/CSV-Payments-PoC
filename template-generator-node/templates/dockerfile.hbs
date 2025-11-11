@@ -42,8 +42,6 @@ COPY \${SERVICE_NAME}/ \${SERVICE_NAME}/
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B clean package -f \${SERVICE_NAME}/pom.xml \
     -DskipTests \
-    -Dquarkus.package.jar.enabled=true \
-    -Dquarkus.package.jar.type=fast-jar \
     -Dquarkus.profile=prod
 
 # Runtime image

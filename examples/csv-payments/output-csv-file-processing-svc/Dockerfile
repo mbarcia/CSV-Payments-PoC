@@ -42,8 +42,6 @@ COPY output-csv-file-processing-svc/ output-csv-file-processing-svc/
 RUN --mount=type=cache,target=/root/.m2 \
     mvn -B clean package -f output-csv-file-processing-svc/pom.xml \
     -DskipTests \
-    -Dquarkus.package.jar.enabled=true \
-    -Dquarkus.package.jar.type=fast-jar \
     -Dquarkus.profile=prod
 
 # Runtime image

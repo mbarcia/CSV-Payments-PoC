@@ -104,7 +104,7 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
                         Multi.createFrom().iterable(capturedInputs)
                                 // Persist each DomainIn sequentially inside this transaction
                                 .onItem().transformToUniAndConcatenate(persistenceManager::persist)
-                                .toUni()
+                                .collect().asList()
                                 // Replace with original result when done
                                 .replaceWith(result)
                     )

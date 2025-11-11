@@ -21,6 +21,8 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingClientService;
@@ -88,20 +90,21 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
 
     LOG.debug("Auto-persistence is enabled, will persist all inputs after successful processing");
 
-    // Only create a cached stream when auto-persistence is enabled
-    Multi<DomainIn> cachedStream = domainStream.cache();
+    // Capture inputs as they flow (single copy in memory)
+    List<DomainIn> capturedInputs = new ArrayList<>();
+    Multi<DomainIn> capturedStream = domainStream.invoke(capturedInputs::add);
 
-    // Process all items → single domain result using the cached stream
-    Uni<DomainOut> processedResult = getService().process(cachedStream); // Multi<DomainIn> → Uni<DomainOut>
+    // Process all items → single domain result using the captured stream
+    Uni<DomainOut> processedResult = getService().process(capturedStream); // Multi<DomainIn> → Uni<DomainOut>
 
     // After processing completes successfully, persist all inputs inside one transaction
     return processedResult
             .onItem().call(result ->
                     Panache.withTransaction(() ->
-                        cachedStream
+                        Multi.createFrom().iterable(capturedInputs)
                                 // Persist each DomainIn sequentially inside this transaction
                                 .onItem().transformToUniAndConcatenate(persistenceManager::persist)
-                                .collect().asList()
+                                .toUni()
                                 // Replace with original result when done
                                 .replaceWith(result)
                     )

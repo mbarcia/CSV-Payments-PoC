@@ -20,7 +20,7 @@ The Pipeline Framework is published to Maven Central to make it available to dev
 
 The Pipeline Framework uses a centralized version management system to ensure consistency across all modules:
 
-1. **Single Source of Truth**: The version is defined in the root POM (`pom.xml`) as the `<pipeline.framework.version>` property
+1. **Single Source of Truth**: The version is defined in the root POM (`pom.xml`) as the `<pipeline.version>` property
 2. **Module References**: All other POM files reference this property instead of hardcoding versions
 3. **Build-Time Resolution**: The Flatten Maven Plugin resolves property references to literal values during the build process
 4. **Updating Versions**: To update the version, change it only in the root POM
@@ -31,13 +31,29 @@ In the root POM (`pom.xml`):
 ```xml
 <properties>
     <!-- ... other properties ... -->
-    <pipeline.framework.version>0.9.0</pipeline.framework.version>
-    <pipeline.version>${pipeline.framework.version}</pipeline.version>
+    <pipeline.version>0.9.0</pipeline.version>
     <!-- ... other properties ... -->
 </properties>
 ```
 
 All other modules reference this property, ensuring a single point of update for version changes.
+
+### Using Maven Versions Plugin
+
+To update versions across all modules consistently, use the Maven Versions Plugin:
+
+```bash
+# Update the version across all modules
+mvn versions:set -DnewVersion=1.0.0
+
+# Verify the changes before committing
+mvn versions:commit
+
+# Or rollback if needed
+mvn versions:revert
+```
+
+This ensures that all modules in the multi-module project are updated consistently.
 
 ### Flatten Plugin Configuration
 
@@ -221,16 +237,31 @@ To use the workflow, add these secrets to your GitHub repository:
 To avoid unintentionally triggering a release, follow this recommended workflow:
 
 1. **Version Preparation**:
-   - Update the version in the root POM to the desired release version
-   - Run `mvn versions:commit` to propagate version changes (if using versions plugin)
-   - Test the build with `mvn clean install`
+   - Use the Maven Release Plugin to prepare the release:
+     ```bash
+     mvn release:prepare
+     ```
+   - This will update versions, create a tag, and prepare the release in one step
+   - The plugin will prompt for:
+     - The release version (e.g., 1.0.0)
+     - The SCM tag (e.g., v1.0.0)
+     - The next development version (e.g., 1.0.1-SNAPSHOT)
 
-2. **Pull Request Review**:
-   - Open a pull request with version changes
-   - Get team approval before merging
+2. **Perform the Release**:
+   - Deploy the release to Maven Central:
+     ```bash
+     mvn release:perform
+     ```
+   - This will checkout the tagged version and run the deployment process with the `release` profile
 
-3. **Tagged Release**:
-   - After merging to main, create a Git tag (e.g., `v1.0.0`)
+3. **Alternative Manual Process**:
+   - Update the version using the Maven Versions Plugin:
+     ```bash
+     mvn versions:set -DnewVersion=1.0.0
+     mvn versions:commit
+     ```
+   - Test the build with `mvn clean install -P release`
+   - Create a Git tag (e.g., `v1.0.0`)
    - Push the tag to trigger the GitHub Actions release workflow
 
 ### Alternative: Manual Release Workflow

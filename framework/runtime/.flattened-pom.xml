@@ -127,12 +127,6 @@
       <scope>compile</scope>
     </dependency>
     <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
-      <version>5.13.4</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
       <groupId>io.quarkus</groupId>
       <artifactId>quarkus-hibernate-reactive-panache</artifactId>
       <version>3.28.5</version>

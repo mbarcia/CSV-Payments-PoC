@@ -20,6 +20,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 import lombok.Getter;
+import org.jboss.logging.Logger;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.csv.common.domain.AckPaymentSent;
 import org.pipelineframework.csv.common.domain.PaymentOutput;
@@ -29,8 +30,6 @@ import org.pipelineframework.csv.common.dto.PaymentOutputDto;
 import org.pipelineframework.csv.common.mapper.PaymentOutputMapper;
 import org.pipelineframework.csv.common.mapper.PaymentStatusMapper;
 import org.pipelineframework.service.ReactiveService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 @PipelineStep(
@@ -84,9 +83,9 @@ public class ProcessPaymentStatusReactiveService
             .invoke(
                 result -> {
                   String serviceId = this.getClass().toString();
-                  Logger logger = LoggerFactory.getLogger(this.getClass());
+                  Logger logger = Logger.getLogger(this.getClass());
                   MDC.put("serviceId", serviceId);
-                  logger.info("Executed command on {} --> {}", paymentStatus, result);
+                  logger.infof("Executed command on %s --> %s", paymentStatus, result);
                   MDC.remove("serviceId");
                 });
   }

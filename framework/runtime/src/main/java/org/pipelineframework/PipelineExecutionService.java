@@ -24,8 +24,7 @@ import java.text.MessageFormat;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;
 import org.pipelineframework.config.PipelineConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 /**
  * Service responsible for executing pipeline logic.
@@ -35,7 +34,7 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class PipelineExecutionService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(PipelineExecutionService.class);
+  private static final Logger LOG = Logger.getLogger(PipelineExecutionService.class);
 
   @Inject
   protected PipelineConfig pipelineConfig;
@@ -66,11 +65,11 @@ public class PipelineExecutionService {
 				    })
 				    .onCompletion().invoke(() -> {
 					    watch.stop();
-					    LOG.info("✅ PIPELINE FINISHED processing in {} seconds", watch.getTime(TimeUnit.SECONDS));
+					    LOG.infof("✅ PIPELINE FINISHED processing in %s seconds", watch.getTime(TimeUnit.SECONDS));
 				    })
 				    .onFailure().invoke(failure -> {
 					    watch.stop();
-					    LOG.error("❌ PIPELINE FAILED after {} seconds", watch.getTime(TimeUnit.SECONDS), failure);
+					    LOG.errorf("❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS), failure);
 				    });
 		    case Uni<?> uni -> uni.toMulti()
 				    .onSubscription().invoke(_ -> {
@@ -79,11 +78,11 @@ public class PipelineExecutionService {
 				    })
 				    .onCompletion().invoke(() -> {
 					    watch.stop();
-					    LOG.info("✅ PIPELINE FINISHED processing in {} seconds", watch.getTime(TimeUnit.SECONDS));
+					    LOG.infof("✅ PIPELINE FINISHED processing in %s seconds", watch.getTime(TimeUnit.SECONDS));
 				    })
 				    .onFailure().invoke(failure -> {
 					    watch.stop();
-					    LOG.error("❌ PIPELINE FAILED after {} seconds", watch.getTime(TimeUnit.SECONDS), failure);
+					    LOG.errorf("❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS), failure);
 				    });
 		    default -> Multi.createFrom().failure(new IllegalStateException(
 				    MessageFormat.format("PipelineRunner returned unexpected type: {0}", result.getClass().getName())

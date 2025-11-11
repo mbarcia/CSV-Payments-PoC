@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.Executor;
 import lombok.Getter;
+import org.jboss.logging.Logger;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.csv.common.domain.CsvPaymentsInputFile;
 import org.pipelineframework.csv.common.domain.PaymentRecord;
@@ -33,8 +34,6 @@ import org.pipelineframework.csv.common.mapper.CsvPaymentsInputFileMapper;
 import org.pipelineframework.csv.common.mapper.PaymentRecordMapper;
 import org.pipelineframework.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
 import org.pipelineframework.service.ReactiveStreamingService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 @PipelineStep(
@@ -69,7 +68,7 @@ public class ProcessCsvPaymentsInputReactiveService
 
   @Override
   public Multi<PaymentRecord> process(CsvPaymentsInputFile input) {
-    Logger logger = LoggerFactory.getLogger(getClass());
+    Logger logger = Logger.getLogger(getClass());
 
     return Multi.createFrom()
         .deferred(
@@ -98,8 +97,8 @@ public class ProcessCsvPaymentsInputReactiveService
                         .invoke(
                             rec -> {
                               MDC.put("serviceId", serviceId);
-                              logger.info(
-                                  "Executed command on {} --> {}", input.getSourceName(), rec);
+                              logger.infof(
+                                  "Executed command on %s --> %s", input.getSourceName(), rec);
                               MDC.remove("serviceId");
                         })
                         .onTermination()
@@ -107,7 +106,7 @@ public class ProcessCsvPaymentsInputReactiveService
                           try {
                             reader.close();
                           } catch (IOException e) {
-                            logger.warn("Failed to close CSV reader", e);
+                            logger.warnf("Failed to close CSV reader", e);
                           }
                         });
                   } catch (IOException e) {

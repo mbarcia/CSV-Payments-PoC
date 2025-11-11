@@ -19,8 +19,7 @@ package org.pipelineframework.step;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import org.pipelineframework.step.functional.ManyToOne;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 /** N -> 1 (reactive) */
 public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
@@ -35,7 +34,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
      */
     @Override
     default Uni<O> apply(Multi<I> input) {
-        Logger LOG = LoggerFactory.getLogger(this.getClass());
+        Logger LOG = Logger.getLogger(this.getClass());
         
         // Apply overflow strategy to the input if needed
         Multi<I> backpressuredInput = input;
@@ -53,7 +52,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
         return applyReduce(finalInput)
             .onItem().invoke(resultValue -> {
                 if (debug()) {
-                    LOG.debug("Reactive Step {} processed stream into output: {}",
+                    LOG.debugf("Reactive Step %s processed stream into output: %s",
                         this.getClass().getSimpleName(), resultValue);
                 }
             })
@@ -65,7 +64,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
             .onFailure().recoverWithUni(error -> {
                 if (recoverOnFailure()) {
                     if (debug()) {
-                        LOG.debug("Reactive Step {}: failed to process stream: {}",
+                        LOG.debugf("Reactive Step %s: failed to process stream: %s",
                             this.getClass().getSimpleName(), error.getMessage());
                     }
                     return deadLetterStream(finalInput, error);
@@ -92,9 +91,9 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
      * @return The result of dead letter handling as a Uni (can be null)
      */
     default Uni<O> deadLetterStream(Multi<I> input, Throwable error) {
-        Logger LOG = LoggerFactory.getLogger(this.getClass());
+        Logger LOG = Logger.getLogger(this.getClass());
         return input.collect().asList()
-            .onItem().invoke(list -> LOG.error("DLQ drop for stream of {} items: {}", list.size(), error.getMessage()))
+            .onItem().invoke(list -> LOG.errorf("DLQ drop for stream of %s items: %s", list.size(), error.getMessage()))
             .onItem().transformToUni(_ -> Uni.createFrom().nullItem());
     }
 }

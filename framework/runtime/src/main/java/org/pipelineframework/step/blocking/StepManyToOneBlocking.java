@@ -21,11 +21,10 @@ import io.smallrye.mutiny.Uni;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executors;
+import org.jboss.logging.Logger;
 import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
 import org.pipelineframework.step.functional.ManyToOne;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** N -> 1 (imperative) */
 public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
@@ -70,7 +69,7 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
 
     @Override
     default Uni<O> apply(Multi<I> input) {
-        final Logger LOG = LoggerFactory.getLogger(this.getClass());
+        final Logger LOG = Logger.getLogger(this.getClass());
         final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         final java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
         int batchSize = this.batchSize();
@@ -98,8 +97,8 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                         O result = applyBatchList(list);
 
                         if (debug()) {
-                            LOG.debug(
-                                "Blocking Step {} processed batch of {} items into single output: {}",
+                            LOG.debugf(
+                                "Blocking Step %s processed batch of %s items into single output: %s",
                                 this.getClass().getSimpleName(), list.size(), result
                             );
                         }
@@ -108,8 +107,8 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     } catch (Exception e) {
                         if (recoverOnFailure()) {
                             if (debug()) {
-                                LOG.debug(
-                                    "Blocking Step {}: failed batch: {}",
+                                LOG.debugf(
+                                    "Blocking Step %s: failed batch: %s",
                                     this.getClass().getSimpleName(), e.getMessage()
                                 );
                             }
@@ -132,8 +131,8 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                         O result = applyBatchList(list);
 
                         if (debug()) {
-                            LOG.debug(
-                                "Blocking Step {} processed batch of {} items into single output: {}",
+                            LOG.debugf(
+                                "Blocking Step %s processed batch of %s items into single output: %s",
                                 this.getClass().getSimpleName(), list.size(), result
                             );
                         }
@@ -142,8 +141,8 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     } catch (Exception e) {
                         if (recoverOnFailure()) {
                             if (debug()) {
-                                LOG.debug(
-                                    "Blocking Step {}: failed batch: {}",
+                                LOG.debugf(
+                                    "Blocking Step %s: failed batch: %s",
                                     this.getClass().getSimpleName(), e.getMessage()
                                 );
                             }

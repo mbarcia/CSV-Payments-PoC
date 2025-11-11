@@ -23,17 +23,16 @@ import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import org.jboss.logging.Logger;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingClientService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceClientStreamingAdapter.class);
+  private static final Logger LOG = Logger.getLogger(GrpcServiceClientStreamingAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;
@@ -80,7 +79,7 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
     Multi<DomainIn> domainStream = requestStream.onItem().transform(this::fromGrpc);
 
     if (!isAutoPersistenceEnabled()) {
-      LOG.debug("Auto-persistence is disabled");
+      LOG.debugf("Auto-persistence is disabled");
       // Pass the original streaming Multi directly to the service (no buffering)
       Uni<DomainOut> processedResult = getService().process(domainStream);
       return processedResult
@@ -88,7 +87,7 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
               .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     }
 
-    LOG.debug("Auto-persistence is enabled, will persist all inputs after successful processing");
+    LOG.debugf("Auto-persistence is enabled, will persist all inputs after successful processing");
 
     // Capture inputs as they flow (single copy in memory)
     List<DomainIn> capturedInputs = new ArrayList<>();

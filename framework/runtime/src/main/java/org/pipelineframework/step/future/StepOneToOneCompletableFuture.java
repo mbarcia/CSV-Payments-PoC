@@ -21,11 +21,10 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
+import org.jboss.logging.Logger;
 import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
 import org.pipelineframework.step.functional.OneToOne;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Imperative variant of StepOneToOne that works with CompletableFuture instead of Uni.
@@ -47,7 +46,7 @@ public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Con
 
     @Override
     default Uni<O> apply(Uni<I> inputUni) {
-        final Logger LOG = LoggerFactory.getLogger(this.getClass());
+        final Logger LOG = Logger.getLogger(this.getClass());
         final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         final boolean runWithVirtualThreads = runWithVirtualThreads();
         final Executor executor = runWithVirtualThreads ? vThreadExecutor : null;
@@ -73,8 +72,8 @@ public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Con
             .atMost(retryLimit())
             .onFailure().invoke(t -> {
                 if (debug()) {
-                    LOG.info(
-                        "Step {} completed all retries ({} attempts) with failure: {}",
+                    LOG.infof(
+                        "Step %s completed all retries (%s attempts) with failure: %s",
                         this.getClass().getSimpleName(),
                         retryLimit(),
                         t.getMessage()
@@ -84,15 +83,15 @@ public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Con
             // debug logging
             .onItem().invoke(i -> {
                 if (debug()) {
-                    LOG.debug("Step {} processed item: {}", this.getClass().getSimpleName(), i);
+                    LOG.debugf("Step %s processed item: %s", this.getClass().getSimpleName(), i);
                 }
             })
             // recover with dead letter queue if needed
             .onFailure().recoverWithUni(err -> {
                 if (recoverOnFailure()) {
                     if (debug()) {
-                        LOG.debug(
-                                "Step {0}: failed item={} after {} retries: {}",
+                        LOG.debugf(
+                                "Step %s: failed item=%s after %s retries: %s",
                                 this.getClass().getSimpleName(), inputUni, retryLimit(), err
                         );
                     }

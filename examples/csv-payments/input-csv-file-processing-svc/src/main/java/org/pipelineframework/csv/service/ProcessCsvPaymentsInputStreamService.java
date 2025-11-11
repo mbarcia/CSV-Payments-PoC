@@ -24,14 +24,13 @@ import jakarta.inject.Inject;
 import jakarta.inject.Named;
 import java.util.Iterator;
 import java.util.concurrent.Executor;
+import org.jboss.logging.Logger;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.csv.common.domain.CsvPaymentsInputStream;
 import org.pipelineframework.csv.common.domain.PaymentRecord;
 import org.pipelineframework.csv.common.mapper.CsvPaymentsInputStreamMapper;
 import org.pipelineframework.csv.common.mapper.PaymentRecordMapper;
 import org.pipelineframework.service.ReactiveStreamingService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
 /**
@@ -69,7 +68,7 @@ public class ProcessCsvPaymentsInputStreamService
 
   @Override
   public Multi<PaymentRecord> process(CsvPaymentsInputStream input) {
-    Logger logger = LoggerFactory.getLogger(getClass());
+    Logger logger = Logger.getLogger(getClass());
 
     return Multi.createFrom()
         .deferred(
@@ -96,7 +95,7 @@ public class ProcessCsvPaymentsInputStreamService
                   .invoke(
                       rec -> {
                          MDC.put("serviceId", serviceId);
-                        logger.info("Executed command on {} --> {}", input.getSourceName(), rec);
+                        logger.infof("Executed command on %s --> %s", input.getSourceName(), rec);
                          MDC.remove("serviceId");
                       });
             }));

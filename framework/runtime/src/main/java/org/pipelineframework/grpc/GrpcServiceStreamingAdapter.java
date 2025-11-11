@@ -19,17 +19,16 @@ package org.pipelineframework.grpc;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceStreamingAdapter.class);
+  private static final Logger LOG = Logger.getLogger(GrpcServiceStreamingAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;
@@ -76,13 +75,13 @@ public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, Dom
     Multi<DomainOut> processedResult = getService().process(entity); // Multi<DomainOut>
 
     if (!isAutoPersistenceEnabled()) {
-      LOG.debug("Auto-persistence is disabled");
+      LOG.debugf("Auto-persistence is disabled");
       return processedResult
               .onItem().transform(this::toGrpc)
               .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     }
 
-    LOG.debug("Auto-persistence is enabled, will persist input after stream completes");
+    LOG.debugf("Auto-persistence is enabled, will persist input after stream completes");
 
     return processedResult
             // After the stream completes successfully

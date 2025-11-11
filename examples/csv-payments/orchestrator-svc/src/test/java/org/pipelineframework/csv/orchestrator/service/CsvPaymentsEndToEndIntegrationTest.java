@@ -24,22 +24,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @QuarkusTest
 class CsvPaymentsEndToEndIntegrationTest {
 
-    private static final Logger LOG =
-            LoggerFactory.getLogger(CsvPaymentsEndToEndIntegrationTest.class);
+    private static final Logger LOG = Logger.getLogger(CsvPaymentsEndToEndIntegrationTest.class);
 
     private static final String TEST_OUTPUT_DIR = "target/test-output";
 
     @BeforeEach
     void setUp() throws IOException {
-        LOG.info("Setting up end-to-end integration test");
+        LOG.infof("Setting up end-to-end integration test");
 
         // Create output directory
         Files.createDirectories(Paths.get(TEST_OUTPUT_DIR));
@@ -56,16 +54,16 @@ class CsvPaymentsEndToEndIntegrationTest {
                         path -> {
                             try {
                                 Files.deleteIfExists(path);
-                                LOG.info("Deleted existing file: {}", path);
+                                LOG.infof("Deleted existing file: %s", path);
                             } catch (IOException e) {
-                                LOG.warn("Failed to delete existing file: {}", path, e);
+                                LOG.warnf("Failed to delete existing file: %s", path, e);
                             }
                         });
     }
 
     @Test
     void testEndToEndProcessing() throws Exception {
-        LOG.info("Running end-to-end processing test");
+        LOG.infof("Running end-to-end processing test");
 
         // Copy test CSV file to output directory, replacing if it already exists
         Path sourceCsv = Paths.get("src/test/resources/test-payments.csv");
@@ -85,7 +83,7 @@ class CsvPaymentsEndToEndIntegrationTest {
 
         // Verify the content of the copied file
         String content = Files.readString(targetCsv);
-        LOG.info("Copied file content:\n{}", content);
+        LOG.infof("Copied file content:\n%s", content);
 
         // Check that it contains the expected header
         assertTrue(

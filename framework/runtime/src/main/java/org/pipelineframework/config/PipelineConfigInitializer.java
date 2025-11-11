@@ -20,8 +20,7 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 /**
  * Configuration initializer that loads static configuration into the dynamic configuration holder
@@ -30,7 +29,7 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class PipelineConfigInitializer {
     
-    private static final Logger LOG = LoggerFactory.getLogger(PipelineConfigInitializer.class);
+    private static final Logger LOG = Logger.getLogger(PipelineConfigInitializer.class);
     
     @Inject
     PipelineInitialConfig staticConfig;
@@ -44,12 +43,12 @@ public class PipelineConfigInitializer {
      * @param event the startup event
      */
     void onStart(@Observes StartupEvent event) {
-        LOG.info("Initializing pipeline configuration");
-        LOG.info("Parallel: {}", staticConfig.parallel());
-        LOG.info("Retry limit: {}", staticConfig.retryLimit());
-        LOG.info("Retry wait: {}ms", staticConfig.retryWaitMs());
+        LOG.infof("Initializing pipeline configuration");
+        LOG.infof("Parallel: %s", staticConfig.parallel());
+        LOG.infof("Retry limit: %s", staticConfig.retryLimit());
+        LOG.infof("Retry wait: %sms", staticConfig.retryWaitMs());
         
         dynamicConfig.updateConfig(staticConfig);
-        LOG.info("Pipeline configuration initialized successfully");
+        LOG.infof("Pipeline configuration initialized successfully");
     }
 }

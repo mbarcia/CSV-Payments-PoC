@@ -11,8 +11,7 @@ import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import lombok.Getter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 @PipelineStep(
     order = {{order}},
@@ -37,10 +36,10 @@ public class Process{{serviceNamePascal}}Service
 
   @Override
   public {{{processMethodReturnType}}} process({{{processMethodParamType}}} input) {
-    Logger logger = LoggerFactory.getLogger(getClass());
+    Logger logger = Logger.getLogger(getClass());
 
     // TODO implement business logic here
-    logger.info("Processing input: {}", input);
+    logger.infof("Processing input: %s", input);
     
     {{outputTypeName}} output = new {{outputTypeName}}();
     // Set output fields based on input

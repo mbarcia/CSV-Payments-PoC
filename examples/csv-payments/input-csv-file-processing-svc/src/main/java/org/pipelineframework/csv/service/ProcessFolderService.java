@@ -32,8 +32,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 import org.slf4j.MDC;
 
 @ApplicationScoped
@@ -56,7 +55,7 @@ import org.slf4j.MDC;
 )
 public class ProcessFolderService implements org.pipelineframework.service.ReactiveStreamingService<CsvFolder, CsvPaymentsInputFile> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ProcessFolderService.class);
+  private static final Logger LOG = Logger.getLogger(ProcessFolderService.class);
 
   @Inject
   HybridResourceLoader resourceLoader;
@@ -64,11 +63,11 @@ public class ProcessFolderService implements org.pipelineframework.service.React
   public Multi<CsvPaymentsInputFile> process(CsvFolder csvFolder) {
     Path csvFolderPath = csvFolder.getPath();
 
-    LOG.info("Reading CSV folder from path: {}", csvFolderPath);
+    LOG.infof("Reading CSV folder from path: %s", csvFolderPath);
 
     URL resource = resourceLoader.getResource(String.valueOf(csvFolderPath));
     if (resource == null) {
-      LOG.warn("CSV folder not found: {}", csvFolderPath);
+      LOG.warnf("CSV folder not found: %s", csvFolderPath);
       resourceLoader.diagnoseResourceAccess(String.valueOf(csvFolderPath));
       return Multi.createFrom().failure(
           new IllegalArgumentException(
@@ -93,7 +92,7 @@ public class ProcessFolderService implements org.pipelineframework.service.React
 
     File[] csvFiles = directory.listFiles((_, name) -> name.toLowerCase().endsWith(".csv"));
     if (csvFiles == null || csvFiles.length == 0) {
-      LOG.warn("No CSV files found in {}", csvFolderPath);
+      LOG.warnf("No CSV files found in %s", csvFolderPath);
       resourceLoader.diagnoseResourceAccess(String.valueOf(csvFolderPath));
       return Multi.createFrom().empty();
     }
@@ -107,8 +106,8 @@ public class ProcessFolderService implements org.pipelineframework.service.React
     ).invoke(
           file -> {
             MDC.put("serviceId", serviceId);
-            LOG.info(
-                    "Executed command on {} --> {}", file.getFilepath(), file);
+            LOG.infof(
+                    "Executed command on %s --> %s", file.getFilepath(), file);
             MDC.remove("serviceId");
           });
   }

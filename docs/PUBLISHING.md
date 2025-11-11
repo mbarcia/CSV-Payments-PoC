@@ -10,7 +10,7 @@ The release process is fully automated with GitHub Actions:
 2. **Commit and push changes**: `git add . && git commit -m "Release x.y.z" && git push`
 3. **Create and push a Git tag**: `git tag vx.y.z && git push origin vx.y.z`
 4. **Watch GitHub Actions**: Go to the Actions tab to monitor the release workflow
-5. **Verify on Maven Central**: Check artifacts are published at https://s01.oss.sonatype.org/
+5. **Verify on Maven Central**: Check artifacts are published at <https://s01.oss.sonatype.org/>
 
 The GitHub Actions workflow automatically:
 - Builds and tests the complete project

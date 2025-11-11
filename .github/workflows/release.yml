@@ -60,13 +60,9 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
+          generate_release_notes: true
           body: |
             ## Release ${{ github.ref_name }}
-            
-            This release includes the following changes:
-            - Auto-generated release notes from commit history
-            
-            See the full changelog for more details.
             
             ### Artifacts
             - Published to Maven Central Repository

@@ -91,14 +91,9 @@ public class ProcessCsvPaymentsInputReactiveService
                     Iterator<PaymentRecord> iterator = csvReader.iterator();
                     Iterable<PaymentRecord> iterable = () -> iterator;
 
-                    Iterable<PaymentRecord> iterable = () -> iterator;
-
                     return Multi.createFrom()
                         .iterable(iterable)
-                        .runSubscriptionOn(executor)
                         .onItem()
-                        .invoke(
-                            rec -> {
                         .invoke(
                             rec -> {
                               MDC.put("serviceId", serviceId);

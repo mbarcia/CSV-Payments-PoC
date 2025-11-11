@@ -18,6 +18,10 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+      # Install built framework artifacts to local repository first so examples can find them
+      - name: Install framework to local repository
+        run: ./mvnw clean install -DskipTests -pl framework
+      # Build and test remaining artifacts (including examples that depend on framework)
       - name: Build
         run: mvn --batch-mode -DskipTests package
       - name: Verify

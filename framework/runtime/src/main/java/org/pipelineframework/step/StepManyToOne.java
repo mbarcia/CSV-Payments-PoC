@@ -24,6 +24,8 @@ import org.jboss.logging.Logger;
 /** N -> 1 (reactive) */
 public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
 
+    Logger LOG = Logger.getLogger(StepManyToOne.class);
+
     /**
      * Apply the step to a stream of inputs, producing a single output reactively.
      * This method serves as a client-side wrapper that provides cross-cutting concerns
@@ -34,7 +36,6 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
      */
     @Override
     default Uni<O> apply(Multi<I> input) {
-        Logger LOG = Logger.getLogger(this.getClass());
         
         // Apply overflow strategy to the input if needed
         Multi<I> backpressuredInput = input;
@@ -91,7 +92,6 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
      * @return The result of dead letter handling as a Uni (can be null)
      */
     default Uni<O> deadLetterStream(Multi<I> input, Throwable error) {
-        Logger LOG = Logger.getLogger(this.getClass());
         return input.collect().asList()
             .onItem().invoke(list -> LOG.errorf("DLQ drop for stream of %s items: %s", list.size(), error.getMessage()))
             .onItem().transformToUni(_ -> Uni.createFrom().nullItem());

@@ -75,13 +75,13 @@ public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, Dom
     Multi<DomainOut> processedResult = getService().process(entity); // Multi<DomainOut>
 
     if (!isAutoPersistenceEnabled()) {
-      LOG.debugf("Auto-persistence is disabled");
+      LOG.debug("Auto-persistence is disabled");
       return processedResult
               .onItem().transform(this::toGrpc)
               .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     }
 
-    LOG.debugf("Auto-persistence is enabled, will persist input after stream completes");
+    LOG.debug("Auto-persistence is enabled, will persist input after stream completes");
 
     return processedResult
             // After the stream completes successfully

@@ -79,7 +79,7 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
     Multi<DomainIn> domainStream = requestStream.onItem().transform(this::fromGrpc);
 
     if (!isAutoPersistenceEnabled()) {
-      LOG.debugf("Auto-persistence is disabled");
+      LOG.debug("Auto-persistence is disabled");
       // Pass the original streaming Multi directly to the service (no buffering)
       Uni<DomainOut> processedResult = getService().process(domainStream);
       return processedResult
@@ -87,7 +87,7 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
               .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     }
 
-    LOG.debugf("Auto-persistence is enabled, will persist all inputs after successful processing");
+    LOG.debug("Auto-persistence is enabled, will persist all inputs after successful processing");
 
     // Capture inputs as they flow (single copy in memory)
     List<DomainIn> capturedInputs = new ArrayList<>();

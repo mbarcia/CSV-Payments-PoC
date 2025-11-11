@@ -69,7 +69,7 @@ public class PipelineExecutionService {
 				    })
 				    .onFailure().invoke(failure -> {
 					    watch.stop();
-					    LOG.errorf("❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS), failure);
+					    LOG.errorf(failure, "❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS));
 				    });
 		    case Uni<?> uni -> uni.toMulti()
 				    .onSubscription().invoke(_ -> {
@@ -82,7 +82,7 @@ public class PipelineExecutionService {
 				    })
 				    .onFailure().invoke(failure -> {
 					    watch.stop();
-					    LOG.errorf("❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS), failure);
+					    LOG.errorf(failure, "❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS));
 				    });
 		    default -> Multi.createFrom().failure(new IllegalStateException(
 				    MessageFormat.format("PipelineRunner returned unexpected type: {0}", result.getClass().getName())

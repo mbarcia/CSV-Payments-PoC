@@ -32,7 +32,6 @@ public class PersistenceManager {
 
     private static final Logger LOG = Logger.getLogger(PersistenceManager.class);
 
-    @SuppressWarnings("rawtypes")
     private List<PersistenceProvider<?>> providers;
 
     @Inject
@@ -53,7 +52,7 @@ public class PersistenceManager {
     public <T> Uni<T> persist(T entity) {
         if (entity == null) {
             LOG.debug("Entity is null, returning empty Uni");
-            return Uni.createFrom().item((T) null);
+            return Uni.createFrom().nullItem();
         }
 
         LOG.debugf("Entity to persist: %s", entity.getClass().getName());

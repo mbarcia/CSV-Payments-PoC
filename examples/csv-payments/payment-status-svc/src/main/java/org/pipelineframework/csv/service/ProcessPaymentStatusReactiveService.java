@@ -55,6 +55,8 @@ import org.slf4j.MDC;
 public class ProcessPaymentStatusReactiveService
     implements ReactiveService<PaymentStatus, PaymentOutput> {
 
+  private static final Logger LOGGER = Logger.getLogger(ProcessPaymentStatusReactiveService.class);
+
   PaymentOutputMapper mapper = PaymentOutputMapper.INSTANCE;
 
   @Override
@@ -83,9 +85,8 @@ public class ProcessPaymentStatusReactiveService
             .invoke(
                 result -> {
                   String serviceId = this.getClass().toString();
-                  Logger logger = Logger.getLogger(this.getClass());
                   MDC.put("serviceId", serviceId);
-                  logger.infof("Executed command on %s --> %s", paymentStatus, result);
+                  LOGGER.infof("Executed command on %s --> %s", paymentStatus, result);
                   MDC.remove("serviceId");
                 });
   }

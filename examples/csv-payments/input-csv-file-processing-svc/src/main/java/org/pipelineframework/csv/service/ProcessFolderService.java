@@ -33,7 +33,7 @@ import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import org.jboss.logging.Logger;
-import org.slf4j.MDC;
+import org.jboss.logging.MDC;
 
 @ApplicationScoped
 @PipelineStep(

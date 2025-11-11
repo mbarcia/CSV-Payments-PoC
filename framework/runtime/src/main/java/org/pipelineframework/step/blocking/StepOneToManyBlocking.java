@@ -37,13 +37,14 @@ import org.pipelineframework.step.functional.OneToMany;
  */
 public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, O>, DeadLetterQueue<I, O> {
 
+    Logger LOG = Logger.getLogger(StepOneToManyBlocking.class);
+
     List<O> applyList(I in);
 
 	default boolean runWithVirtualThreads() { return false; }
 
     @Override
     default Multi<O> apply(Uni<I> inputUni) {
-        final Logger LOG = Logger.getLogger(this.getClass());
         final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         final Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 

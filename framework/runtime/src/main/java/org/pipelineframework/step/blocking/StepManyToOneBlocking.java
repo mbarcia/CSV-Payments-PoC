@@ -98,7 +98,7 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
 
                         if (debug()) {
                             LOG.debugf(
-                                "Blocking Step %s processed batch of %s items into single output: %s",
+                                "Blocking Step %s processed batch of %d items into single output: %s",
                                 this.getClass().getSimpleName(), list.size(), result
                             );
                         }
@@ -132,7 +132,7 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
 
                         if (debug()) {
                             LOG.debugf(
-                                "Blocking Step %s processed batch of %s items into single output: %s",
+                                "Blocking Step %s processed batch of %d items into single output: %s",
                                 this.getClass().getSimpleName(), list.size(), result
                             );
                         }

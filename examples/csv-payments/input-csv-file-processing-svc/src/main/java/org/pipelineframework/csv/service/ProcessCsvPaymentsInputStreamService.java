@@ -25,13 +25,13 @@ import jakarta.inject.Named;
 import java.util.Iterator;
 import java.util.concurrent.Executor;
 import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.csv.common.domain.CsvPaymentsInputStream;
 import org.pipelineframework.csv.common.domain.PaymentRecord;
 import org.pipelineframework.csv.common.mapper.CsvPaymentsInputStreamMapper;
 import org.pipelineframework.csv.common.mapper.PaymentRecordMapper;
 import org.pipelineframework.service.ReactiveStreamingService;
-import org.slf4j.MDC;
 
 /**
  * Service that processes CSV payments input and produces a stream of payment records.
@@ -59,6 +59,8 @@ import org.slf4j.MDC;
 public class ProcessCsvPaymentsInputStreamService
     implements ReactiveStreamingService<CsvPaymentsInputStream, PaymentRecord> {
 
+  private static final Logger LOGGER = Logger.getLogger(ProcessCsvPaymentsInputStreamService.class);
+
   Executor executor;
 
     @Inject
@@ -68,8 +70,6 @@ public class ProcessCsvPaymentsInputStreamService
 
   @Override
   public Multi<PaymentRecord> process(CsvPaymentsInputStream input) {
-    Logger logger = Logger.getLogger(getClass());
-
     return Multi.createFrom()
         .deferred(
             Unchecked.supplier(() -> {
@@ -95,7 +95,7 @@ public class ProcessCsvPaymentsInputStreamService
                   .invoke(
                       rec -> {
                          MDC.put("serviceId", serviceId);
-                        logger.infof("Executed command on %s --> %s", input.getSourceName(), rec);
+                        LOGGER.infof("Executed command on %s --> %s", input.getSourceName(), rec);
                          MDC.remove("serviceId");
                       });
             }));

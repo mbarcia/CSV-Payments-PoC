@@ -56,7 +56,7 @@ class CsvPaymentsEndToEndIntegrationTest {
                                 Files.deleteIfExists(path);
                                 LOG.infof("Deleted existing file: %s", path);
                             } catch (IOException e) {
-                                LOG.warnf("Failed to delete existing file: %s", path, e);
+                                LOG.warnf(e, "Failed to delete existing file: %s", path);
                             }
                         });
     }

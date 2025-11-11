@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.concurrent.Executor;
 import lombok.Getter;
 import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.csv.common.domain.CsvPaymentsInputFile;
 import org.pipelineframework.csv.common.domain.PaymentRecord;
@@ -34,7 +35,6 @@ import org.pipelineframework.csv.common.mapper.CsvPaymentsInputFileMapper;
 import org.pipelineframework.csv.common.mapper.PaymentRecordMapper;
 import org.pipelineframework.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
 import org.pipelineframework.service.ReactiveStreamingService;
-import org.slf4j.MDC;
 
 @PipelineStep(
     order = 2,
@@ -59,6 +59,8 @@ import org.slf4j.MDC;
 public class ProcessCsvPaymentsInputReactiveService
     implements ReactiveStreamingService<CsvPaymentsInputFile, PaymentRecord> {
 
+  private static final Logger LOGGER = Logger.getLogger(ProcessCsvPaymentsInputReactiveService.class);
+
   Executor executor;
 
   @Inject
@@ -68,8 +70,6 @@ public class ProcessCsvPaymentsInputReactiveService
 
   @Override
   public Multi<PaymentRecord> process(CsvPaymentsInputFile input) {
-    Logger logger = Logger.getLogger(getClass());
-
     return Multi.createFrom()
         .deferred(
             Unchecked.supplier(
@@ -97,7 +97,7 @@ public class ProcessCsvPaymentsInputReactiveService
                         .invoke(
                             rec -> {
                               MDC.put("serviceId", serviceId);
-                              logger.infof(
+                              LOGGER.infof(
                                   "Executed command on %s --> %s", input.getSourceName(), rec);
                               MDC.remove("serviceId");
                         })
@@ -106,7 +106,7 @@ public class ProcessCsvPaymentsInputReactiveService
                           try {
                             reader.close();
                           } catch (IOException e) {
-                            logger.warnf("Failed to close CSV reader", e);
+                            LOGGER.warn("Failed to close CSV reader", e);
                           }
                         });
                   } catch (IOException e) {

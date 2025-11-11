@@ -61,7 +61,7 @@ public class ProcessAckPaymentSentReactiveService
   public ProcessAckPaymentSentReactiveService(
       PollAckPaymentSentReactiveService pollAckPaymentSentService) {
     this.pollAckPaymentSentService = pollAckPaymentSentService;
-    LOG.debugf("ProcessAckPaymentSentReactiveService initialized");
+    LOG.debug("ProcessAckPaymentSentReactiveService initialized");
   }
 
   @Override
@@ -72,7 +72,7 @@ public class ProcessAckPaymentSentReactiveService
     // Call the service with the new unified method
     Uni<PaymentStatus> result = pollAckPaymentSentService.process(ackPaymentSent);
     
-    LOG.debugf("Returning Uni from ProcessAckPaymentSentReactiveService");
+    LOG.debug("Returning Uni from ProcessAckPaymentSentReactiveService");
     return result
         .onItem()
         .invoke(paymentStatus -> 
@@ -80,6 +80,6 @@ public class ProcessAckPaymentSentReactiveService
                 paymentStatus.getId(), paymentStatus.getReference(), paymentStatus.getStatus()))
         .onFailure()
         .invoke(failure -> 
-            LOG.errorf("Failed to process AckPaymentSent in ProcessAckPaymentSentReactiveService", failure));
+            LOG.errorf(failure, "Failed to process AckPaymentSent in ProcessAckPaymentSentReactiveService"));
   }
 }

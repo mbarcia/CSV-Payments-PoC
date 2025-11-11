@@ -36,14 +36,13 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <enablePreview>true</enablePreview>
-        <quarkus.platform.version>3.28.5</quarkus.platform.version>
+        <quarkus.platform.version>3.29.2</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.63.0</grpc.version>
         <version.jandex>3.5.0</version.jandex>
-        <pipeline.version>${pipeline.framework.version}</pipeline.version>
-        <pipeline.framework.version>0.9.0</pipeline.framework.version>
+        <version.pipeline>0.9.0-SNAPSHOT</version.pipeline>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
     </properties>
@@ -62,7 +61,7 @@
             <dependency>
                 <groupId>org.pipelineframework</groupId>
                 <artifactId>framework-parent</artifactId>
-                <version>${pipeline.version}</version>
+                <version>${version.pipeline}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -107,7 +106,7 @@
                             <path>
                                 <groupId>org.pipelineframework</groupId>
                                 <artifactId>pipelineframework-deployment</artifactId>
-                                <version>${pipeline.version}</version>
+                                <version>${version.pipeline}</version>
                             </path>
                         </annotationProcessorPaths>
                         <compilerArgs>

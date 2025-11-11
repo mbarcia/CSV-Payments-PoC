@@ -2,6 +2,23 @@
 
 This document explains how to publish The Pipeline Framework to Maven Central and how to manage the project's versioning and release process properly.
 
+## TL;DR: Automatic Release Process
+
+The release process is fully automated with GitHub Actions:
+
+1. **Update version in root POM** (if needed): Change `<version.pipeline>` in `pom.xml`
+2. **Commit and push changes**: `git add . && git commit -m "Release x.y.z" && git push`
+3. **Create and push a Git tag**: `git tag vx.y.z && git push origin vx.y.z`
+4. **Watch GitHub Actions**: Go to the Actions tab to monitor the release workflow
+5. **Verify on Maven Central**: Check artifacts are published at <https://s01.oss.sonatype.org/>
+
+The GitHub Actions workflow automatically:
+- Builds and tests the complete project
+- Signs all artifacts with GPG
+- Deploys to Sonatype OSSRH
+- Closes and releases the staging repository
+- Creates a GitHub release with notes
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -20,8 +37,8 @@ The Pipeline Framework is published to Maven Central to make it available to dev
 
 The Pipeline Framework uses a centralized version management system to ensure consistency across all modules:
 
-1. **Single Source of Truth**: The version is defined in the root POM (`pom.xml`) as the `<pipeline.framework.version>` property
-2. **Module References**: All other POM files reference this property instead of hardcoding versions
+1. **Single Source of Truth**: The version is defined in the root POM (`pom.xml`) as the `<version.pipeline>` property
+2. **Module References**: All other POM files reference this property instead of hard-coding versions
 3. **Build-Time Resolution**: The Flatten Maven Plugin resolves property references to literal values during the build process
 4. **Updating Versions**: To update the version, change it only in the root POM
 
@@ -31,13 +48,29 @@ In the root POM (`pom.xml`):
 ```xml
 <properties>
     <!-- ... other properties ... -->
-    <pipeline.framework.version>0.9.0</pipeline.framework.version>
-    <pipeline.version>${pipeline.framework.version}</pipeline.version>
+    <version.pipeline>0.9.0</version.pipeline>
     <!-- ... other properties ... -->
 </properties>
 ```
 
 All other modules reference this property, ensuring a single point of update for version changes.
+
+### Using Maven Versions Plugin
+
+To update versions across all modules consistently, use the Maven Versions Plugin:
+
+```bash
+# Update the version across all modules
+mvn versions:set -DnewVersion=1.0.0
+
+# Verify the changes before committing
+mvn versions:commit
+
+# Or rollback if needed
+mvn versions:revert
+```
+
+This ensures that all modules in the multimodule project are updated consistently.
 
 ### Flatten Plugin Configuration
 
@@ -166,50 +199,11 @@ To encrypt your Sonatype password:
 
 ## GitHub Actions Workflow
 
-The release process is automated using GitHub Actions. The workflow is triggered by creating a Git tag with the pattern `v*`:
-
-### Release Workflow File
-
-Create `.github/workflows/release.yml`:
-
-```yaml
-name: Publish to Maven Central
-
-on:
-  push:
-    tags:
-      - 'v*'
-
-jobs:
-  publish:
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        server-id: ossrh
-        server-username: MAVEN_USERNAME
-        server-password: MAVEN_PASSWORD
-        gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-        gpg-passphrase: GPG_PASSPHRASE
-
-    - name: Build and publish
-      run: mvn clean deploy -P release
-      env:
-        MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
-        MAVEN_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
-        GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-```
+The release process is automated using GitHub Actions.
 
 ### Required GitHub Secrets
 
-To use the workflow, add these secrets to your GitHub repository:
+To use the workflow, these secrets must exist in the GitHub repository:
 
 1. `OSSRH_USERNAME` - Your Sonatype username
 2. `OSSRH_PASSWORD` - Your Sonatype password
@@ -218,20 +212,46 @@ To use the workflow, add these secrets to your GitHub repository:
 
 ## Safe Release Process
 
-To avoid unintentionally triggering a release, follow this recommended workflow:
+### Standard Release Workflow (Recommended)
 
-1. **Version Preparation**:
-   - Update the version in the root POM to the desired release version
-   - Run `mvn versions:commit` to propagate version changes (if using versions plugin)
-   - Test the build with `mvn clean install`
+The Maven Release Plugin provides a complete automated solution.
+Again, this is automatically managed by GitHub Actions, which actions the following steps.
 
-2. **Pull Request Review**:
-   - Open a pull request with version changes
-   - Get team approval before merging
+1. **Prepare the Release**:
+   - Use the Maven Release Plugin to prepare the release:
+     ```bash
+     mvn release:prepare
+     ```
+   - This will update versions, create a tag, and prepare the release in one step
+   - The plugin will prompt for:
+     - The release version (e.g., 1.0.0)
+     - The SCM tag (e.g., v1.0.0)
+     - The next development version (e.g., 1.0.1-SNAPSHOT)
 
-3. **Tagged Release**:
-   - After merging to main, create a Git tag (e.g., `v1.0.0`)
+2. **Perform the Release**:
+   - Deploy the release to Maven Central:
+     ```bash
+     mvn release:perform
+     ```
+   - This will check out the tagged version and run the deployment process with the `release` profile
+
+### When to Use the Versions Plugin Approach
+
+Use this manual approach only when you need fine-grained control or the Release Plugin is not available:
+
+1. **Manual Version Update**:
+   - Update the version using the Maven Versions Plugin:
+     ```bash
+     mvn versions:set -DnewVersion=1.0.0
+     mvn versions:commit
+     ```
+   - Test the build with `mvn clean install -P release`
+   - Create a Git tag (e.g., `v1.0.0`)
    - Push the tag to trigger the GitHub Actions release workflow
+
+**Comparison**:
+- **Release Plugin**: Handles everything automatically (version updates, SCM tagging, deployment) but requires proper plugin configuration
+- **Versions Plugin**: Offers more manual control but requires multiple manual steps and careful coordination
 
 ### Alternative: Manual Release Workflow
 

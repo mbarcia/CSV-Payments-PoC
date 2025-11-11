@@ -31,7 +31,7 @@ class LiveStepConfigTest {
                 .defaults()
                 .retryLimit(10)
                 .retryWait(Duration.ofSeconds(2))
-                .concurrency(8)
+                .parallel(true)
                 .debug(true)
                 .recoverOnFailure(true)
                 .runWithVirtualThreads(true)
@@ -39,12 +39,12 @@ class LiveStepConfigTest {
                 .jitter(true);
 
         // When
-        LiveStepConfig liveConfig = new LiveStepConfig(pipelineConfig);
+        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
 
         // Then
         assertEquals(10, liveConfig.retryLimit());
         assertEquals(Duration.ofSeconds(2), liveConfig.retryWait());
-        assertEquals(8, liveConfig.concurrency());
+        assertTrue(liveConfig.parallel());
         assertTrue(liveConfig.debug());
         assertTrue(liveConfig.recoverOnFailure());
         assertTrue(liveConfig.runWithVirtualThreads());
@@ -60,21 +60,21 @@ class LiveStepConfigTest {
                 .defaults()
                 .retryLimit(5)
                 .retryWait(Duration.ofSeconds(1))
-                .concurrency(4)
+                .parallel(false)
                 .debug(false)
                 .recoverOnFailure(false)
                 .runWithVirtualThreads(false)
                 .maxBackoff(Duration.ofSeconds(30))
                 .jitter(false);
 
-        LiveStepConfig liveConfig = new LiveStepConfig(pipelineConfig);
+        StepConfig overrides = new StepConfig();
+        LiveStepConfig liveConfig = new LiveStepConfig(overrides, pipelineConfig);
 
         // When
-        liveConfig
-                .overrides()
+        overrides
                 .retryLimit(15)
                 .retryWait(Duration.ofSeconds(3))
-                .concurrency(12)
+                .parallel(true)
                 .debug(true)
                 .recoverOnFailure(true)
                 .runWithVirtualThreads(true)
@@ -84,7 +84,7 @@ class LiveStepConfigTest {
         // Then
         assertEquals(15, liveConfig.retryLimit());
         assertEquals(Duration.ofSeconds(3), liveConfig.retryWait());
-        assertEquals(12, liveConfig.concurrency());
+        assertTrue(liveConfig.parallel());
         assertTrue(liveConfig.debug());
         assertTrue(liveConfig.recoverOnFailure());
         assertTrue(liveConfig.runWithVirtualThreads());
@@ -96,15 +96,16 @@ class LiveStepConfigTest {
     void testLiveStepConfigUsesDefaultsWhenNoOverrides() {
         // Given
         PipelineConfig pipelineConfig = new PipelineConfig();
-        pipelineConfig.defaults().retryLimit(8).debug(true).concurrency(6).recoverOnFailure(true);
+        pipelineConfig.defaults().retryLimit(8).debug(true).parallel(true).recoverOnFailure(true);
 
-        LiveStepConfig liveConfig = new LiveStepConfig(pipelineConfig);
+        StepConfig overrides = new StepConfig();
+        LiveStepConfig liveConfig = new LiveStepConfig(overrides, pipelineConfig);
         // Not setting any overrides
 
         // When & Then
         assertEquals(8, liveConfig.retryLimit());
         assertTrue(liveConfig.debug());
-        assertEquals(6, liveConfig.concurrency());
+        assertTrue(liveConfig.parallel()); // from defaults
         assertTrue(liveConfig.recoverOnFailure());
     }
 
@@ -116,20 +117,21 @@ class LiveStepConfigTest {
                 .defaults()
                 .retryLimit(5)
                 .retryWait(Duration.ofSeconds(1))
-                .concurrency(4)
+                .parallel(false)
                 .debug(false)
                 .recoverOnFailure(false);
 
-        LiveStepConfig liveConfig = new LiveStepConfig(pipelineConfig);
+        StepConfig overrides = new StepConfig();
+        LiveStepConfig liveConfig = new LiveStepConfig(overrides, pipelineConfig);
 
         // When - only override some properties
-        liveConfig.overrides().retryLimit(15).debug(true);
-        // concurrency, recoverOnFailure, etc. are not overridden
+        overrides.retryLimit(15).debug(true);
+        // parallel, recoverOnFailure, etc. are not overridden
 
         // Then - overridden values should be used, others should fall back to defaults
         assertEquals(15, liveConfig.retryLimit()); // overridden
         assertEquals(Duration.ofSeconds(1), liveConfig.retryWait()); // default
-        assertEquals(4, liveConfig.concurrency()); // default
+        assertFalse(liveConfig.parallel()); // default
         assertTrue(liveConfig.debug()); // overridden
         assertFalse(liveConfig.recoverOnFailure()); // default
     }
@@ -140,11 +142,11 @@ class LiveStepConfigTest {
         PipelineConfig pipelineConfig = new PipelineConfig();
         pipelineConfig.defaults().retryLimit(5).debug(false);
 
-        LiveStepConfig liveConfig = new LiveStepConfig(pipelineConfig);
+        StepConfig overrides = new StepConfig();
+        LiveStepConfig liveConfig = new LiveStepConfig(overrides, pipelineConfig);
 
         // When - override with the same values as defaults
-        liveConfig
-                .overrides()
+        overrides
                 .retryLimit(5) // same as default
                 .debug(false); // same as default
 

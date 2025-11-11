@@ -55,27 +55,24 @@ public class TestSteps {
             // If so, preserve these as manual configuration
             if (!hasManualConfig && config != null) {
                 // Check if the incoming config has custom values
-                if (config.retryLimit()
-                                != new org.pipelineframework.config.StepConfig().retryLimit()
-                        || config.retryWait()
-                                != new org.pipelineframework.config.StepConfig().retryWait()
-                        || config.debug()
-                                != new org.pipelineframework.config.StepConfig().debug()) {
+                final org.pipelineframework.config.StepConfig defaultCfg =
+                        new org.pipelineframework.config.StepConfig();
+                if (config.retryLimit() != defaultCfg.retryLimit()
+                        || !java.util.Objects.equals(config.retryWait(), defaultCfg.retryWait())
+                        || config.debug() != defaultCfg.debug()) {
                     // This looks like manual configuration - save the values
                     setManualConfig(config.retryLimit(), config.retryWait(), config.debug());
                 }
             }
 
             if (hasManualConfig) {
-                // If we have manual config, apply it on top of the new config
-                super.initialiseWithConfig(config);
-                // Apply the manual overrides
                 if (config != null) {
                     config.overrides()
                             .retryLimit(manualRetryLimit)
                             .retryWait(manualRetryWait)
                             .debug(manualDebug);
                 }
+                super.initialiseWithConfig(config);
             } else {
                 super.initialiseWithConfig(config);
             }
@@ -132,19 +129,38 @@ public class TestSteps {
 
     public static class FailingStepBlocking extends ConfigurableStep
             implements StepOneToOneBlocking<String, String> {
-        private final boolean shouldRecover;
+        // Configuration preservation fields like in AsyncFailNTimesStep
+        private boolean hasManualConfig = false;
+        private int manualRetryLimit = -1;
+        private java.time.Duration manualRetryWait = null;
+        private boolean manualDebug = false;
+        private boolean manualRecoverOnFailure = false;
+        private boolean manualRecoverOnFailureSet =
+                false; // Sentinel to track if constructor set the value
 
         public FailingStepBlocking() {
-            this(false);
+            // Leave recoverOnFailure to be driven by configuration unless explicitly set
         }
 
         public FailingStepBlocking(boolean shouldRecover) {
-            this.shouldRecover = shouldRecover;
+            this.manualRecoverOnFailure = shouldRecover;
+            this.manualRecoverOnFailureSet =
+                    true; // Mark that constructor explicitly set this value
         }
 
         @Override
         public Uni<String> apply(String input) {
-            throw new RuntimeException("Intentional failure for testing");
+            // Return the input wrapped in a Uni that fails - this way the input is preserved
+            // for potential recovery by the deadLetter method
+            return Uni.createFrom()
+                    .failure(new RuntimeException("Intentional failure for testing"));
+        }
+
+        @Override
+        public Uni<String> applyOneToOne(String input) {
+            // For the reactive interface, call the blocking interface method
+            // This ensures both interfaces are properly handled
+            return apply(input);
         }
 
         /**
@@ -158,22 +174,79 @@ public class TestSteps {
          */
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
-            return failedItem.onItem().invoke(item ->
-                LOG.infof("Dead letter handled for item: %s, cause: %s", item, cause.getMessage())
-            );
-         }
+            return failedItem
+                    .onItem()
+                    .invoke(
+                            item ->
+                                    LOG.infof(
+                                            "Dead letter handled for item: %s, cause: %s",
+                                            item, cause.getMessage()));
+        }
 
         @Override
         public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
-            super.initialiseWithConfig(config);
-            // Apply the recovery setting after the config is properly set up
-            if (shouldRecover && config != null) {
-                config.overrides().recoverOnFailure(true);
+            // Check if this is the first time being configured with non-default values
+            // If so, preserve these as manual configuration (like AsyncFailNTimesStep)
+            if (!hasManualConfig && config != null) {
+                // Check if the incoming config has custom values
+                final org.pipelineframework.config.StepConfig defaultCfg =
+                        new org.pipelineframework.config.StepConfig();
+                boolean hasConfigRecoverOnFailure =
+                        config.recoverOnFailure() != defaultCfg.recoverOnFailure();
+                if (config.retryLimit() != defaultCfg.retryLimit()
+                        || !java.util.Objects.equals(config.retryWait(), defaultCfg.retryWait())
+                        || config.debug() != defaultCfg.debug()
+                        || hasConfigRecoverOnFailure) {
+                    // This looks like manual configuration - save the values
+                    // Only set recoverOnFailure from config if constructor didn't set it
+                    boolean recoverOnFailureToUse =
+                            manualRecoverOnFailureSet
+                                    ? manualRecoverOnFailure
+                                    : config.recoverOnFailure();
+                    setManualConfig(
+                            config.retryLimit(),
+                            config.retryWait(),
+                            config.debug(),
+                            recoverOnFailureToUse);
+                }
+            }
+
+            if (hasManualConfig) {
+                if (config != null) {
+                    config.overrides()
+                            .retryLimit(manualRetryLimit)
+                            .retryWait(manualRetryWait)
+                            .debug(manualDebug)
+                            .recoverOnFailure(manualRecoverOnFailure);
+                }
+                super.initialiseWithConfig(config);
+            } else {
+                if (config != null) {
+                    // Only apply config's recoverOnFailure if constructor didn't set it
+                    if (!manualRecoverOnFailureSet) {
+                        config.overrides().recoverOnFailure(config.recoverOnFailure());
+                    } else {
+                        config.overrides().recoverOnFailure(manualRecoverOnFailure);
+                    }
+                }
+                super.initialiseWithConfig(config);
             }
         }
 
-        public Uni<String> applyOneToOne(String input) {
-            return apply(input);
+        // Method to mark that manual config has been set
+        private void setManualConfig(
+                int retryLimit,
+                java.time.Duration retryWait,
+                boolean debug,
+                boolean recoverOnFailure) {
+            this.hasManualConfig = true;
+            this.manualRetryLimit = retryLimit;
+            this.manualRetryWait = retryWait;
+            this.manualDebug = debug;
+            // Only update manualRecoverOnFailure if it wasn't set by constructor
+            if (!manualRecoverOnFailureSet) {
+                this.manualRecoverOnFailure = recoverOnFailure;
+            }
         }
     }
 }

@@ -23,13 +23,14 @@ import org.pipelineframework.config.StepConfig;
  * Base class for configurable pipeline steps that use LiveStepConfig
  * to dynamically access pipeline configuration.
  */
-public class ConfigurableStep implements Configurable {
+public abstract class ConfigurableStep implements Configurable {
 
-    StepConfig config = new StepConfig();
+    LiveStepConfig config = null;
+
 
     @Override
     public StepConfig effectiveConfig() {
-        return config;
+        return config != null ? config : new StepConfig();
     }
 
     @Override
@@ -44,5 +45,10 @@ public class ConfigurableStep implements Configurable {
         if (config != null) {
             this.config = config; // Update the internal config reference
         }
+    }
+    
+    @Override
+    public LiveStepConfig liveConfig() {
+        return config;
     }
 }

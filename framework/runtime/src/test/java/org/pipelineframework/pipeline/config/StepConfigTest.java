@@ -31,8 +31,8 @@ class StepConfigTest {
 
         // Then
         assertEquals(3, config.retryLimit());
-        assertEquals(Duration.ofMillis(200), config.retryWait());
-        assertEquals(4, config.concurrency());
+        assertEquals(Duration.ofMillis(2000), config.retryWait());
+        assertFalse(config.parallel());
         assertFalse(config.debug());
         assertFalse(config.recoverOnFailure());
         assertFalse(config.runWithVirtualThreads());
@@ -77,15 +77,15 @@ class StepConfigTest {
     }
 
     @Test
-    void testConcurrencySetter() {
+    void testParallelSetter() {
         // Given
         StepConfig config = new StepConfig();
 
         // When
-        StepConfig result = config.concurrency(10);
+        StepConfig result = config.parallel(true);
 
         // Then
-        assertEquals(10, config.concurrency());
+        assertTrue(config.parallel());
         assertSame(config, result); // Fluent API
     }
 

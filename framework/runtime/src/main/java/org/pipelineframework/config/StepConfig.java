@@ -31,11 +31,9 @@ import java.util.concurrent.atomic.AtomicReference;
 public class StepConfig {
 
     private final AtomicInteger retryLimit = new AtomicInteger(3);
-    private final AtomicReference<Duration> retryWait = new AtomicReference<>(Duration.ofMillis(200));
-    private final AtomicInteger concurrency = new AtomicInteger(4);
+    private final AtomicReference<Duration> retryWait = new AtomicReference<>(Duration.ofMillis(2000));
+    private volatile boolean parallel = false; // Default is sequential processing
     private final AtomicInteger backpressureBufferCapacity = new AtomicInteger(1024);
-    private final AtomicInteger batchSize = new AtomicInteger(10); // Default batch size
-    private final AtomicReference<Duration> batchTimeout = new AtomicReference<>(Duration.ofMillis(1000)); // Default batch timeout
 
     private volatile boolean debug = false;
     private volatile boolean recoverOnFailure = false;
@@ -56,42 +54,39 @@ public class StepConfig {
      * Whether to automatically persist step results to storage
      * @return true if auto persistence is enabled, false otherwise
      */
-    public boolean autoPersist() { return autoPersist; } // New getter
+    public boolean autoPersist() { return autoPersist; }
     /**
-     * Maximum number of retries for failed operations
-     * @return the retry limit
+     * Number of times to retry a failed operation before giving up
+     * @return the retry limit (default: 3)
      */
     public int retryLimit() { return retryLimit.get(); }
+    
     /**
-     * Duration to wait between retries
-     * @return the retry wait duration
+     * Base delay between retry attempts
+     * @return the retry wait duration (default: 2000ms)
      */
     public Duration retryWait() { return retryWait.get(); }
+
     /**
-     * Maximum number of concurrent operations allowed
-     * @return the concurrency limit
-     */
-    public int concurrency() { return concurrency.get(); }
-    /**
-     * Buffer capacity for handling backpressure
-     * @return the backpressure buffer capacity
+     * The backpressure buffer capacity
+     * @return the buffer capacity (default: 1024)
      */
     public int backpressureBufferCapacity() { return backpressureBufferCapacity.get(); }
+
+
+
     /**
-     * Number of items to batch together before processing
-     * @return the batch size
-     */
-    public int batchSize() { return batchSize.get(); }
-    /**
-     * Maximum time to wait before processing a batch, even if batch size hasn't been reached
-     * @return the batch timeout duration
-     */
-    public Duration batchTimeout() { return batchTimeout.get(); }
-    /**
-     * Strategy to use for handling backpressure ("BUFFER", "DROP", etc.)
-     * @return the backpressure strategy
+     * Backpressure strategy to use when buffering items ("BUFFER", "DROP")
+     * @return the backpressure strategy (default: "BUFFER")
      */
     public String backpressureStrategy() { return backpressureStrategy; }
+
+    /**
+     * Whether to enable parallel processing for this step
+     * @return true if parallel processing is enabled, false for sequential processing
+     */
+    public boolean parallel() { return parallel; }
+
     /**
      * Whether to enable debug mode with additional logging
      * @return true if debug mode is enabled, false otherwise
@@ -109,7 +104,7 @@ public class StepConfig {
     public boolean runWithVirtualThreads() { return runWithVirtualThreads; }
     /**
      * Maximum backoff duration when using exponential backoff
-     * @return the maximum backoff duration
+     * @return the maximum backoff duration (default: 30 seconds)
      */
     public Duration maxBackoff() { return maxBackoff.get(); }
     /**
@@ -118,55 +113,51 @@ public class StepConfig {
      */
     public boolean jitter() { return jitter; }
 
-    // --- setters (runtime mutable) ---
+    // --- setters ---
     /**
-     * Sets whether to automatically persist step results to storage
-     * @param v true to enable auto persistence, false to disable
-     * @return this StepConfig instance for method chaining
-     */
-    public StepConfig autoPersist(boolean v) { autoPersist = v; return this; } // New setter
-    /**
-     * Sets the maximum number of retries for failed operations
+     * Sets the number of times to retry a failed operation before giving up
      * @param v the retry limit
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig retryLimit(int v) { retryLimit.set(v); return this; }
+    public StepConfig retryLimit(int v) { 
+        if (v < 0) {
+            throw new IllegalArgumentException("retryLimit must be >= 0");
+        }
+        retryLimit.set(v); 
+        return this; 
+    }
     /**
-     * Sets the duration to wait between retries
+     * Sets the base delay between retry attempts
      * @param v the retry wait duration
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig retryWait(Duration v) { retryWait.set(Objects.requireNonNull(v)); return this; }
+    public StepConfig retryWait(Duration v) { 
+        Objects.requireNonNull(v, "retryWait must not be null");
+        if (v.isNegative() || v.isZero()) {
+            throw new IllegalArgumentException("retryWait must be > 0");
+        }
+        retryWait.set(v); 
+        return this; 
+    }
     /**
-     * Sets the maximum number of concurrent operations allowed
-     * @param v the concurrency limit
+     * Sets whether to enable parallel processing for this step
+     * @param v true to enable parallel processing, false for sequential processing
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig concurrency(int v) { concurrency.set(v); return this; }
+    public StepConfig parallel(boolean v) { parallel = v; return this; }
+
     /**
-     * Sets the buffer capacity for handling backpressure
-     * @param v the backpressure buffer capacity
+     * Sets the backpressure buffer capacity
+     * @param v the buffer capacity
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig backpressureBufferCapacity(int v) { backpressureBufferCapacity.set(v); return this; }
-    /**
-     * Sets the number of items to batch together before processing
-     * @param v the batch size
-     * @return this StepConfig instance for method chaining
-     */
-    public StepConfig batchSize(int v) { batchSize.set(v); return this; }
-    /**
-     * Sets the maximum time to wait before processing a batch, even if batch size hasn't been reached
-     * @param v the batch timeout duration
-     * @return this StepConfig instance for method chaining
-     */
-    public StepConfig batchTimeout(Duration v) { batchTimeout.set(Objects.requireNonNull(v)); return this; }
-    /**
-     * Sets the strategy to use for handling backpressure
-     * @param v the backpressure strategy ("BUFFER", "DROP", etc.)
-     * @return this StepConfig instance for method chaining
-     */
-    public StepConfig backpressureStrategy(String v) { backpressureStrategy = v; return this; }
+    public StepConfig backpressureBufferCapacity(int v) { 
+        if (v <= 0) {
+            throw new IllegalArgumentException("backpressureBufferCapacity must be > 0");
+        }
+        backpressureBufferCapacity.set(v); 
+        return this; 
+    }
     /**
      * Sets whether to enable debug mode with additional logging
      * @param v true to enable debug mode, false to disable
@@ -186,11 +177,38 @@ public class StepConfig {
      */
     public StepConfig runWithVirtualThreads(boolean v) { runWithVirtualThreads = v; return this; }
     /**
+     * Sets whether to automatically persist step results to storage
+     * @param v true to enable auto persistence, false to disable
+     * @return this StepConfig instance for method chaining
+     */
+    public StepConfig autoPersist(boolean v) { autoPersist = v; return this; }
+    /**
+     * Sets the backpressure strategy to use when buffering items ("BUFFER", "DROP")
+     * @param v the backpressure strategy
+     * @return this StepConfig instance for method chaining
+     */
+    public StepConfig backpressureStrategy(String v) {
+        Objects.requireNonNull(v, "backpressureStrategy must not be null");
+        String norm = v.trim().toUpperCase();
+        if (!norm.equals("BUFFER") && !norm.equals("DROP")) {
+            throw new IllegalArgumentException("backpressureStrategy must be BUFFER or DROP");
+        }
+        backpressureStrategy = norm;
+        return this;
+    }
+    /**
      * Sets the maximum backoff duration when using exponential backoff
      * @param v the maximum backoff duration
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig maxBackoff(Duration v) { maxBackoff.set(Objects.requireNonNull(v)); return this; }
+    public StepConfig maxBackoff(Duration v) { 
+        Objects.requireNonNull(v, "maxBackoff must not be null");
+        if (v.isNegative() || v.isZero()) {
+            throw new IllegalArgumentException("maxBackoff must be > 0");
+        }
+        maxBackoff.set(v); 
+        return this; 
+    }
     /**
      * Sets whether to add jitter to backoff intervals
      * @param v true to enable jitter, false to disable
@@ -200,15 +218,16 @@ public class StepConfig {
 
     @Override
     public String toString() {
-        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, concurrency={2}, debug={3}, recoverOnFailure={4}, runWithVirtualThreads={5}, maxBackoff={6}, jitter={7}, autoPersist={8}'}'",
+        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, parallel={2}, debug={3}, recoverOnFailure={4}, maxBackoff={5}, jitter={6}, autoPersist={7}, backpressureBufferCapacity={8}, backpressureStrategy={9}'}'",
                 retryLimit(),
                 retryWait(),
-                concurrency(),
+                parallel,
                 debug,
                 recoverOnFailure,
-                runWithVirtualThreads,
                 maxBackoff(),
                 jitter,
-                autoPersist);
+                autoPersist,
+                backpressureBufferCapacity(),
+                backpressureStrategy());
     }
 }

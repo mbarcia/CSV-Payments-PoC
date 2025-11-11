@@ -40,9 +40,7 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
 
     List<O> applyList(I in);
 
-    default int concurrency() { return 1; }
-
-    default boolean runWithVirtualThreads() { return false; }
+	default boolean runWithVirtualThreads() { return false; }
 
     @Override
     default Multi<O> apply(Uni<I> inputUni) {
@@ -69,5 +67,20 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
                         LOG.debug("Blocking Step {} emitted item: {}", this.getClass().getSimpleName(), o);
                     }
                 });
+            })
+            .onFailure(t -> !(t instanceof NullPointerException)).retry()
+            .withBackOff(retryWait(), maxBackoff())
+            .withJitter(jitter() ? 0.5 : 0.0)
+            .atMost(retryLimit())
+            .onFailure().invoke(t -> {
+                if (debug()) {
+                    LOG.info(
+                        "Blocking Step {} completed all retries ({} attempts) with failure: {}",
+                        this.getClass().getSimpleName(),
+                        retryLimit(),
+                        t.getMessage()
+                    );
+                }
             });
-    }}
+    }
+}

@@ -28,13 +28,13 @@ import org.pipelineframework.csv.common.domain.AckPaymentSent;
 @Builder
 @JsonDeserialize(builder = PaymentStatusDto.PaymentStatusDtoBuilder.class)
 public class PaymentStatusDto {
-  public UUID id;
-  public String reference;
-  public String status;
-  public String message;
-  public BigDecimal fee;
-  public UUID ackPaymentSentId;
-  public AckPaymentSent ackPaymentSent;
+  UUID id;
+  String reference;
+  String status;
+  String message;
+  BigDecimal fee;
+  UUID ackPaymentSentId;
+  AckPaymentSent ackPaymentSent;
 
   // Lombok will generate the builder, but Jackson needs to know how to interpret it
   @JsonPOJOBuilder(withPrefix = "")

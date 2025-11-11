@@ -21,7 +21,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.smallrye.mutiny.Uni;
-import java.util.concurrent.Executors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -41,9 +40,7 @@ class PollAckPaymentSentReactiveServiceTest {
         MockitoAnnotations.openMocks(this);
         pollAckPaymentSentReactiveService =
                 new PollAckPaymentSentReactiveService(
-                        Executors.newVirtualThreadPerTaskExecutor(),
-                        paymentProviderService,
-                        paymentProviderConfig);
+                        paymentProviderService, paymentProviderConfig);
     }
 
     @Test

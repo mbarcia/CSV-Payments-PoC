@@ -40,15 +40,15 @@ public interface PipelineInitialConfig {
      * Base delay between retries in milliseconds.
      * @return retry delay in milliseconds
      */
-    @WithDefault("200")
+    @WithDefault("2000")
     Long retryWaitMs();
 
     /**
-     * Maximum concurrent operations.
-     * @return concurrency limit
+     * Enable parallel processing.
+     * @return true to enable parallel processing, false for sequential processing
      */
-    @WithDefault("4")
-    Integer concurrency();
+    @WithDefault("false")
+    Boolean parallel();
 
     /**
      * Enable debug logging.
@@ -87,8 +87,8 @@ public interface PipelineInitialConfig {
 
     /**
      * Enable automatic persistence of step inputs.
-     * @return true to enable auto-persistence, false otherwise
+     * @return true to enable auto-persistence, false otherwise (default)
      */
-    @WithDefault("true")
+    @WithDefault("false")
     Boolean autoPersist();
 }

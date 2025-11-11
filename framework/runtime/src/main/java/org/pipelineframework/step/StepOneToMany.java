@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 /** 1 -> N */
 public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, DeadLetterQueue<I, O> {
     Multi<O> applyOneToMany(I in);
-    
-    @Override
+
+	@Override
     default Multi<O> apply(Uni<I> input) {
         final Logger LOG = LoggerFactory.getLogger(this.getClass());
         final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
@@ -65,6 +65,16 @@ public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, Dead
         .onFailure(t -> !(t instanceof NullPointerException)).retry()
         .withBackOff(retryWait(), maxBackoff())
         .withJitter(jitter() ? 0.5 : 0.0)
-        .atMost(retryLimit());
+        .atMost(retryLimit())
+        .onFailure().invoke(t -> {
+            if (debug()) {
+                LOG.info(
+                    "Step {} completed all retries ({} attempts) with failure: {}",
+                    this.getClass().getSimpleName(),
+                    retryLimit(),
+                    t.getMessage()
+                );
+            }
+        });
     }
 }

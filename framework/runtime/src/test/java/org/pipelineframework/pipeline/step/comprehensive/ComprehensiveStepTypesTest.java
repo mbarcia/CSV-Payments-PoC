@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.pipelineframework.PipelineRunner;
 import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
+import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.pipeline.step.collection.example.ExpandPaymentCollectionStep;
 import org.pipelineframework.pipeline.step.future.example.ProcessPaymentFutureStep;
 import org.pipelineframework.step.ConfigurableStep;
@@ -45,17 +46,17 @@ public class ComprehensiveStepTypesTest {
 
         // Create different types of steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        LiveStepConfig validateConfig = new LiveStepConfig(new PipelineConfig());
+        LiveStepConfig validateConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
         validateConfig.overrides().autoPersist(false);
         validateStep.initialiseWithConfig(validateConfig);
 
         ExpandPaymentCollectionStep expandStep = new ExpandPaymentCollectionStep();
-        LiveStepConfig expandConfig = new LiveStepConfig(new PipelineConfig());
+        LiveStepConfig expandConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
         expandConfig.overrides().autoPersist(false);
         expandStep.initialiseWithConfig(expandConfig);
 
         ProcessPaymentFutureStep processStep = new ProcessPaymentFutureStep();
-        LiveStepConfig processConfig = new LiveStepConfig(new PipelineConfig());
+        LiveStepConfig processConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
         processConfig.overrides().autoPersist(false);
         processStep.initialiseWithConfig(processConfig);
 

@@ -14,31 +14,11 @@
  * limitations under the License.
  */
 
-package org.pipelineframework.domain;
+package org.pipelineframework.service;
 
-import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
-import jakarta.persistence.Column;
-import jakarta.persistence.Id;
-import jakarta.persistence.MappedSuperclass;
-import java.util.UUID;
+import io.smallrye.mutiny.Multi;
 
-@MappedSuperclass
-public abstract class BaseEntity extends PanacheEntityBase {
-
-  @Id
-  @Column(name = "id", updatable = false, nullable = false)
-  public UUID id;
-
-  public BaseEntity() {
-    id = UUID.randomUUID();
-  }
-  
-  // Getters and setters
-  public UUID getId() {
-    return id;
-  }
-  
-  public void setId(UUID id) {
-    this.id = id;
-  }
+@FunctionalInterface
+public interface ReactiveBidirectionalStreamingService<T, S> {
+  Multi<S> process(Multi<T> processableObj);
 }

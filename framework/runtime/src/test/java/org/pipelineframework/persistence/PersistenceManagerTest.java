@@ -55,9 +55,6 @@ class PersistenceManagerTest {
         } catch (Exception e) {
             fail("Failed to inject mock providerInstance: " + e.getMessage());
         }
-
-        // Manually call PostConstruct
-        persistenceManager.init();
     }
 
     @Test

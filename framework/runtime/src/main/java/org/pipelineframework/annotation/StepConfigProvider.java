@@ -16,7 +16,6 @@
 
 package org.pipelineframework.annotation;
 
-import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.pipelineframework.config.StepConfig;
@@ -43,13 +42,13 @@ public class StepConfigProvider {
             if (annotation != null) {
                 // Build configuration from the annotation
                 StepConfig config = new StepConfig();
-                config.autoPersist(annotation.autoPersist())
-                       .debug(annotation.debug())
-                       .recoverOnFailure(annotation.recoverOnFailure())
-                       .backpressureBufferCapacity(annotation.backpressureBufferCapacity())
-                       .batchSize(annotation.batchSize())
-                       .batchTimeout(Duration.ofMillis(annotation.batchTimeoutMs()))
-                       .backpressureStrategy(annotation.backpressureStrategy());
+                config
+                    .autoPersist(annotation.autoPersist())
+                    .debug(annotation.debug())
+                    .recoverOnFailure(annotation.recoverOnFailure())
+                    .backpressureBufferCapacity(annotation.backpressureBufferCapacity())
+                    .backpressureStrategy(annotation.backpressureStrategy())
+                    .parallel(annotation.parallel());
                 return config;
             } else {
                 // If no annotation, return a default config

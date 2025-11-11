@@ -33,7 +33,7 @@ const httpsAxios = axios.create({
 // Service endpoints - going through Kong API Gateway
 const INPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/process-csv-payments-input-reactive/process';
 const SEND_PAYMENT_SVC = 'https://localhost:8843/api/v1/send-payment-record-reactive/process';
-const PROCESS_ACK_PAYMENT_SENT_SVC = 'https://localhost:8843/api/v1/payments-processing/process';
+const PROCESS_ACK_PAYMENT_SENT_SVC = 'https://localhost:8843/api/v1/process-ack-payment-sent-reactive/process';
 const PAYMENT_STATUS_SVC = 'https://localhost:8843/api/v1/process-payment-status-reactive/process';
 const OUTPUT_PROCESSING_SVC = 'https://localhost:8843/api/v1/process-csv-payments-output-file-reactive/process';
 

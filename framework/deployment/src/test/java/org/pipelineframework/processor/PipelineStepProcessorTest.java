@@ -235,8 +235,9 @@ class PipelineStepProcessorTest {
         "com.example.foo.domain.bar.Type, com.example.foo.dto.bar.TypeDto", // Nested domain
         // packages
         "CustomerInput, CustomerInputDto", // No package
-        "com.example.domain, com.example.Dto", // Edge case with class named domain
-        "com.example.common.domain, com.example.common.Dto" // Edge case with class named domain
+        "com.example.domain, com.example.dto.domainDto", // Edge case with class named domain
+        "com.example.common.domain, com.example.common.dto.domainDto" // Edge case with class named
+        // domain
     })
     void testGetDtoType(String domainType, String expectedDtoType) {
         // Create a proper TypeMirror mock that returns the domainType when toString is called

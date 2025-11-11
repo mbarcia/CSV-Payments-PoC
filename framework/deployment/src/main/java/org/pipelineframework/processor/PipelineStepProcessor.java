@@ -107,22 +107,25 @@ public class PipelineStepProcessor extends AbstractProcessor {
                     ", restEnabled=" + restEnabled);
                 
                 if (restEnabled) {
-                    // Check if service implements ReactiveService, ReactiveStreamingService, or ReactiveStreamingClientService
+                    // Check if service implements ReactiveService, ReactiveStreamingService, ReactiveStreamingClientService, or ReactiveBidirectionalStreamingService
                     boolean isReactiveService = implementsInterface(serviceClass, "org.pipelineframework.service.ReactiveService");
                     boolean isReactiveStreamingService = implementsInterface(serviceClass, "org.pipelineframework.service.ReactiveStreamingService");
                     boolean isReactiveStreamingClientService = implementsInterface(serviceClass, "org.pipelineframework.service.ReactiveStreamingClientService");
+                    boolean isReactiveBidirectionalStreamingService = implementsInterface(serviceClass, "org.pipelineframework.service.ReactiveBidirectionalStreamingService");
                     
-                    if (!isReactiveService && !isReactiveStreamingService && !isReactiveStreamingClientService) {
+                    if (!isReactiveService && !isReactiveStreamingService && !isReactiveStreamingClientService && !isReactiveBidirectionalStreamingService) {
                         processingEnv.getMessager().printMessage(Diagnostic.Kind.WARNING, 
-                            "Service " + serviceClass.getSimpleName() + " has restEnabled=true but does not implement ReactiveService, ReactiveStreamingService, or ReactiveStreamingClientService, skipping REST resource generation");
+                            "Service " + serviceClass.getSimpleName() + " has restEnabled=true but does not implement ReactiveService, ReactiveStreamingService, ReactiveStreamingClientService, or ReactiveBidirectionalStreamingService, skipping REST resource generation");
                     } else {
+                        String serviceType = isReactiveService ? "ReactiveService" : 
+                                           isReactiveStreamingService ? "ReactiveStreamingService" : 
+                                           isReactiveStreamingClientService ? "ReactiveStreamingClientService" : 
+                                           "ReactiveBidirectionalStreamingService";
                         processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, 
                             "Generating REST resource for " + serviceClass.getSimpleName() + 
-                            " (type: " + (isReactiveService ? "ReactiveService" : 
-                                          isReactiveStreamingService ? "ReactiveStreamingService" : 
-                                          "ReactiveStreamingClientService") + ")");
+                            " (type: " + serviceType + ")");
                         try {
-                            generateRestResource(serviceClass, pipelineStep, isReactiveService, isReactiveStreamingService, isReactiveStreamingClientService);
+                            generateRestResource(serviceClass, pipelineStep, isReactiveService, isReactiveStreamingService, isReactiveStreamingClientService, isReactiveBidirectionalStreamingService);
                         } catch (IOException e) {
                             processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
                                 "Failed to generate REST resource for " + serviceClass.getSimpleName() + ": " + e.getMessage());
@@ -166,11 +169,23 @@ public class PipelineStepProcessor extends AbstractProcessor {
         String serviceClassName = serviceClass.getSimpleName().toString();
         String clientStepClassName = serviceClassName.replace("Service", "") + CLIENT_STEP_SUFFIX;
         
-        // Create the class with ApplicationScoped annotation for CDI
+        // Create the class with Dependent annotation for CDI
         TypeSpec.Builder clientStepBuilder = TypeSpec.classBuilder(clientStepClassName)
             .addModifiers(Modifier.PUBLIC)
-            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.enterprise.context", "ApplicationScoped"))
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.enterprise.context", "Dependent"))
                 .build());
+
+        // Add service class field, so we can recover the annotation at runtime
+        FieldSpec serviceClassField = FieldSpec.builder(
+                        Class.class,
+                        "ORIGINAL_SERVICE_CLASS",
+                        Modifier.PUBLIC,
+                        Modifier.STATIC,
+                        Modifier.FINAL)
+                .initializer("$T.class", serviceClass)
+                .build();
+
+        clientStepBuilder.addField(serviceClassField);
 
         // Add necessary imports as field declarations or annotations
         if (grpcStubType != null && !grpcStubType.toString().equals("void")) {
@@ -281,6 +296,19 @@ public class PipelineStepProcessor extends AbstractProcessor {
                 .build();
                 
             clientStepBuilder.addMethod(applyMethod);
+        } else if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepManyToMany")) {
+            // For ManyToMany: Multi<Input> -> Multi<Output> (ManyToMany interface has applyTransform(Multi<Input> in) method)
+            MethodSpec applyMethod = MethodSpec.methodBuilder("applyTransform")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(ParameterizedTypeName.get(ClassName.get(Multi.class), 
+                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
+                .addParameter(ParameterizedTypeName.get(ClassName.get(Multi.class), 
+                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT), "inputs")
+                .addStatement("return this.grpcClient.remoteProcess(inputs)")
+                .build();
+                
+            clientStepBuilder.addMethod(applyMethod);
         } else {
             // Default to OneToOne: Input -> Uni<Output> (StepOneToOne interface has applyOneToOne(Input in) method)
             MethodSpec applyMethod = MethodSpec.methodBuilder("applyOneToOne")
@@ -341,7 +369,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
         TypeMirror grpcImplType = getAnnotationValue(annotationMirror, "grpcImpl");
         String serviceName = serviceClass.getQualifiedName().toString();
         TypeMirror backendType = getAnnotationValue(annotationMirror, "backendType");
-        boolean autoPersistenceEnabled = getAnnotationValueAsBoolean(annotationMirror, "autoPersist", true);
+        boolean autoPersistenceEnabled = getAnnotationValueAsBoolean(annotationMirror, "autoPersist", false);
 
         // Use the same package as the original service but with a ".pipeline" suffix
         String fqcn = serviceClass.getQualifiedName().toString();
@@ -457,8 +485,11 @@ public class PipelineStepProcessor extends AbstractProcessor {
         } else if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepManyToOne")) {
             // For ManyToOne: streaming input -> unary output
             grpcAdapterClassName = ClassName.get("org.pipelineframework.grpc", "GrpcServiceClientStreamingAdapter");
+        } else if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepManyToMany")) {
+            // For ManyToMany: streaming input -> streaming output (bidirectional)
+            grpcAdapterClassName = ClassName.get("org.pipelineframework.grpc", "GrpcServiceBidirectionalStreamingAdapter");
         } else {
-            // Default to GrpcReactiveServiceAdapter for OneToOne, ManyToMany, etc.
+            // Default to GrpcReactiveServiceAdapter for OneToOne
             grpcAdapterClassName = ClassName.get("org.pipelineframework.grpc", "GrpcReactiveServiceAdapter");
         }
 
@@ -573,6 +604,60 @@ public class PipelineStepProcessor extends AbstractProcessor {
                 .addStatement("return adapter.remoteProcess(request)")
                 .build();
             grpcServiceBuilder.addMethod(remoteProcessMethod);
+        } else if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepManyToMany")) {
+            // For bidirectional streaming (streaming input, streaming output)
+            TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
+                .superclass(ParameterizedTypeName.get(grpcAdapterClassName, 
+                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
+                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
+                    inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
+                    outputType != null ? ClassName.get(outputType) : ClassName.OBJECT))
+                .addMethod(MethodSpec.methodBuilder("getService")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get(serviceClass))
+                    .addStatement("return $N", "service")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("fromGrpc")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(inputType != null ? ClassName.get(inputType) : ClassName.OBJECT)
+                    .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "grpcIn")
+                    .addStatement("return $N.fromGrpcFromDto(grpcIn)", "inboundMapper")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("toGrpc")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT)
+                    .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
+                    .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
+                    .build())
+                .addMethod(MethodSpec.methodBuilder("getStepConfig")
+                    .addAnnotation(Override.class)
+                    .addModifiers(Modifier.PROTECTED)
+                    .returns(ClassName.get("org.pipelineframework.config", "StepConfig"))
+                    .addStatement("return new org.pipelineframework.config.StepConfig().autoPersist($L)", autoPersistenceEnabled)
+                    .build())
+                .build();
+
+            MethodSpec remoteProcessMethod = MethodSpec.methodBuilder("remoteProcess")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PUBLIC)
+                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"), 
+                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
+                .addParameter(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"), 
+                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT), "request")
+                .addStatement("$T adapter = $L", 
+                    ParameterizedTypeName.get(grpcAdapterClassName, 
+                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
+                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
+                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
+                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT), 
+                    inlineAdapter)
+                .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
+                .addStatement("return adapter.remoteProcess(request)")
+                .build();
+            grpcServiceBuilder.addMethod(remoteProcessMethod);
         } else {
             // Default to unary (unary input, unary output) - e.g., ProcessPaymentStatusGrpcService
             TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
@@ -673,7 +758,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
      * @param isReactiveStreamingClientService true if the service implements ReactiveStreamingClientService
      * @throws IOException if writing the generated Java source file fails
      */
-    protected void generateRestResource(TypeElement serviceClass, PipelineStep pipelineStep, boolean isReactiveService, boolean isReactiveStreamingService, boolean isReactiveStreamingClientService) throws IOException {
+    protected void generateRestResource(TypeElement serviceClass, PipelineStep pipelineStep, boolean isReactiveService, boolean isReactiveStreamingService, boolean isReactiveStreamingClientService, boolean isReactiveBidirectionalStreamingService) throws IOException {
         // Get the annotation mirror to extract TypeMirror values
         AnnotationMirror annotationMirror = getAnnotationMirror(serviceClass, PipelineStep.class);
         if (annotationMirror == null) {
@@ -724,15 +809,6 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .addMember("value", "$S", servicePath)
             .build());
 
-        // Add @Produces and @Consumes annotations
-        resourceBuilder.addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Produces"))
-            .addMember("value", "$T.$L", ClassName.get("jakarta.ws.rs.core", "MediaType"), "APPLICATION_JSON")
-            .build());
-
-        resourceBuilder.addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Consumes"))
-            .addMember("value", "$T.$L", ClassName.get("jakarta.ws.rs.core", "MediaType"), "APPLICATION_JSON")
-            .build());
-
         // Add service field with @Inject
         FieldSpec serviceField = FieldSpec.builder(
             ClassName.get(serviceClass),
@@ -745,7 +821,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
         String inboundMapperFieldName = "inboundMapper";
         String outboundMapperFieldName = "outboundMapper";
         
-        if (inboundMapperType != null && !inboundMapperType.toString().equals("void")) {
+        if (!inboundMapperType.toString().equals("void")) {
             // Create field for inbound mapper
             String inboundMapperPackage = inboundMapperType.toString().substring(0, inboundMapperType.toString().lastIndexOf('.'));
             String inboundMapperSimpleName = inboundMapperType.toString().substring(inboundMapperType.toString().lastIndexOf('.') + 1);
@@ -762,7 +838,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
             resourceBuilder.addField(inboundMapperField);
         }
 
-        if (outboundMapperType != null && !outboundMapperType.toString().equals("void")) {
+        if (!outboundMapperType.toString().equals("void")) {
             // Create field for outbound mapper
             String outboundMapperPackage = outboundMapperType.toString().substring(0, outboundMapperType.toString().lastIndexOf('.'));
             String outboundMapperSimpleName = outboundMapperType.toString().substring(outboundMapperType.toString().lastIndexOf('.') + 1);
@@ -778,6 +854,17 @@ public class PipelineStepProcessor extends AbstractProcessor {
                 .build();
             resourceBuilder.addField(outboundMapperField);
         }
+
+        // Add logger field to the resource class (before process method)
+        FieldSpec loggerField = FieldSpec.builder(
+                        ClassName.get("org.jboss.logging", "Logger"),
+                        "logger")
+                .addModifiers(Modifier.PRIVATE, Modifier.STATIC, Modifier.FINAL)
+                .initializer("$T.getLogger($L.class)",
+                        ClassName.get("org.jboss.logging", "Logger"),
+                        resourceClassName)
+                .build();
+        resourceBuilder.addField(loggerField);
 
         // Determine input and output DTO types
         TypeName inputDtoClassName;
@@ -817,6 +904,11 @@ public class PipelineStepProcessor extends AbstractProcessor {
             processMethod = createReactiveStreamingClientServiceProcessMethod(
                 inputDtoClassName, outputDtoClassName, 
                 inboundMapperFieldName, outboundMapperFieldName, inputType, outputType);
+        } else if (isReactiveBidirectionalStreamingService) {
+            // For ReactiveBidirectionalStreamingService: Multi<input> -> Multi<output>
+            processMethod = createReactiveBidirectionalStreamingServiceProcessMethod(
+                inputDtoClassName, outputDtoClassName, 
+                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType);
         } else {
             // For regular ReactiveService: input -> output
             processMethod = createReactiveServiceProcessMethod(
@@ -834,15 +926,18 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .returns(ClassName.get("org.jboss.resteasy.reactive", "RestResponse"))
             .addParameter(Exception.class, "ex")
             .beginControlFlow("if (ex instanceof $T)", IllegalArgumentException.class)
+                .addStatement("logger.warn(\"Invalid request\", ex)")
                 .addStatement("return $T.status($T.Status.BAD_REQUEST, \"Invalid request\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
                 ClassName.get("jakarta.ws.rs.core", "Response"))
             .nextControlFlow("else if (ex instanceof $T)", RuntimeException.class)
-            .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
+                .addStatement("logger.error(\"Unexpected error processing request\", ex)")
+                .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
                 ClassName.get("jakarta.ws.rs.core", "Response"))
             .nextControlFlow("else")
-            .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
+                .addStatement("logger.error(\"Unexpected error processing request\", ex)")
+                .addStatement("return $T.status($T.Status.INTERNAL_SERVER_ERROR, \"An unexpected error occurred\")",
                 ClassName.get("org.jboss.resteasy.reactive", "RestResponse"),
                 ClassName.get("jakarta.ws.rs.core", "Response"))
             .endControlFlow()
@@ -1006,6 +1101,63 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
     
     /**
+     * Creates the REST resource "process" method for a bidirectional reactive streaming service endpoint.
+     * <p>
+     * The generated method is a public POST mapped to "/process" that:
+     * - accepts a Multi<input DTO>,
+     * - converts it to the domain input using the provided inbound mapper,
+     * - delegates to domainService.process(...) which returns Multi<Output>,
+     * - maps the resulting domain outputs to DTOs using the outbound mapper,
+     * - and returns a Multi<OutputDto> containing the mapped results.
+     *
+     * @param inputDtoClassName the DTO type used as the input parameter (for the Multi)
+     * @param outputDtoClassName the DTO type returned inside the Multi
+     * @param inboundMapperFieldName the injected field name of the inbound mapper used to convert DTO -> domain
+     * @param outboundMapperFieldName the injected field name of the outbound mapper used to convert domain -> DTO
+     * @param inputType the domain input type (used to reference the converted domain parameter)
+     * @param outputType the domain output type (used for type references when mapping the result)
+     * @return a MethodSpec representing the generated `process` method that returns `Multi<OutputDto>`
+     */
+    private MethodSpec createReactiveBidirectionalStreamingServiceProcessMethod(
+            TypeName inputDtoClassName, TypeName outputDtoClassName,
+            String inboundMapperFieldName, String outboundMapperFieldName,
+            TypeMirror inputType, TypeMirror outputType) {
+        
+        TypeName multiInputDto = ParameterizedTypeName.get(ClassName.get(Multi.class), inputDtoClassName);
+        TypeName multiOutputDto = ParameterizedTypeName.get(ClassName.get(Multi.class), outputDtoClassName);
+
+        MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("process")
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "POST"))
+                .build())
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Path"))
+                .addMember("value", "$S", "/process")
+                .build())
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Consumes"))
+                .addMember("value", "$S",  "application/x-ndjson")
+                .build())
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.ws.rs", "Produces"))
+                .addMember("value", "$S",  "application/x-ndjson")
+                .build())
+            .addAnnotation(AnnotationSpec.builder(ClassName.get("org.jboss.resteasy.reactive", "RestStreamElementType"))
+                .addMember("value", "$S", "application/json")
+                .build())
+            .addModifiers(Modifier.PUBLIC)
+            .returns(multiOutputDto)
+            .addParameter(multiInputDto, "inputDtos");
+
+        // Add the implementation code
+        methodBuilder.addStatement("$T<$T> domainInputs = inputDtos.map(input -> $L.fromDto(input))", 
+                ClassName.get(Multi.class),
+                inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                inboundMapperFieldName != null ? inboundMapperFieldName : "/* mapper missing */");
+
+        methodBuilder.addStatement("return domainService.process(domainInputs).map(output -> $L.toDto(output))", 
+                outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */");
+
+        return methodBuilder.build();
+    }
+    
+    /**
      * Checks if a service class implements the ReactiveService interface.
      * 
      * @param serviceClass the TypeElement representing the service class
@@ -1132,8 +1284,9 @@ public class PipelineStepProcessor extends AbstractProcessor {
             // Ensure the package has .dto in it if it doesn't already
             if (!modifiedPackageName.contains(".dto")) {
                 modifiedPackageName = modifiedPackageName + ".dto";
+            } else {
+                return modifiedPackageName + ".Dto";
             }
-            return modifiedPackageName + ".Dto";
         }
         
         return modifiedPackageName.isEmpty() ? simpleName + "Dto" : modifiedPackageName + "." + simpleName + "Dto";

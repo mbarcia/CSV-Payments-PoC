@@ -32,21 +32,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @PipelineStep(
-        order = 4,
-        inputType = AckPaymentSent.class,
-        outputType = PaymentStatus.class,
-        inputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.AckPaymentSent.class,
-        outputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.PaymentStatus.class,
-        stepType = org.pipelineframework.step.StepOneToOne.class,
-        backendType = GrpcReactiveServiceAdapter.class,
-        grpcStub = MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub.class,
-        grpcImpl = MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase.class,
-        inboundMapper = AckPaymentSentMapper.class,
-        outboundMapper = PaymentStatusMapper.class,
-        grpcClient = "process-ack-payment-sent",
-        restEnabled = true,
-        autoPersist = true,
-        debug = true
+    order = 4,
+    inputType = AckPaymentSent.class,
+    outputType = PaymentStatus.class,
+    inputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.AckPaymentSent.class,
+    outputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.PaymentStatus.class,
+    stepType = org.pipelineframework.step.StepOneToOne.class,
+    backendType = GrpcReactiveServiceAdapter.class,
+    grpcStub = MutinyProcessAckPaymentSentServiceGrpc.MutinyProcessAckPaymentSentServiceStub.class,
+    grpcImpl = MutinyProcessAckPaymentSentServiceGrpc.ProcessAckPaymentSentServiceImplBase.class,
+    inboundMapper = AckPaymentSentMapper.class,
+    outboundMapper = PaymentStatusMapper.class,
+    grpcClient = "process-ack-payment-sent",
+    restEnabled = true,
+    autoPersist = false,
+    parallel = true,
+    debug = true
 )
 @ApplicationScoped
 @Getter
@@ -66,21 +67,11 @@ public class ProcessAckPaymentSentReactiveService
 
   @Override
   public Uni<PaymentStatus> process(AckPaymentSent ackPaymentSent) {
-    return process(ackPaymentSent, true); // Default to using virtual threads
-  }
-
-  /**
-   * Process with optional virtual thread execution
-   * @param ackPaymentSent the payment to process
-   * @param useVirtualThreads whether to use virtual threads (false for REST calls)
-   * @return Uni with the payment status
-   */
-  public Uni<PaymentStatus> process(AckPaymentSent ackPaymentSent, boolean useVirtualThreads) {
     LOG.debug("Processing AckPaymentSent in ProcessAckPaymentSentReactiveService: id={}, conversationId={}, paymentRecordId={}", 
         ackPaymentSent.getId(), ackPaymentSent.getConversationId(), ackPaymentSent.getPaymentRecordId());
     
-    // Call the service with the appropriate threading option
-    Uni<PaymentStatus> result = pollAckPaymentSentService.process(ackPaymentSent, useVirtualThreads);
+    // Call the service with the new unified method
+    Uni<PaymentStatus> result = pollAckPaymentSentService.process(ackPaymentSent);
     
     LOG.debug("Returning Uni from ProcessAckPaymentSentReactiveService");
     return result

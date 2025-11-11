@@ -25,7 +25,7 @@ import lombok.Value;
 @Builder
 @JsonDeserialize(builder = CsvPaymentsInputStreamDto.CsvPaymentsInputStreamDtoBuilder.class)
 public class CsvPaymentsInputStreamDto {
-  public String source;
+  String source;
 
   // Lombok will generate the builder, but Jackson needs to know how to interpret it
   @JsonPOJOBuilder(withPrefix = "")

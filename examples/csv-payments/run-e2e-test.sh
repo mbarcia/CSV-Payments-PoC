@@ -39,19 +39,7 @@ SERVICES_STARTED=false
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
-TEST_OUTPUT_DIR="$PROJECT_ROOT/input-csv-file-processing-svc/target/multi-file-e2e-test-output"
-
-echo "Starting multi-file end-to-end integration test..."
-
-# Create test output directory
-echo "Creating test output directory: $TEST_OUTPUT_DIR"
-mkdir -p "$TEST_OUTPUT_DIR"
-
-# Cleanup any previous test runs
-echo "Cleaning up previous test runs..."
-pkill -f "quarkus:dev" || true
-rm -f "$SCRIPT_DIR"/*.pid
-rm -f "$SCRIPT_DIR"/*.log
+TEST_OUTPUT_DIR="$PROJECT_ROOT/input-csv-file-processing-svc/multi-file-e2e-test-output"
 
 # Correctly detect Docker for the dev services
 detect_docker() {
@@ -446,6 +434,18 @@ verify_database_persistence() {
 
 # Main execution flow
 {
+    echo "Starting multi-file end-to-end integration test..."
+
+    # Cleanup any previous test runs
+    echo "Cleaning up previous test runs..."
+    pkill -f "quarkus:dev" || true
+    rm -f "$SCRIPT_DIR"/*.pid
+    rm -f "$SCRIPT_DIR"/*.log
+
+    # Create test output directory
+    echo "Creating test output directory: $TEST_OUTPUT_DIR"
+    rm -rf "$TEST_OUTPUT_DIR"
+    mkdir -p "$TEST_OUTPUT_DIR"
     # Create test CSV files
     create_test_csv_files
     

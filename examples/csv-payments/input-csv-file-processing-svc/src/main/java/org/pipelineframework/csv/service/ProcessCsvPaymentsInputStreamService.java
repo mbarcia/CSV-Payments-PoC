@@ -39,7 +39,7 @@ import org.slf4j.MDC;
  * This converts a single input file into multiple payment records.
  */
 @PipelineStep(
-    order = 0,
+    order = 0, // disabled
     autoPersist = true,
     debug = true,
     recoverOnFailure = true,
@@ -92,11 +92,12 @@ public class ProcessCsvPaymentsInputStreamService
               return Multi.createFrom()
                   .iterable(iterable)
                   .runSubscriptionOn(executor)
+                  .onItem()
                   .invoke(
                       rec -> {
                          MDC.put("serviceId", serviceId);
                         logger.info("Executed command on {} --> {}", input.getSourceName(), rec);
-                         MDC.clear();
+                         MDC.remove("serviceId");
                       });
             }));
   }

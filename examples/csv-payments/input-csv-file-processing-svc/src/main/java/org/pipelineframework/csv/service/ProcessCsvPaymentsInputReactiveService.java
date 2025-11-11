@@ -50,8 +50,9 @@ import org.slf4j.MDC;
     inboundMapper = CsvPaymentsInputFileMapper.class,
     outboundMapper = PaymentRecordMapper.class,
     grpcClient = "process-csv-payments-input-file",
-    restEnabled = true,
     autoPersist = true,
+    parallel = true,
+    backpressureBufferCapacity = 10000, // the default is only 128
     debug = true
 )
 @ApplicationScoped
@@ -72,35 +73,46 @@ public class ProcessCsvPaymentsInputReactiveService
 
     return Multi.createFrom()
         .deferred(
-            Unchecked.supplier(() -> {
-              try {
-                var csvReader =
-                    new CsvToBeanBuilder<PaymentRecord>(input.openReader())
-                        .withType(PaymentRecord.class)
-                        .withMappingStrategy(input.veryOwnStrategy())
-                        .withSeparator(',')
-                        .withIgnoreLeadingWhiteSpace(true)
-                        .withIgnoreEmptyLine(true)
-                        .build();
+            Unchecked.supplier(
+                () -> {
+                  try {
+                    var reader = input.openReader();
+                    var csvReader =
+                        new CsvToBeanBuilder<PaymentRecord>(reader)
+                            .withType(PaymentRecord.class)
+                            .withMappingStrategy(input.veryOwnStrategy())
+                            .withSeparator(',')
+                            .withIgnoreLeadingWhiteSpace(true)
+                            .withIgnoreEmptyLine(true)
+                            .build();
 
-                String serviceId = this.getClass().toString();
+                    String serviceId = this.getClass().toString();
 
-                // Lazy + typed
-                Iterator<PaymentRecord> iterator = csvReader.iterator();
-                Iterable<PaymentRecord> iterable = () -> iterator;
+                    // Lazy + typed
+                    Iterator<PaymentRecord> iterator = csvReader.iterator();
+                    Iterable<PaymentRecord> iterable = () -> iterator;
 
-                return Multi.createFrom()
-                    .iterable(iterable)
-                    .runSubscriptionOn(executor)
-                    .invoke(
-                        rec -> {
-                          MDC.put("serviceId", serviceId);
-                          logger.info("Executed command on {} --> {}", input.getSourceName(), rec);
-                          MDC.clear();
+                    return Multi.createFrom()
+                        .iterable(iterable)
+                        .onItem()
+                        .invoke(
+                            rec -> {
+                              MDC.put("serviceId", serviceId);
+                              logger.info(
+                                  "Executed command on {} --> {}", input.getSourceName(), rec);
+                              MDC.remove("serviceId");
+                        })
+                        .onTermination()
+                        .invoke(() -> {
+                          try {
+                            reader.close();
+                          } catch (IOException e) {
+                            logger.warn("Failed to close CSV reader", e);
+                          }
                         });
-              } catch (IOException e) {
-                throw new RuntimeException("CSV processing error", e);
-              }
-            }));
+                  } catch (IOException e) {
+                    throw new RuntimeException("CSV processing error", e);
+                  }
+                }));
   }
 }

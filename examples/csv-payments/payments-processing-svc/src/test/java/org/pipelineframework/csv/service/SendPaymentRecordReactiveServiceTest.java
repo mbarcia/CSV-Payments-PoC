@@ -16,16 +16,14 @@
 
 package org.pipelineframework.csv.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import io.smallrye.mutiny.Uni;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import io.vertx.mutiny.core.Vertx;
+import java.util.concurrent.Callable;
+import org.junit.jupiter.api.*;
+import org.mockito.*;
 import org.pipelineframework.csv.common.domain.AckPaymentSent;
 import org.pipelineframework.csv.common.domain.PaymentRecord;
 import org.pipelineframework.csv.common.mapper.SendPaymentRequestMapper;
@@ -33,14 +31,28 @@ import org.pipelineframework.csv.common.mapper.SendPaymentRequestMapper;
 class SendPaymentRecordReactiveServiceTest {
 
     @Mock private PaymentProviderServiceMock paymentProviderServiceMock;
-
     @Mock private PaymentRecord paymentRecord;
+    @Mock private Vertx vertx; // 👈 mock Vertx itself
 
     @InjectMocks private SendPaymentRecordReactiveService sendPaymentRecordReactiveService;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+
+        // Make executeBlocking immediately run the callable and return a succeeded Uni
+        when(vertx.executeBlocking(any(Callable.class)))
+                .thenAnswer(
+                        invocation -> {
+                            Callable<?> callable = invocation.getArgument(0);
+                            try {
+                                Object result = callable.call();
+                                // Mutiny Vertx returns io.smallrye.mutiny.Uni<T>
+                                return Uni.createFrom().item(result);
+                            } catch (Exception e) {
+                                return Uni.createFrom().failure(e);
+                            }
+                        });
     }
 
     @Test
@@ -56,6 +68,6 @@ class SendPaymentRecordReactiveServiceTest {
         Uni<AckPaymentSent> result = sendPaymentRecordReactiveService.process(paymentRecord);
 
         // Then
-        result.subscribe().with(ack -> assertEquals(expectedAck, ack));
+        result.subscribe().with(ack -> Assertions.assertEquals(expectedAck, ack));
     }
 }

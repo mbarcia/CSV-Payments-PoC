@@ -25,6 +25,7 @@ import {{basePackage}}.common.domain.{{firstInputTypeName}};
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+import java.util.concurrent.Callable;
 
 /**
  * Main application class for the orchestrator service.
@@ -33,9 +34,13 @@ import picocli.CommandLine.Option;
 @Command(name = "orchestrator", mixinStandardHelpOptions = true, version = "1.0.0",
          description = "{{appName}} Orchestrator Service")
 @Dependent
-public class OrchestratorApplication implements QuarkusApplication {
+public class OrchestratorApplication implements QuarkusApplication, Callable<Integer> {
 
-    @Option(names = {"-i", "--input"}, description = "Input value for the pipeline", required = true)
+    @Option(
+        names = {"-i", "--input"}, 
+        description = "Input value for the pipeline",
+        defaultValue = ""
+    )
     String input;
 
     @Inject
@@ -47,21 +52,22 @@ public class OrchestratorApplication implements QuarkusApplication {
 
     @Override
     public int run(String... args) {
-        CommandLine cmd = new CommandLine(this);
-        cmd.parseArgs(args);
-
-        if (input != null) {
-            executePipelineWithInput(input);
-            return 0; // Success exit code
-        } else {
-            System.err.println("Input parameter is required");
-            return 1; // Error exit code
-        }
+        return new CommandLine(this).execute(args);
     }
 
-    // Execute the pipeline when arguments are properly parsed
-    private void executePipelineWithInput(String input) {
-        Multi<{{firstInputTypeName}}> inputMulti = getInputMulti(input);
+    public Integer call() {
+        // Use command line option if provided, otherwise fall back to environment variable
+        String actualInput = input;
+        if (actualInput == null || actualInput.trim().isEmpty()) {
+            actualInput = System.getenv("PIPELINE_INPUT");
+        }
+        
+        if (actualInput == null || actualInput.trim().isEmpty()) {
+            System.err.println("Input parameter is required");
+            return CommandLine.ExitCode.USAGE;
+        }
+        
+        Multi<{{firstInputTypeName}}> inputMulti = getInputMulti(actualInput);
 
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti)
@@ -69,6 +75,7 @@ public class OrchestratorApplication implements QuarkusApplication {
             .await().indefinitely();
 
         System.out.println("Pipeline execution completed");
+        return CommandLine.ExitCode.OK;
     }
 
     // This method needs to be implemented by the user after template generation

@@ -22,7 +22,8 @@ The Pipeline Framework uses a centralized version management system to ensure co
 
 1. **Single Source of Truth**: The version is defined in the root POM (`pom.xml`) as the `<pipeline.framework.version>` property
 2. **Module References**: All other POM files reference this property instead of hardcoding versions
-3. **Updating Versions**: To update the version, change it only in the root POM
+3. **Build-Time Resolution**: The Flatten Maven Plugin resolves property references to literal values during the build process
+4. **Updating Versions**: To update the version, change it only in the root POM
 
 ### Version Property Definition
 
@@ -37,6 +38,40 @@ In the root POM (`pom.xml`):
 ```
 
 All other modules reference this property, ensuring a single point of update for version changes.
+
+### Flatten Plugin Configuration
+
+To comply with Maven's requirement that the `<version>` element in project POMs be literal values while still maintaining a single source of truth, we use the Maven Flatten Plugin:
+
+```xml
+<plugin>
+    <groupId>org.codehaus.mojo</groupId>
+    <artifactId>flatten-maven-plugin</artifactId>
+    <version>1.6.0</version>
+    <configuration>
+        <updatePomFile>true</updatePomFile>
+        <flattenMode>oss</flattenMode>
+    </configuration>
+    <executions>
+        <execution>
+            <id>flatten</id>
+            <phase>process-resources</phase>
+            <goals>
+                <goal>flatten</goal>
+            </goals>
+        </execution>
+        <execution>
+            <id>flatten-clean</id>
+            <phase>clean</phase>
+            <goals>
+                <goal>clean</goal>
+            </goals>
+        </execution>
+    </executions>
+</plugin>
+```
+
+This configuration generates a `.flattened-pom.xml` file with all properties resolved to their literal values during the build process. This full property resolution is required for Maven Central publishing to ensure that the published artifacts have all dependencies with literal versions instead of property placeholders.
 
 ## Maven Central Publishing Setup
 

@@ -2,41 +2,62 @@
 
 The orchestrator service coordinates the pipeline execution and manages the overall flow of data through the pipeline.
 
-## Pipeline Application
+## Orchestrator Application
 
-The orchestrator extends the framework's `PipelineApplication`:
+The orchestrator implements the framework's `QuarkusApplication` interface and `Callable<Integer>` for command-line interface:
 
 ```java
-// orchestrator-svc/src/main/java/com/example/app/orchestrator/CsvPaymentsApplication.java
-@QuarkusMain
+// orchestrator-svc/src/main/java/com/example/app/orchestrator/OrchestratorApplication.java
 @CommandLine.Command(
-    name = "csv-payments",
+    name = "orchestrator",
     mixinStandardHelpOptions = true,
     version = "1.0.0",
-    description = "Process CSV payment files")
-public class CsvPaymentsApplication extends PipelineApplication implements Runnable, QuarkusApplication {
-    
-    @Inject ProcessFolderService processFolderService;
-    
-    @CommandLine.Option(
-        names = {"-c", "--csv-folder"},
-        description = "The folder path containing CSV payment files",
-        defaultValue = "${env:CSV_FOLDER_PATH:-csv/}")
-    String csvFolder;
-    
+    description = "{{appName}} Orchestrator Service")
+public class OrchestratorApplication implements QuarkusApplication, Callable<Integer> {
+
+    @Option(
+        names = {"-i", "--input"}, 
+        description = "Input value for the pipeline",
+        defaultValue = "${sys:quarkus.pipeline.input:-${env:PIPELINE_INPUT}}"
+    )
+    String input;
+
+    @Inject
+    PipelineExecutionService pipelineExecutionService;
+
     @Override
-    public void run() {
-        processPipeline(csvFolder);
+    public int run(String... args) {
+        return new CommandLine(this).execute(args);
+    }
+
+    public Integer call() {
+        if (input == null || input.trim().isEmpty()) {
+            System.err.println("Input parameter is required");
+            return CommandLine.ExitCode.USAGE;
+        }
+        
+        Multi<{{firstInputTypeName}}> inputMulti = getInputMulti(input);
+
+        // Execute the pipeline with the processed input using injected service
+        pipelineExecutionService.executePipeline(inputMulti)
+            .collect().asList()
+            .await().indefinitely();
+
+        System.out.println("Pipeline execution completed");
+        return CommandLine.ExitCode.OK;
     }
     
-    @Override
-    public void processPipeline(String input) {
-        // Process input and create stream
-        Stream<CsvPaymentsInputFile> inputFileStream = processFolderService.process(input);
-        Multi<CsvPaymentsInputFile> inputMulti = Multi.createFrom().iterable(inputFileStream::iterator);
+    // This method needs to be implemented by the user after template generation
+    // based on their specific input type and requirements
+    private Multi<{{firstInputTypeName}}> getInputMulti(String input) {
+        // TODO: User needs to implement this method after template generation
+        // Create and return appropriate Multi based on the input and first step requirements
+        // For example:
+        // {{firstInputTypeName}} inputItem = new {{firstInputTypeName}}();
+        // inputItem.setField(input);
+        // return Multi.createFrom().item(inputItem);
         
-        // Execute pipeline with generated steps
-        executePipeline(inputMulti, List.of());
+        throw new UnsupportedOperationException("Method getInputMulti needs to be implemented by user after template generation");
     }
 }
 ```

@@ -34,6 +34,7 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 @ApplicationScoped
 @PipelineStep(
@@ -49,8 +50,8 @@ import org.slf4j.LoggerFactory;
     inboundMapper = CsvFolderMapper.class,
     outboundMapper = CsvPaymentsInputFileMapper.class,
     grpcClient = "process-folder",
-    restEnabled = true,
     autoPersist = true,
+    parallel = true,
     debug = true
 )
 public class ProcessFolderService implements org.pipelineframework.service.ReactiveStreamingService<CsvFolder, CsvPaymentsInputFile> {
@@ -62,6 +63,7 @@ public class ProcessFolderService implements org.pipelineframework.service.React
 
   public Multi<CsvPaymentsInputFile> process(CsvFolder csvFolder) {
     Path csvFolderPath = csvFolder.getPath();
+
     LOG.info("Reading CSV folder from path: {}", csvFolderPath);
 
     URL resource = resourceLoader.getResource(String.valueOf(csvFolderPath));
@@ -96,10 +98,18 @@ public class ProcessFolderService implements org.pipelineframework.service.React
       return Multi.createFrom().empty();
     }
 
+    String serviceId = this.getClass().toString();
+
     return Multi.createFrom().iterable(
             Arrays.stream(csvFiles)
                     .map(CsvPaymentsInputFile::new)
                     .toList()
-    );
+    ).invoke(
+          file -> {
+            MDC.put("serviceId", serviceId);
+            LOG.info(
+                    "Executed command on {} --> {}", file.getFilepath(), file);
+            MDC.remove("serviceId");
+          });
   }
 }

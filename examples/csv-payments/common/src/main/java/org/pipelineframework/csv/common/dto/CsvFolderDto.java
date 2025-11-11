@@ -28,7 +28,7 @@ import lombok.*;
 @Builder
 @JsonDeserialize(builder = CsvFolderDto.CsvFolderDtoBuilder.class)
 public class CsvFolderDto {
-    public Path path;
+    Path path;
 
     // Lombok will generate the builder, but Jackson needs to know how to interpret it
     @JsonPOJOBuilder(withPrefix = "")

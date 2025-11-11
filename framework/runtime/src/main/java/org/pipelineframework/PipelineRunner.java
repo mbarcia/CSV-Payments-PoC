@@ -16,6 +16,7 @@
 
 package org.pipelineframework;
 
+import io.quarkus.arc.Arc;
 import io.quarkus.arc.Unremovable;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -26,17 +27,18 @@ import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
+import org.pipelineframework.config.PipelineStepsConfig;
 import org.pipelineframework.step.*;
-import org.pipelineframework.step.functional.ManyToMany;
+import org.pipelineframework.step.blocking.StepOneToManyBlocking;
 import org.pipelineframework.step.functional.ManyToOne;
+import org.pipelineframework.step.future.StepOneToOneCompletableFuture;
 
 @ApplicationScoped
 @Unremovable
 public class PipelineRunner implements AutoCloseable {
 
-    private static final Logger LOG = Logger.getLogger(PipelineRunner.class);
+    private static final Logger logger = Logger.getLogger(PipelineRunner.class);
 
     @Inject
     ConfigFactory configFactory;
@@ -56,7 +58,7 @@ public class PipelineRunner implements AutoCloseable {
         List<Object> steps = loadPipelineSteps();
         
         if (steps.isEmpty()) {
-            LOG.warn("No steps available to execute - pipeline will not process data");
+            logger.warn("No steps available to execute - pipeline will not process data");
         }
         
         return run(input, steps);
@@ -81,29 +83,32 @@ public class PipelineRunner implements AutoCloseable {
 
         for (Object step : steps) {
             if (step == null) {
-                LOG.warn("Warning: Found null step in configuration, skipping...");
+                logger.warn("Warning: Found null step in configuration, skipping...");
                 continue;
             }
             
             if (step instanceof Configurable c) {
-                LiveStepConfig live = configFactory.buildLiveConfig(step.getClass(), pipelineConfig);
-                c.initialiseWithConfig(live);
+                try {
+                   c.initialiseWithConfig(configFactory.buildLiveConfig(step.getClass(), pipelineConfig));
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException("Could not initialise step " + c , e);
+                }
             }
 
             Class<?> clazz = step.getClass();
-            LOG.debugf("Step class: %s", clazz.getName());
+            logger.debugf("Step class: %s", clazz.getName());
             for (Class<?> iface : clazz.getInterfaces()) {
-                LOG.debugf("Implements: %s", iface.getName());
+                logger.debugf("Implements: %s", iface.getName());
             }
 
             switch (step) {
                 case StepOneToOne stepOneToOne -> current = applyOneToOneUnchecked(stepOneToOne, current);
+                case StepOneToOneCompletableFuture stepFuture -> current = applyOneToOneFutureUnchecked(stepFuture, current);
                 case StepOneToMany stepOneToMany -> current = applyOneToManyUnchecked(stepOneToMany, current);
-                case org.pipelineframework.step.blocking.StepOneToManyBlocking stepOneToManyBlocking -> current = applyOneToManyBlockingUnchecked(stepOneToManyBlocking, current);
-                case org.pipelineframework.step.future.StepOneToOneCompletableFuture stepFuture -> current = applyOneToOneFutureUnchecked(stepFuture, current);
+                case StepOneToManyBlocking stepOneToManyBlocking -> current = applyOneToManyBlockingUnchecked(stepOneToManyBlocking, current);
                 case ManyToOne manyToOne -> current = applyManyToOneUnchecked(manyToOne, current);
-                case ManyToMany manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
-                default -> LOG.errorf("Step not recognised: %s", step.getClass().getName());
+                case StepManyToMany manyToMany -> current = applyManyToManyUnchecked(manyToMany, current);
+                default -> logger.errorf("Step not recognised: %s", step.getClass().getName());
             }
         }
 
@@ -123,184 +128,152 @@ public class PipelineRunner implements AutoCloseable {
      * @return a list of instantiated pipeline step objects in execution order
      */
     private List<Object> loadPipelineSteps() {
-        // Get all configured pipeline steps from application properties
-        Map<String, Map<String, String>> stepConfigs = new HashMap<>();
-        
         try {
-            // Access Quarkus configuration properties
-            org.eclipse.microprofile.config.Config config = 
-                org.eclipse.microprofile.config.ConfigProvider.getConfig();
-            
-            // Since we can't iterate safely, let's try to get specific known properties
-            // The configuration properties will be in the form: pipeline.steps.{name}.{property}
-            // We'll need to know the step names in advance or use a different strategy
-            
-            // A better approach: use Quarkus Config's ability to create configuration objects
-            // For now, let's look for a known property to see if configuration access works
-            Optional<String> testProp = config.getOptionalValue("pipeline.steps.process-folder.class", String.class);
-            testProp.ifPresent(s -> LOG.debugf("Found test property: %s", s));
-            
-            // Instead of iterating all properties, let's use the fact that we know the pattern
-            // We'll try to get properties for known step names (this could be made more dynamic)
-            String[] stepNames = {"process-folder", "process-csv-input", "send-payment", "process-ack-payment", "process-payment-status", "process-csv-output"};
-            
-            for (String stepName : stepNames) {
-                String classProp = "pipeline.steps." + stepName + ".class";
-                String typeProp = "pipeline.steps." + stepName + ".type";
-                String orderProp = "pipeline.steps." + stepName + ".order";
-                
-                Optional<String> className = config.getOptionalValue(classProp, String.class);
-                if (className.isPresent()) {
-                    Map<String, String> stepConfig = new HashMap<>();
-                    stepConfig.put("class", className.get());
-                    
-                    config.getOptionalValue(typeProp, String.class).ifPresent(type -> stepConfig.put("type", type));
-                    config.getOptionalValue(orderProp, String.class).ifPresent(order -> stepConfig.put("order", order));
-                    
-                    stepConfigs.put(stepName, stepConfig);
+            // Use the structured configuration mapping to get all pipeline steps
+            PipelineStepsConfig pipelineStepsConfig = CDI.current()
+                .select(PipelineStepsConfig.class).get();
+
+            Map<String, org.pipelineframework.config.PipelineStepsConfig.StepConfig> stepConfigs =
+                pipelineStepsConfig.steps();
+
+            // Sort the steps by their order property
+            List<Map.Entry<String, org.pipelineframework.config.PipelineStepsConfig.StepConfig>> sortedStepEntries =
+                stepConfigs.entrySet().stream()
+                    .sorted(Map.Entry.comparingByValue(
+                        Comparator.comparingInt(org.pipelineframework.config.PipelineStepsConfig.StepConfig::order)))
+                    .toList();
+
+            List<Object> steps = new ArrayList<>();
+            for (Map.Entry<String, org.pipelineframework.config.PipelineStepsConfig.StepConfig> entry : sortedStepEntries) {
+                String stepName = entry.getKey();
+                org.pipelineframework.config.PipelineStepsConfig.StepConfig stepConfig = entry.getValue();
+                Object step = createStepFromConfig(stepName, stepConfig);
+                if (step != null) {
+                    steps.add(step);
                 }
             }
-            
+
+            logger.debugf("Loaded %d pipeline steps from application properties", steps.size());
+            return steps;
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to load configuration: %s", e.getMessage());
+            logger.errorf(e, "Failed to load configuration: %s", e.getMessage());
             return Collections.emptyList();
         }
-
-        // Sort the steps by a potential order property if present
-        List<String> sortedStepNames = stepConfigs.keySet().stream()
-            .sorted(Comparator.comparingInt(name -> {
-                Map<String, String> config = stepConfigs.get(name);
-                String orderStr = config.getOrDefault("order", "100");
-                try {
-                    return Integer.parseInt(orderStr);
-                } catch (NumberFormatException e) {
-                    return 100; // default order
-                }
-            }))
-            .toList();
-
-        List<Object> steps = new ArrayList<>();
-        for (String stepName : sortedStepNames) {
-            Map<String, String> stepConfig = stepConfigs.get(stepName);
-            Object step = createStepFromConfig(stepName, stepConfig);
-            if (step != null) {
-                steps.add(step);
-            }
-        }
-
-        LOG.debugf("Loaded %d pipeline steps from application properties", steps.size());
-        return steps;
     }
 
     /**
      * Instantiate a pipeline step from its configuration and return a CDI-managed instance.
      *
      * @param stepName the logical name of the step (used only for error logging)
-     * @param config a map of step properties; must include the `class` key with the step's fully-qualified class name
+     * @param config the step configuration containing the class name and other properties
      * @return a CDI-managed instance of the configured class, or `null` if the `class` key is missing or instantiation fails
      */
-    private Object createStepFromConfig(String stepName, Map<String, String> config) {
-        String stepClassName = config.get("class");
+    private Object createStepFromConfig(String stepName, org.pipelineframework.config.PipelineStepsConfig.StepConfig config) {
+        String stepClassName = config.className();
         if (stepClassName == null) {
-            LOG.errorf("No class specified for pipeline step: %s", stepName);
+            logger.errorf("No class specified for pipeline step: %s", stepName);
             return null;
         }
 
         try {
             Class<?> stepClass = Thread.currentThread().getContextClassLoader().loadClass(stepClassName);
-            return CDI.current().select(stepClass).get();
+            return Arc.container().instance(stepClass).get();
         } catch (Exception e) {
-            LOG.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
+            logger.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
             return null;
         }
     }
 
-    @SuppressWarnings({"unchecked", "UnnecessaryLocalVariable"})
-    private static <I, O> Object applyOneToOneUnchecked(org.pipelineframework.step.StepOneToOne<I, O> step, Object current) {
+    @SuppressWarnings({"unchecked"})
+    public static <I, O> Object applyOneToOneUnchecked(StepOneToOne<I, O> step, Object current) {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {
-            // Apply the OneToOne step to each item in the Multi, using the apply method 
-            // which includes retry and recovery logic
-            Multi<O> result = ((Multi<I>) current)
-                .onItem()
-                .transformToUni(item -> step.apply(Uni.createFrom().item(item)))
-                .concatenate();
-            return result;
+            if (step.parallel()) {
+                logger.debugf("Applying step %s (flatMap)", step.getClass());
+                return ((Multi<I>) current).flatMap(item -> step.apply(Uni.createFrom().item(item)).toMulti());
+            } else {
+                logger.debugf("Applying step %s (concatMap)", step.getClass());
+                return ((Multi<I>) current).concatMap(item -> step.apply(Uni.createFrom().item(item)).toMulti());
+            }
         } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToOne: {0}", current));
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepOneToOne: {0}", current));
         }
     }
 
-    @SuppressWarnings({"unchecked", "UnnecessaryLocalVariable"})
-    private static <I, O> Object applyOneToManyBlockingUnchecked(org.pipelineframework.step.blocking.StepOneToManyBlocking<I, O> step, Object current) {
+    @SuppressWarnings("unchecked")
+    private static <I, O> Object applyOneToOneFutureUnchecked(StepOneToOneCompletableFuture<I, O> step, Object current) {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {
-            // Apply the OneToMany blocking step to each item in the Multi, producing a Multi of Multi<O>,
-            // then flatten it to a single Multi<O>
-            Multi<O> result = ((Multi<I>) current)
-                .onItem()
-                .transformToMultiAndConcatenate(item -> step.apply(Uni.createFrom().item(item)));
-            return result;
+            if (step.parallel()) {
+                return ((Multi<I>) current).flatMap(item -> step.apply(Uni.createFrom().item(item)).toMulti());
+            } else {
+                return ((Multi<I>) current).concatMap(item -> step.apply(Uni.createFrom().item(item)).toMulti());
+            }
         } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToManyBlocking: {0}", current));
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepOneToOneCompletableFuture: {0}", current));
         }
     }
 
-    @SuppressWarnings({"unchecked", "UnnecessaryLocalVariable"})
-    private static <I, O> Object applyOneToManyUnchecked(org.pipelineframework.step.StepOneToMany<I, O> step, Object current) {
+    @SuppressWarnings({"unchecked"})
+    private static <I, O> Object applyOneToManyBlockingUnchecked(StepOneToManyBlocking<I, O> step, Object current) {
         if (current instanceof Uni<?>) {
             return step.apply((Uni<I>) current);
         } else if (current instanceof Multi<?>) {
-            // Apply the OneToMany step to each item in the Multi, producing a Multi of Multi<O>,
-            // then flatten it to a single Multi<O>
-            Multi<O> result = ((Multi<I>) current)
-                .onItem()
-                .transformToMulti(step::applyOneToMany)
-                .concatenate();
-            return result;
+            if (step.parallel()) {
+                logger.debugf("Applying step %s (flatMap)", step.getClass());
+                return ((Multi<I>) current).flatMap(item -> step.apply(Uni.createFrom().item(item)));
+            } else {
+                logger.debugf("Applying step %s (concatMap)", step.getClass());
+                return ((Multi<I>) current).concatMap(item -> step.apply(Uni.createFrom().item(item)));
+            }
         } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToMany: {0}", current));
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepOneToManyBlocking: {0}", current));
+        }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private static <I, O> Object applyOneToManyUnchecked(StepOneToMany<I, O> step, Object current) {
+        if (current instanceof Uni<?>) {
+            return step.apply((Uni<I>) current);
+        } else if (current instanceof Multi<?>) {
+            if (step.parallel()) {
+                logger.debugf("Applying step %s (flatMap)", step.getClass());
+                return ((Multi<I>) current).flatMap(item -> step.apply(Uni.createFrom().item(item)));
+            } else {
+                logger.debugf("Applying step %s (concatMap)", step.getClass());
+                return ((Multi<I>) current).concatMap(item -> step.apply(Uni.createFrom().item(item)));
+            }
+        } else {
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepOneToMany: {0}", current));
         }
     }
 
     @SuppressWarnings("unchecked")
     private static <I, O> Object applyManyToOneUnchecked(ManyToOne<I, O> step, Object current) {
         if (current instanceof Multi<?>) {
-            return step.applyReduce((Multi<I>) current);
-        } else if (current instanceof Uni<?>) {
-            // convert Uni to Multi and call applyReduce
-            return step.applyReduce(((Uni<I>) current).toMulti());
-        } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for ManyToOne: {0}", current));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <I, O> Object applyOneToOneFutureUnchecked(org.pipelineframework.step.future.StepOneToOneCompletableFuture<I, O> step, Object current) {
-        if (current instanceof Uni<?>) {
-            return step.apply((Uni<I>) current);
-        } else if (current instanceof Multi<?>) {
-            // Apply the OneToOne step to each item in the Multi, using the apply method 
-            // which includes retry and recovery logic
-            return ((Multi<I>) current)
-                .onItem()
-                .transformToUni(item -> step.apply(Uni.createFrom().item(item)))
-                .concatenate();
-        } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for OneToOneCompletableFuture: {0}", current));
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <I, O> Object applyManyToManyUnchecked(ManyToMany<I, O> step, Object current) {
-        if (current instanceof Multi<?>) {
             return step.apply((Multi<I>) current);
         } else if (current instanceof Uni<?>) {
+            // convert Uni to Multi and call apply
             return step.apply(((Uni<I>) current).toMulti());
         } else {
-            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for ManyToMany: {0}", current));
+            throw new IllegalArgumentException(MessageFormat.format("Unsupported current type for StepManyToOne: {0}", current));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <I, O> Object applyManyToManyUnchecked(StepManyToMany<I, O> step, Object current) {
+        if (current instanceof Uni<?>) {
+            // Single async source — convert to Multi and process
+            return step.apply(((Uni<I>) current).toMulti());
+        } else if (current instanceof Multi<?> c) {
+            logger.debugf("Applying many-to-many step %s on full stream", step.getClass());
+            // ✅ Just pass the whole stream to the step
+            return step.apply((Multi<I>) c);
+        } else {
+            throw new IllegalArgumentException(MessageFormat.format(
+                    "Unsupported current type for StepManyToMany: {0}", current));
         }
     }
 

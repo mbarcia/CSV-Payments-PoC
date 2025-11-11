@@ -21,18 +21,16 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import java.text.MessageFormat;
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;
 import org.pipelineframework.config.PipelineConfig;
-import org.pipelineframework.config.StepConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Service responsible for executing pipeline logic.
  * This service provides the shared execution logic that can be used by both
- * the PipelineApplication and PipelineCLI without duplicating code.
+ * the PipelineApplication and the CLI app without duplicating code.
  */
 @ApplicationScoped
 public class PipelineExecutionService {
@@ -47,64 +45,50 @@ public class PipelineExecutionService {
 
   /**
    * Execute the pipeline with a given input.
-   * This method is used by both PipelineApplication and PipelineCLI.
+   * This method is used by PipelineApplication.
    *
    * @param input the input Multi for the pipeline
    */
-  public void executePipeline(Multi<?> input) {
-    LOG.info("PIPELINE BEGINS processing");
+  public Multi<?> executePipeline(Multi<?> input) {
 
-    StopWatch watch = new StopWatch();
-    watch.start();
-
-    // Configure profiles
-    pipelineConfig.defaults().retryLimit(3).debug(false);
-    pipelineConfig.profile("dev", new StepConfig().retryLimit(1).debug(true));
-    pipelineConfig.profile("prod", new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)));
-
-    try {
+	  return Multi.createFrom().deferred(() -> {
+      // This code is executed at subscription time
+      StopWatch watch = new StopWatch();
       Object result = pipelineRunner.run(input);
 
-      Multi<?> multiResult;
-      if (result instanceof Multi) {
-        multiResult = (Multi<?>) result;
-      } else if (result instanceof Uni) {
-        multiResult = ((Uni<?>) result).toMulti();
-      } else {
-        throw new IllegalStateException(MessageFormat.format("PipelineRunner returned unexpected type: {0}", result.getClass()));
-      }
-
-      // Blocking invocation
-      multiResult.collect().asList().await().indefinitely();
-      System.exit(0);
-
-      multiResult
-        .onCompletion().invoke(() -> {
-          LOG.info("Processing completed.");
-          watch.stop();
-          LOG.info(
-              "✅ PIPELINE FINISHED processing in {} seconds",
-              watch.getTime(TimeUnit.SECONDS));
-        })
-        .onFailure().invoke(failure -> {
-          LOG.error("Error: {}", failure.getMessage());
-          watch.stop();
-          LOG.error(
-              "❌ PIPELINE FAILED after {} seconds",
-              watch.getTime(TimeUnit.SECONDS),
-              failure);
-        })
-        .subscribe()
-        .with(
-          item -> LOG.debug("Processed item {}", item),
-          failure -> LOG.error("❌ Unhandled pipeline error", failure)
-        );
-    } catch (Exception e) {
-      watch.stop();
-      LOG.error(
-          "❌ PIPELINE ABORTED after {} seconds",
-          watch.getTime(TimeUnit.SECONDS),
-          e);
-    }
+	    return switch (result) {
+		    case null -> Multi.createFrom().failure(new IllegalStateException(
+				    "PipelineRunner returned null"));
+		    case Multi<?> multi1 -> multi1
+				    .onSubscription().invoke(_ -> {
+					    LOG.info("PIPELINE BEGINS processing");
+					    watch.start();
+				    })
+				    .onCompletion().invoke(() -> {
+					    watch.stop();
+					    LOG.info("✅ PIPELINE FINISHED processing in {} seconds", watch.getTime(TimeUnit.SECONDS));
+				    })
+				    .onFailure().invoke(failure -> {
+					    watch.stop();
+					    LOG.error("❌ PIPELINE FAILED after {} seconds", watch.getTime(TimeUnit.SECONDS), failure);
+				    });
+		    case Uni<?> uni -> uni.toMulti()
+				    .onSubscription().invoke(_ -> {
+					    LOG.info("PIPELINE BEGINS processing");
+					    watch.start();
+				    })
+				    .onCompletion().invoke(() -> {
+					    watch.stop();
+					    LOG.info("✅ PIPELINE FINISHED processing in {} seconds", watch.getTime(TimeUnit.SECONDS));
+				    })
+				    .onFailure().invoke(failure -> {
+					    watch.stop();
+					    LOG.error("❌ PIPELINE FAILED after {} seconds", watch.getTime(TimeUnit.SECONDS), failure);
+				    });
+		    default -> Multi.createFrom().failure(new IllegalStateException(
+				    MessageFormat.format("PipelineRunner returned unexpected type: {0}", result.getClass().getName())
+		    ));
+	    };
+    });
   }
 }

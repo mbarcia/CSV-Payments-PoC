@@ -16,15 +16,11 @@
 
 package org.pipelineframework.pipeline.blocking;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
 import java.math.BigDecimal;
 
-@Entity
 public class TestPaymentEntity {
-    @Id @GeneratedValue private Long id;
 
+    private Long id;
     private String recipient;
     private BigDecimal amount;
     private String status;

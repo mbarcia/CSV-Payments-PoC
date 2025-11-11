@@ -38,6 +38,39 @@ orchestrator-svc/
 
 ### OrchestratorApplication.java
 
+The generated OrchestratorApplication.java is a Quarkus application that uses Picocli for command-line argument parsing. It's designed to work with multiple input configuration methods:
+
+#### Input Configuration Options
+
+The application supports multiple ways to specify the input:
+
+1. **Command-line argument**:
+   ```bash
+   java -jar app.jar -i /path/to/input
+   ```
+
+2. **Environment variable**:
+   ```bash
+   PIPELINE_INPUT=/path/to/input java -jar app.jar
+   ```
+
+3. **Quarkus configuration property** (especially useful for dev mode):
+   ```properties
+   # In application.properties or application-dev.properties
+   quarkus.pipeline.input=/path/to/input
+   ```
+   
+4. **System property**:
+   ```bash
+   java -Dquarkus.pipeline.input=/path/to/input -jar app.jar
+   ```
+
+The application checks for these options in the following priority:
+1. Command-line argument (`-i` or `--input`) - highest priority
+2. Environment variable (`PIPELINE_INPUT`) - used when command-line argument is not provided
+
+For dev mode (quarkus:dev) with environment variables, make sure the environment variable is properly set in your run configuration.
+
 The generated orchestrator application implements `QuarkusApplication` and includes a `getInputMulti()` method stub that needs to be implemented by the user. This method is responsible for provisioning input data to the pipeline:
 
 ```java

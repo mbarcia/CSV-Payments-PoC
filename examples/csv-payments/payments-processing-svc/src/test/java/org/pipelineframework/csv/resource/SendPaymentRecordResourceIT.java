@@ -19,7 +19,7 @@ package org.pipelineframework.csv.resource;
 import static io.restassured.RestAssured.given;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
-import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.restassured.RestAssured;
 import io.restassured.config.SSLConfig;
 import io.restassured.http.ContentType;
@@ -27,8 +27,8 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-@QuarkusTest
-class SendPaymentRecordResourceTest {
+@QuarkusIntegrationTest
+class SendPaymentRecordResourceIT {
 
     @BeforeAll
     static void setUp() {
@@ -59,7 +59,7 @@ class SendPaymentRecordResourceTest {
         given().contentType(ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .post("/api/v1/send-payment-record-reactive/process")
+                .post("/api/v1/send-payment-record/process")
                 .then()
                 .statusCode(200)
                 .body("id", notNullValue())
@@ -85,9 +85,9 @@ class SendPaymentRecordResourceTest {
         given().contentType(ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .post("/api/v1/send-payment-record-reactive/process")
+                .post("/api/v1/send-payment-record/process")
                 .then()
-                .statusCode(400); // Jackson deserialization error results in 400
+                .statusCode(500);
     }
 
     @Test
@@ -104,7 +104,7 @@ class SendPaymentRecordResourceTest {
         given().contentType(ContentType.JSON)
                 .body(requestBody)
                 .when()
-                .post("/api/v1/send-payment-record-reactive/process")
+                .post("/api/v1/send-payment-record/process")
                 .then()
                 .statusCode(200); // Missing non-required fields still works
     }

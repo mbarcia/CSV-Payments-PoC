@@ -16,25 +16,45 @@
 
 package org.pipelineframework.config;
 
-import jakarta.enterprise.context.Dependent;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Objects;
 
-@Dependent
+/**
+ * Live configuration for pipeline steps that can be modified at runtime.
+ * <p>
+ * This class extends {@link StepConfig} to provide mutable configuration properties
+ * that can be changed during application runtime. It uses atomic references and
+ * volatile fields to ensure thread-safe updates to configuration values.
+ */
 public final class LiveStepConfig extends StepConfig {
 
     private final PipelineConfig pipelineConfig;
-    private final AtomicReference<StepConfig> overrides = new AtomicReference<>(new StepConfig());
+    private final StepConfig overrides;
 
-    public LiveStepConfig(PipelineConfig pipelineConfig) {
-        this.pipelineConfig = pipelineConfig;
+    /**
+     * Creates a new LiveStepConfig with the provided overrides and pipeline configuration.
+     *
+     * @param overrides the configuration overrides
+     * @param pipelineConfig the pipeline configuration
+     */
+    public LiveStepConfig(StepConfig overrides, PipelineConfig pipelineConfig) {
+        this.overrides = Objects.requireNonNull(overrides, "overrides must not be null");
+        this.pipelineConfig = Objects.requireNonNull(pipelineConfig, "pipelineConfig must not be null");
     }
 
-    /** Apply per-step overrides */
+    // --- getters ---
+    /**
+     * Get the configuration overrides
+     * @return the configuration overrides
+     */
     public StepConfig overrides() {
-        return overrides.get();
+        return overrides;
     }
 
+    /**
+     * Get the current pipeline configuration defaults
+     * @return the current pipeline configuration defaults
+     */
     private StepConfig currentDefaults() {
         return pipelineConfig.defaults();
     }
@@ -46,9 +66,6 @@ public final class LiveStepConfig extends StepConfig {
     @Override public Duration retryWait() {
         Duration o = overrides().retryWait();
         return !o.equals(super.retryWait()) ? o : currentDefaults().retryWait();
-    }
-    @Override public int concurrency() {
-        return overrides().concurrency() != super.concurrency() ? overrides().concurrency() : currentDefaults().concurrency();
     }
     @Override public boolean debug() {
         return overrides().debug() != super.debug() ? overrides().debug() : currentDefaults().debug();
@@ -76,6 +93,10 @@ public final class LiveStepConfig extends StepConfig {
     @Override public String backpressureStrategy() {
         return !overrides().backpressureStrategy().equals(super.backpressureStrategy()) ? 
                overrides().backpressureStrategy() : currentDefaults().backpressureStrategy();
+    }
+    @Override public boolean parallel() {
+        return overrides().parallel() != super.parallel() ? 
+               overrides().parallel() : currentDefaults().parallel();
     }
 
 }

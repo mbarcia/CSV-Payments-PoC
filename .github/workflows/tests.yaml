@@ -20,12 +20,12 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
       # Install built framework artifacts to local repository first so examples can find them
       - name: Install framework to local repository
-        run: ./mvnw clean install -DskipTests -pl framework
+        run: ./mvnw clean install -DskipTests -f framework/pom.xml --no-transfer-progress
       # Build and test remaining artifacts (including examples that depend on framework)
       - name: Build
-        run: mvn --batch-mode -DskipTests package
+        run: ./mvnw --batch-mode -DskipTests package --no-transfer-progress
       - name: Verify
-        run: mvn -B verify -P coverage --no-transfer-progress
+        run: ./mvnw -B verify -P coverage --no-transfer-progress
       - name: Coverage
         uses: codecov/codecov-action@v3
         with:

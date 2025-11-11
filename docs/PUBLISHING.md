@@ -37,7 +37,7 @@ The Pipeline Framework is published to Maven Central to make it available to dev
 
 The Pipeline Framework uses a centralized version management system to ensure consistency across all modules:
 
-1. **Single Source of Truth**: The version is defined in the root POM (`pom.xml`) as the `<pipeline.version>` property
+1. **Single Source of Truth**: The version is defined in the root POM (`pom.xml`) as the `<version.pipeline>` property
 2. **Module References**: All other POM files reference this property instead of hard coding versions
 3. **Build-Time Resolution**: The Flatten Maven Plugin resolves property references to literal values during the build process
 4. **Updating Versions**: To update the version, change it only in the root POM
@@ -48,7 +48,7 @@ In the root POM (`pom.xml`):
 ```xml
 <properties>
     <!-- ... other properties ... -->
-    <pipeline.version>0.9.0</pipeline.version>
+    <version.pipeline>0.9.0</version.pipeline>
     <!-- ... other properties ... -->
 </properties>
 ```

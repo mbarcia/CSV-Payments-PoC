@@ -22,14 +22,13 @@ import io.quarkus.test.junit.QuarkusTest;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @QuarkusTest
 class CsvPaymentsIntegrationTest {
 
-    private static final Logger LOG = LoggerFactory.getLogger(CsvPaymentsIntegrationTest.class);
+    private static final Logger LOG = Logger.getLogger(CsvPaymentsIntegrationTest.class);
 
     private static final String TEST_RESOURCES_DIR = "src/test/resources";
     private static final String TEST_OUTPUT_DIR = "target/test-output";
@@ -45,6 +44,6 @@ class CsvPaymentsIntegrationTest {
         assertTrue(content.contains("Marc Joyce"), "CSV should contain test data");
         assertTrue(content.contains("Anthony Franco"), "CSV should contain test data");
 
-        LOG.info("CSV file content verified successfully");
+        LOG.infof("CSV file content verified successfully");
     }
 }

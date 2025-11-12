@@ -25,13 +25,12 @@ import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 import org.pipelineframework.step.ConfigurableStep;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(GrpcReactiveServiceAdapter.class);
+  private static final Logger LOG = Logger.getLogger(GrpcReactiveServiceAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;
@@ -98,14 +97,17 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
     return Panache.withTransaction(() -> {
       Uni<DomainOut> processedResult = getService().process(entity);
 
-      Uni<DomainOut> withPersistence = isAutoPersistenceEnabled()
+      boolean autoPersistenceEnabled = isAutoPersistenceEnabled();
+      Uni<DomainOut> withPersistence = autoPersistenceEnabled
               ? processedResult.onItem().call(_ ->
               // If auto-persistence is enabled, persist the input entity after successful processing
               persistenceManager.persist(entity)
       )
               : processedResult;
 
-      LOG.debug("Auto-persistence is disabled");
+      if (!autoPersistenceEnabled) {
+        LOG.debug("Auto-persistence is disabled");
+      }
 
       return withPersistence
               .onItem().transform(this::toGrpc)

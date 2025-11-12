@@ -22,13 +22,12 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class HybridResourceLoader implements ResourceLoader {
 
-  private static final Logger LOG = LoggerFactory.getLogger(HybridResourceLoader.class);
+  private static final Logger LOG = Logger.getLogger(HybridResourceLoader.class);
 
   // Configurable external directory - defaults to "./" (current directory) relative to working directory
   @ConfigProperty(defaultValue = "./")
@@ -50,16 +49,16 @@ public class HybridResourceLoader implements ResourceLoader {
       File csvDir = new File(projectRoot, "csv");
       if (csvDir.exists() && csvDir.isDirectory()) {
         resolvedExternalCsvDir = csvDir.getPath();
-        LOG.debug("Found CSV directory: {}", resolvedExternalCsvDir);
+        LOG.debugf("Found CSV directory: %s", resolvedExternalCsvDir);
       } else {
         // If csv directory doesn't exist, create the resolved path anyway
         resolvedExternalCsvDir = csvDir.getPath();
-        LOG.debug("CSV directory not found, using path: {}", resolvedExternalCsvDir);
+        LOG.debugf("CSV directory not found, using path: %s", resolvedExternalCsvDir);
       }
     } else {
       // Fallback to the configured value
       resolvedExternalCsvDir = externalCsvDir;
-      LOG.warn("Could not find project root, using configured CSV dir: {}", resolvedExternalCsvDir);
+      LOG.warnf("Could not find project root, using configured CSV dir: %s", resolvedExternalCsvDir);
     }
   }
 
@@ -70,16 +69,16 @@ public class HybridResourceLoader implements ResourceLoader {
    * @return URL to the resource, or null if not found
    */
   public URL getResource(String path) {
-    LOG.debug("Looking for resource: {}", path);
+    LOG.debugf("Looking for resource: %s", path);
 
     try {
       // 1. First try as external file
       File externalFile = resolveExternalPath(path);
       if (externalFile.exists()) {
-        LOG.debug("Found as external file: {}", externalFile);
+        LOG.debugf("Found as external file: %s", externalFile);
         return externalFile.toURI().toURL();
       } else {
-        LOG.debug("External file not found: {}", externalFile);
+        LOG.debugf("External file not found: %s", externalFile);
       }
 
       // 2. Then try as classpath resource (for proof of concept/testing)
@@ -88,17 +87,17 @@ public class HybridResourceLoader implements ResourceLoader {
           Thread.currentThread().getContextClassLoader().getResource(normalizedPath);
 
       if (classpathResource != null) {
-        LOG.debug("Found as classpath resource: {}", classpathResource);
+        LOG.debugf("Found as classpath resource: %s", classpathResource);
         return classpathResource;
       } else {
-        LOG.debug("Classpath resource not found: {}", normalizedPath);
+        LOG.debugf("Classpath resource not found: %s", normalizedPath);
       }
 
-      LOG.warn("Resource not found in any location: {}", path);
+      LOG.warnf("Resource not found in any location: %s", path);
       return null;
 
     } catch (MalformedURLException e) {
-      LOG.error("Error creating URL", e);
+      LOG.errorf("Error creating URL", e);
       return null;
     }
   }
@@ -127,27 +126,27 @@ public class HybridResourceLoader implements ResourceLoader {
 
   /** Diagnostic method to check resource availability */
   public void diagnoseResourceAccess(String path) {
-    LOG.info("==== RESOURCE ACCESS DIAGNOSIS ====");
-    LOG.info("Looking for resource: {}", path);
-    LOG.info("Working directory: {}", new File(".").getAbsolutePath());
-    LOG.info("Configured external CSV dir: {}", externalCsvDir);
-    LOG.info("Resolved external CSV dir: {}", resolvedExternalCsvDir);
+    LOG.infof("==== RESOURCE ACCESS DIAGNOSIS ====");
+    LOG.infof("Looking for resource: %s", path);
+    LOG.infof("Working directory: %s", new File(".").getAbsolutePath());
+    LOG.infof("Configured external CSV dir: %s", externalCsvDir);
+    LOG.infof("Resolved external CSV dir: %s", resolvedExternalCsvDir);
 
     // Check external file
     File externalFile = resolveExternalPath(path);
-    LOG.info("External file path: {}", externalFile.getAbsolutePath());
-    LOG.info("External file exists: {}", externalFile.exists());
+    LOG.infof("External file path: %s", externalFile.getAbsolutePath());
+    LOG.infof("External file exists: %s", externalFile.exists());
 
     // Check classpath resource
     String normalizedPath = path.startsWith("/") ? path.substring(1) : path;
     URL classpathResource =
         Thread.currentThread().getContextClassLoader().getResource(normalizedPath);
-    LOG.info("Classpath resource path: {}", normalizedPath);
-    LOG.info("Classpath resource exists: {}", classpathResource != null);
+    LOG.infof("Classpath resource path: %s", normalizedPath);
+    LOG.infof("Classpath resource exists: %s", classpathResource != null);
     if (classpathResource != null) {
-      LOG.info("Classpath resource URL: {}", classpathResource);
+      LOG.infof("Classpath resource URL: %s", classpathResource);
     }
 
-    LOG.info("==== END DIAGNOSIS ====");
+    LOG.infof("==== END DIAGNOSIS ====");
   }
 }

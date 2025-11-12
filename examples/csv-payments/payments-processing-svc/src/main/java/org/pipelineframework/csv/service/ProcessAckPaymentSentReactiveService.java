@@ -20,6 +20,7 @@ import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import lombok.Getter;
+import org.jboss.logging.Logger;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.csv.common.domain.AckPaymentSent;
 import org.pipelineframework.csv.common.domain.PaymentStatus;
@@ -28,8 +29,6 @@ import org.pipelineframework.csv.common.mapper.PaymentStatusMapper;
 import org.pipelineframework.csv.grpc.MutinyProcessAckPaymentSentServiceGrpc;
 import org.pipelineframework.grpc.GrpcReactiveServiceAdapter;
 import org.pipelineframework.service.ReactiveService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @PipelineStep(
     order = 4,
@@ -54,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class ProcessAckPaymentSentReactiveService
     implements ReactiveService<AckPaymentSent, PaymentStatus> {
     
-  private static final Logger LOG = LoggerFactory.getLogger(ProcessAckPaymentSentReactiveService.class);
+  private static final Logger LOG = Logger.getLogger(ProcessAckPaymentSentReactiveService.class);
 
   private final PollAckPaymentSentReactiveService pollAckPaymentSentService;
 
@@ -67,7 +66,7 @@ public class ProcessAckPaymentSentReactiveService
 
   @Override
   public Uni<PaymentStatus> process(AckPaymentSent ackPaymentSent) {
-    LOG.debug("Processing AckPaymentSent in ProcessAckPaymentSentReactiveService: id={}, conversationId={}, paymentRecordId={}", 
+    LOG.debugf("Processing AckPaymentSent in ProcessAckPaymentSentReactiveService: id=%s, conversationId=%s, paymentRecordId=%s", 
         ackPaymentSent.getId(), ackPaymentSent.getConversationId(), ackPaymentSent.getPaymentRecordId());
     
     // Call the service with the new unified method
@@ -77,10 +76,10 @@ public class ProcessAckPaymentSentReactiveService
     return result
         .onItem()
         .invoke(paymentStatus -> 
-            LOG.debug("Successfully processed AckPaymentSent, resulting PaymentStatus: id={}, reference={}, status={}", 
+            LOG.debugf("Successfully processed AckPaymentSent, resulting PaymentStatus: id=%s, reference=%s, status=%s", 
                 paymentStatus.getId(), paymentStatus.getReference(), paymentStatus.getStatus()))
         .onFailure()
         .invoke(failure -> 
-            LOG.error("Failed to process AckPaymentSent in ProcessAckPaymentSentReactiveService", failure));
+            LOG.errorf(failure, "Failed to process AckPaymentSent in ProcessAckPaymentSentReactiveService"));
   }
 }

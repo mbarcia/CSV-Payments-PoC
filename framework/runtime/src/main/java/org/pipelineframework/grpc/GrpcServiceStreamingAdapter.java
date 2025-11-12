@@ -19,17 +19,16 @@ package org.pipelineframework.grpc;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
+import org.jboss.logging.Logger;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceStreamingAdapter.class);
+  private static final Logger LOG = Logger.getLogger(GrpcServiceStreamingAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;

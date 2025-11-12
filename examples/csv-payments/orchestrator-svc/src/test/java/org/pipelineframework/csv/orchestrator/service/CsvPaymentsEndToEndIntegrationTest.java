@@ -24,16 +24,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import org.jboss.logging.Logger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @QuarkusTest
 class CsvPaymentsEndToEndIntegrationTest {
 
-    private static final Logger LOG =
-            LoggerFactory.getLogger(CsvPaymentsEndToEndIntegrationTest.class);
+    private static final Logger LOG = Logger.getLogger(CsvPaymentsEndToEndIntegrationTest.class);
 
     private static final String TEST_OUTPUT_DIR = "target/test-output";
 
@@ -56,9 +54,9 @@ class CsvPaymentsEndToEndIntegrationTest {
                         path -> {
                             try {
                                 Files.deleteIfExists(path);
-                                LOG.info("Deleted existing file: {}", path);
+                                LOG.infof("Deleted existing file: %s", path);
                             } catch (IOException e) {
-                                LOG.warn("Failed to delete existing file: {}", path, e);
+                                LOG.warnf(e, "Failed to delete existing file: %s", path);
                             }
                         });
     }
@@ -85,7 +83,7 @@ class CsvPaymentsEndToEndIntegrationTest {
 
         // Verify the content of the copied file
         String content = Files.readString(targetCsv);
-        LOG.info("Copied file content:\n{}", content);
+        LOG.infof("Copied file content:\n%s", content);
 
         // Check that it contains the expected header
         assertTrue(

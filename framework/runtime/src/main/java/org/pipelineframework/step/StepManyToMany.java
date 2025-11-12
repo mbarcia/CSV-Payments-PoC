@@ -18,9 +18,8 @@ package org.pipelineframework.step;
 
 import io.smallrye.mutiny.Multi;
 import java.util.concurrent.Executors;
+import org.jboss.logging.Logger;
 import org.pipelineframework.step.functional.ManyToMany;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** N -> N */
 public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, DeadLetterQueue<I, O> {
@@ -28,7 +27,7 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
 
 	@Override
     default Multi<O> apply(Multi<I> input) {
-        final Logger LOG = LoggerFactory.getLogger(this.getClass());
+        final Logger LOG = Logger.getLogger(this.getClass());
         final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         java.util.concurrent.Executor executor = effectiveConfig().runWithVirtualThreads() ? vThreadExecutor : null;
 
@@ -52,8 +51,8 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
 
         return output.onItem().transform(item -> {
             if (debug()) {
-                LOG.debug(
-                    "Step {} emitted item: {}",
+                LOG.debugf(
+                    "Step %s emitted item: %s",
                     this.getClass().getSimpleName(), item
                 );
             }
@@ -65,8 +64,8 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
         .atMost(retryLimit())
         .onFailure().invoke(t -> {
             if (debug()) {
-                LOG.info(
-                    "Step {} completed all retries ({} attempts) with failure: {}",
+                LOG.infof(
+                    "Step %s completed all retries (%s attempts) with failure: %s",
                     this.getClass().getSimpleName(),
                     retryLimit(),
                     t.getMessage()

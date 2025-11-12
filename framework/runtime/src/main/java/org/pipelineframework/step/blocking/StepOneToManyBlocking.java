@@ -21,11 +21,10 @@ import io.smallrye.mutiny.Uni;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import org.jboss.logging.Logger;
 import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
 import org.pipelineframework.step.functional.OneToMany;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Imperative variant of StepOneToMany that works with Lists instead of Multi.
@@ -38,13 +37,14 @@ import org.slf4j.LoggerFactory;
  */
 public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, O>, DeadLetterQueue<I, O> {
 
+    Logger LOG = Logger.getLogger(StepOneToManyBlocking.class);
+
     List<O> applyList(I in);
 
 	default boolean runWithVirtualThreads() { return false; }
 
     @Override
     default Multi<O> apply(Uni<I> inputUni) {
-        final Logger LOG = LoggerFactory.getLogger(this.getClass());
         final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         final Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 
@@ -64,7 +64,7 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
 
                 return multi.onItem().invoke(o -> {
                     if (debug()) {
-                        LOG.debug("Blocking Step {} emitted item: {}", this.getClass().getSimpleName(), o);
+                        LOG.debugf("Blocking Step %s emitted item: %s", this.getClass().getSimpleName(), o);
                     }
                 });
             })
@@ -74,8 +74,8 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
             .atMost(retryLimit())
             .onFailure().invoke(t -> {
                 if (debug()) {
-                    LOG.info(
-                        "Blocking Step {} completed all retries ({} attempts) with failure: {}",
+                    LOG.infof(
+                        "Blocking Step %s completed all retries (%s attempts) with failure: %s",
                         this.getClass().getSimpleName(),
                         retryLimit(),
                         t.getMessage()

@@ -20,9 +20,8 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+import org.jboss.logging.Logger;
 import org.pipelineframework.step.functional.OneToMany;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** 1 -> N */
 public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, DeadLetterQueue<I, O> {
@@ -30,7 +29,7 @@ public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, Dead
 
 	@Override
     default Multi<O> apply(Uni<I> input) {
-        final Logger LOG = LoggerFactory.getLogger(this.getClass());
+        final Logger LOG = Logger.getLogger(this.getClass());
         final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
         Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 
@@ -54,8 +53,8 @@ public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, Dead
 
             return multi.onItem().transform(o -> {
                 if (debug()) {
-                    LOG.debug(
-                        "Step {} emitted item: {}",
+                    LOG.debugf(
+                        "Step %s emitted item: %s",
                         this.getClass().getSimpleName(), o
                     );
                 }
@@ -68,8 +67,8 @@ public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, Dead
         .atMost(retryLimit())
         .onFailure().invoke(t -> {
             if (debug()) {
-                LOG.info(
-                    "Step {} completed all retries ({} attempts) with failure: {}",
+                LOG.infof(
+                    "Step %s completed all retries (%s attempts) with failure: %s",
                     this.getClass().getSimpleName(),
                     retryLimit(),
                     t.getMessage()

@@ -22,8 +22,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.List;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.jboss.logging.Logger;
 
 /**
  * Manager for persistence operations that delegates to registered PersistenceProvider implementations.
@@ -31,9 +30,8 @@ import org.slf4j.LoggerFactory;
 @ApplicationScoped
 public class PersistenceManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PersistenceManager.class);
+    private static final Logger LOG = Logger.getLogger(PersistenceManager.class);
 
-    @SuppressWarnings("rawtypes")
     private List<PersistenceProvider<?>> providers;
 
     @Inject
@@ -42,7 +40,7 @@ public class PersistenceManager {
     @PostConstruct
     void init() {
         this.providers = providerInstance.stream().toList();
-        LOG.info("Initialised {} persistence providers", providers.size());
+        LOG.infof("Initialised %s persistence providers", providers.size());
     }
 
     /**
@@ -54,21 +52,21 @@ public class PersistenceManager {
     public <T> Uni<T> persist(T entity) {
         if (entity == null) {
             LOG.debug("Entity is null, returning empty Uni");
-            return Uni.createFrom().item((T) null);
+            return Uni.createFrom().nullItem();
         }
 
-        LOG.debug("Entity to persist: {}", entity.getClass().getName());
+        LOG.debugf("Entity to persist: %s", entity.getClass().getName());
         for (PersistenceProvider<?> provider : providers) {
             if (provider.supports(entity)) {
                 @SuppressWarnings("unchecked")
                 PersistenceProvider<T> p = (PersistenceProvider<T>) provider;
-                LOG.debug("About to persist with provider: {}", provider.getClass().getName());
+                LOG.debugf("About to persist with provider: %s", provider.getClass().getName());
 
                 return p.persist(entity);
             }
         }
 
-        LOG.warn("No persistence provider found for {}", entity.getClass().getName());
+        LOG.warnf("No persistence provider found for %s", entity.getClass().getName());
         return Uni.createFrom().item(entity);
     }
 }

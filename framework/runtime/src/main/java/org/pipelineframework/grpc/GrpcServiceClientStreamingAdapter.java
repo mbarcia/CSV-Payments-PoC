@@ -23,17 +23,16 @@ import jakarta.inject.Inject;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import org.jboss.logging.Logger;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingClientService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(GrpcServiceClientStreamingAdapter.class);
+  private static final Logger LOG = Logger.getLogger(GrpcServiceClientStreamingAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;

@@ -21,6 +21,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.UUID;
 import lombok.Getter;
 import org.jboss.logging.Logger;
+import org.jboss.logging.MDC;
 import org.pipelineframework.annotation.PipelineStep;
 import org.pipelineframework.csv.common.domain.AckPaymentSent;
 import org.pipelineframework.csv.common.domain.PaymentOutput;
@@ -30,7 +31,6 @@ import org.pipelineframework.csv.common.dto.PaymentOutputDto;
 import org.pipelineframework.csv.common.mapper.PaymentOutputMapper;
 import org.pipelineframework.csv.common.mapper.PaymentStatusMapper;
 import org.pipelineframework.service.ReactiveService;
-import org.slf4j.MDC;
 
 @PipelineStep(
     order = 5,

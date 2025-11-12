@@ -224,13 +224,6 @@
 
     <profiles>
         <profile>
-            <id>native</id>
-            <properties>
-                <quarkus.native.enabled>true</quarkus.native.enabled>
-                <skipITs>false</skipITs>
-            </properties>
-        </profile>
-        <profile>
             <id>skip-tests</id>
             <build>
                 <plugins>

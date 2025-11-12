@@ -37,7 +37,7 @@ class CsvPaymentsEndToEndIntegrationTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        LOG.infof("Setting up end-to-end integration test");
+        LOG.info("Setting up end-to-end integration test");
 
         // Create output directory
         Files.createDirectories(Paths.get(TEST_OUTPUT_DIR));
@@ -63,7 +63,7 @@ class CsvPaymentsEndToEndIntegrationTest {
 
     @Test
     void testEndToEndProcessing() throws Exception {
-        LOG.infof("Running end-to-end processing test");
+        LOG.info("Running end-to-end processing test");
 
         // Copy test CSV file to output directory, replacing if it already exists
         Path sourceCsv = Paths.get("src/test/resources/test-payments.csv");

@@ -97,14 +97,15 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
     return Panache.withTransaction(() -> {
       Uni<DomainOut> processedResult = getService().process(entity);
 
-      Uni<DomainOut> withPersistence = isAutoPersistenceEnabled()
+      boolean autoPersistenceEnabled = isAutoPersistenceEnabled();
+      Uni<DomainOut> withPersistence = autoPersistenceEnabled
               ? processedResult.onItem().call(_ ->
               // If auto-persistence is enabled, persist the input entity after successful processing
               persistenceManager.persist(entity)
       )
               : processedResult;
 
-      if (!isAutoPersistenceEnabled()) {
+      if (!autoPersistenceEnabled) {
         LOG.debug("Auto-persistence is disabled");
       }
 

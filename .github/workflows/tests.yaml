@@ -29,6 +29,14 @@ jobs:
       - name: Coverage
         uses: codecov/codecov-action@v3
         with:
-          files: ./target/site/jacoco/jacoco.xml
+          files: |
+            ./framework/runtime/target/site/jacoco/jacoco.xml
+            ./framework/deployment/target/site/jacoco/jacoco.xml
+            ./examples/csv-payments/common/target/site/jacoco/jacoco.xml
+            ./examples/csv-payments/input-csv-file-processing-svc/target/site/jacoco/jacoco.xml
+            ./examples/csv-payments/payments-processing-svc/target/site/jacoco/jacoco.xml
+            ./examples/csv-payments/payment-status-svc/target/site/jacoco/jacoco.xml
+            ./examples/csv-payments/output-csv-file-processing-svc/target/site/jacoco/jacoco.xml
+            ./examples/csv-payments/orchestrator-svc/target/site/jacoco/jacoco.xml
           name: codecov
           token: ${{ secrets.CODECOV_TOKEN }}

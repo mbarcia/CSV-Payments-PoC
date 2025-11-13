@@ -27,7 +27,8 @@ jobs:
       - name: Verify
         run: ./mvnw -B verify -P coverage --no-transfer-progress -T 1C
       - name: Coverage
-        uses: codecov/codecov-action@v3
+       - name: Coverage
+        uses: codecov/codecov-action@v4
         with:
           files: |
             ./framework/runtime/target/site/jacoco/jacoco.xml

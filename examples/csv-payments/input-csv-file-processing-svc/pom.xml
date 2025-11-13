@@ -164,25 +164,8 @@
                 <artifactId>spotless-maven-plugin</artifactId>
             </plugin>
             <plugin>
-             <groupId>org.apache.maven.plugins</groupId>
-             <artifactId>maven-jar-plugin</artifactId>
-             <executions>
-                 <execution>
-                     <id>make-client-jar</id>
-                     <phase>package</phase>
-                     <goals>
-                         <goal>jar</goal>
-                      </goals>
-                      <configuration>
-                          <classifier>client</classifier>
-                          <includes>
-                              <include>**/pipeline/*ClientStep.class</include>
-                              <include>**/pipeline/*ClientStep$*.class</include>
-                              <include>META-INF/beans.xml</include>
-                          </includes>
-                      </configuration>
-                  </execution>
-              </executions>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

@@ -26,8 +26,6 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.PipelineRunner;
-import org.pipelineframework.config.LiveStepConfig;
-import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.pipeline.step.collection.example.ExpandPaymentCollectionStep;
 import org.pipelineframework.pipeline.step.future.example.ProcessPaymentFutureStep;
@@ -46,18 +44,15 @@ public class ComprehensiveStepTypesTest {
 
         // Create different types of steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        LiveStepConfig validateConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        validateConfig.overrides().autoPersist(false);
+        StepConfig validateConfig = new StepConfig();
         validateStep.initialiseWithConfig(validateConfig);
 
         ExpandPaymentCollectionStep expandStep = new ExpandPaymentCollectionStep();
-        LiveStepConfig expandConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        expandConfig.overrides().autoPersist(false);
+        StepConfig expandConfig = new StepConfig();
         expandStep.initialiseWithConfig(expandConfig);
 
         ProcessPaymentFutureStep processStep = new ProcessPaymentFutureStep();
-        LiveStepConfig processConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        processConfig.overrides().autoPersist(false);
+        StepConfig processConfig = new StepConfig();
         processStep.initialiseWithConfig(processConfig);
 
         // When: Run pipeline with mixed step types
@@ -102,7 +97,7 @@ public class ComprehensiveStepTypesTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
     }

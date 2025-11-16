@@ -25,8 +25,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
-import org.pipelineframework.config.LiveStepConfig;
-import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.ConfigurableStep;
 import org.pipelineframework.step.StepOneToOne;
@@ -59,8 +57,8 @@ class PipelineRunnerConcurrencyUnitTest {
         Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
 
         TestConcurrentStep step = new TestConcurrentStep();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        step.initialiseWithConfig(stepConfig);
 
         // When - Use the PipelineRunner's applyOneToOneUnchecked method directly
         Multi<String> result = (Multi<String>) PipelineRunnerTestHelper.applyOneToOne(step, input);
@@ -84,9 +82,9 @@ class PipelineRunnerConcurrencyUnitTest {
         Multi<String> input = Multi.createFrom().items("slow", "fast1", "fast2"); // slow item first
 
         TestConcurrentStep step = new TestConcurrentStep();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        liveConfig.overrides().parallel(true); // Enable concurrency
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.parallel(true); // Enable concurrency
+        step.initialiseWithConfig(stepConfig);
 
         // When
         Multi<String> result = (Multi<String>) PipelineRunnerTestHelper.applyOneToOne(step, input);
@@ -113,9 +111,9 @@ class PipelineRunnerConcurrencyUnitTest {
         Multi<String> input = Multi.createFrom().items("itemA", "itemB");
 
         TestConcurrentStep step = new TestConcurrentStep();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        // Don't override parallel - should use default of false (backward compatibility)
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        // Don't modify parallel - should use default of false (backward compatibility)
+        step.initialiseWithConfig(stepConfig);
 
         // When
         Multi<String> result = (Multi<String>) PipelineRunnerTestHelper.applyOneToOne(step, input);

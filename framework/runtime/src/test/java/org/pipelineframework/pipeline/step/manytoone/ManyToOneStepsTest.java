@@ -26,8 +26,6 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.PipelineRunner;
-import org.pipelineframework.config.LiveStepConfig;
-import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.ConfigurableStep;
 import org.pipelineframework.step.blocking.StepOneToOneBlocking;
@@ -51,13 +49,11 @@ public class ManyToOneStepsTest {
 
         // Create steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        LiveStepConfig validateConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        validateConfig.overrides().autoPersist(false);
+        StepConfig validateConfig = new StepConfig();
         validateStep.initialiseWithConfig(validateConfig);
 
         PaymentAggregationStep aggregateStep = new PaymentAggregationStep();
-        LiveStepConfig aggregateConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        aggregateConfig.overrides().autoPersist(false);
+        StepConfig aggregateConfig = new StepConfig();
         aggregateStep.initialiseWithConfig(aggregateConfig);
 
         // When: Run pipeline
@@ -92,13 +88,11 @@ public class ManyToOneStepsTest {
 
         // Create steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        LiveStepConfig validateConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        validateConfig.overrides().autoPersist(false);
+        StepConfig validateConfig = new StepConfig();
         validateStep.initialiseWithConfig(validateConfig);
 
         PaymentAggregationStepBlocking aggregateStep = new PaymentAggregationStepBlocking();
-        LiveStepConfig aggregateConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        aggregateConfig.overrides().autoPersist(false);
+        StepConfig aggregateConfig = new StepConfig();
         aggregateStep.initialiseWithConfig(aggregateConfig);
 
         // When: Run pipeline
@@ -147,7 +141,7 @@ public class ManyToOneStepsTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
     }
@@ -174,7 +168,7 @@ public class ManyToOneStepsTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
     }
@@ -242,7 +236,7 @@ public class ManyToOneStepsTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
     }

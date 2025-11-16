@@ -32,11 +32,74 @@ class StepConfigTest {
         assertEquals(3, config.retryLimit());
         assertEquals(Duration.ofMillis(2000), config.retryWait());
         assertFalse(config.parallel());
-        assertFalse(config.debug());
         assertFalse(config.recoverOnFailure());
-        assertFalse(config.runWithVirtualThreads());
         assertEquals(Duration.ofSeconds(30), config.maxBackoff());
         assertFalse(config.jitter());
+    }
+
+    @Test
+    void testConfigFromPipelineStepConfig() {
+        // Given
+        PipelineStepConfig.StepConfig mockStepConfig =
+                new PipelineStepConfig.StepConfig() {
+                    @Override
+                    public Integer retryLimit() {
+                        return 5;
+                    }
+
+                    @Override
+                    public Long retryWaitMs() {
+                        return 3000L;
+                    }
+
+                    @Override
+                    public Boolean parallel() {
+                        return true;
+                    }
+
+                    @Override
+                    public Boolean recoverOnFailure() {
+                        return true;
+                    }
+
+                    @Override
+                    public Long maxBackoff() {
+                        return 60000L;
+                    }
+
+                    @Override
+                    public Boolean jitter() {
+                        return true;
+                    }
+
+                    @Override
+                    public Integer backpressureBufferCapacity() {
+                        return 2048;
+                    }
+
+                    @Override
+                    public String backpressureStrategy() {
+                        return "DROP";
+                    }
+
+                    @Override
+                    public Integer order() {
+                        return 100;
+                    }
+                };
+
+        // When
+        StepConfig config = new StepConfig(mockStepConfig);
+
+        // Then
+        assertEquals(5, config.retryLimit());
+        assertEquals(Duration.ofMillis(3000), config.retryWait());
+        assertTrue(config.parallel());
+        assertTrue(config.recoverOnFailure());
+        assertEquals(Duration.ofSeconds(60), config.maxBackoff());
+        assertTrue(config.jitter());
+        assertEquals(2048, config.backpressureBufferCapacity());
+        assertEquals("DROP", config.backpressureStrategy());
     }
 
     @Test
@@ -89,19 +152,6 @@ class StepConfigTest {
     }
 
     @Test
-    void testDebugSetter() {
-        // Given
-        StepConfig config = new StepConfig();
-
-        // When
-        StepConfig result = config.debug(true);
-
-        // Then
-        assertTrue(config.debug());
-        assertSame(config, result); // Fluent API
-    }
-
-    @Test
     void testRecoverOnFailureSetter() {
         // Given
         StepConfig config = new StepConfig();
@@ -134,19 +184,6 @@ class StepConfigTest {
 
         // Then
         assertFalse(config.recoverOnFailure());
-        assertSame(config, result); // Fluent API
-    }
-
-    @Test
-    void testRunWithVirtualThreadsSetter() {
-        // Given
-        StepConfig config = new StepConfig();
-
-        // When
-        StepConfig result = config.runWithVirtualThreads(true);
-
-        // Then
-        assertTrue(config.runWithVirtualThreads());
         assertSame(config, result); // Fluent API
     }
 

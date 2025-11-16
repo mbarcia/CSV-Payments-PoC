@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.ConfigurableStep;
@@ -69,8 +68,7 @@ class PipelineRunnerConcurrencyTest {
     void testSequentialProcessingByDefault() {
         // Given - Default step config (parallel = false)
         TestStepOneToOne step = new TestStepOneToOne();
-        LiveStepConfig liveConfig =
-                new LiveStepConfig(new StepConfig(), pipelineConfig); // default config
+        StepConfig liveConfig = new StepConfig();
         step.initialiseWithConfig(liveConfig); // defaults: parallel=false
 
         // When
@@ -99,8 +97,7 @@ class PipelineRunnerConcurrencyTest {
     void testConcurrentProcessingWithoutOrderPreservation() {
         // Given - Enable parallel processing
         TestStepOneToOne step = new TestStepOneToOne();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
+        StepConfig liveConfig = new StepConfig().parallel(true);
         step.initialiseWithConfig(liveConfig);
 
         // When - Use items where some are slow to demonstrate concurrent processing
@@ -127,8 +124,7 @@ class PipelineRunnerConcurrencyTest {
     void testConcurrentProcessingWithOrderPreservation() {
         // Given - Enable parallel processing
         TestStepOneToOne step = new TestStepOneToOne();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
+        StepConfig liveConfig = new StepConfig().parallel(true);
         step.initialiseWithConfig(liveConfig);
 
         // When - Process items with different processing times
@@ -153,8 +149,7 @@ class PipelineRunnerConcurrencyTest {
     void testBackwardCompatibilityWithParallelFalse() {
         // Given - Explicitly set parallel to false (should behave as before)
         TestStepOneToOne step = new TestStepOneToOne();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(false);
+        StepConfig liveConfig = new StepConfig().parallel(false);
         step.initialiseWithConfig(liveConfig);
 
         // When

@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.ConfigurableStep;
@@ -143,8 +142,7 @@ class ConcurrencyIntegrationTest {
     void testSequentialProcessingByDefault() {
         // Given - Default step config (parallel = false)
         TestStepOneToOne step = new TestStepOneToOne();
-        LiveStepConfig liveConfig =
-                new LiveStepConfig(new StepConfig(), pipelineConfig); // default config
+        StepConfig liveConfig = new StepConfig(); // default config
         step.initialiseWithConfig(liveConfig); // defaults: parallel=false
 
         // When
@@ -173,8 +171,7 @@ class ConcurrencyIntegrationTest {
     void testParallelProcessingWithoutOrderPreservation() {
         // Given - Enable parallel processing
         TestStepOneToOne step = new TestStepOneToOne();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
+        StepConfig liveConfig = new StepConfig().parallel(true);
         step.initialiseWithConfig(liveConfig);
 
         // When - Use items where some are slow to demonstrate concurrent processing
@@ -201,8 +198,7 @@ class ConcurrencyIntegrationTest {
     void testBackwardCompatibilityWithParallelFalse() {
         // Given - Explicitly set parallel to false (should behave as before)
         TestStepOneToOne step = new TestStepOneToOne();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(false);
+        StepConfig liveConfig = new StepConfig().parallel(false);
         step.initialiseWithConfig(liveConfig);
 
         // When
@@ -224,8 +220,7 @@ class ConcurrencyIntegrationTest {
     void testOneToManyParallelProcessing() {
         // Given - Step with parallel processing enabled
         TestStepOneToMany step = new TestStepOneToMany();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
+        StepConfig liveConfig = new StepConfig().parallel(true);
         step.initialiseWithConfig(liveConfig);
 
         // When
@@ -248,8 +243,7 @@ class ConcurrencyIntegrationTest {
     void testOneToManyBlockingParallelProcessing() {
         // Given - Step with parallel processing enabled
         TestStepOneToManyBlocking step = new TestStepOneToManyBlocking();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
+        StepConfig liveConfig = new StepConfig().parallel(true);
         step.initialiseWithConfig(liveConfig);
 
         // When
@@ -272,8 +266,7 @@ class ConcurrencyIntegrationTest {
     void testOneToOneCompletableFutureParallelProcessing() {
         // Given - Step with parallel processing enabled
         TestStepOneToOneCompletableFuture step = new TestStepOneToOneCompletableFuture();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
+        StepConfig liveConfig = new StepConfig().parallel(true);
         step.initialiseWithConfig(liveConfig);
 
         // When

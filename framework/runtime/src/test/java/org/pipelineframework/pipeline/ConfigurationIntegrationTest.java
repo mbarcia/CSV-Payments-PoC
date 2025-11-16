@@ -18,7 +18,6 @@ package org.pipelineframework.pipeline;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
@@ -45,7 +44,7 @@ class ConfigurationIntegrationTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
 
@@ -64,9 +63,8 @@ class ConfigurationIntegrationTest {
             assertEquals(3, defaults.retryLimit());
             assertEquals(Duration.ofMillis(2000), defaults.retryWait());
             assertFalse(defaults.parallel());
-            assertFalse(defaults.debug());
+
             assertFalse(defaults.recoverOnFailure());
-            assertFalse(defaults.runWithVirtualThreads());
             assertEquals(Duration.ofSeconds(30), defaults.maxBackoff());
             assertFalse(defaults.jitter());
         }
@@ -78,7 +76,7 @@ class ConfigurationIntegrationTest {
             PipelineConfig pipelineConfig = new PipelineConfig();
 
             // Set up profiles
-            pipelineConfig.profile("test", new StepConfig().retryLimit(5).debug(true));
+            pipelineConfig.profile("test", new StepConfig().retryLimit(5));
             pipelineConfig.activate("test");
 
             // Verify active profile
@@ -86,7 +84,6 @@ class ConfigurationIntegrationTest {
 
             StepConfig activeConfig = pipelineConfig.defaults();
             assertEquals(5, activeConfig.retryLimit());
-            assertTrue(activeConfig.debug());
         }
     }
 
@@ -94,12 +91,11 @@ class ConfigurationIntegrationTest {
     void testNewStepConfigInheritsDefaults() {
         try (PipelineRunner runner = new PipelineRunner()) {
             PipelineConfig pipelineConfig = new PipelineConfig();
-            pipelineConfig.defaults().retryLimit(8).debug(true);
+            pipelineConfig.defaults().retryLimit(8);
 
             StepConfig stepConfig = pipelineConfig.newStepConfig();
 
             assertEquals(8, stepConfig.retryLimit());
-            assertTrue(stepConfig.debug());
         }
     }
 }

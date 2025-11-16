@@ -63,6 +63,11 @@ class GrpcServiceStreamingAdapterTest {
                     protected GrpcOut toGrpc(DomainOut domainOut) {
                         return new GrpcOut();
                     }
+
+                    @Override
+                    protected boolean isAutoPersistenceEnabled() {
+                        return false;
+                    }
                 };
     }
 
@@ -146,6 +151,11 @@ class GrpcServiceStreamingAdapterTest {
                     protected GrpcOut toGrpc(DomainOut domainOut) {
                         return new GrpcOut();
                     }
+
+                    @Override
+                    protected boolean isAutoPersistenceEnabled() {
+                        return false;
+                    }
                 };
 
         // When
@@ -185,6 +195,11 @@ class GrpcServiceStreamingAdapterTest {
                     protected GrpcOut toGrpc(DomainOut domainOut) {
                         assertNotNull(domainOut);
                         return new GrpcOut();
+                    }
+
+                    @Override
+                    protected boolean isAutoPersistenceEnabled() {
+                        return false;
                     }
                 };
 

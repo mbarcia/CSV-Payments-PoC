@@ -46,7 +46,6 @@ public class RetryTestSteps {
         private boolean hasManualConfig = false;
         private int manualRetryLimit = -1;
         private java.time.Duration manualRetryWait = null;
-        private boolean manualDebug = false;
         private boolean manualRecoverOnFailure = false;
 
         /**
@@ -67,7 +66,7 @@ public class RetryTestSteps {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Check if this is the first time being configured with non-default values
             // If so, preserve these as manual configuration
             if (!hasManualConfig && config != null) {
@@ -76,16 +75,12 @@ public class RetryTestSteps {
                                 != new org.pipelineframework.config.StepConfig().retryLimit()
                         || config.retryWait()
                                 != new org.pipelineframework.config.StepConfig().retryWait()
-                        || config.debug() != new org.pipelineframework.config.StepConfig().debug()
                         || config.recoverOnFailure()
                                 != new org.pipelineframework.config.StepConfig()
                                         .recoverOnFailure()) {
                     // This looks like manual configuration - save the values
                     setManualConfig(
-                            config.retryLimit(),
-                            config.retryWait(),
-                            config.debug(),
-                            config.recoverOnFailure());
+                            config.retryLimit(), config.retryWait(), config.recoverOnFailure());
                 }
             }
 
@@ -94,10 +89,8 @@ public class RetryTestSteps {
                 super.initialiseWithConfig(config);
                 // Apply the manual overrides
                 if (config != null) {
-                    config.overrides()
-                            .retryLimit(manualRetryLimit)
+                    config.retryLimit(manualRetryLimit)
                             .retryWait(manualRetryWait)
-                            .debug(manualDebug)
                             .recoverOnFailure(manualRecoverOnFailure);
                 }
             } else {
@@ -107,14 +100,10 @@ public class RetryTestSteps {
 
         // Method to mark that manual config has been set
         private void setManualConfig(
-                int retryLimit,
-                java.time.Duration retryWait,
-                boolean debug,
-                boolean recoverOnFailure) {
+                int retryLimit, java.time.Duration retryWait, boolean recoverOnFailure) {
             this.hasManualConfig = true;
             this.manualRetryLimit = retryLimit;
             this.manualRetryWait = retryWait;
-            this.manualDebug = debug;
             this.manualRecoverOnFailure = recoverOnFailure;
         }
 

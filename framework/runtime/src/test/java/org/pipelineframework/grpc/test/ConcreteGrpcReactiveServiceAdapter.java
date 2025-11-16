@@ -17,7 +17,6 @@
 package org.pipelineframework.grpc.test;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.domain.TestEntity;
 import org.pipelineframework.domain.TestResult;
 import org.pipelineframework.grpc.GrpcReactiveServiceAdapter;
@@ -49,8 +48,8 @@ public class ConcreteGrpcReactiveServiceAdapter
     }
 
     @Override
-    protected StepConfig getStepConfig() {
-        return new StepConfig().autoPersist(autoPersist);
+    protected boolean isAutoPersistenceEnabled() {
+        return autoPersist;
     }
 
     // Public methods for testing

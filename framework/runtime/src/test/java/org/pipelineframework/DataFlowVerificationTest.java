@@ -27,7 +27,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.ConfigurableStep;
@@ -76,10 +75,10 @@ class DataFlowVerificationTest {
         TrackingStep step2 = new TrackingStep("Step2");
 
         // Initialize steps with proper configuration
-        LiveStepConfig config1 = new LiveStepConfig(new StepConfig(), pipelineConfig);
+        StepConfig config1 = new StepConfig();
         step1.initialiseWithConfig(config1);
 
-        LiveStepConfig config2 = new LiveStepConfig(new StepConfig(), pipelineConfig);
+        StepConfig config2 = new StepConfig();
         step2.initialiseWithConfig(config2);
 
         System.out.println("Step 1 parallel: " + step1.parallel());
@@ -137,12 +136,12 @@ class DataFlowVerificationTest {
         TrackingStep step2 = new TrackingStep("Step2_Parallel");
 
         // Initialize steps with parallel processing enabled
-        LiveStepConfig config1 = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        config1.overrides().parallel(true);
+        StepConfig config1 = new StepConfig();
+        config1.parallel(true);
         step1.initialiseWithConfig(config1);
 
-        LiveStepConfig config2 = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        config2.overrides().parallel(true);
+        StepConfig config2 = new StepConfig();
+        config2.parallel(true);
         step2.initialiseWithConfig(config2);
 
         System.out.println("Step 1 parallel: " + step1.parallel());

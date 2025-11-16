@@ -26,8 +26,6 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.PipelineRunner;
-import org.pipelineframework.config.LiveStepConfig;
-import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.ConfigurableStep;
 import org.pipelineframework.step.blocking.StepOneToOneBlocking;
@@ -44,13 +42,11 @@ public class FutureStepsTest {
 
         // Create steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
-        LiveStepConfig validateConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        validateConfig.overrides().autoPersist(false);
+        StepConfig validateConfig = new StepConfig();
         validateStep.initialiseWithConfig(validateConfig);
 
         ProcessPaymentFutureStep processStep = new ProcessPaymentFutureStep();
-        LiveStepConfig processConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        processConfig.overrides().autoPersist(false);
+        StepConfig processConfig = new StepConfig();
         processStep.initialiseWithConfig(processConfig);
 
         // When: Run pipeline
@@ -93,7 +89,7 @@ public class FutureStepsTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
     }
@@ -114,7 +110,7 @@ public class FutureStepsTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
     }

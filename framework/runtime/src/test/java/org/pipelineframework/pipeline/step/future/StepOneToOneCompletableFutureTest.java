@@ -41,7 +41,7 @@ class StepOneToOneCompletableFutureTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Use the config provided
         }
     }
@@ -60,18 +60,6 @@ class StepOneToOneCompletableFutureTest {
     }
 
     @Test
-    void testDefaultExecutor() {
-        // Given
-        TestStepFuture step = new TestStepFuture();
-
-        // When
-        var executor = step.getExecutor();
-
-        // Then
-        assertNotNull(executor);
-    }
-
-    @Test
     void testDefaultParallel() {
         // Given
         TestStepFuture step = new TestStepFuture();
@@ -81,18 +69,6 @@ class StepOneToOneCompletableFutureTest {
 
         // Then
         assertFalse(parallel);
-    }
-
-    @Test
-    void testDefaultRunWithVirtualThreads() {
-        // Given
-        TestStepFuture step = new TestStepFuture();
-
-        // When
-        boolean runWithVirtualThreads = step.runWithVirtualThreads();
-
-        // Then
-        assertFalse(runWithVirtualThreads);
     }
 
     @Test

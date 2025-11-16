@@ -45,7 +45,7 @@ class StepManyToManyBlockingTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Use the config provided
         }
     }
@@ -65,18 +65,6 @@ class StepManyToManyBlockingTest {
         assertEquals(2, result.size());
         assertEquals("Streamed: item1", result.get(0));
         assertEquals("Streamed: item2", result.get(1));
-    }
-
-    @Test
-    void testDefaultRunWithVirtualThreads() {
-        // Given
-        TestStepBlocking step = new TestStepBlocking();
-
-        // When
-        boolean runWithVirtualThreads = step.runWithVirtualThreads();
-
-        // Then
-        assertFalse(runWithVirtualThreads);
     }
 
     @Test

@@ -18,7 +18,6 @@ package org.pipelineframework.grpc.test;
 
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.grpc.GrpcServiceBidirectionalStreamingAdapter;
 import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
 
@@ -48,8 +47,8 @@ public class ConcreteGrpcBidirectionalStreamingAdapter
     }
 
     @Override
-    protected StepConfig getStepConfig() {
-        return new StepConfig().autoPersist(autoPersist);
+    protected boolean isAutoPersistenceEnabled() {
+        return autoPersist;
     }
 
     // Public methods for testing

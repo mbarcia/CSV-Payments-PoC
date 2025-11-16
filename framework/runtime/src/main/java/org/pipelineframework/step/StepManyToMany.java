@@ -17,7 +17,6 @@
 package org.pipelineframework.step;
 
 import io.smallrye.mutiny.Multi;
-import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.pipelineframework.step.functional.ManyToMany;
 
@@ -28,8 +27,6 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
 	@Override
     default Multi<O> apply(Multi<I> input) {
         final Logger LOG = Logger.getLogger(this.getClass());
-        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        java.util.concurrent.Executor executor = effectiveConfig().runWithVirtualThreads() ? vThreadExecutor : null;
 
         // Apply the transformation
         Multi<O> output = applyTransform(input);
@@ -44,18 +41,11 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
             output = output.onOverflow().buffer(128); // default buffer size
         }
 
-        if (executor != null) {
-            // shift blocking subscription work to virtual threads
-            output = output.runSubscriptionOn(executor);
-        }
-
         return output.onItem().transform(item -> {
-            if (debug()) {
-                LOG.debugf(
-                    "Step %s emitted item: %s",
-                    this.getClass().getSimpleName(), item
-                );
-            }
+            LOG.debugf(
+                "Step %s emitted item: %s",
+                this.getClass().getSimpleName(), item
+            );
             return item;
         })
         .onFailure(t -> !(t instanceof NullPointerException)).retry()
@@ -63,14 +53,12 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
         .withJitter(jitter() ? 0.5 : 0.0)
         .atMost(retryLimit())
         .onFailure().invoke(t -> {
-            if (debug()) {
-                LOG.infof(
-                    "Step %s completed all retries (%s attempts) with failure: %s",
-                    this.getClass().getSimpleName(),
-                    retryLimit(),
-                    t.getMessage()
-                );
-            }
+            LOG.infof(
+                "Step %s completed all retries (%s attempts) with failure: %s",
+                this.getClass().getSimpleName(),
+                retryLimit(),
+                t.getMessage()
+            );
         });
     }
 }

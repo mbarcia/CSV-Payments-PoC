@@ -19,7 +19,6 @@ package org.pipelineframework.step.blocking;
 import io.smallrye.mutiny.Multi;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Executors;
 import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
 import org.pipelineframework.step.functional.ManyToMany;
@@ -41,16 +40,13 @@ public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configur
         return Collections.emptyList();
     }
 
-	default boolean runWithVirtualThreads() { return false; }
     
     @Override
     default Multi<O> apply(Multi<I> input) {
-        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 
         // Apply overflow strategy to the input
         // default behavior - buffer with default capacity (no explicit overflow strategy needed)
-        Multi<I> backpressuredInput = (executor != null) ? input.runSubscriptionOn(executor) : input;
+        Multi<I> backpressuredInput = input;
         if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
             backpressuredInput = backpressuredInput.onOverflow().buffer(backpressureBufferCapacity());
         } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
@@ -77,20 +73,16 @@ public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configur
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())
             .onFailure().invoke(t -> {
-                if (debug()) {
-                    System.out.printf(
-                        "Blocking Step %s completed all retries (%d attempts) with failure: %s%n",
-                        this.getClass().getSimpleName(),
-                        retryLimit(),
-                        t.getMessage()
-                    );
-                }
+                System.out.printf(
+                    "Blocking Step %s completed all retries (%d attempts) with failure: %s%n",
+                    this.getClass().getSimpleName(),
+                    retryLimit(),
+                    t.getMessage()
+                );
             })
             .onItem().invoke(o -> {
-                if (debug()) {
-                    System.out.printf("Blocking Step %s streamed item: %s%n",
-                            this.getClass().getSimpleName(), o);
-                }
+                System.out.printf("Blocking Step %s streamed item: %s%n",
+                        this.getClass().getSimpleName(), o);
             });
     }
 }

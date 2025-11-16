@@ -19,8 +19,6 @@ package org.pipelineframework.step.blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
@@ -41,12 +39,9 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
 
     List<O> applyList(I in);
 
-	default boolean runWithVirtualThreads() { return false; }
 
     @Override
     default Multi<O> apply(Uni<I> inputUni) {
-        final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        final Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 
         return inputUni
             .onItem().transformToMulti(item -> {
@@ -58,14 +53,8 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
                     }
                 });
 
-                if (executor != null) {
-                    multi = multi.runSubscriptionOn(executor);
-                }
-
                 return multi.onItem().invoke(o -> {
-                    if (debug()) {
-                        LOG.debugf("Blocking Step %s emitted item: %s", this.getClass().getSimpleName(), o);
-                    }
+                    LOG.debugf("Blocking Step %s emitted item: %s", this.getClass().getSimpleName(), o);
                 });
             })
             .onFailure(t -> !(t instanceof NullPointerException)).retry()
@@ -73,14 +62,12 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())
             .onFailure().invoke(t -> {
-                if (debug()) {
-                    LOG.infof(
-                        "Blocking Step %s completed all retries (%s attempts) with failure: %s",
-                        this.getClass().getSimpleName(),
-                        retryLimit(),
-                        t.getMessage()
-                    );
-                }
+                LOG.infof(
+                    "Blocking Step %s completed all retries (%s attempts) with failure: %s",
+                    this.getClass().getSimpleName(),
+                    retryLimit(),
+                    t.getMessage()
+                );
             });
     }
 }

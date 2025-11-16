@@ -16,16 +16,15 @@
 
 package org.pipelineframework.step;
 
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.StepConfig;
 
 /**
- * Base class for configurable pipeline steps that use LiveStepConfig
- * to dynamically access pipeline configuration.
+ * Base class for configurable pipeline steps that use StepConfig
+ * to access pipeline configuration.
  */
 public abstract class ConfigurableStep implements Configurable {
 
-    LiveStepConfig config = null;
+    StepConfig config = null;
 
 
     @Override
@@ -35,20 +34,15 @@ public abstract class ConfigurableStep implements Configurable {
 
     @Override
     public int backpressureBufferCapacity() { return effectiveConfig().backpressureBufferCapacity(); }
-    
+
     @Override
     public String backpressureStrategy() { return effectiveConfig().backpressureStrategy(); }
-    
+
     @Override
-    public void initialiseWithConfig(LiveStepConfig config) {
+    public void initialiseWithConfig(StepConfig config) {
         // Default implementation - subclasses should override if they need specific initialization
         if (config != null) {
             this.config = config; // Update the internal config reference
         }
-    }
-    
-    @Override
-    public LiveStepConfig liveConfig() {
-        return config;
     }
 }

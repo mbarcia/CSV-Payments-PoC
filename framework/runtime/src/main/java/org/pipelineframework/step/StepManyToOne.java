@@ -52,10 +52,8 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
 
         return applyReduce(finalInput)
             .onItem().invoke(resultValue -> {
-                if (debug()) {
-                    LOG.debugf("Reactive Step %s processed stream into output: %s",
-                        this.getClass().getSimpleName(), resultValue);
-                }
+                LOG.debugf("Reactive Step %s processed stream into output: %s",
+                    this.getClass().getSimpleName(), resultValue);
             })
             .onFailure(t -> !(t instanceof NullPointerException))
             .retry()
@@ -64,10 +62,9 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
             .atMost(retryLimit())
             .onFailure().recoverWithUni(error -> {
                 if (recoverOnFailure()) {
-                    if (debug()) {
-                        LOG.debugf("Reactive Step %s: failed to process stream: %s",
-                            this.getClass().getSimpleName(), error.getMessage());
-                    }
+                    LOG.debugf("Reactive Step %s: failed to process stream: %s",
+                        this.getClass().getSimpleName(), error.getMessage());
+
                     return deadLetterStream(finalInput, error);
                 } else {
                     return Uni.createFrom().failure(error);

@@ -32,5 +32,4 @@ import org.pipelineframework.step.StepOneToOne;
 public interface StepOneToOneBlocking<I, O> extends StepOneToOne<I, O> {
     Uni<O> apply(I in);
 
-	default boolean runWithVirtualThreads() { return true; }
 }

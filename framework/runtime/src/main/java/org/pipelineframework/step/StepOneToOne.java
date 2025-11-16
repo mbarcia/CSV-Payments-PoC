@@ -69,9 +69,8 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
         .transformToUni(
             (item, failure) -> {
               if (failure == null) {
-                if (debug()) {
-                  LOG.debugf("Step %s processed item: %s", this.getClass().getSimpleName(), item);
-                }
+                LOG.debugf("Step %s processed item: %s", this.getClass().getSimpleName(), item);
+
                 return Uni.createFrom().item(item);
               }
 

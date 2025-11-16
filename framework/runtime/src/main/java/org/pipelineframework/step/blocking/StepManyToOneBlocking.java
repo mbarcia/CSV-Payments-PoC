@@ -20,7 +20,6 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
@@ -70,16 +69,12 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
     @Override
     default Uni<O> apply(Multi<I> input) {
         final Logger LOG = Logger.getLogger(this.getClass());
-        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        final java.util.concurrent.Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
         int batchSize = this.batchSize();
         Duration batchTimeout = this.batchTimeout();
 
         // Apply overflow strategy to the input
         // default behavior - buffer with default capacity (no explicit overflow strategy needed)
-        Multi<I> backpressuredInput = (executor != null)
-                ? input.runSubscriptionOn(executor)
-                : input;
+        Multi<I> backpressuredInput = input;
         if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
             backpressuredInput = backpressuredInput.onOverflow().buffer(backpressureBufferCapacity());
         } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
@@ -96,22 +91,18 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     try {
                         O result = applyBatchList(list);
 
-                        if (debug()) {
-                            LOG.debugf(
-                                "Blocking Step %s processed batch of %d items into single output: %s",
-                                this.getClass().getSimpleName(), list.size(), result
-                            );
-                        }
+                        LOG.debugf(
+                            "Blocking Step %s processed batch of %d items into single output: %s",
+                            this.getClass().getSimpleName(), list.size(), result
+                        );
 
                         return Uni.createFrom().item(result);
                     } catch (Exception e) {
                         if (recoverOnFailure()) {
-                            if (debug()) {
-                                LOG.debugf(
-                                    "Blocking Step %s: failed batch: %s",
-                                    this.getClass().getSimpleName(), e.getMessage()
-                                );
-                            }
+                            LOG.debugf(
+                                "Blocking Step %s: failed batch: %s",
+                                this.getClass().getSimpleName(), e.getMessage()
+                            );
                             return deadLetterBatchList(list, e);
                         } else {
                             return Uni.createFrom().failure(e);
@@ -130,22 +121,18 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     try {
                         O result = applyBatchList(list);
 
-                        if (debug()) {
-                            LOG.debugf(
-                                "Blocking Step %s processed batch of %d items into single output: %s",
-                                this.getClass().getSimpleName(), list.size(), result
-                            );
-                        }
+                        LOG.debugf(
+                            "Blocking Step %s processed batch of %d items into single output: %s",
+                            this.getClass().getSimpleName(), list.size(), result
+                        );
 
                         return Uni.createFrom().item(result);
                     } catch (Exception e) {
                         if (recoverOnFailure()) {
-                            if (debug()) {
-                                LOG.debugf(
-                                    "Blocking Step %s: failed batch: %s",
-                                    this.getClass().getSimpleName(), e.getMessage()
-                                );
-                            }
+                            LOG.debugf(
+                                "Blocking Step %s: failed batch: %s",
+                                this.getClass().getSimpleName(), e.getMessage()
+                            );
                             return deadLetterBatchList(list, e);
                         } else {
                             return Uni.createFrom().failure(e);

@@ -25,10 +25,9 @@ import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 import java.text.MessageFormat;
 import java.util.*;
-import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.pipelineframework.config.PipelineConfig;
-import org.pipelineframework.config.PipelineStepsConfig;
+import org.pipelineframework.config.PipelineStepConfig;
 import org.pipelineframework.step.*;
 import org.pipelineframework.step.blocking.StepOneToManyBlocking;
 import org.pipelineframework.step.functional.ManyToOne;
@@ -46,7 +45,6 @@ public class PipelineRunner implements AutoCloseable {
     @Inject
     PipelineConfig pipelineConfig;
 
-    private final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
      * Execute the configured pipeline steps against the provided Multi input.
@@ -56,11 +54,11 @@ public class PipelineRunner implements AutoCloseable {
      */
     public Object run(Multi<?> input) {
         List<Object> steps = loadPipelineSteps();
-        
+
         if (steps.isEmpty()) {
             logger.warn("No steps available to execute - pipeline will not process data");
         }
-        
+
         return run(input, steps);
     }
 
@@ -89,7 +87,7 @@ public class PipelineRunner implements AutoCloseable {
             
             if (step instanceof Configurable c) {
                 try {
-                   c.initialiseWithConfig(configFactory.buildLiveConfig(step.getClass(), pipelineConfig));
+                   c.initialiseWithConfig(configFactory.buildConfig(step.getClass(), pipelineConfig));
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException("Could not initialise step " + c , e);
                 }
@@ -118,36 +116,37 @@ public class PipelineRunner implements AutoCloseable {
     /**
      * Load and instantiate pipeline steps defined in application properties.
      *
-     * <p>Reads configured properties for a predefined set of step names (properties
-     * under `pipeline.steps.{name}`), collects each step's `class` and optional
-     * `type` and `order` properties, instantiates managed step objects via
-     * {@code createStepFromConfig}, sorts steps by the numeric `order` property
-     * (steps without a valid `order` default to 100), and returns the instantiated
-     * steps in execution order. If configuration cannot be read, returns an empty list.
+     * <p>Reads configured properties from the named section of PipelineStepConfig
+     * (properties under `pipeline.{fully.qualified.class.name}`), collects each step's
+     * configuration including the `className` and `order` properties,
+     * instantiates managed step objects via {@code createStepFromConfig}, sorts steps
+     * by the numeric `order` property (steps without a valid `order` default to 100),
+     * and returns the instantiated steps in execution order.
+     * If configuration cannot be read, returns an empty list.
      *
      * @return a list of instantiated pipeline step objects in execution order
      */
     private List<Object> loadPipelineSteps() {
         try {
             // Use the structured configuration mapping to get all pipeline steps
-            PipelineStepsConfig pipelineStepsConfig = CDI.current()
-                .select(PipelineStepsConfig.class).get();
+            PipelineStepConfig pipelineStepConfig = CDI.current()
+                .select(PipelineStepConfig.class).get();
 
-            Map<String, org.pipelineframework.config.PipelineStepsConfig.StepConfig> stepConfigs =
-                pipelineStepsConfig.steps();
+            Map<String, org.pipelineframework.config.PipelineStepConfig.StepConfig> stepConfigs =
+                pipelineStepConfig.step();
 
             // Sort the steps by their order property
-            List<Map.Entry<String, org.pipelineframework.config.PipelineStepsConfig.StepConfig>> sortedStepEntries =
+            List<Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig>> sortedStepEntries =
                 stepConfigs.entrySet().stream()
                     .sorted(Map.Entry.comparingByValue(
-                        Comparator.comparingInt(org.pipelineframework.config.PipelineStepsConfig.StepConfig::order)))
+                        Comparator.comparingInt(config -> config.order() != null ? config.order() : 100)))
                     .toList();
 
             List<Object> steps = new ArrayList<>();
-            for (Map.Entry<String, org.pipelineframework.config.PipelineStepsConfig.StepConfig> entry : sortedStepEntries) {
-                String stepName = entry.getKey();
-                org.pipelineframework.config.PipelineStepsConfig.StepConfig stepConfig = entry.getValue();
-                Object step = createStepFromConfig(stepName, stepConfig);
+            for (Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig> entry : sortedStepEntries) {
+                String stepClassName = entry.getKey();  // The fully qualified class name
+                org.pipelineframework.config.PipelineStepConfig.StepConfig stepConfig = entry.getValue();
+                Object step = createStepFromConfig(stepClassName, stepConfig);
                 if (step != null) {
                     steps.add(step);
                 }
@@ -164,20 +163,15 @@ public class PipelineRunner implements AutoCloseable {
     /**
      * Instantiate a pipeline step from its configuration and return a CDI-managed instance.
      *
-     * @param stepName the logical name of the step (used only for error logging)
-     * @param config the step configuration containing the class name and other properties
-     * @return a CDI-managed instance of the configured class, or `null` if the `class` key is missing or instantiation fails
+     * @param stepClassName the fully qualified class name of the step
+     * @param config the step configuration containing other properties
+     * @return a CDI-managed instance of the configured class, or `null` if instantiation fails
      */
-    private Object createStepFromConfig(String stepName, org.pipelineframework.config.PipelineStepsConfig.StepConfig config) {
-        String stepClassName = config.className();
-        if (stepClassName == null) {
-            logger.errorf("No class specified for pipeline step: %s", stepName);
-            return null;
-        }
-
+    private Object createStepFromConfig(String stepClassName, org.pipelineframework.config.PipelineStepConfig.StepConfig config) {
         try {
             Class<?> stepClass = Thread.currentThread().getContextClassLoader().loadClass(stepClassName);
-            return Arc.container().instance(stepClass).get();
+            Object step = Arc.container().instance(stepClass).get();
+            return step;
         } catch (Exception e) {
             logger.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
             return null;
@@ -279,8 +273,5 @@ public class PipelineRunner implements AutoCloseable {
 
     @Override
     public void close() {
-        if (vThreadExecutor instanceof AutoCloseable ac) {
-            try { ac.close(); } catch (Exception ignored) {}
-        }
     }
 }

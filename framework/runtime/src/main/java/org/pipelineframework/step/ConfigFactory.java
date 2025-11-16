@@ -16,14 +16,11 @@
 
 package org.pipelineframework.step;
 
-import io.quarkus.logging.Log;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
-import java.lang.reflect.Field;
-import java.util.Objects;
-import org.pipelineframework.annotation.PipelineStep;
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
+import org.pipelineframework.config.PipelineStepConfig;
 import org.pipelineframework.config.StepConfig;
 
 @ApplicationScoped
@@ -32,29 +29,23 @@ public class ConfigFactory {
     @Inject
     PipelineConfig pipelineConfig;
 
-    public LiveStepConfig buildLiveConfig(Class<?> stepClass, PipelineConfig pipelineConfig)
+    public StepConfig buildConfig(Class<?> stepClass, PipelineConfig pipelineConfig)
         throws IllegalAccessException {
 
-        StepConfig overrides = new StepConfig();
-	    try {
-            Field originalServiceClassField = stepClass.getField("ORIGINAL_SERVICE_CLASS");
-            Class<?> originalServiceClass =  (Class<?>) originalServiceClassField.get(null);
-            PipelineStep annotation = originalServiceClass.getAnnotation(PipelineStep.class);
-            if (annotation == null) {
-                throw new RuntimeException("Null annotation, when a pipeline step must have come from an annotation");
-            }
-            overrides
-                    .autoPersist(annotation.autoPersist())
-                    .recoverOnFailure(annotation.recoverOnFailure())
-                    .backpressureBufferCapacity(annotation.backpressureBufferCapacity())
-                    .backpressureStrategy(annotation.backpressureStrategy())
-                    .debug(annotation.debug())
-                    .parallel(annotation.parallel());
-	    } catch (NoSuchFieldException e) {
-          // Test classes usually do not have this field
-          Log.warnf("Field ORIGINAL_SERVICE_CLASS not found, make sure this is a test run. Continuing...");
-	    }
+        // Get the new Quarkus configuration
+        PipelineStepConfig pipelineStepConfig = CDI.current()
+            .select(PipelineStepConfig.class).get();
 
-        return new LiveStepConfig(overrides, Objects.requireNonNullElseGet(pipelineConfig, PipelineConfig::new));
+        // Get config for the specific class if available
+        String className = stepClass.getName();
+        PipelineStepConfig.StepConfig classConfig = pipelineStepConfig.step().get(className);
+
+        if (classConfig != null) {
+            // Use specific configuration for this step class
+            return new StepConfig(classConfig);
+        } else {
+            // Use the PipelineConfig's newStepConfig which contains properly initialized defaults
+            return pipelineConfig.newStepConfig();
+        }
     }
 }

@@ -69,11 +69,11 @@ For strict sequential processing, leave that as false (the default).
 
 ## Avoid breaking parallelism in the pipeline
 
-*Important*
+###Important
 
 If any previous step uses `parallel = false` (the default), the pipeline will serialize the stream at that point.
 
-Downstream the pipeline cannot "rewind" concurrency — the upstream won't push items faster than it finished
+Downstream, the pipeline cannot "rewind" concurrency — the upstream won't push items faster than it finished
 sequentially.
 
 Hence, the more "downstream" you can push the `parallel = false` moment, the faster the pipeline will process streams.

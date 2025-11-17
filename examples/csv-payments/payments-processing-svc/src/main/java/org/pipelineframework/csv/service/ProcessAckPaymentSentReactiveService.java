@@ -52,7 +52,6 @@ public class ProcessAckPaymentSentReactiveService
     
   private static final Logger LOG = Logger.getLogger(ProcessAckPaymentSentReactiveService.class);
 
-  @Inject
   PollAckPaymentSentService pollAckPaymentSentService;
 
   @Inject

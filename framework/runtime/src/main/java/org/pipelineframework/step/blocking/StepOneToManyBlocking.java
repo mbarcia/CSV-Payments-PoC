@@ -37,9 +37,25 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
 
     Logger LOG = Logger.getLogger(StepOneToManyBlocking.class);
 
-    List<O> applyList(I in);
+    /**
+ * Produce a list of output items from a single input item.
+ *
+ * @param in the input item to be transformed
+ * @return a List of output items produced from the input; an empty list if there are no outputs
+ */
+List<O> applyList(I in);
 
 
+    /**
+     * Convert a single-item reactive input into a stream of outputs produced by {@link #applyList(Object)}.
+     *
+     * For each item emitted by the provided Uni, this method emits each element of the List returned by
+     * applyList for that item. On failures (except NullPointerException) it retries according to the
+     * step's backoff, jitter and retry limit configuration; when all retries are exhausted it logs the final failure.
+     *
+     * @param inputUni a Uni that supplies the input item to be expanded into multiple outputs
+     * @return a Multi that emits each output element produced from the input by {@link #applyList(Object)}
+     */
     @Override
     default Multi<O> apply(Uni<I> inputUni) {
 

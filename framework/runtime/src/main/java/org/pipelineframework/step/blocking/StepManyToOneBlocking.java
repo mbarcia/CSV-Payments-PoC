@@ -58,17 +58,34 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
     }
 
     /**
-     * Handle a failed batch by sending it to a dead letter queue or similar mechanism.
+     * Deliver a failed input batch to a dead-letter mechanism and record the failure.
      *
-     * @param inputs The list of inputs that failed to process
-     * @param error The error that occurred
-     * @return The result of dead letter handling (can be null)
+     * Default implementation logs the error for the batch and yields a null result.
+     *
+     * @param inputs the batch of inputs that failed to process
+     * @param error the error that occurred while processing the batch
+     * @return a Uni emitting `null` cast to the output type `O`
      */
     default Uni<O> deadLetterBatchList(List<I> inputs, Throwable error) {
         LOG.errorf("DLQ drop for batch of %d items: %s", inputs.size(), error.getMessage());
         return Uni.createFrom().item((O) null);
     }
 
+    /**
+     * Process a stream of input items in configurable batches and emit the final batch's output.
+     *
+     * <p>The method applies the configured backpressure strategy ("buffer" or "drop"), groups items
+     * into batches by {@link #batchSize()} or {@link #batchTimeout()}, and processes each batch by
+     * calling {@link #applyBatchList(List)}. Batches are handled concurrently when
+     * {@link #effectiveConfig()}.parallel() is true, otherwise they are processed sequentially.
+     * On failure, if {@link #recoverOnFailure()} is true the batch is delegated to
+     * {@link #deadLetterBatchList(List, Throwable)}, otherwise the failure is propagated.
+     * Retries are applied for failures except {@link NullPointerException} using the configured
+     * backoff, jitter and retry limit settings.
+     *
+     * @param input the source stream of input items to be batched
+     * @return the output produced for the last processed batch, or `null` if no batches were emitted
+     */
     @Override
     default Uni<O> apply(Multi<I> input) {
         final Logger LOG = Logger.getLogger(this.getClass());

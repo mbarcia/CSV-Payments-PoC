@@ -23,6 +23,16 @@ public interface DeadLetterQueue<I, O> {
 
     Logger LOG = Logger.getLogger(DeadLetterQueue.class);
 
+    /**
+     * Record a failed item to the dead-letter queue and produce a null output.
+     *
+     * Logs an error-level message containing the failed item (via its `toString`) and the failure cause,
+     * then returns a Uni that completes with a `null` item of type `O`.
+     *
+     * @param failedItem the failed input wrapped in a Uni; its `toString` is included in the log
+     * @param cause the throwable that caused the failure
+     * @return a Uni that emits a `null` value of type `O`
+     */
     default Uni<O> deadLetter(Uni<I> failedItem, Throwable cause) {
         LOG.errorf("DLQ drop: item=%s cause=%s", failedItem.toString(), cause);
         return io.smallrye.mutiny.Uni.createFrom().nullItem();

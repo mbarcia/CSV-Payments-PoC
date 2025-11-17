@@ -45,14 +45,12 @@ public class StepClientRegistrar {
     }
 
     /**
-     * Registers step client classes discovered in the application index as additional unremovable beans when CLI generation is enabled.
-     * <p>
-     * Scans the combined index for classes whose simple name ends with the configured client step suffix. For each matching class, if
-     * pipeline CLI generation is enabled via the provided build-time configuration, produces an AdditionalBeanBuildItem for that class
-     * and marks it unremovable; otherwise the class is skipped.
+     * Exposes discovered pipeline step client classes as additional unremovable beans when CLI client generation is enabled.
      *
-     * @param beans a build producer used to register AdditionalBeanBuildItem instances
-     * @param config pipeline build-time configuration that controls whether CLI-generated clients should be registered
+     * Scans the provided Jandex index for classes whose simple name ends with the configured client step suffix and registers each
+     * matching class as an unremovable AdditionalBeanBuildItem when CLI generation is enabled via the supplied configuration.
+     *
+     * @param config controls whether CLI-generated clients should be registered
      * @param combinedIndex combined Jandex index containing application classes to scan
      */
     @BuildStep

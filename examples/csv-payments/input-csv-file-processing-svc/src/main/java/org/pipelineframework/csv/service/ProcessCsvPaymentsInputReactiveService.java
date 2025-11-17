@@ -61,6 +61,13 @@ public class ProcessCsvPaymentsInputReactiveService
   private final long rowsPerPeriod;
   private final long millisPeriod;
 
+    /**
+     * Create a service instance configured with demand-pacing parameters.
+     *
+     * Initialises the instance fields used for pacing from the supplied configuration and logs the configured values.
+     *
+     * @param config configuration supplying the number of rows per pacing period and the period duration in milliseconds
+     */
     @Inject
     public ProcessCsvPaymentsInputReactiveService(DemandPacerConfig config) {
         rowsPerPeriod = config.rowsPerPeriod();
@@ -72,6 +79,18 @@ public class ProcessCsvPaymentsInputReactiveService
                 config.millisPeriod());
     }
 
+  /**
+   * Stream parsed PaymentRecord objects from the provided CSV input file with demand pacing.
+   *
+   * <p>The returned stream emits records parsed from the CSV using the input's mapping strategy and
+   * applies a fixed-rate demand pacer configured for this service. The underlying reader is closed
+   * when the stream terminates and each emitted record is logged with a service identifier.
+   *
+   * @param input the CSV input file wrapper providing the reader, source name and mapping strategy
+   * @return a {@code Multi<PaymentRecord>} that emits parsed payment records paced by the service's
+   *     configured rows-per-period and period duration
+   * @throws RuntimeException if an I/O error occurs while opening or preparing the CSV reader
+   */
   @Override
   public Multi<PaymentRecord> process(CsvPaymentsInputFile input) {
     return Multi.createFrom()

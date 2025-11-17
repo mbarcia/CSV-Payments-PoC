@@ -27,6 +27,14 @@ import org.pipelineframework.step.blocking.StepOneToOneBlocking;
 public class EnrichPaymentStep extends ConfigurableStep
         implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
 
+    /**
+     * Enriches a payment entity with additional data via a brief blocking simulation.
+     *
+     * If the payment's status equals "VALIDATED" the status is changed to "ENRICHED".
+     *
+     * @param payment the payment entity to process and potentially enrich
+     * @return the input payment entity after enrichment
+     */
     @Override
     public Uni<TestPaymentEntity> apply(TestPaymentEntity payment) {
         // This is a blocking operation that simulates enrichment logic
@@ -47,6 +55,11 @@ public class EnrichPaymentStep extends ConfigurableStep
         return Uni.createFrom().item(payment);
     }
 
+    /**
+     * Initialise the step with the supplied configuration.
+     *
+     * @param config the step configuration containing parameters used to initialise this step
+     */
     @Override
     public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
         super.initialiseWithConfig(config);

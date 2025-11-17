@@ -37,6 +37,12 @@ public class PollAckPaymentSentOnVirtualThreadReactiveService
   private final PaymentProviderService paymentProviderServiceMock;
   private final PaymentProviderConfig config;
 
+  /**
+   * Create a service instance that will poll for payment acknowledgements using the supplied provider and configuration.
+   *
+   * @param paymentProviderServiceMock the payment provider service used to retrieve payment status
+   * @param config the configuration controlling polling behaviour and timeouts
+   */
   @Inject
   public PollAckPaymentSentOnVirtualThreadReactiveService(
       PaymentProviderService paymentProviderServiceMock,
@@ -50,6 +56,15 @@ public class PollAckPaymentSentOnVirtualThreadReactiveService
             config.waitMilliseconds());
   }
 
+    /**
+     * Processes an AckPaymentSent by polling the payment provider and returning the resulting payment status.
+     *
+     * Simulates a polling delay up to the configured wait period, invokes the payment provider to obtain the
+     * PaymentStatus for the given AckPaymentSent, and propagates any processing failures through the returned Uni.
+     *
+     * @param detachedAckPaymentSent the AckPaymentSent to query status for
+     * @return the resulting PaymentStatus for the provided AckPaymentSent
+     */
     @Override
     public Uni<PaymentStatus> process(AckPaymentSent detachedAckPaymentSent) {
         logger.debugf(

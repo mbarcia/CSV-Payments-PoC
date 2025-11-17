@@ -34,25 +34,27 @@ import java.util.Map;
 public interface PipelineStepConfig {
     
     /**
-     * Global default configuration applied to all steps unless overridden
-     */
+ * Default configuration applied to all pipeline steps unless a step defines overrides.
+ *
+ * @return the global StepConfig used as defaults for steps
+ */
     StepConfig defaults();
     
     /**
-     * Per-step configuration overrides
-     * Format: pipeline.step."fully.qualified.class.name".property=value
+     * Per-step configuration overrides keyed by each step's fully qualified class name.
+     *
+     * <p>Configured under the prefix <code>pipeline.step."fully.qualified.class.name".property=value</code>.
+     *
+     * @return a map from fully qualified step class name to the corresponding {@link StepConfig} override
      */
     @WithName("step")
     Map<String, StepConfig> step();
     
     interface StepConfig {
         /**
-         * The execution order for this step in the pipeline (optional).
-         * <p>
-         * Steps are executed in ascending order of this value. Lower numbers execute first.
-         * Steps without a specified order default to 100.
+         * Execution order for this step within the pipeline.
          *
-         * @return the step order, or 100 if not specified
+         * @return the step order; 100 if not specified
          */
         @WithDefault("100")
         Integer order();
@@ -65,50 +67,59 @@ public interface PipelineStepConfig {
         Integer retryLimit();
 
         /**
-         * Base delay between retries in milliseconds.
-         * @return retry delay in milliseconds
+         * Base delay between retry attempts, in milliseconds.
+         *
+         * @return the base delay between retries in milliseconds
          */
         @WithDefault("2000")
         Long retryWaitMs();
 
         /**
-         * Enable parallel processing.
-         * @return true to enable parallel processing, false for sequential processing
+         * Whether the step processes items in parallel.
+         *
+         * @return true if parallel processing is enabled, false otherwise.
          */
         @WithDefault("false")
         Boolean parallel();
 
         /**
-         * Enable failure recovery.
-         * @return true to enable recovery, false otherwise
+         * Whether the step will attempt recovery after a failure.
+         *
+         * @return `true` if recovery is enabled, `false` otherwise
          */
         @WithDefault("false")
         Boolean recoverOnFailure();
 
         /**
-         * Maximum backoff time in milliseconds.
-         * @return maximum backoff time in milliseconds
+         * Limit for backoff delays applied to retry attempts.
+         *
+         * @return the maximum backoff time in milliseconds
          */
         @WithDefault("30000")
         Long maxBackoff();
 
         /**
-         * Add jitter to retry delays.
-         * @return true to add jitter, false otherwise
+         * Whether jitter is added to retry delays.
+         *
+         * @return true to add jitter to retry delays, false otherwise.
          */
         @WithDefault("false")
         Boolean jitter();
 
         /**
-         * The backpressure buffer capacity
-         * @return the buffer capacity (default: 1024)
+         * Configures the capacity of the backpressure buffer for this pipeline step.
+         *
+         * @return the buffer capacity in number of items; default is 1024
          */
         @WithDefault("1024")
         Integer backpressureBufferCapacity();
 
         /**
-         * Backpressure strategy to use when buffering items ("BUFFER", "DROP")
-         * @return the backpressure strategy (default: "BUFFER")
+         * Selects the backpressure strategy applied when buffering items.
+         *
+         * <p>Accepted values: "BUFFER" to buffer incoming items, "DROP" to discard items when capacity is reached.</p>
+         *
+         * @return the backpressure strategy; "BUFFER" by default
          */
         @WithDefault("BUFFER")
         String backpressureStrategy();

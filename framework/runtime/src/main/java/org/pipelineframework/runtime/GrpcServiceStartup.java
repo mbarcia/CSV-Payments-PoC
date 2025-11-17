@@ -35,6 +35,14 @@ public class GrpcServiceStartup {
     @Inject
     BeanManager beanManager;
 
+    /**
+     * Initialises gRPC services annotated with {@code @GrpcService} when the application starts.
+     *
+     * Observes the Quarkus {@code StartupEvent} to trigger CDI initialisation of beans annotated with
+     * {@code @GrpcService}.
+     *
+     * @param event the Quarkus startup event that triggers the initialisation
+     */
     void onStart(@Observes StartupEvent event) {
         LOG.info("Starting gRPC service initialization...");
         // This will trigger CDI to initialize beans with @GrpcService annotation

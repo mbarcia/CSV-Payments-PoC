@@ -54,6 +54,12 @@ public class PollAckPaymentSentReactiveService
             config.waitMilliseconds());
   }
 
+  /**
+   * Polls the payment provider for the status of the given detached AckPaymentSent and produces the resulting PaymentStatus.
+   *
+   * @param detachedAckPaymentSent the detached acknowledgement containing identifiers used to query the payment provider
+   * @return the PaymentStatus returned by the payment provider
+   */
   @Override
   public Uni<PaymentStatus> process(AckPaymentSent detachedAckPaymentSent) {
       logger.debugf(

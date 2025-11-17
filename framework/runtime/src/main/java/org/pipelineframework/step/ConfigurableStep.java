@@ -27,17 +27,39 @@ public abstract class ConfigurableStep implements Configurable {
     StepConfig config = null;
 
 
+    /**
+     * Obtain the effective configuration for this step.
+     *
+     * @return the current {@code StepConfig} if one has been set; otherwise a new default {@code StepConfig}
+     */
     @Override
     public StepConfig effectiveConfig() {
         return config != null ? config : new StepConfig();
     }
 
+    /**
+     * Get the configured backpressure buffer capacity for this step.
+     *
+     * @return the buffer capacity used for backpressure as defined by the effective configuration
+     */
     @Override
     public int backpressureBufferCapacity() { return effectiveConfig().backpressureBufferCapacity(); }
 
+    /**
+     * Retrieves the backpressure strategy configured for this step.
+     *
+     * @return the backpressure strategy as a String
+     */
     @Override
     public String backpressureStrategy() { return effectiveConfig().backpressureStrategy(); }
 
+    /**
+     * Initialise the step with the supplied StepConfig; if the argument is non-null it becomes the step's internal config.
+     *
+     * Subclasses may override to perform additional or different initialisation behaviour.
+     *
+     * @param config the configuration to apply to this step; if null the existing internal config is left unchanged
+     */
     @Override
     public void initialiseWithConfig(StepConfig config) {
         // Default implementation - subclasses should override if they need specific initialization

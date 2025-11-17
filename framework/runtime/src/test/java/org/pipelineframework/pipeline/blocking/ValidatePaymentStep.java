@@ -29,6 +29,12 @@ import org.pipelineframework.step.blocking.StepOneToOneBlocking;
 public class ValidatePaymentStep extends ConfigurableStep
         implements StepOneToOneBlocking<TestPaymentEntity, TestPaymentEntity> {
 
+    /**
+     * Validate and set the status of a payment entity based on its amount.
+     *
+     * @param payment the payment entity to validate; its `status` is updated in-place
+     * @return the same payment entity with `status` set to `"VALIDATED"` if `amount` is greater than zero, `"REJECTED"` otherwise
+     */
     @Override
     public Uni<TestPaymentEntity> apply(TestPaymentEntity payment) {
         // This is a blocking operation that simulates validation logic
@@ -51,6 +57,11 @@ public class ValidatePaymentStep extends ConfigurableStep
         return Uni.createFrom().item(payment);
     }
 
+    /**
+     * Initialises the step using the supplied step configuration.
+     *
+     * @param config the step configuration to apply to this step
+     */
     @Override
     public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
         super.initialiseWithConfig(config);

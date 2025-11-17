@@ -27,6 +27,14 @@ public final class PipelineConfig {
     private final java.util.Map<String, StepConfig> profiles = new java.util.concurrent.ConcurrentHashMap<>();
     private final java.util.concurrent.atomic.AtomicReference<String> activeProfile = new java.util.concurrent.atomic.AtomicReference<>();
 
+    /**
+     * Initialises the PipelineConfig with a default profile and sets the active profile
+     * from the Quarkus launch profile.
+     *
+     * <p>Creates a new StepConfig stored under the "default" profile key, reads the
+     * current Quarkus launch profile key, falls back to "default" if the profile key
+     * is null or blank, and activates the determined profile.</p>
+     */
     public PipelineConfig() {
         // initialize with a default profile
         StepConfig defaultConfig = new StepConfig();
@@ -62,7 +70,15 @@ public final class PipelineConfig {
         return this;
     }
 
-    /** Create a new StepConfig initialized with active profile defaults */
+    /**
+     * Create a new StepConfig populated from the active profile's defaults.
+     *
+     * The returned config copies the active profile's settings for
+     * retryLimit, retryWait, backpressureBufferCapacity, backpressureStrategy,
+     * parallel, recoverOnFailure, maxBackoff and jitter.
+     *
+     * @return a new StepConfig initialised with the active profile's corresponding settings
+     */
     public StepConfig newStepConfig() {
         StepConfig base = defaults();
         return new StepConfig()

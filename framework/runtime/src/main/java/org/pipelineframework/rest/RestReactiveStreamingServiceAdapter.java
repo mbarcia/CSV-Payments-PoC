@@ -35,17 +35,26 @@ public abstract class RestReactiveStreamingServiceAdapter<DomainIn, DomainOut, D
     PersistenceManager persistenceManager;
     
 
-    protected abstract ReactiveStreamingService<DomainIn, DomainOut> getService();
-
-    protected abstract DtoOut toDto(DomainOut domainOut);
+    /**
+ * Provide the reactive streaming service used to process domain inputs into domain outputs.
+ *
+ * @return the {@link ReactiveStreamingService} instance that processes {@code DomainIn} into {@code DomainOut}
+ */
+protected abstract ReactiveStreamingService<DomainIn, DomainOut> getService();
 
     /**
-     * Determines whether entities should be automatically persisted before processing. This method
-     * should be implemented by generated service adapters to return the auto-persist value
-     * from the @PipelineStep annotation.
-     *
-     * @return true if entities should be auto-persisted, false otherwise
-     */
+ * Convert a processed domain object to its corresponding DTO representation.
+ *
+ * @param domainOut the domain-level result to convert
+ * @return the DTO representation of the provided domain object
+ */
+protected abstract DtoOut toDto(DomainOut domainOut);
+
+    /**
+ * Indicates whether entities are persisted automatically before processing.
+ *
+ * @return true if entities are persisted automatically before processing, false otherwise
+ */
     protected abstract boolean isAutoPersistenceEnabled();
 
     /**

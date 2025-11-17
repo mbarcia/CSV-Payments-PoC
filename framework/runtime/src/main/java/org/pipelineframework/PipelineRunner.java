@@ -63,17 +63,18 @@ public class PipelineRunner implements AutoCloseable {
     }
 
     /**
-     * Execute the pipeline by applying the ordered steps to the given input stream.
+     * Apply an ordered sequence of pipeline steps to the provided input stream.
      *
-     * <p>Each non-null step from {@code steps} is applied in sequence to the current pipeline state.
-     * If a step implements {@code Configurable} it will be initialised with a live configuration
-     * before being applied. Unknown step types are ignored (logged) and null entries are skipped.</p>
+     * <p>Each non-null entry in {@code steps} is applied in sequence to the pipeline state.
+     * Steps that implement {@code Configurable} are initialised with a configuration built
+     * from the injected {@code configFactory} and {@code pipelineConfig} before application.
+     * Null entries are skipped and unrecognised step types are logged and ignored.</p>
      *
-     * @param input  the initial Multi stream to be processed
-     * @param steps  an ordered list of pipeline step instances; null entries are skipped and
-     *               {@code Configurable} steps are initialised before application
-     * @return       the resulting pipeline output, typically a {@code Uni<?>} or {@code Multi<?>} representing
-     *               the pipeline's final stream
+     * @param input the initial Multi stream to be processed
+     * @param steps an ordered list of pipeline step instances; null entries are skipped and
+     *              {@code Configurable} steps are initialised prior to being applied
+     * @return      the resulting pipeline output, typically a {@code Uni<?>} or {@code Multi<?>}
+     * @throws RuntimeException if initialisation of a {@code Configurable} step fails due to access restrictions
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Object run(Multi<?> input, List<Object> steps) {
@@ -114,17 +115,14 @@ public class PipelineRunner implements AutoCloseable {
     }
 
     /**
-     * Load and instantiate pipeline steps defined in application properties.
+     * Load and instantiate pipeline steps configured via PipelineStepConfig.
      *
-     * <p>Reads configured properties from the named section of PipelineStepConfig
-     * (properties under `pipeline.{fully.qualified.class.name}`), collects each step's
-     * configuration including the `className` and `order` properties,
-     * instantiates managed step objects via {@code createStepFromConfig}, sorts steps
-     * by the numeric `order` property (steps without a valid `order` default to 100),
-     * and returns the instantiated steps in execution order.
-     * If configuration cannot be read, returns an empty list.
+     * <p>Reads the mapped step configurations, instantiates CDI-managed step objects for each
+     * configured entry, and returns them in execution order. Steps are ordered by their
+     * `order` property; entries without an `order` are treated as 100. If the configuration
+     * cannot be read or an error occurs, an empty list is returned.
      *
-     * @return a list of instantiated pipeline step objects in execution order
+     * @return the instantiated pipeline step objects in execution order, or an empty list if configuration cannot be read
      */
     private List<Object> loadPipelineSteps() {
         try {
@@ -271,6 +269,9 @@ public class PipelineRunner implements AutoCloseable {
         }
     }
 
+    /**
+     * Performs no action; PipelineRunner has no resources to release on close.
+     */
     @Override
     public void close() {
     }

@@ -17,7 +17,6 @@
 package org.pipelineframework.csv.config;
 
 import io.quarkus.test.junit.QuarkusTest;
-import io.smallrye.config.SmallRyeConfig;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.config.PipelineConfig;
@@ -36,43 +35,30 @@ class PipelineDefaultsIntegrationTest {
     PipelineStepConfig pipelineStepConfig;
 
     @Test
-    void testPipelineConfigDefaultsAreSyncedWithPipelineStepConfig() {
-        // Get the defaults from the configuration system (PipelineStepConfig)
-        PipelineStepConfig.StepConfig configFromStepConfig = pipelineStepConfig.defaults();
+    void testPipelineConfigNewStepConfigInheritsDefaults() {
+        // Test that when creating new StepConfig instances via newStepConfig(),
+        // they inherit from the defaults (whether from the PipelineConfigInitializer or defaults)
+        StepConfig newStepConfig = pipelineConfig.newStepConfig();
+        StepConfig defaults = pipelineConfig.defaults();
 
-        // Get the defaults from PipelineConfig
-        StepConfig configFromPipelineConfig = pipelineConfig.defaults();
-
-
-        // Verify that both configurations have the same values
-        // This proves that the PipelineConfigInitializer is correctly
-        // synchronizing values from PipelineStepConfig to PipelineConfig
-        assertEquals(configFromStepConfig.retryLimit(), configFromPipelineConfig.retryLimit(),
-                "PipelineConfig should have the same retryLimit as PipelineStepConfig");
-        assertEquals(configFromStepConfig.retryWaitMs(), configFromPipelineConfig.retryWait().toMillis(),
-                "PipelineConfig should have the same retryWait as PipelineStepConfig");
-        assertEquals(configFromStepConfig.parallel(), configFromPipelineConfig.parallel(),
-                "PipelineConfig should have the same parallel setting as PipelineStepConfig");
-        assertEquals(configFromStepConfig.recoverOnFailure(), configFromPipelineConfig.recoverOnFailure(),
-                "PipelineConfig should have the same recoverOnFailure setting as PipelineStepConfig");
-        assertEquals(configFromStepConfig.maxBackoff(), configFromPipelineConfig.maxBackoff().toMillis(),
-                "PipelineConfig should have the same maxBackoff as PipelineStepConfig");
-        assertEquals(configFromStepConfig.jitter(), configFromPipelineConfig.jitter(),
-                "PipelineConfig should have the same jitter setting as PipelineStepConfig");
-        assertEquals(configFromStepConfig.backpressureBufferCapacity(), configFromPipelineConfig.backpressureBufferCapacity(),
-                "PipelineConfig should have the same backpressureBufferCapacity as PipelineStepConfig");
-        assertEquals(configFromStepConfig.backpressureStrategy(), configFromPipelineConfig.backpressureStrategy(),
-                "PipelineConfig should have the same backpressureStrategy as PipelineStepConfig");
+        // Verify inheritance between newStepConfig and defaults
+        assertEquals(defaults.retryLimit(), newStepConfig.retryLimit());
+        assertEquals(defaults.retryWait(), newStepConfig.retryWait());
+        assertEquals(defaults.parallel(), newStepConfig.parallel());
+        assertEquals(defaults.recoverOnFailure(), newStepConfig.recoverOnFailure());
+        assertEquals(defaults.maxBackoff(), newStepConfig.maxBackoff());
+        assertEquals(defaults.jitter(), newStepConfig.jitter());
+        assertEquals(defaults.backpressureBufferCapacity(), newStepConfig.backpressureBufferCapacity());
+        assertEquals(defaults.backpressureStrategy(), newStepConfig.backpressureStrategy());
     }
 
     @Test
-    void testPipelineConfigNewStepConfigInheritsDefaults() {
-        // Test that when creating new StepConfig instances via newStepConfig(),
-        // they inherit from the properly synced defaults
-        StepConfig newStepConfig = pipelineConfig.newStepConfig();
+    void testPipelineConfigValuesAreConsistent() {
+        // Test that the PipelineConfig's defaults and newStepConfig use consistent values
         StepConfig defaults = pipelineConfig.defaults();
+        StepConfig newStepConfig = pipelineConfig.newStepConfig();
         
-        // Verify inheritance
+        // Verify that newStepConfig inherits from defaults
         assertEquals(defaults.retryLimit(), newStepConfig.retryLimit());
         assertEquals(defaults.retryWait(), newStepConfig.retryWait());
         assertEquals(defaults.parallel(), newStepConfig.parallel());

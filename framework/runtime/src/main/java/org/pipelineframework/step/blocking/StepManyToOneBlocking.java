@@ -104,73 +104,56 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
             .group().intoLists().of(batchSize, batchTimeout);
 
         if (effectiveConfig().parallel()) {
-            // Process batches concurrently
+            // Process batches concurrently with per-batch retry logic
             return batches
-                .onItem().transformToUniAndMerge(list -> {
-                    try {
-                        O result = applyBatchList(list);
-
-                        if (logger.isDebugEnabled()) {
-                            logger.debugf(
-                                "Blocking Step %s processed batch of %d items into single output: %s",
-                                this.getClass().getSimpleName(), list.size(), result
-                            );
-                        }
-
-                        return Uni.createFrom().item(result);
-                    } catch (Exception e) {
-                        if (recoverOnFailure()) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debugf(
-                                    "Blocking Step %s: failed batch: %s",
-                                    this.getClass().getSimpleName(), e.getMessage()
-                                );
-                            }
-                            return deadLetterBatchList(list, e);
-                        } else {
-                            return Uni.createFrom().failure(e);
-                        }
-                    }
-                })
-                .onFailure(t -> !(t instanceof NullPointerException)).retry()
-                .withBackOff(retryWait(), maxBackoff())
-                .withJitter(jitter() ? 0.5 : 0.0)
-                .atMost(retryLimit())
-            .collect().last();
+                .onItem().transformToUniAndMerge(list -> processBatch(list, logger))
+                .collect().last();
         } else {
-            // Process batches sequentially (backward compatibility)
+            // Process batches sequentially (backward compatibility) with per-batch retry logic
             return batches
-                .onItem().transformToUniAndConcatenate(list -> {
-                    try {
-                        O result = applyBatchList(list);
+                .onItem().transformToUniAndConcatenate(list -> processBatch(list, logger))
+                .collect().last();
+        }
+    }
 
+    /**
+     * Process a single batch of inputs with proper error handling and retry logic.
+     *
+     * @param list The batch of inputs to process
+     * @param logger The logger to use for logging
+     * @return A Uni that emits the processed output or handles errors appropriately
+     */
+    private Uni<O> processBatch(List<I> list, Logger logger) {
+        return Uni.createFrom().item(list)
+            .onItem().transformToUni(batch -> {
+                try {
+                    O result = applyBatchList(batch);
+
+                    if (logger.isDebugEnabled()) {
+                        logger.debugf(
+                            "Blocking Step %s processed batch of %d items into single output: %s",
+                            this.getClass().getSimpleName(), batch.size(), result
+                        );
+                    }
+
+                    return Uni.createFrom().item(result);
+                } catch (Exception e) {
+                    if (recoverOnFailure()) {
                         if (logger.isDebugEnabled()) {
                             logger.debugf(
-                                "Blocking Step %s processed batch of %d items into single output: %s",
-                                this.getClass().getSimpleName(), list.size(), result
+                                "Blocking Step %s: failed batch: %s",
+                                this.getClass().getSimpleName(), e.getMessage()
                             );
                         }
-
-                        return Uni.createFrom().item(result);
-                    } catch (Exception e) {
-                        if (recoverOnFailure()) {
-                            if (logger.isDebugEnabled()) {
-                                logger.debugf(
-                                    "Blocking Step %s: failed batch: %s",
-                                    this.getClass().getSimpleName(), e.getMessage()
-                                );
-                            }
-                            return deadLetterBatchList(list, e);
-                        } else {
-                            return Uni.createFrom().failure(e);
-                        }
+                        return deadLetterBatchList(list, e);
+                    } else {
+                        return Uni.createFrom().failure(e);
                     }
-                })
-                .onFailure(t -> !(t instanceof NullPointerException)).retry()
-                .withBackOff(retryWait(), maxBackoff())
-                .withJitter(jitter() ? 0.5 : 0.0)
-                .atMost(retryLimit())
-            .collect().last();
-        }
+                }
+            })
+            .onFailure(t -> !(t instanceof NullPointerException)).retry()
+            .withBackOff(retryWait(), maxBackoff())
+            .withJitter(jitter() ? 0.5 : 0.0)
+            .atMost(retryLimit());
     }
 }

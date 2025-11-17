@@ -50,7 +50,7 @@ public class PollAckPaymentSentOnVirtualThreadReactiveService
 	    this.paymentProviderServiceMock = paymentProviderServiceMock;
         this.config = config;
         logger.debugf(
-            "PollAckPaymentSentReactiveService initialized with config: permitsPerSecond=%s, timeoutMillis=%s, waitMilliseconds=%s",
+            "PollAckPaymentSentOnVirtualThreadReactiveService initialized with config: permitsPerSecond=%s, timeoutMillis=%s, waitMilliseconds=%s",
             config.permitsPerSecond(),
             config.timeoutMillis(),
             config.waitMilliseconds());

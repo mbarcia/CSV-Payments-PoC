@@ -256,12 +256,11 @@ public class TestSteps {
                 super.initialiseWithConfig(config);
             } else {
                 if (config != null) {
-                    // Only apply config's recoverOnFailure if constructor didn't set it
-                    if (!manualRecoverOnFailureSet) {
-                        config.recoverOnFailure(config.recoverOnFailure());
-                    } else {
+                    // Only apply manual recoverOnFailure if it was explicitly set
+                    if (manualRecoverOnFailureSet) {
                         config.recoverOnFailure(manualRecoverOnFailure);
                     }
+                    // Otherwise, leave config as-is (do nothing)
                 }
                 super.initialiseWithConfig(config);
             }

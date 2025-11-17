@@ -20,12 +20,15 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 import io.quarkus.arc.InjectableInstance;
+import io.quarkus.test.junit.QuarkusTest;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import java.lang.reflect.Field;
+import lombok.Getter;
+import lombok.Setter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -35,6 +38,7 @@ import org.mockito.MockitoAnnotations;
  * Comprehensive unit tests for VThreadPersistenceProvider. Tests entity persistence, transaction
  * handling, and virtual thread detection.
  */
+@QuarkusTest
 class VThreadPersistenceProviderTest {
 
     @Mock private InjectableInstance<EntityManager> mockEntityManagerInstance;
@@ -99,9 +103,9 @@ class VThreadPersistenceProviderTest {
     }
 
     @Test
-    void testSupportsThreadContextReturnsTrueForVirtualThread() {
-        // Note: This test assumes running on a platform thread
-        // In a real virtual thread context, this would return true
+    void testSupportsThreadContextReturnsFalseOnPlatformThread() {
+        // Note: This test assumes running on the JUnit platform thread.
+        // In a real virtual-thread context, supportsThreadContext() should return true instead.
 
         // When
         boolean supportsThreadContext = provider.supportsThreadContext();
@@ -313,22 +317,25 @@ class VThreadPersistenceProviderTest {
     }
 
     /** Test entity class for testing */
+    @Setter
+    @Getter
     @Entity
     private static class TestEntity {
         private String value;
+        @jakarta.persistence.Id
+        private Long id;
 
-        public String getValue() {
-            return value;
-        }
-
-        public void setValue(String value) {
-            this.value = value;
-        }
     }
 
     /** Another test entity class */
+    @Setter
+    @Getter
     @Entity
-    private static class AnotherTestEntity {}
+    private static class AnotherTestEntity {
+        @jakarta.persistence.Id
+        private Long id;
+
+    }
 
     /** Non-entity class for negative testing */
     private static class NonEntityClass {}

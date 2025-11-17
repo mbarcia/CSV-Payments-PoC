@@ -28,8 +28,6 @@ import org.pipelineframework.step.functional.ManyToOne;
 /** N -> 1 (imperative) */
 public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
 
-    Logger LOG = Logger.getLogger(StepManyToOneBlocking.class);
-
     /**
      * Apply the step to a batch of inputs, producing a single output.
      *
@@ -67,6 +65,7 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
      * @return a Uni emitting `null` cast to the output type `O`
      */
     default Uni<O> deadLetterBatchList(List<I> inputs, Throwable error) {
+        Logger LOG = Logger.getLogger(this.getClass());
         LOG.errorf("DLQ drop for batch of %d items: %s", inputs.size(), error.getMessage());
         return Uni.createFrom().item((O) null);
     }
@@ -88,7 +87,7 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
      */
     @Override
     default Uni<O> apply(Multi<I> input) {
-        final Logger LOG = Logger.getLogger(this.getClass());
+        final Logger logger = Logger.getLogger(this.getClass());
         int batchSize = this.batchSize();
         Duration batchTimeout = this.batchTimeout();
 
@@ -111,8 +110,8 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     try {
                         O result = applyBatchList(list);
 
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debugf(
+                        if (logger.isDebugEnabled()) {
+                            logger.debugf(
                                 "Blocking Step %s processed batch of %d items into single output: %s",
                                 this.getClass().getSimpleName(), list.size(), result
                             );
@@ -121,8 +120,8 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                         return Uni.createFrom().item(result);
                     } catch (Exception e) {
                         if (recoverOnFailure()) {
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debugf(
+                            if (logger.isDebugEnabled()) {
+                                logger.debugf(
                                     "Blocking Step %s: failed batch: %s",
                                     this.getClass().getSimpleName(), e.getMessage()
                                 );
@@ -145,8 +144,8 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     try {
                         O result = applyBatchList(list);
 
-                        if (LOG.isDebugEnabled()) {
-                            LOG.debugf(
+                        if (logger.isDebugEnabled()) {
+                            logger.debugf(
                                 "Blocking Step %s processed batch of %d items into single output: %s",
                                 this.getClass().getSimpleName(), list.size(), result
                             );
@@ -155,8 +154,8 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                         return Uni.createFrom().item(result);
                     } catch (Exception e) {
                         if (recoverOnFailure()) {
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debugf(
+                            if (logger.isDebugEnabled()) {
+                                logger.debugf(
                                     "Blocking Step %s: failed batch: %s",
                                     this.getClass().getSimpleName(), e.getMessage()
                                 );

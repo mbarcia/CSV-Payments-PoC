@@ -47,7 +47,7 @@ public class PollAckPaymentSentOnVirtualThreadReactiveService
   public PollAckPaymentSentOnVirtualThreadReactiveService(
       PaymentProviderService paymentProviderServiceMock,
       PaymentProviderConfig config) {
-	    this.paymentProviderServiceMock = paymentProviderServiceMock;
+        this.paymentProviderServiceMock = paymentProviderServiceMock;
         this.config = config;
         logger.debugf(
             "PollAckPaymentSentOnVirtualThreadReactiveService initialized with config: permitsPerSecond=%s, timeoutMillis=%s, waitMilliseconds=%s",
@@ -81,15 +81,13 @@ public class PollAckPaymentSentOnVirtualThreadReactiveService
                     logger.debugf("Thread: %s isVirtual? %s",
                             Thread.currentThread(), Thread.currentThread().isVirtual());
 
-                    logger.debugf("About to delay for %dms", time);
-
                     // Safe on virtual threads (no event-loop hop)
                     logger.debugf("About to sleep for %sms", time);
                     try {
                         Thread.sleep(time); // simulate delay
                         logger.infof("Finished polling (--> %dms)", time);
                     } catch (InterruptedException e) {
-                        logger.error("InterruptedException while sleeping: %s", e.getMessage(), e);
+                        logger.error("InterruptedException whilst sleeping", e);
                         Thread.currentThread().interrupt(); // Restore interrupt status
                         throw new RuntimeException("InterruptedException while sleeping", e);
                     }
@@ -107,8 +105,11 @@ public class PollAckPaymentSentOnVirtualThreadReactiveService
 
                     String serviceId = this.getClass().toString();
                     MDC.put("serviceId", serviceId);
-                    logger.infof("Executed command on %s --> %s", detachedAckPaymentSent, result);
-                    MDC.remove("serviceId");
+                    try {
+                        logger.infof("Executed command on %s --> %s", detachedAckPaymentSent, result);
+                    } finally {
+                        MDC.remove("serviceId");
+                    }
 
                     return result;
                 })

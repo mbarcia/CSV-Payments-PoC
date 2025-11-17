@@ -1038,6 +1038,14 @@ public class PipelineStepProcessor extends AbstractProcessor {
             ClassName returnType,
             TypeName parameterType, String parameterName) {
 
+        // Check that mappers exist when they will be referenced by fromGrpc/toGrpc methods
+        if (inputType != null && inputGrpcType != null && inboundMapperType == null) {
+            throw new IllegalStateException("inboundMapper is required when both inputType and inputGrpcType are specified");
+        }
+        if (outputType != null && outputGrpcType != null && outboundMapperType == null) {
+            throw new IllegalStateException("outboundMapper is required when both outputType and outputGrpcType are specified");
+        }
+
         // Create the inline adapter
         TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
             .superclass(ParameterizedTypeName.get(grpcAdapterClassName,

@@ -78,9 +78,19 @@ class ReactiveServiceAdapterBaseTest {
 
     @Test
     void testSwitchToEventLoopFailureMessage() {
-        // Note: In a @QuarkusTest environment, there might be a Vert.x context available
-        // So we can't reliably test the failure path in this environment  
-        org.junit.jupiter.api.Assumptions.assumeTrue(false, "Skipping test that assumes no Vert.x context available in Quarkus test environment");
+        // Given - no Vert.x context in this test environment
+        TestReactiveServiceAdapter testAdapter = new TestReactiveServiceAdapter(false);
+
+        // When & Then
+        IllegalStateException ex =
+                assertThrows(
+                        IllegalStateException.class,
+                        () -> testAdapter.switchToEventLoopPublic().await().indefinitely(),
+                        "Should have thrown IllegalStateException");
+        assertEquals(
+                "No Vert.x context available",
+                ex.getMessage(),
+                "Error message should indicate no Vert.x context");
     }
 
     @Test

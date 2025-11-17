@@ -54,15 +54,34 @@ public class ConfigFactory {
         if (classConfig != null) {
             // Start with pipeline defaults and layer per-step overrides on top
             StepConfig baseConfig = pipelineConfig.newStepConfig();
-            return baseConfig
-                .retryLimit(classConfig.retryLimit())
-                .retryWait(java.time.Duration.ofMillis(classConfig.retryWaitMs()))
-                .parallel(classConfig.parallel())
-                .recoverOnFailure(classConfig.recoverOnFailure())
-                .maxBackoff(java.time.Duration.ofMillis(classConfig.maxBackoff()))
-                .jitter(classConfig.jitter())
-                .backpressureBufferCapacity(classConfig.backpressureBufferCapacity())
-                .backpressureStrategy(classConfig.backpressureStrategy());
+            
+            // Only apply overrides that differ from the default interface values to preserve pipeline defaults
+            StepConfig result = baseConfig;
+            if (!classConfig.retryLimit().equals(3)) {
+                result = result.retryLimit(classConfig.retryLimit());
+            }
+            if (!classConfig.retryWaitMs().equals(2000L)) {
+                result = result.retryWait(java.time.Duration.ofMillis(classConfig.retryWaitMs()));
+            }
+            if (!classConfig.parallel().equals(false)) {
+                result = result.parallel(classConfig.parallel());
+            }
+            if (!classConfig.recoverOnFailure().equals(false)) {
+                result = result.recoverOnFailure(classConfig.recoverOnFailure());
+            }
+            if (!classConfig.maxBackoff().equals(30000L)) {
+                result = result.maxBackoff(java.time.Duration.ofMillis(classConfig.maxBackoff()));
+            }
+            if (!classConfig.jitter().equals(false)) {
+                result = result.jitter(classConfig.jitter());
+            }
+            if (!classConfig.backpressureBufferCapacity().equals(1024)) {
+                result = result.backpressureBufferCapacity(classConfig.backpressureBufferCapacity());
+            }
+            if (!classConfig.backpressureStrategy().equals("BUFFER")) {
+                result = result.backpressureStrategy(classConfig.backpressureStrategy());
+            }
+            return result;
         } else {
             // Use the PipelineConfig's newStepConfig which contains properly initialized defaults
             return pipelineConfig.newStepConfig();

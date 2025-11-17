@@ -19,11 +19,8 @@ package org.pipelineframework.rest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
-import org.pipelineframework.annotation.StepConfigProvider;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingService;
-import org.pipelineframework.step.ConfigurableStep;
 
 /**
  * Base class for streaming REST resources that provides auto-persistence functionality.
@@ -37,40 +34,19 @@ public abstract class RestReactiveStreamingServiceAdapter<DomainIn, DomainOut, D
     @Inject
     PersistenceManager persistenceManager;
     
-    // The step class this adapter is for
-    private Class<? extends ConfigurableStep> stepClass;
 
     protected abstract ReactiveStreamingService<DomainIn, DomainOut> getService();
 
     protected abstract DtoOut toDto(DomainOut domainOut);
 
     /**
-     * Get the step configuration for this service adapter.
-     * Override this method to provide specific configuration.
-     * 
-     * @return the step configuration, or null if not configured
-     */
-    protected StepConfig getStepConfig() {
-        if (stepClass != null) {
-            return StepConfigProvider.getStepConfig(stepClass);
-        }
-        return null;
-    }
-
-    /**
-     * Determines whether entities should be automatically persisted before processing.
-     * Override this method to enable auto-persistence.
-     * 
+     * Determines whether entities should be automatically persisted before processing. This method
+     * should be implemented by generated service adapters to return the auto-persist value
+     * from the @PipelineStep annotation.
+     *
      * @return true if entities should be auto-persisted, false otherwise
      */
-    protected boolean isAutoPersistenceEnabled() {
-        if (stepClass != null) {
-            return StepConfigProvider.isAutoPersistenceEnabled(stepClass);
-        }
-        
-        StepConfig config = getStepConfig();
-        return config != null && config.autoPersist();
-    }
+    protected abstract boolean isAutoPersistenceEnabled();
 
     /**
      * Process a single domain object with auto-persistence support.

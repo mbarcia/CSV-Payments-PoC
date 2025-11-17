@@ -46,15 +46,7 @@ The `order` property determines the execution order of the steps in the pipeline
 
 ## Parallel Processing Configuration
 
-For any step type, you can configure parallel processing to process multiple items from the same stream concurrently. This can be set globally or per-step:
-
-```properties
-# Global setting
-pipeline.defaults.parallel=true
-
-# Or per-step override
-pipeline.step."org.example.MyStep".parallel=true
-```
+For any step type, you can configure parallel processing to process multiple items from the same stream concurrently. This can be set globally or per-step using the same configuration mechanisms described in the [Global Configuration](#global-configuration) and [Per-Step Configuration](#per-step-configuration) sections above.
 
 ### Parallel Processing Parameters
 

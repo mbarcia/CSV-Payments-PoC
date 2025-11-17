@@ -56,7 +56,6 @@ public class PollAckPaymentSentReactiveService
 
   @Override
   public Uni<PaymentStatus> process(AckPaymentSent detachedAckPaymentSent) {
-    // Do NOT use virtual threads if setting autoPersist
       logger.debugf(
           "Processing AckPaymentSent: id=%s, conversationId=%s, paymentRecordId=%s",
           detachedAckPaymentSent.getId(),

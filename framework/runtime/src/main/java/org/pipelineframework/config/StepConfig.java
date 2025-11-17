@@ -16,6 +16,7 @@
 
 package org.pipelineframework.config;
 
+import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.Dependent;
 import java.text.MessageFormat;
 import java.time.Duration;
@@ -26,22 +27,30 @@ import java.util.concurrent.atomic.AtomicReference;
 /**
  * Configuration class for pipeline steps that holds various runtime parameters
  * such as retry limits, concurrency settings, and debugging options.
+ *
+ * This class can be initialized with values from the new Quarkus configuration system.
  */
 @Dependent
+@DefaultBean
 public class StepConfig {
 
-    private final AtomicInteger retryLimit = new AtomicInteger(3);
-    private final AtomicReference<Duration> retryWait = new AtomicReference<>(Duration.ofMillis(2000));
+    // Default values for configuration
+    private static final int DEFAULT_RETRY_LIMIT = 3;
+    private static final Duration DEFAULT_RETRY_WAIT = Duration.ofMillis(2000);
+    private static final int DEFAULT_BACKPRESSURE_BUFFER_CAPACITY = 1024;
+    private static final Duration DEFAULT_MAX_BACKOFF = Duration.ofSeconds(30);
+    private static final String DEFAULT_BACKPRESSURE_STRATEGY = "BUFFER";
+
+    // Mutable fields for runtime configuration (to maintain backward compatibility)
+    private final AtomicInteger retryLimit = new AtomicInteger(DEFAULT_RETRY_LIMIT);
+    private final AtomicReference<Duration> retryWait = new AtomicReference<>(DEFAULT_RETRY_WAIT);
     private volatile boolean parallel = false; // Default is sequential processing
-    private final AtomicInteger backpressureBufferCapacity = new AtomicInteger(1024);
+    private final AtomicInteger backpressureBufferCapacity = new AtomicInteger(DEFAULT_BACKPRESSURE_BUFFER_CAPACITY);
 
-    private volatile boolean debug = false;
     private volatile boolean recoverOnFailure = false;
-    private volatile boolean runWithVirtualThreads = false;
-    private volatile boolean autoPersist = false;
-    private volatile String backpressureStrategy = "BUFFER";
+    private volatile String backpressureStrategy = DEFAULT_BACKPRESSURE_STRATEGY;
 
-    private final AtomicReference<Duration> maxBackoff = new AtomicReference<>(Duration.ofSeconds(30));
+    private final AtomicReference<Duration> maxBackoff = new AtomicReference<>(DEFAULT_MAX_BACKOFF);
     private volatile boolean jitter = false;
 
     /**
@@ -49,18 +58,30 @@ public class StepConfig {
      */
     public StepConfig() {}
 
-    // --- getters ---
     /**
-     * Whether to automatically persist step results to storage
-     * @return true if auto persistence is enabled, false otherwise
+     * Creates a StepConfig initialized with values from the Quarkus configuration.
+     * @param config The configuration to use for initialization
      */
-    public boolean autoPersist() { return autoPersist; }
+    public StepConfig(org.pipelineframework.config.PipelineStepConfig.StepConfig config) {
+        if (config != null) {
+            this.retryLimit.set(config.retryLimit());
+            this.retryWait.set(Duration.ofMillis(config.retryWaitMs()));
+            this.parallel = config.parallel();
+            this.recoverOnFailure = config.recoverOnFailure();
+            this.maxBackoff.set(Duration.ofMillis(config.maxBackoff()));
+            this.jitter = config.jitter();
+            this.backpressureBufferCapacity.set(config.backpressureBufferCapacity());
+            this.backpressureStrategy = config.backpressureStrategy();
+        }
+    }
+
+    // --- getters ---
     /**
      * Number of times to retry a failed operation before giving up
      * @return the retry limit (default: 3)
      */
     public int retryLimit() { return retryLimit.get(); }
-    
+
     /**
      * Base delay between retry attempts
      * @return the retry wait duration (default: 2000ms)
@@ -72,8 +93,6 @@ public class StepConfig {
      * @return the buffer capacity (default: 1024)
      */
     public int backpressureBufferCapacity() { return backpressureBufferCapacity.get(); }
-
-
 
     /**
      * Backpressure strategy to use when buffering items ("BUFFER", "DROP")
@@ -88,25 +107,17 @@ public class StepConfig {
     public boolean parallel() { return parallel; }
 
     /**
-     * Whether to enable debug mode with additional logging
-     * @return true if debug mode is enabled, false otherwise
-     */
-    public boolean debug() { return debug; }
-    /**
      * Whether to attempt recovery when a failure occurs
      * @return true if failure recovery is enabled, false otherwise
      */
     public boolean recoverOnFailure() { return recoverOnFailure; }
-    /**
-     * Whether to run the step using virtual threads
-     * @return true if virtual threads are enabled, false otherwise
-     */
-    public boolean runWithVirtualThreads() { return runWithVirtualThreads; }
+
     /**
      * Maximum backoff duration when using exponential backoff
      * @return the maximum backoff duration (default: 30 seconds)
      */
     public Duration maxBackoff() { return maxBackoff.get(); }
+
     /**
      * Whether to add jitter to backoff intervals
      * @return true if jitter is enabled, false otherwise
@@ -119,26 +130,28 @@ public class StepConfig {
      * @param v the retry limit
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig retryLimit(int v) { 
+    public StepConfig retryLimit(int v) {
         if (v < 0) {
             throw new IllegalArgumentException("retryLimit must be >= 0");
         }
-        retryLimit.set(v); 
-        return this; 
+        retryLimit.set(v);
+        return this;
     }
+
     /**
      * Sets the base delay between retry attempts
      * @param v the retry wait duration
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig retryWait(Duration v) { 
+    public StepConfig retryWait(Duration v) {
         Objects.requireNonNull(v, "retryWait must not be null");
         if (v.isNegative() || v.isZero()) {
             throw new IllegalArgumentException("retryWait must be > 0");
         }
-        retryWait.set(v); 
-        return this; 
+        retryWait.set(v);
+        return this;
     }
+
     /**
      * Sets whether to enable parallel processing for this step
      * @param v true to enable parallel processing, false for sequential processing
@@ -151,37 +164,21 @@ public class StepConfig {
      * @param v the buffer capacity
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig backpressureBufferCapacity(int v) { 
+    public StepConfig backpressureBufferCapacity(int v) {
         if (v <= 0) {
             throw new IllegalArgumentException("backpressureBufferCapacity must be > 0");
         }
-        backpressureBufferCapacity.set(v); 
-        return this; 
+        backpressureBufferCapacity.set(v);
+        return this;
     }
-    /**
-     * Sets whether to enable debug mode with additional logging
-     * @param v true to enable debug mode, false to disable
-     * @return this StepConfig instance for method chaining
-     */
-    public StepConfig debug(boolean v) { debug = v; return this; }
+
     /**
      * Sets whether to attempt recovery when a failure occurs
      * @param v true to enable failure recovery, false to disable
      * @return this StepConfig instance for method chaining
      */
     public StepConfig recoverOnFailure(boolean v) { recoverOnFailure = v; return this; }
-    /**
-     * Sets whether to run the step using virtual threads
-     * @param v true to enable virtual threads, false to disable
-     * @return this StepConfig instance for method chaining
-     */
-    public StepConfig runWithVirtualThreads(boolean v) { runWithVirtualThreads = v; return this; }
-    /**
-     * Sets whether to automatically persist step results to storage
-     * @param v true to enable auto persistence, false to disable
-     * @return this StepConfig instance for method chaining
-     */
-    public StepConfig autoPersist(boolean v) { autoPersist = v; return this; }
+
     /**
      * Sets the backpressure strategy to use when buffering items ("BUFFER", "DROP")
      * @param v the backpressure strategy
@@ -196,19 +193,21 @@ public class StepConfig {
         backpressureStrategy = norm;
         return this;
     }
+
     /**
      * Sets the maximum backoff duration when using exponential backoff
      * @param v the maximum backoff duration
      * @return this StepConfig instance for method chaining
      */
-    public StepConfig maxBackoff(Duration v) { 
+    public StepConfig maxBackoff(Duration v) {
         Objects.requireNonNull(v, "maxBackoff must not be null");
         if (v.isNegative() || v.isZero()) {
             throw new IllegalArgumentException("maxBackoff must be > 0");
         }
-        maxBackoff.set(v); 
-        return this; 
+        maxBackoff.set(v);
+        return this;
     }
+
     /**
      * Sets whether to add jitter to backoff intervals
      * @param v true to enable jitter, false to disable
@@ -218,15 +217,13 @@ public class StepConfig {
 
     @Override
     public String toString() {
-        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, parallel={2}, debug={3}, recoverOnFailure={4}, maxBackoff={5}, jitter={6}, autoPersist={7}, backpressureBufferCapacity={8}, backpressureStrategy={9}'}'",
+        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, parallel={2}, recoverOnFailure={3}, maxBackoff={4}, jitter={5}, backpressureBufferCapacity={6}, backpressureStrategy={7}'}'",
                 retryLimit(),
                 retryWait(),
                 parallel,
-                debug,
                 recoverOnFailure,
                 maxBackoff(),
                 jitter,
-                autoPersist,
                 backpressureBufferCapacity(),
                 backpressureStrategy());
     }

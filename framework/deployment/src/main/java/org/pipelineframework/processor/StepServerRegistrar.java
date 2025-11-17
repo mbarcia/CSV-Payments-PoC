@@ -44,13 +44,12 @@ public class StepServerRegistrar {
 
     /**
      * Registers generated gRPC service classes as unremovable CDI beans when CLI generation is disabled.
-     * <p>
-     * Iterates the Jandex index for classes whose fully qualified name ends with the GRPC service suffix
-     * and produces AdditionalBeanBuildItem entries to mark them unremovable.
      *
-     * @param additionalBeans producer used to register AdditionalBeanBuildItem instances for discovered services
-     * @param config build-time configuration; if {@code config.generateCli()} is true, no registration is performed
-     * @param combinedIndex provides the Jandex index used to discover generated gRPC service classes
+     * If CLI generation is enabled this step performs no registration.
+     *
+     * @param additionalBeans producer used to register discovered service classes as unremovable CDI beans
+     * @param config build-time configuration that controls whether CLI generation is enabled
+     * @param combinedIndex provides the index used to discover generated gRPC service classes
      */
     @BuildStep
     void registerGeneratedGrpcServices(BuildProducer<AdditionalBeanBuildItem> additionalBeans,

@@ -59,8 +59,11 @@ public class StepConfig {
     public StepConfig() {}
 
     /**
-     * Creates a StepConfig initialized with values from the Quarkus configuration.
-     * @param config The configuration to use for initialization
+     * Initialise a StepConfig from a PipelineStepConfig.StepConfig by copying its properties.
+     *
+     * If {@code config} is {@code null}, the instance retains its default values.
+     *
+     * @param config the Quarkus-backed step configuration whose values are copied; may be {@code null}
      */
     public StepConfig(org.pipelineframework.config.PipelineStepConfig.StepConfig config) {
         if (config != null) {
@@ -77,9 +80,10 @@ public class StepConfig {
 
     // --- getters ---
     /**
-     * Number of times to retry a failed operation before giving up
-     * @return the retry limit (default: 3)
-     */
+ * Number of retry attempts for a failed operation before giving up.
+ *
+ * @return the retry limit (number of attempts); default: 3
+ */
     public int retryLimit() { return retryLimit.get(); }
 
     /**
@@ -89,9 +93,10 @@ public class StepConfig {
     public Duration retryWait() { return retryWait.get(); }
 
     /**
-     * The backpressure buffer capacity
-     * @return the buffer capacity (default: 1024)
-     */
+ * Current backpressure buffer capacity.
+ *
+ * @return the buffer capacity (number of elements)
+ */
     public int backpressureBufferCapacity() { return backpressureBufferCapacity.get(); }
 
     /**
@@ -101,21 +106,24 @@ public class StepConfig {
     public String backpressureStrategy() { return backpressureStrategy; }
 
     /**
-     * Whether to enable parallel processing for this step
-     * @return true if parallel processing is enabled, false for sequential processing
-     */
+ * Indicates whether this step processes items in parallel.
+ *
+ * @return true if parallel processing is enabled, false otherwise
+ */
     public boolean parallel() { return parallel; }
 
     /**
-     * Whether to attempt recovery when a failure occurs
-     * @return true if failure recovery is enabled, false otherwise
-     */
+ * Indicates if failure recovery is enabled.
+ *
+ * @return `true` if failure recovery is enabled, `false` otherwise
+ */
     public boolean recoverOnFailure() { return recoverOnFailure; }
 
     /**
-     * Maximum backoff duration when using exponential backoff
-     * @return the maximum backoff duration (default: 30 seconds)
-     */
+ * Maximum duration allowed for exponential backoff.
+ *
+ * @return the maximum backoff duration, defaults to 30 seconds
+ */
     public Duration maxBackoff() { return maxBackoff.get(); }
 
     /**
@@ -126,10 +134,12 @@ public class StepConfig {
 
     // --- setters ---
     /**
-     * Sets the number of times to retry a failed operation before giving up
-     * @param v the retry limit
-     * @return this StepConfig instance for method chaining
-     */
+         * Configure how many times a failed operation will be retried before no further retries are attempted.
+         *
+         * @param v the retry limit; must be greater than or equal to 0
+         * @return   this StepConfig instance for method chaining
+         * @throws IllegalArgumentException if {@code v} is less than 0
+         */
     public StepConfig retryLimit(int v) {
         if (v < 0) {
             throw new IllegalArgumentException("retryLimit must be >= 0");
@@ -139,9 +149,12 @@ public class StepConfig {
     }
 
     /**
-     * Sets the base delay between retry attempts
-     * @param v the retry wait duration
+     * Configure the base delay used between retry attempts.
+     *
+     * @param v the retry wait duration; must not be {@code null} and must be greater than zero
      * @return this StepConfig instance for method chaining
+     * @throws NullPointerException if {@code v} is {@code null}
+     * @throws IllegalArgumentException if {@code v} is zero or negative
      */
     public StepConfig retryWait(Duration v) {
         Objects.requireNonNull(v, "retryWait must not be null");
@@ -160,9 +173,11 @@ public class StepConfig {
     public StepConfig parallel(boolean v) { parallel = v; return this; }
 
     /**
-     * Sets the backpressure buffer capacity
-     * @param v the buffer capacity
+     * Set the capacity of the backpressure buffer.
+     *
+     * @param v the capacity in number of items; must be greater than zero
      * @return this StepConfig instance for method chaining
+     * @throws IllegalArgumentException if {@code v} is less than or equal to zero
      */
     public StepConfig backpressureBufferCapacity(int v) {
         if (v <= 0) {
@@ -180,9 +195,15 @@ public class StepConfig {
     public StepConfig recoverOnFailure(boolean v) { recoverOnFailure = v; return this; }
 
     /**
-     * Sets the backpressure strategy to use when buffering items ("BUFFER", "DROP")
-     * @param v the backpressure strategy
+     * Configure the backpressure strategy used when handling excess items.
+     *
+     * <p>Accepted values are "BUFFER" and "DROP"; comparison is case-insensitive and leading/trailing
+     * whitespace is ignored. The value is normalised to upper case when stored.</p>
+     *
+     * @param v the strategy name (for example "BUFFER" or "DROP")
      * @return this StepConfig instance for method chaining
+     * @throws NullPointerException if {@code v} is null
+     * @throws IllegalArgumentException if {@code v} is not "BUFFER" or "DROP"
      */
     public StepConfig backpressureStrategy(String v) {
         Objects.requireNonNull(v, "backpressureStrategy must not be null");
@@ -195,9 +216,12 @@ public class StepConfig {
     }
 
     /**
-     * Sets the maximum backoff duration when using exponential backoff
-     * @param v the maximum backoff duration
+     * Configure the maximum backoff duration used for exponential backoff.
+     *
+     * @param v the maximum backoff Duration; must be greater than zero
      * @return this StepConfig instance for method chaining
+     * @throws NullPointerException if {@code v} is null
+     * @throws IllegalArgumentException if {@code v} is zero or negative
      */
     public StepConfig maxBackoff(Duration v) {
         Objects.requireNonNull(v, "maxBackoff must not be null");
@@ -215,6 +239,13 @@ public class StepConfig {
      */
     public StepConfig jitter(boolean v) { jitter = v; return this; }
 
+    /**
+     * Produces a single-line, human-readable summary of this step's configuration.
+     *
+     * @return a formatted String containing the current values of
+     *         retryLimit, retryWait, parallel, recoverOnFailure, maxBackoff, jitter,
+     *         backpressureBufferCapacity and backpressureStrategy
+     */
     @Override
     public String toString() {
         return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, parallel={2}, recoverOnFailure={3}, maxBackoff={4}, jitter={5}, backpressureBufferCapacity={6}, backpressureStrategy={7}'}'",

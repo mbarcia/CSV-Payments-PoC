@@ -44,10 +44,10 @@ public class PersistenceManager {
     }
 
     /**
-     * Persist an entity using the appropriate provider.
+     * Persist the given entity using a registered persistence provider that supports it and the current thread context.
      *
-     * @param entity The entity to persist
-     * @return A Uni that completes with the persisted entity, or the original entity if no provider supports it
+     * @param entity the entity to persist
+     * @return the persisted entity if a suitable provider handled it, otherwise the original entity; if the input was null the Uni emits `null`
      */
     public <T> Uni<T> persist(T entity) {
         if (entity == null) {

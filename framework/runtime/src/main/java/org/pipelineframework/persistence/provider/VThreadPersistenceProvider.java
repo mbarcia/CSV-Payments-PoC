@@ -32,11 +32,23 @@ public class VThreadPersistenceProvider implements PersistenceProvider<Object> {
 
   private final InjectableInstance<EntityManager> entityManagerInstance;
 
+  /**
+   * Initialises the provider and locates an injectable EntityManager instance via Arc.
+   *
+   * Stores the resolved InjectableInstance<EntityManager> for use by the provider's persistence operations.
+   */
   public VThreadPersistenceProvider() {
     // Look up the EntityManager bean instance via Arc
     entityManagerInstance = Arc.container().select(EntityManager.class);
   }
 
+  /**
+   * Persist the given entity within a JPA transaction and return the same instance.
+   *
+   * @param entity the entity to persist
+   * @return the persisted entity instance
+   * @throws IllegalStateException if no EntityManager is resolvable for this provider
+   */
   @Override
   public Uni<Object> persist(Object entity) {
     return Uni.createFrom().item(() -> {
@@ -60,16 +72,32 @@ public class VThreadPersistenceProvider implements PersistenceProvider<Object> {
     });
   }
 
+  /**
+   * Identifies the handled entity type for this persistence provider.
+   *
+   * @return the Class object representing the handled entity type, {@code Object.class}
+   */
   @Override
   public Class<Object> type() {
     return Object.class;
   }
 
+  /**
+   * Checks whether an object's runtime class is annotated as a JPA entity.
+   *
+   * @param entity the object whose runtime class will be inspected for the `@Entity` annotation
+   * @return `true` if the runtime class of {@code entity} is annotated with `jakarta.persistence.Entity`, `false` otherwise
+   */
   @Override
   public boolean supports(Object entity) {
     return entity.getClass().isAnnotationPresent(Entity.class);
   }
 
+  /**
+   * Indicates whether this provider is running in a virtual-thread context.
+   *
+   * @return {@code true} if the current thread is a virtual thread, {@code false} otherwise.
+   */
   @Override
   public boolean supportsThreadContext() {
     // This provider is designed for virtual threads

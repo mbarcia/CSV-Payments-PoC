@@ -41,11 +41,22 @@ public class ConcreteGrpcBidirectionalStreamingAdapter
         return "domain_" + grpcIn;
     }
 
+    /**
+     * Convert a domain output string to its gRPC representation.
+     *
+     * @param domainOut the domain output string to convert
+     * @return the gRPC-formatted string prefixed with "grpc_"
+     */
     @Override
     protected String toGrpc(String domainOut) {
         return "grpc_" + domainOut;
     }
 
+    /**
+     * Indicates whether automatic persistence of streaming messages is enabled.
+     *
+     * @return `true` if automatic persistence is enabled, `false` otherwise.
+     */
     @Override
     protected boolean isAutoPersistenceEnabled() {
         return autoPersist;

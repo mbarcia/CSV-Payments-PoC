@@ -54,6 +54,11 @@ public class ProcessAckPaymentSentReactiveService
 
   PollAckPaymentSentService pollAckPaymentSentService;
 
+  /**
+   * Create a ProcessAckPaymentSentReactiveService and wire its dependency.
+   *
+   * @param pollAckPaymentSentService the service used to process AckPaymentSent messages into PaymentStatus
+   */
   @Inject
   public ProcessAckPaymentSentReactiveService(
           PollAckPaymentSentService pollAckPaymentSentService) {

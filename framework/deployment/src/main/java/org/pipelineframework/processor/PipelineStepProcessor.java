@@ -142,6 +142,20 @@ public class PipelineStepProcessor extends AbstractProcessor {
         return true;
     }
 
+    /**
+     * Generates and writes a CDI-enabled pipeline client step class that delegates to a gRPC stub.
+     *
+     * <p>Reads configuration from the {@link PipelineStep} annotation on the provided service class
+     * and generates a Java source file in the same package with a ".pipeline" suffix. The generated
+     * class extends ConfigurableStep, implements the appropriate pipeline step interface (OneToOne,
+     * OneToMany, ManyToOne, ManyToMany) using gRPC types, and exposes an apply/transform method that
+     * calls the configured gRPC client's remoteProcess method. Mapper and gRPC client fields are
+     * injected when configured in the annotation.</p>
+     *
+     * @param serviceClass the annotated service class element to read configuration from and base the generated class on
+     * @param pipelineStep the resolved {@code PipelineStep} annotation instance for the service class
+     * @throws IOException if writing the generated Java source file fails
+     */
     protected void generateClientStep(TypeElement serviceClass, PipelineStep pipelineStep) throws IOException {
         // Get the annotation mirror to extract TypeMirror values
         AnnotationMirror annotationMirror = getAnnotationMirror(serviceClass, PipelineStep.class);
@@ -556,15 +570,16 @@ public class PipelineStepProcessor extends AbstractProcessor {
     
     /**
      * Generate a REST resource class that exposes the annotated reactive service as HTTP endpoints.
-     * <p>
-     * The generated resource maps request/response DTOs to domain types (using configured mappers when present),
-     * delegates processing to the domain service, and includes an exception mapper for runtime errors.
+     *
+     * The generated resource maps request and response DTOs to domain types using configured mappers,
+     * delegates processing to the domain service, and registers an exception mapper for runtime errors.
      *
      * @param serviceClass the annotated service class element
      * @param pipelineStep the PipelineStep annotation instance for the service
-     * @param isReactiveService true if the service implements ReactiveService
-     * @param isReactiveStreamingService true if the service implements ReactiveStreamingService
-     * @param isReactiveStreamingClientService true if the service implements ReactiveStreamingClientService
+     * @param isReactiveService true if the service implements ReactiveService (single-request reactive)
+     * @param isReactiveStreamingService true if the service implements ReactiveStreamingService (single request -> streaming response)
+     * @param isReactiveStreamingClientService true if the service implements ReactiveStreamingClientService (streaming request -> single response)
+     * @param isReactiveBidirectionalStreamingService true if the service implements ReactiveBidirectionalStreamingService (streaming request -> streaming response)
      * @throws IOException if writing the generated Java source file fails
      */
     protected void generateRestResource(TypeElement serviceClass, PipelineStep pipelineStep, boolean isReactiveService, boolean isReactiveStreamingService, boolean isReactiveStreamingClientService, boolean isReactiveBidirectionalStreamingService) throws IOException {
@@ -773,17 +788,14 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
     
     /**
-     * Creates the JAX-RS `process` method for a ReactiveStreamingService that accepts a single
-     * input DTO and returns a stream of output DTOs.
+     * Create the JAX-RS `process` method for a ReactiveStreamingService that accepts a single input DTO and returns a stream of output DTOs.
      *
-     * @param inputDtoClassName      the DTO type used as the method parameter
-     * @param outputDtoClassName     the DTO element type emitted by the returned stream
-     * @param inboundMapperFieldName the field name of the mapper used to convert DTO -> domain
-     * @param outboundMapperFieldName the field name of the mapper used to convert domain -> DTO
-     * @param inputType              the domain input type from the service generics (may be null)
-     * @param outputType             the domain output type from the service generics (may be null)
-     * @param runOnVirtualThreads    whether to add @RunOnVirtualThread annotation to the method
-     * @return                       a MethodSpec for the generated REST `process` method
+     * @param inboundMapperFieldName  field name of the mapper used to convert DTO to domain; may be null if no mapper is configured
+     * @param outboundMapperFieldName field name of the mapper used to convert domain to DTO; may be null if no mapper is configured
+     * @param inputType               the domain input TypeMirror from the service generics; may be null when unavailable
+     * @param outputType              the domain output TypeMirror from the service generics; may be null when unavailable
+     * @param runOnVirtualThreads     if true, the generated method will be annotated with `@RunOnVirtualThread`
+     * @return                        a MethodSpec representing the generated REST `process` method that returns a `Multi` of output DTOs
      */
     private MethodSpec createReactiveStreamingServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
@@ -823,23 +835,21 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
 
     /**
-     * Creates the REST resource `process` method for a ReactiveStreamingClientService: accepts a stream
-     * of input DTOs and produces a single output DTO.
-     *
-     * <p>The generated method is public, annotated with `@POST` and `@Path("/process")`, takes a
-     * `Multi<inputDto>` parameter named `inputDtos`, and returns a `Uni<outputDto>`. It maps incoming
-     * DTOs to domain inputs using the provided inbound mapper field, delegates to `domainService.process`,
-     * and maps the resulting domain output to a DTO using the provided outbound mapper field.
-     *
-     * @param inputDtoClassName the TypeName of the input DTO type
-     * @param outputDtoClassName the TypeName of the output DTO type
-     * @param inboundMapperFieldName the field name of the inbound mapper used to convert DTOs to domain objects
-     * @param outboundMapperFieldName the field name of the outbound mapper used to convert domain objects to DTOs
-     * @param inputType the domain input TypeMirror (may be null)
-     * @param outputType the domain output TypeMirror (may be null)
-     * @param runOnVirtualThreads whether to add @RunOnVirtualThread annotation to the method
-     * @return a MethodSpec for the REST `process` method that handles streaming inputs and produces a single output
-     */
+         * Build the REST resource "process" method for a ReactiveStreamingClientService which accepts a stream
+         * of input DTOs and produces a single output DTO.
+         *
+         * <p>The generated method is public, annotated with {@code @POST} and {@code @Path("/process")}, takes a
+         * {@code Multi<inputDto>} parameter named {@code inputDtos}, and returns a {@code Uni<outputDto>}.
+         *
+         * @param inputDtoClassName the TypeName of the input DTO type
+         * @param outputDtoClassName the TypeName of the output DTO type
+         * @param inboundMapperFieldName field name of the inbound mapper used to convert DTOs to domain objects; may be null
+         * @param outboundMapperFieldName field name of the outbound mapper used to convert domain objects to DTOs; may be null
+         * @param inputType the domain input TypeMirror, used for the generated method's domain type references; may be null
+         * @param outputType the domain output TypeMirror, used for the generated method's domain type references; may be null
+         * @param runOnVirtualThreads if true, annotate the generated method with {@code @RunOnVirtualThread}
+         * @return a MethodSpec representing the REST {@code process} method that maps streaming inputs to a single output
+         */
     private MethodSpec createReactiveStreamingClientServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
             String inboundMapperFieldName, String outboundMapperFieldName,
@@ -928,23 +938,21 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
     
     /**
-     * Creates the REST resource "process" method for a bidirectional reactive streaming service endpoint.
-     * <p>
-     * The generated method is a public POST mapped to "/process" that:
-     * - accepts a Multi<input DTO>,
-     * - converts it to the domain input using the provided inbound mapper,
-     * - delegates to domainService.process(...) which returns Multi<Output>,
-     * - maps the resulting domain outputs to DTOs using the outbound mapper,
-     * - and returns a Multi<OutputDto> containing the mapped results.
+     * Create a JAX-RS `process` method for a bidirectional reactive streaming service.
      *
-     * @param inputDtoClassName the DTO type used as the input parameter (for the Multi)
-     * @param outputDtoClassName the DTO type returned inside the Multi
-     * @param inboundMapperFieldName the injected field name of the inbound mapper used to convert DTO -> domain
-     * @param outboundMapperFieldName the injected field name of the outbound mapper used to convert domain -> DTO
-     * @param inputType the domain input type (used to reference the converted domain parameter)
-     * @param outputType the domain output type (used for type references when mapping the result)
-     * @param runOnVirtualThreads whether to add @RunOnVirtualThread annotation to the method
-     * @return a MethodSpec representing the generated `process` method that returns `Multi<OutputDto>`
+     * <p>The generated method is a public POST mapped to "/process" that consumes and produces
+     * "application/x-ndjson", accepts a stream (`Multi`) of input DTOs, converts each DTO to the
+     * domain input using the inbound mapper, delegates to `domainService.process(...)`, and maps
+     * domain outputs to output DTOs using the outbound mapper, returning a `Multi` of output DTOs.
+     *
+     * @param inputDtoClassName the DTO type used as the input element of the incoming `Multi`
+     * @param outputDtoClassName the DTO type used as the output element of the returned `Multi`
+     * @param inboundMapperFieldName name of the injected inbound mapper field used to convert DTO → domain
+     * @param outboundMapperFieldName name of the injected outbound mapper field used to convert domain → DTO
+     * @param inputType the domain input type (used for the generated method's internal type references)
+     * @param outputType the domain output type (used for the generated method's internal type references)
+     * @param runOnVirtualThreads if true, the generated method will be annotated with `@RunOnVirtualThread`
+     * @return a MethodSpec describing the generated `process` endpoint method that returns `Multi<OutputDto>`
      */
     private MethodSpec createReactiveBidirectionalStreamingServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
@@ -1003,23 +1011,23 @@ public class PipelineStepProcessor extends AbstractProcessor {
     }
 
     /**
-     * Creates and adds the remoteProcess method to the gRPC service builder based on the step type.
-     * This method extracts the common adapter generation logic used across different step types.
+     * Adds a generated `remoteProcess` method to the provided gRPC service builder that instantiates
+     * an inline adapter configured for the step and delegates incoming requests to that adapter.
      *
-     * @param grpcServiceBuilder the TypeSpec.Builder for the gRPC service class
-     * @param grpcAdapterClassName the gRPC adapter class name
-     * @param inputGrpcType the input gRPC type
-     * @param outputGrpcType the output gRPC type
-     * @param inputType the input domain type
-     * @param outputType the output domain type
-     * @param serviceClass the service class
-     * @param inboundMapperType the inbound mapper type
-     * @param outboundMapperType the outbound mapper type
-     * @param autoPersistenceEnabled whether auto-persistence is enabled
-     * @param runOnVirtualThreads whether to run on virtual threads
-     * @param returnType the return type of the remoteProcess method (Uni or Multi)
-     * @param parameterType the parameter type of the remoteProcess method
-     * @param parameterName the name of the parameter
+     * @param grpcServiceBuilder the TypeSpec.Builder for the gRPC service class to which the method will be added
+     * @param grpcAdapterClassName the base gRPC adapter class to instantiate (with appropriate type parameters)
+     * @param inputGrpcType the gRPC input message type (may be null)
+     * @param outputGrpcType the gRPC output message type (may be null)
+     * @param inputType the domain input type (may be null)
+     * @param outputType the domain output type (may be null)
+     * @param serviceClass the domain service class returned by the adapter's `getService` implementation
+     * @param inboundMapperType the mapper type used to convert from gRPC/DTO input to domain input (may be null)
+     * @param outboundMapperType the mapper type used to convert from domain output to gRPC/DTO output (may be null)
+     * @param autoPersistenceEnabled if true, the generated adapter reports that automatic persistence is enabled
+     * @param runOnVirtualThreads if true, the generated `remoteProcess` method is annotated to run on virtual threads
+     * @param returnType the reactive return wrapper type for the generated method (e.g. `Uni` or `Multi`)
+     * @param parameterType the type of the single parameter accepted by the generated `remoteProcess` method
+     * @param parameterName the name of the method parameter
      */
     private void createAndAddRemoteProcessMethod(TypeSpec.Builder grpcServiceBuilder,
             ClassName grpcAdapterClassName,

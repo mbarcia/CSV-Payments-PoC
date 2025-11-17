@@ -53,36 +53,26 @@ public abstract class GrpcServiceBidirectionalStreamingAdapter<
 
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
-  protected abstract GrpcOut toGrpc(DomainOut domainOut);
+  /**
+ * Converts a domain output object to its corresponding gRPC message representation.
+ *
+ * @param domainOut the domain output object to convert
+ * @return the converted gRPC output message
+ */
+protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
   /**
-   * Handles a bidirectional gRPC streaming call (N-N cardinality) where both the client and server
-   * exchange multiple messages asynchronously.
+   * Adapts a bidirectional gRPC stream of incoming messages to a stream of outgoing messages by
+   * converting inputs to domain objects, delegating processing to the domain service, and converting
+   * results back to gRPC responses.
    *
-   * <p>This method transforms incoming {@code GrpcIn} messages into domain entities, processes them
-   * through the service layer, and emits a stream of {@code GrpcOut} responses.
+   * <p>If auto-persistence is enabled, input domain objects are persisted after the processing
+   * stream completes; any persistence failure causes the RPC to fail. Processing failures are also
+   * propagated to the caller as gRPC errors.
    *
-   * <p>When auto-persistence is enabled, each input entity is persisted sequentially and reactively
-   * <em>after</em> the processing begins. Unlike the non-enforced variant, <strong>any persistence
-   * failure aborts the entire gRPC stream</strong> — ensuring strict data integrity between
-   * processed and persisted inputs.
-   *
-   * <h4>Behavior summary</h4>
-   *
-   * <ul>
-   *   <li><b>Auto-persistence enabled:</b> Each input is persisted after processing begins; if any
-   *       persist operation fails, the RPC fails immediately with a gRPC {@code UNKNOWN} status.
-   *   <li><b>Auto-persistence disabled:</b> Input entities are processed but not persisted.
-   *   <li>Processing errors are also propagated to the client as gRPC failures.
-   * </ul>
-   *
-   * <p>The persistence operations are executed using {@link
-   * io.smallrye.mutiny.Multi#onItem().transformToUniAndConcatenate(java.util.function.Function)} to maintain
-   * sequential order and backpressure safety. This guarantees that no concurrent writes occur, even
-   * when processing high-volume streams.
-   *
-   * @param requestStream a reactive {@link Multi} of incoming {@code GrpcIn} messages.
-   * @return a reactive {@link Multi} of outgoing {@code GrpcOut} messages produced by the service.
+   * @param requestStream the reactive stream of incoming {@code GrpcIn} messages
+   * @return a reactive stream of {@code GrpcOut} messages produced by the domain service, or a gRPC
+   *         failure if processing or (when enabled) persistence fails
    */
   public Multi<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
     Multi<DomainIn> domainStream = requestStream
@@ -132,6 +122,12 @@ public abstract class GrpcServiceBidirectionalStreamingAdapter<
         .onFailure().transform(new throwStatusRuntimeExceptionFunction());
   }
 
+  /**
+   * Determines whether a Throwable represents a transient database connectivity issue.
+   *
+   * @param failure the throwable to inspect; its message will be checked for transient DB indicators
+   * @return `true` if the throwable's message contains "connection refused", "connection closed" or "timeout", `false` otherwise
+   */
   private boolean isTransientDbError(Throwable failure) {
     String msg = failure.getMessage();
     return msg != null

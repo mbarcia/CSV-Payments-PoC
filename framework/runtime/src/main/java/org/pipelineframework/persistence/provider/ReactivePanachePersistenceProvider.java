@@ -58,11 +58,21 @@ public class ReactivePanachePersistenceProvider implements PersistenceProvider<P
                     "Failed to persist entity of type " + entity.getClass().getName(), t));
     }
 
+    /**
+     * Checks whether the provider supports the given entity instance.
+     *
+     * @return {@code true} if the entity is an instance of {@code PanacheEntityBase}, {@code false} otherwise.
+     */
     @Override
     public boolean supports(Object entity) {
         return entity instanceof PanacheEntityBase;
     }
 
+    /**
+     * Indicate whether this persistence provider supports the current thread context.
+     *
+     * @return `true` if the current thread is not a virtual thread, `false` otherwise.
+     */
     @Override
     public boolean supportsThreadContext() {
         // This provider is designed for reactive (non-virtual) threads

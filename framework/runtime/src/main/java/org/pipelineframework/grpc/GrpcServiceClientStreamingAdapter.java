@@ -51,8 +51,25 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
 
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
-  protected abstract GrpcOut toGrpc(DomainOut domainOut);
+  /**
+ * Convert a domain output object to its gRPC representation.
+ *
+ * @param domainOut the domain-layer result to convert to a gRPC message
+ * @return the corresponding gRPC output message
+ */
+protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
+  /**
+   * Orchestrates processing of a client-streaming gRPC request into a single gRPC response, optionally persisting all inputs after successful processing.
+   *
+   * When auto-persistence is disabled the incoming stream is forwarded directly to the domain service for processing.
+   * When auto-persistence is enabled the adapter captures all domain-converted inputs in memory, passes them to the domain service,
+   * and after a successful domain result persists all captured inputs in a single transaction; persistence retries on transient
+   * database errors are applied. All failures are converted to a StatusRuntimeException.
+   *
+   * @param requestStream the incoming stream of gRPC input messages
+   * @return the gRPC output message produced from the domain result
+   */
   public Uni<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
     // 1️⃣ Convert incoming gRPC messages to domain objects
     Multi<DomainIn> domainStream = requestStream.onItem().transform(this::fromGrpc);
@@ -105,4 +122,3 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
     );
   }
 }
-

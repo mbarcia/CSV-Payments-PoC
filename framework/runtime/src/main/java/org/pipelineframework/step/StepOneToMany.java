@@ -25,7 +25,17 @@ import org.pipelineframework.step.functional.OneToMany;
 public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, DeadLetterQueue<I, O> {
     Multi<O> applyOneToMany(I in);
 
-	@Override
+	/**
+     * Converts a single asynchronous input into a stream of output items using this step's transformation and resilience policies.
+     *
+     * <p>The input item is passed to {@link #applyOneToMany(Object)} to produce an output Multi; the returned stream applies this step's configured
+     * backpressure strategy and buffer capacity, emits each item while logging at debug level, retries failures (except {@link NullPointerException})
+     * using the step's backoff, jitter and retry limit, and logs a final informational message if all retries are exhausted.</p>
+     *
+     * @param input the asynchronous input that produces the single item to process
+     * @return a Multi that emits the transformed output items for the provided input, subject to backpressure and retry policies
+     */
+    @Override
     default Multi<O> apply(Uni<I> input) {
         final Logger LOG = Logger.getLogger(this.getClass());
 

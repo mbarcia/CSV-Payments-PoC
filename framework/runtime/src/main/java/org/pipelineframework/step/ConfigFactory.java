@@ -29,6 +29,17 @@ public class ConfigFactory {
     @Inject
     PipelineConfig pipelineConfig;
 
+    /**
+     * Build a StepConfig for the given step class, applying any per-step overrides to pipeline defaults.
+     *
+     * Uses the application's PipelineStepConfig to look up a class-specific configuration by the step
+     * class's fully qualified name; if found, returns a StepConfig based on the pipeline defaults with
+     * those overrides applied, otherwise returns the pipelineConfig's default StepConfig.
+     *
+     * @param stepClass the step implementation class to resolve per-step overrides for
+     * @param pipelineConfig the pipeline-wide configuration providing default step settings
+     * @return a StepConfig with per-step overrides applied if available, or the pipeline defaults otherwise
+     */
     public StepConfig buildConfig(Class<?> stepClass, PipelineConfig pipelineConfig)
         throws IllegalAccessException {
 

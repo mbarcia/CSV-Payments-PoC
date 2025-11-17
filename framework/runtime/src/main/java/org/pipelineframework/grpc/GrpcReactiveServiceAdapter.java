@@ -42,12 +42,40 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
     this.persistenceManager = persistenceManager;
   }
 
-  protected abstract ReactiveService<DomainIn, DomainOut> getService();
+  /**
+ * Provides the reactive service responsible for processing domain inputs into domain outputs.
+ *
+ * @return the ReactiveService that processes DomainIn to produce DomainOut.
+ */
+protected abstract ReactiveService<DomainIn, DomainOut> getService();
 
-  protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
+  /**
+ * Convert a gRPC input object into the corresponding domain input representation.
+ *
+ * @param grpcIn the gRPC input object to convert
+ * @return the resulting domain input object
+ */
+protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
-  protected abstract GrpcOut toGrpc(DomainOut domainOut);
+  /**
+ * Convert a domain-layer output value into its gRPC representation.
+ *
+ * @param domainOut the domain-layer result to convert
+ * @return the corresponding gRPC output instance
+ */
+protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
+  /**
+   * Process a gRPC request through the reactive domain service and optionally persist the input entity.
+   *
+   * Converts the provided gRPC request to a domain input, invokes the underlying reactive service,
+   * and converts the resulting domain output back to a gRPC response. If auto-persistence is enabled,
+   * the input entity is persisted after successful processing within the correct Vert.x event-loop and transaction.
+   *
+   * @param grpcRequest the incoming gRPC request to convert and process
+   * @return the gRPC response message corresponding to the processed domain result
+   * @throws io.grpc.StatusRuntimeException if processing or persistence fails; failures are mapped to an appropriate gRPC status
+   */
   public Uni<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
     DomainIn entity = fromGrpc(grpcRequest);
     // Panache.withTransaction(...) creates the correct Vert.x context and transaction

@@ -37,6 +37,12 @@ public class TestSteps {
         private int manualRetryLimit = -1;
         private java.time.Duration manualRetryWait = null;
 
+        /**
+         * Process an input string with a short blocking simulation.
+         *
+         * @param input the string to process
+         * @return the processed string prefixed with "Processed: "
+         */
         @Override
         public Uni<String> apply(String input) {
             // This is a blocking operation that simulates processing
@@ -48,6 +54,15 @@ public class TestSteps {
             return Uni.createFrom().item("Processed: " + input);
         }
 
+        /**
+         * Initialises the step with the provided configuration, preserving any first non-default values as manual overrides.
+         *
+         * <p>If this is the first time a non-default configuration is supplied, the method records the supplied
+         * `retryLimit` and `retryWait` as manual configuration. Once manual configuration exists, those stored values
+         * are applied to any subsequent incoming `config` before delegating to the superclass initialisation.</p>
+         *
+         * @param config the step configuration to apply; may be {@code null}
+         */
         @Override
         public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Check if this is the first time being configured with non-default values
@@ -73,21 +88,42 @@ public class TestSteps {
             }
         }
 
-        // Method to mark that manual config has been set
+        /**
+         * Record manual retry configuration and mark the step as manually configured.
+         *
+         * @param retryLimit the manual retry limit to apply
+         * @param retryWait the manual wait duration between retries to apply
+         */
         public void setManualConfig(int retryLimit, java.time.Duration retryWait) {
             this.hasManualConfig = true;
             this.manualRetryLimit = retryLimit;
             this.manualRetryWait = retryWait;
         }
 
+        /**
+         * Gets the retry limit applied to this step.
+         *
+         * @return the maximum number of retry attempts allowed by the effective configuration
+         */
         public int retryLimit() {
             return effectiveConfig().retryLimit();
         }
 
+        /**
+         * Get the wait duration used between retry attempts from the effective step configuration.
+         *
+         * @return the configured wait duration between retry attempts
+         */
         public java.time.Duration retryWait() {
             return effectiveConfig().retryWait();
         }
 
+        /**
+         * Process a single input value and produce a corresponding output value.
+         *
+         * @param input the value to process
+         * @return the processed string
+         */
         public Uni<String> applyOneToOne(String input) {
             return apply(input);
         }
@@ -154,9 +190,7 @@ public class TestSteps {
         }
 
         /**
-         * Handle a failed item by logging the dead-letter event with error context and returning
-         * the original item unchanged. This method is invoked when a step fails and recovery is
-         * enabled.
+         * Handle a failed input by logging a dead-letter event and returning the original item.
          *
          * @param failedItem a Uni that produces the item that failed processing
          * @param cause the throwable that caused the failure
@@ -173,6 +207,19 @@ public class TestSteps {
                                             item, cause.getMessage()));
         }
 
+        /**
+         * Initialise the step with the provided step configuration, preserving any first-seen non-default values as manual overrides.
+         *
+         * If this is the first time the step receives a non-default configuration, the method records the incoming
+         * retryLimit, retryWait and recoverOnFailure as manual configuration. Once manual configuration is present,
+         * subsequent initialisation calls apply the recorded retryLimit, retryWait and recoverOnFailure to the incoming
+         * config before delegating to the superclass.
+         *
+         * The recoverOnFailure value provided by the step's constructor (if set) takes precedence over a value from the
+         * incoming config when deciding what to record or apply.
+         *
+         * @param config the step configuration to apply; may be null
+         */
         @Override
         public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Check if this is the first time being configured with non-default values
@@ -216,7 +263,18 @@ public class TestSteps {
             }
         }
 
-        // Method to mark that manual config has been set
+        /**
+         * Record manual configuration values for retry behaviour and dead-letter recovery.
+         *
+         * Sets the step into a manual-configured state and stores the provided retry limit and
+         * retry wait duration. The recoverOnFailure flag is stored only if it was not explicitly
+         * set by the constructor.
+         *
+         * @param retryLimit the manual retry limit to apply
+         * @param retryWait the manual duration to wait between retries
+         * @param recoverOnFailure whether failed items should be recovered instead of dead-lettered;
+         *                         ignored if the constructor previously fixed this behaviour
+         */
         private void setManualConfig(
                 int retryLimit, java.time.Duration retryWait, boolean recoverOnFailure) {
             this.hasManualConfig = true;

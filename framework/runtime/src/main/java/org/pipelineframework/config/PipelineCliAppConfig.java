@@ -29,7 +29,11 @@ import java.util.Optional;
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
 public interface PipelineCliAppConfig {
 
-    /** Generate CLI entrypoint? */
+    /**
+     * Indicates whether the build should generate a CLI entrypoint.
+     *
+     * @return `true` if a CLI entrypoint will be generated, `false` otherwise.
+     */
     @WithDefault("false")
     Boolean generateCli();
 

@@ -33,8 +33,30 @@ import org.pipelineframework.step.functional.OneToOne;
  * and imperative representations.
  */
 public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Configurable, DeadLetterQueue<I, O> {
-    CompletableFuture<O> applyAsync(I in);
+    /**
+ * Process the given input and produce an output asynchronously.
+ *
+ * @param in the input item to process
+ * @return a CompletableFuture completing with the produced output, or completing exceptionally if processing fails
+ */
+CompletableFuture<O> applyAsync(I in);
 
+    /**
+     * Adapts a Mutiny Uni input into the CompletableFuture-based processing defined by {@link #applyAsync(Object)},
+     * applies retry/backoff/jitter policies, and performs optional dead-letter recovery and logging.
+     *
+     * <p>Behaviour summary:
+     * - For each item emitted by {@code inputUni} the method delegates processing to {@link #applyAsync(Object)}.
+     * - Failures are retried with exponential backoff and optional jitter up to {@link #retryLimit()} attempts;
+     *   {@link NullPointerException} is excluded from retries.
+     * - After exhausting retries an informational log entry is emitted identifying the step and retry limit.
+     * - On success a debug log records the processed item; if recovery is enabled via {@link #recoverOnFailure()}
+     *   a failed item is routed to the dead-letter queue via {@link #deadLetter(Uni, Throwable)} and a debug
+     *   log records the failure, otherwise the failure is propagated.
+     *
+     * @param inputUni the Uni that emits input items to be processed
+     * @return a Uni that emits processed output items or fails/recovers according to the configured retry and recovery policies
+     */
     @Override
     default Uni<O> apply(Uni<I> inputUni) {
         final Logger LOG = Logger.getLogger(this.getClass());

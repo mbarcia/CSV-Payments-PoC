@@ -42,11 +42,22 @@ public class ConcreteGrpcReactiveServiceAdapter
         return new TestEntity("test", "description");
     }
 
+    /**
+     * Convert a domain TestResult into its gRPC representation.
+     *
+     * @param domainOut the domain-level result to convert
+     * @return an Object representing the gRPC response; in this test implementation a newly created generic Object
+     */
     @Override
     protected Object toGrpc(TestResult domainOut) {
         return new Object(); // This is just for testing
     }
 
+    /**
+     * Indicates whether automatic persistence is enabled for this adapter.
+     *
+     * @return `true` if auto-persistence is enabled, `false` otherwise.
+     */
     @Override
     protected boolean isAutoPersistenceEnabled() {
         return autoPersist;

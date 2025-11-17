@@ -49,12 +49,11 @@ public class RetryTestSteps {
         private boolean manualRecoverOnFailure = false;
 
         /**
-         * Handles a failed asynchronous item by logging the dead-letter event and returning the
-         * original item.
+         * Log the dead-letter event and recover the original input.
          *
-         * @param failedItem a Uni that contains the item which failed processing
+         * @param failedItem a Uni containing the item that failed processing
          * @param cause the exception that caused the failure
-         * @return the original item value extracted from {@code failedItem}
+         * @return the original input string contained in {@code failedItem}
          */
         @Override
         public Uni<String> deadLetter(Uni<String> failedItem, Throwable cause) {
@@ -65,6 +64,18 @@ public class RetryTestSteps {
             return failedItem.onItem().transform(item -> item);
         }
 
+        /**
+         * Initialises the step from the supplied StepConfig and preserves the first observed
+         * non-default retry-related values as manual overrides for subsequent initialisations.
+         *
+         * <p>If a non-null `config` is provided and this is the first time non-default values
+         * for `retryLimit`, `retryWait` or `recoverOnFailure` are observed, those values are
+         * stored as manual overrides. When manual overrides exist they are applied on top of
+         * any later `config` passed to this method.
+         *
+         * @param config the configuration to apply; may be {@code null}. Values are compared
+         *               against a fresh {@code StepConfig} instance to detect non-defaults.
+         */
         @Override
         public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Check if this is the first time being configured with non-default values
@@ -98,7 +109,13 @@ public class RetryTestSteps {
             }
         }
 
-        // Method to mark that manual config has been set
+        /**
+         * Record that manual retry configuration has been provided and store its values.
+         *
+         * @param retryLimit the maximum number of retry attempts to apply
+         * @param retryWait the wait duration between retry attempts
+         * @param recoverOnFailure whether the step should recover and emit the original value after failures
+         */
         private void setManualConfig(
                 int retryLimit, java.time.Duration retryWait, boolean recoverOnFailure) {
             this.hasManualConfig = true;

@@ -22,13 +22,17 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "csv-poc.reader-demand-pacer")
 public interface DemandPacerConfig {
   /**
-   * Rate-limiting of the CSV reader/parser (in rows/time)
+   * Number of rows permitted in each rate-limiting period.
+   *
+   * @return the maximum number of rows allowed per period
    */
   @WithDefault("10")
   long rowsPerPeriod();
 
   /**
-   * Rate-limiting period (in milliseconds)
+   * Rate-limiting period for demand pacing, expressed in milliseconds.
+   *
+   * @return the period length in milliseconds
    */
   @WithDefault("100")
   long millisPeriod();

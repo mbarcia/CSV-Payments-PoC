@@ -34,17 +34,29 @@ public abstract class RestReactiveServiceAdapter<DomainIn, DomainOut, DtoOut> {
     @Inject
     PersistenceManager persistenceManager;
 
-    protected abstract ReactiveService<DomainIn, DomainOut> getService();
-
-    protected abstract DtoOut toDto(DomainOut domainOut);
+    /**
+ * Provides the reactive service used to process domain inputs into domain outputs.
+ *
+ * @return the {@code ReactiveService<DomainIn, DomainOut>} instance used to process domain objects
+ */
+protected abstract ReactiveService<DomainIn, DomainOut> getService();
 
     /**
-     * Determines whether entities should be automatically persisted before processing. This method
-     * should be implemented by generated service adapters to return the auto-persist value
-     * from the @PipelineStep annotation.
-     *
-     * @return true if entities should be auto-persisted, false otherwise
-     */
+ * Convert a processed domain object to its REST DTO representation.
+ *
+ * @param domainOut the processed domain model instance to convert
+ * @return the DTO representation to be returned by the REST resource
+ */
+protected abstract DtoOut toDto(DomainOut domainOut);
+
+    /**
+ * Indicate whether entities must be persisted automatically before processing.
+ *
+ * Implementations (typically generated service adapters) should return the auto-persist
+ * setting derived from the @PipelineStep annotation.
+ *
+ * @return `true` if entities must be auto-persisted before processing, `false` otherwise
+ */
     protected abstract boolean isAutoPersistenceEnabled();
 
     /**

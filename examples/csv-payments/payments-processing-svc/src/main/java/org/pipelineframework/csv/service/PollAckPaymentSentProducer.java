@@ -29,6 +29,13 @@ public class PollAckPaymentSentProducer {
 	@Inject
 	PollAckPaymentSentReactiveService reactiveImpl;
 
+	/**
+	 * Selects the appropriate PollAckPaymentSentService implementation for the current thread.
+	 *
+	 * @return the PollAckPaymentSentService implementation appropriate for the current thread:
+	 *         the virtual-thread-specific implementation if the current thread is a virtual thread,
+	 *         otherwise the reactive implementation
+	 */
 	@SuppressWarnings("rawtypes")
 	@Produces
 	public PollAckPaymentSentService produce() {

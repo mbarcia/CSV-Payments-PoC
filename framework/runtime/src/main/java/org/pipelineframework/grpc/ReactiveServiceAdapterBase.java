@@ -30,6 +30,14 @@ public abstract class ReactiveServiceAdapterBase {
    */
   protected abstract boolean isAutoPersistenceEnabled();
 
+  /**
+   * Switches execution to the current Vert.x event loop.
+   *
+   * If no Vert.x context is present the returned Uni fails with an IllegalStateException.
+   *
+   * @return a Uni that completes with `null` once the current Vert.x context has executed on its event loop,
+   *         or fails with an {@link IllegalStateException} when no Vert.x context is available
+   */
   protected Uni<Void> switchToEventLoop() {
     var ctx = Vertx.currentContext();
     if (ctx == null) {

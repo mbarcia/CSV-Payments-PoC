@@ -35,7 +35,7 @@ public class GrpcServiceStartup {
     @Inject
     BeanManager beanManager;
 
-    public void onStart(@Observes StartupEvent event) {
+    void onStart(@Observes StartupEvent event) {
         LOG.info("Starting gRPC service initialization...");
         // This will trigger CDI to initialize beans with @GrpcService annotation
         LOG.info("gRPC service initialization completed.");

@@ -43,7 +43,7 @@ public class PipelineConfigInitializer {
      * Initializes the PipelineConfig with values from application configuration
      * when the application starts up.
      */
-    public void onStart(@Observes StartupEvent event) {
+    void onStart(@Observes StartupEvent event) {
         logger.debug("Initializing PipelineConfig with application configuration defaults");
 
         // Get the defaults from the configuration system

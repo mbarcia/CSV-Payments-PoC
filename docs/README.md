@@ -12,7 +12,7 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 
 ### Key Features
 
-- **Reactive Programming**: Built on top of Mutiny for non-blocking operations
+- **Reactive Programming**: Built on top of Quarkus, Mutiny and Vert.x for non-blocking operations
 - **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
 - **Visual Design Canvas**: Create and configure pipelines with the visual designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>
 - **gRPC and REST Support**: Automatically generates adapters for both communication protocols
@@ -79,6 +79,8 @@ If you find issues with the documentation or want to contribute improvements:
 All contributions are welcome!
 
 The site will be available at http://localhost:5173
+
+![CodeRabbit Pull Request Reviews](https://img.shields.io/coderabbit/prs/github/mbarcia/pipelineframework)
 
 ## Building
 

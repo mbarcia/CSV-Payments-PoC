@@ -49,14 +49,75 @@ public abstract class ReactiveServiceAdapterBase {
   /**
    * Determines whether a Throwable represents a transient database connectivity issue.
    *
-   * @param failure the throwable to inspect; its message will be checked for transient DB indicators
-   * @return `true` if the throwable's message contains "connection refused", "connection closed" or "timeout", `false` otherwise
+   * @param failure the throwable to inspect; walks the cause chain checking each message and type for transient DB indicators
+   * @return `true` if any exception in the cause chain has a message containing "connection refused", "connection closed",
+   * "timeout", "connection reset", "communications link failure" (case-insensitive) or is of a known transient exception type,
+   * `false` otherwise
    */
   protected boolean isTransientDbError(Throwable failure) {
-    String msg = failure.getMessage();
-    return msg != null
-        && (msg.contains("connection refused")
-            || msg.contains("connection closed")
-            || msg.contains("timeout"));
+    Throwable current = failure;
+    while (current != null) {
+      // Check if the current exception is of a known transient type
+      if (isKnownTransientExceptionType(current)) {
+        return true;
+      }
+
+      // Check for transient indicators in the message (case-insensitive)
+      String msg = current.getMessage();
+      if (msg != null) {
+        String lowerMsg = msg.toLowerCase();
+        if (lowerMsg.contains("connection refused")
+            || lowerMsg.contains("connection closed")
+            || lowerMsg.contains("timeout")
+            || lowerMsg.contains("connection reset")
+            || lowerMsg.contains("communications link failure")) {
+          return true;
+        }
+      }
+
+      // Move to the cause
+      current = current.getCause();
+
+      // Prevent infinite loops if there's a circular cause
+      if (current == failure) {
+        break;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Determines if the given exception is of a type that indicates a transient database error.
+   *
+   * @param throwable the exception to check
+   * @return true if the exception type is known to indicate transient database errors
+   */
+  private boolean isKnownTransientExceptionType(Throwable throwable) {
+    // SQL transient exceptions
+    if (throwable instanceof java.sql.SQLTransientException) {
+      return true;
+    }
+
+    // Hibernate Reactive specific transient exceptions (if they exist)
+    // Check for common Hibernate and database driver transient exceptions
+    String throwableClassName = throwable.getClass().getName();
+    if (throwableClassName.contains("hibernate") &&
+        (throwableClassName.toLowerCase().contains("transient") ||
+         throwableClassName.toLowerCase().contains("connection") ||
+         throwableClassName.toLowerCase().contains("timeout"))) {
+      return true;
+    }
+
+    // Additional database driver specific transient exceptions
+    if (throwableClassName.contains("org.postgresql.util.PSQLException") ||
+        throwableClassName.contains("com.mysql.cj.exceptions") ||
+        throwableClassName.contains("oracle") ||
+        throwableClassName.contains("sqlserver")) {
+      // For specific database exceptions that might be transient
+      return true;
+    }
+
+    return false;
   }
 }

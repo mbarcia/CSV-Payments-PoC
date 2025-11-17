@@ -103,7 +103,7 @@ public class PollAckPaymentSentOnVirtualThreadReactiveService
                             result.getStatus()
                     );
 
-                    String serviceId = this.getClass().toString();
+                    String serviceId = this.getClass().getSimpleName();
                     MDC.put("serviceId", serviceId);
                     try {
                         logger.infof("Executed command on %s --> %s", detachedAckPaymentSent, result);

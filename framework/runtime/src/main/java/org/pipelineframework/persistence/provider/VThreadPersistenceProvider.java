@@ -60,19 +60,19 @@ public class VThreadPersistenceProvider implements PersistenceProvider<Object> {
         throw new IllegalStateException("No EntityManager available for VThreadPersistenceProvider");
       }
 
-	    try (EntityManager em = entityManagerInstance.get()) {
-		    em.getTransaction().begin();
-		    try {
-			    em.persist(entity);
-			    em.getTransaction().commit();
-		    } catch (Exception e) {
-			    if (em.getTransaction().isActive()) {
-				    em.getTransaction().rollback();
-			    }
-			    throw e;
-		    }
-		    return entity;
-	    }
+        try (EntityManager em = entityManagerInstance.get()) {
+            em.getTransaction().begin();
+            try {
+                em.persist(entity);
+                em.getTransaction().commit();
+            } catch (Exception e) {
+                if (em.getTransaction().isActive()) {
+                    em.getTransaction().rollback();
+                }
+                throw e;
+            }
+            return entity;
+        }
     });
   }
 

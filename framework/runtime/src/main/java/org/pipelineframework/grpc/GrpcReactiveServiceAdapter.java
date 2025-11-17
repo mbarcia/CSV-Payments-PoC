@@ -24,7 +24,8 @@ import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 
-public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> extends ReactiveServiceAdapterBase<DomainIn,DomainOut> {
+@SuppressWarnings("LombokSetterMayBeUsed")
+public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> extends ReactiveServiceAdapterBase {
 
   private static final Logger LOG = Logger.getLogger(GrpcReactiveServiceAdapter.class);
 

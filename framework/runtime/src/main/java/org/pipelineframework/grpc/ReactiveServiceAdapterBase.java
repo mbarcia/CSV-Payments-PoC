@@ -19,7 +19,7 @@ package org.pipelineframework.grpc;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
-public abstract class ReactiveServiceAdapterBase<DomainIn, DomainOut> {
+public abstract class ReactiveServiceAdapterBase {
 
   /**
    * Determines whether entities should be automatically persisted before processing. This method
@@ -30,7 +30,7 @@ public abstract class ReactiveServiceAdapterBase<DomainIn, DomainOut> {
    */
   protected abstract boolean isAutoPersistenceEnabled();
 
-  protected <T> Uni<T> switchToEventLoop() {
+  protected Uni<Void> switchToEventLoop() {
     var ctx = Vertx.currentContext();
     if (ctx == null) {
       return Uni.createFrom().failure(new IllegalStateException("No Vert.x context available"));

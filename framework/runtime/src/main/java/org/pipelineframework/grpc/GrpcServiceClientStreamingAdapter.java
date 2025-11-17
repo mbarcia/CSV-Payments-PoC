@@ -30,7 +30,7 @@ import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut>
-        extends ReactiveServiceAdapterBase<DomainIn,DomainOut>{
+        extends ReactiveServiceAdapterBase {
 
   private static final Logger LOG = Logger.getLogger(GrpcServiceClientStreamingAdapter.class);
 

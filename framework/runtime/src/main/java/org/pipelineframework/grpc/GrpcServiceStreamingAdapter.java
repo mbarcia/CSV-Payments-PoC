@@ -26,7 +26,7 @@ import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut>
-        extends ReactiveServiceAdapterBase<DomainIn,DomainOut> {
+        extends ReactiveServiceAdapterBase {
 
   private static final Logger LOG = Logger.getLogger(GrpcServiceStreamingAdapter.class);
 

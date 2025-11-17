@@ -27,6 +27,9 @@ import org.pipelineframework.step.functional.ManyToOne;
 
 /** N -> 1 (imperative) */
 public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
+
+    Logger LOG = Logger.getLogger(StepManyToOneBlocking.class);
+
     /**
      * Apply the step to a batch of inputs, producing a single output.
      *
@@ -62,7 +65,7 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
      * @return The result of dead letter handling (can be null)
      */
     default Uni<O> deadLetterBatchList(List<I> inputs, Throwable error) {
-        System.err.printf("DLQ drop for batch of %d items: %s%n", inputs.size(), error.getMessage());
+        LOG.errorf("DLQ drop for batch of %d items: %s", inputs.size(), error.getMessage());
         return Uni.createFrom().item((O) null);
     }
 
@@ -91,18 +94,22 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     try {
                         O result = applyBatchList(list);
 
-                        LOG.debugf(
-                            "Blocking Step %s processed batch of %d items into single output: %s",
-                            this.getClass().getSimpleName(), list.size(), result
-                        );
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debugf(
+                                "Blocking Step %s processed batch of %d items into single output: %s",
+                                this.getClass().getSimpleName(), list.size(), result
+                            );
+                        }
 
                         return Uni.createFrom().item(result);
                     } catch (Exception e) {
                         if (recoverOnFailure()) {
-                            LOG.debugf(
-                                "Blocking Step %s: failed batch: %s",
-                                this.getClass().getSimpleName(), e.getMessage()
-                            );
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debugf(
+                                    "Blocking Step %s: failed batch: %s",
+                                    this.getClass().getSimpleName(), e.getMessage()
+                                );
+                            }
                             return deadLetterBatchList(list, e);
                         } else {
                             return Uni.createFrom().failure(e);
@@ -121,18 +128,22 @@ public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, 
                     try {
                         O result = applyBatchList(list);
 
-                        LOG.debugf(
-                            "Blocking Step %s processed batch of %d items into single output: %s",
-                            this.getClass().getSimpleName(), list.size(), result
-                        );
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debugf(
+                                "Blocking Step %s processed batch of %d items into single output: %s",
+                                this.getClass().getSimpleName(), list.size(), result
+                            );
+                        }
 
                         return Uni.createFrom().item(result);
                     } catch (Exception e) {
                         if (recoverOnFailure()) {
-                            LOG.debugf(
-                                "Blocking Step %s: failed batch: %s",
-                                this.getClass().getSimpleName(), e.getMessage()
-                            );
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debugf(
+                                    "Blocking Step %s: failed batch: %s",
+                                    this.getClass().getSimpleName(), e.getMessage()
+                                );
+                            }
                             return deadLetterBatchList(list, e);
                         } else {
                             return Uni.createFrom().failure(e);

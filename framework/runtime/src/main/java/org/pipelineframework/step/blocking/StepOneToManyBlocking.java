@@ -54,7 +54,9 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
                 });
 
                 return multi.onItem().invoke(o -> {
-                    LOG.debugf("Blocking Step %s emitted item: %s", this.getClass().getSimpleName(), o);
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debugf("Blocking Step %s emitted item: %s", this.getClass().getSimpleName(), o);
+                    }
                 });
             })
             .onFailure(t -> !(t instanceof NullPointerException)).retry()

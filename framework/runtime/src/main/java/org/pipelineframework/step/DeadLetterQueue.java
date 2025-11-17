@@ -17,10 +17,14 @@
 package org.pipelineframework.step;
 
 import io.smallrye.mutiny.Uni;
+import org.jboss.logging.Logger;
 
 public interface DeadLetterQueue<I, O> {
+
+    Logger LOG = Logger.getLogger(DeadLetterQueue.class);
+
     default Uni<O> deadLetter(Uni<I> failedItem, Throwable cause) {
-        System.err.printf("DLQ drop: item=%s cause=%s%n", failedItem.toString(), cause);
+        LOG.errorf("DLQ drop: item=%s cause=%s", failedItem.toString(), cause);
         return io.smallrye.mutiny.Uni.createFrom().nullItem();
     }
 }

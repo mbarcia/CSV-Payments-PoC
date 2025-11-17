@@ -62,15 +62,19 @@ public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Con
             })
             // debug logging
             .onItem().invoke(i -> {
-                LOG.debugf("Step %s processed item: %s", this.getClass().getSimpleName(), i);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debugf("Step %s processed item: %s", this.getClass().getSimpleName(), i);
+                }
             })
             // recover with dead letter queue if needed
             .onFailure().recoverWithUni(err -> {
                 if (recoverOnFailure()) {
-                    LOG.debugf(
-                            "Step %s: failed item=%s after %s retries: %s",
-                            this.getClass().getSimpleName(), inputUni, retryLimit(), err
-                    );
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debugf(
+                                "Step %s: failed item=%s after %s retries: %s",
+                                this.getClass().getSimpleName(), inputUni, retryLimit(), err
+                        );
+                    }
                     return deadLetter(inputUni, err);
                 } else {
                     return Uni.createFrom().failure(err);

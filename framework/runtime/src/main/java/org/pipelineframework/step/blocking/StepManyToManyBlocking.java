@@ -19,6 +19,7 @@ package org.pipelineframework.step.blocking;
 import io.smallrye.mutiny.Multi;
 import java.util.Collections;
 import java.util.List;
+import org.jboss.logging.Logger;
 import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
 import org.pipelineframework.step.functional.ManyToMany;
@@ -33,10 +34,13 @@ import org.pipelineframework.step.functional.ManyToMany;
  * and imperative representations.
  */
 public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configurable, DeadLetterQueue<I, O> {
+
+    Logger LOG = Logger.getLogger(StepManyToManyBlocking.class);
+
     List<O> applyStreamingList(List<I> upstream);
 
     default List<O> deadLetterList(List<I> upstream, Throwable err) {
-        System.err.print("DLQ drop");
+        LOG.error("DLQ drop", err);
         return Collections.emptyList();
     }
 
@@ -73,16 +77,18 @@ public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configur
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())
             .onFailure().invoke(t -> {
-                System.out.printf(
-                    "Blocking Step %s completed all retries (%d attempts) with failure: %s%n",
+                LOG.infof(
+                    "Blocking Step %s completed all retries (%d attempts) with failure: %s",
                     this.getClass().getSimpleName(),
                     retryLimit(),
                     t.getMessage()
                 );
             })
             .onItem().invoke(o -> {
-                System.out.printf("Blocking Step %s streamed item: %s%n",
-                        this.getClass().getSimpleName(), o);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debugf("Blocking Step %s streamed item: %s",
+                            this.getClass().getSimpleName(), o);
+                }
             });
     }
 }

@@ -43,10 +43,12 @@ public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, Dead
             }
 
             return multi.onItem().transform(o -> {
-                LOG.debugf(
-                    "Step %s emitted item: %s",
-                    this.getClass().getSimpleName(), o
-                );
+                if (LOG.isDebugEnabled()) {
+                    LOG.debugf(
+                        "Step %s emitted item: %s",
+                        this.getClass().getSimpleName(), o
+                    );
+                }
                 return o;
             });
         })

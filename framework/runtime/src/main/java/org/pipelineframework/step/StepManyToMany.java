@@ -42,10 +42,12 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
         }
 
         return output.onItem().transform(item -> {
-            LOG.debugf(
-                "Step %s emitted item: %s",
-                this.getClass().getSimpleName(), item
-            );
+            if (LOG.isDebugEnabled()) {
+                LOG.debugf(
+                    "Step %s emitted item: %s",
+                    this.getClass().getSimpleName(), item
+                );
+            }
             return item;
         })
         .onFailure(t -> !(t instanceof NullPointerException)).retry()

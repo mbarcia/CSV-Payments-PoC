@@ -26,7 +26,7 @@ import java.util.Map;
  * Configuration mapping for pipeline steps, supporting both global defaults
  * and per-step overrides using Quarkus configuration patterns.
  * <p>
- * To configure global defaults: pipeline.config.property=value
+ * To configure global defaults: pipeline.defaults.property=value
  * To configure specific steps: pipeline.step."fully.qualified.StepClass".property=value
  */
 @ConfigMapping(prefix = "pipeline")

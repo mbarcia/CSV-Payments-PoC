@@ -41,8 +41,17 @@ public class ConfigFactory {
         PipelineStepConfig.StepConfig classConfig = pipelineStepConfig.step().get(className);
 
         if (classConfig != null) {
-            // Use specific configuration for this step class
-            return new StepConfig(classConfig);
+            // Start with pipeline defaults and layer per-step overrides on top
+            StepConfig baseConfig = pipelineConfig.newStepConfig();
+            return baseConfig
+                .retryLimit(classConfig.retryLimit())
+                .retryWait(java.time.Duration.ofMillis(classConfig.retryWaitMs()))
+                .parallel(classConfig.parallel())
+                .recoverOnFailure(classConfig.recoverOnFailure())
+                .maxBackoff(java.time.Duration.ofMillis(classConfig.maxBackoff()))
+                .jitter(classConfig.jitter())
+                .backpressureBufferCapacity(classConfig.backpressureBufferCapacity())
+                .backpressureStrategy(classConfig.backpressureStrategy());
         } else {
             // Use the PipelineConfig's newStepConfig which contains properly initialized defaults
             return pipelineConfig.newStepConfig();

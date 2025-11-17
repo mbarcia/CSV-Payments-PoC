@@ -52,35 +52,18 @@ public class ConfigFactory {
         PipelineStepConfig.StepConfig classConfig = pipelineStepConfig.step().get(className);
 
         if (classConfig != null) {
-            // Start with pipeline defaults and layer per-step overrides on top
-            StepConfig baseConfig = pipelineConfig.newStepConfig();
-            
-            // Only apply overrides that differ from the default interface values to preserve pipeline defaults
-            StepConfig result = baseConfig;
-            if (!classConfig.retryLimit().equals(3)) {
-                result = result.retryLimit(classConfig.retryLimit());
-            }
-            if (!classConfig.retryWaitMs().equals(2000L)) {
-                result = result.retryWait(java.time.Duration.ofMillis(classConfig.retryWaitMs()));
-            }
-            if (!classConfig.parallel().equals(false)) {
-                result = result.parallel(classConfig.parallel());
-            }
-            if (!classConfig.recoverOnFailure().equals(false)) {
-                result = result.recoverOnFailure(classConfig.recoverOnFailure());
-            }
-            if (!classConfig.maxBackoff().equals(30000L)) {
-                result = result.maxBackoff(java.time.Duration.ofMillis(classConfig.maxBackoff()));
-            }
-            if (!classConfig.jitter().equals(false)) {
-                result = result.jitter(classConfig.jitter());
-            }
-            if (!classConfig.backpressureBufferCapacity().equals(1024)) {
-                result = result.backpressureBufferCapacity(classConfig.backpressureBufferCapacity());
-            }
-            if (!classConfig.backpressureStrategy().equals("BUFFER")) {
-                result = result.backpressureStrategy(classConfig.backpressureStrategy());
-            }
+            // Start with pipeline defaults and unconditionally apply all per-step overrides
+            StepConfig result = pipelineConfig.newStepConfig();
+
+            // Apply all values from classConfig to the base config, regardless of equality with defaults
+            result = result.retryLimit(classConfig.retryLimit());
+            result = result.retryWait(java.time.Duration.ofMillis(classConfig.retryWaitMs()));
+            result = result.parallel(classConfig.parallel());
+            result = result.recoverOnFailure(classConfig.recoverOnFailure());
+            result = result.maxBackoff(java.time.Duration.ofMillis(classConfig.maxBackoff()));
+            result = result.jitter(classConfig.jitter());
+            result = result.backpressureBufferCapacity(classConfig.backpressureBufferCapacity());
+            result = result.backpressureStrategy(classConfig.backpressureStrategy());
             return result;
         } else {
             // Use the PipelineConfig's newStepConfig which contains properly initialized defaults

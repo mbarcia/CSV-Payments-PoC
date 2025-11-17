@@ -21,7 +21,6 @@ import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import org.jboss.logging.Logger;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
@@ -34,7 +33,7 @@ import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
  */
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceBidirectionalStreamingAdapter<
-    GrpcIn, GrpcOut, DomainIn, DomainOut> {
+    GrpcIn, GrpcOut, DomainIn, DomainOut> extends ReactiveServiceAdapterBase<DomainIn,DomainOut> {
 
   private final Logger logger = Logger.getLogger(getClass());
 
@@ -55,27 +54,6 @@ public abstract class GrpcServiceBidirectionalStreamingAdapter<
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
   protected abstract GrpcOut toGrpc(DomainOut domainOut);
-
-  /**
-   * Get the step configuration for this service adapter. Override this method to provide specific
-   * configuration.
-   *
-   * @return the step configuration, or null if not configured
-   */
-  protected StepConfig getStepConfig() {
-    return null;
-  }
-
-  /**
-   * Determines whether entities should be automatically persisted before processing. Override this
-   * method to enable auto-persistence.
-   *
-   * @return true if entities should be auto-persisted, false otherwise
-   */
-  protected boolean isAutoPersistenceEnabled() {
-    StepConfig config = getStepConfig();
-    return config != null && config.autoPersist();
-  }
 
   /**
    * Handles a bidirectional gRPC streaming call (N-N cardinality) where both the client and server
@@ -133,27 +111,25 @@ public abstract class GrpcServiceBidirectionalStreamingAdapter<
 
     // Step 2: After stream finishes successfully, persist all inputs (once)
     return processedStream
-        // When the stream completes successfully (not per item!)
-        .onCompletion()
-        .call(
-            () ->
-                Panache.withTransaction(
-                        () ->
-                            cachedStream
-                                .onItem()
-                                .transformToUniAndConcatenate(persistenceManager::persist)
-                                .collect()
-                                .asList()
-                                .replaceWithVoid())
-                    // Optional retry for transient DB errors
+        .onCompletion().call(() ->
+            // Ensure event-loop + Hibernate Reactive context
+            switchToEventLoop().call(() ->
+                            Panache.withTransaction(() ->
+                                    cachedStream
+                                            .onItem()
+                                            .transformToUniAndConcatenate(persistenceManager::persist)
+                                            .collect()
+                                            .asList()
+                                            .replaceWithVoid()
+                            )
+                    )
                     .onFailure(this::isTransientDbError)
                     .retry()
                     .withBackOff(Duration.ofMillis(200), Duration.ofSeconds(2))
-                    .atMost(3))
-        .onItem()
-        .transform(this::toGrpc)
-        .onFailure()
-        .transform(new throwStatusRuntimeExceptionFunction());
+                    .atMost(3)
+        )
+        .onItem().transform(this::toGrpc)
+        .onFailure().transform(new throwStatusRuntimeExceptionFunction());
   }
 
   private boolean isTransientDbError(Throwable failure) {

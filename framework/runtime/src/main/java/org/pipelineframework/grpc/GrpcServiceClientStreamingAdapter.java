@@ -24,13 +24,13 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.jboss.logging.Logger;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingClientService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
-public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut>
+        extends ReactiveServiceAdapterBase<DomainIn,DomainOut>{
 
   private static final Logger LOG = Logger.getLogger(GrpcServiceClientStreamingAdapter.class);
 
@@ -52,27 +52,6 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
   protected abstract GrpcOut toGrpc(DomainOut domainOut);
-
-  /**
-   * Get the step configuration for this service adapter.
-   * Override this method to provide specific configuration.
-   * 
-   * @return the step configuration, or null if not configured
-   */
-  protected StepConfig getStepConfig() {
-    return null;
-  }
-
-  /**
-   * Determines whether entities should be automatically persisted before processing.
-   * Override this method to enable auto-persistence.
-   * 
-   * @return true if entities should be auto-persisted, false otherwise
-   */
-  protected boolean isAutoPersistenceEnabled() {
-    StepConfig config = getStepConfig();
-    return config != null && config.autoPersist();
-  }
 
   public Uni<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
     // 1️⃣ Convert incoming gRPC messages to domain objects
@@ -99,6 +78,7 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
     // After processing completes successfully, persist all inputs inside one transaction
     return processedResult
             .onItem().call(result ->
+                switchToEventLoop().call(() ->
                     Panache.withTransaction(() ->
                         Multi.createFrom().iterable(capturedInputs)
                                 // Persist each DomainIn sequentially inside this transaction
@@ -107,9 +87,10 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
                                 // Replace with original result when done
                                 .replaceWith(result)
                     )
-                    // Optionally, retry on transient DB issues
-                    .onFailure(this::isTransientDbError)
-                    .retry().withBackOff(Duration.ofMillis(200), Duration.ofSeconds(2)).atMost(3)
+                )
+                // Optionally, retry on transient DB issues
+                .onFailure(this::isTransientDbError)
+                .retry().withBackOff(Duration.ofMillis(200), Duration.ofSeconds(2)).atMost(3)
             )
             .onItem().transform(this::toGrpc)
             .onFailure().transform(new throwStatusRuntimeExceptionFunction());

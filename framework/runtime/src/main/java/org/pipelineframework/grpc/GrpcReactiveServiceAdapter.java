@@ -19,42 +19,26 @@ package org.pipelineframework.grpc;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
-import org.pipelineframework.annotation.StepConfigProvider;
-import org.pipelineframework.config.StepConfig;
+import org.jboss.logging.Logger;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
-import org.pipelineframework.step.ConfigurableStep;
-import org.jboss.logging.Logger;
 
-@SuppressWarnings("LombokSetterMayBeUsed")
-public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> extends ReactiveServiceAdapterBase<DomainIn,DomainOut> {
 
   private static final Logger LOG = Logger.getLogger(GrpcReactiveServiceAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;
-  
-  // The step class this adapter is for
-  private Class<? extends ConfigurableStep> stepClass;
-  
+
   /**
-   * Sets the persistence manager for this adapter.
-   * This method is useful when the adapter is not managed by CDI (e.g., anonymous inner classes).
-   * 
+   * Sets the persistence manager for this adapter. This method is useful when the adapter is not
+   * managed by CDI (e.g., anonymous inner classes).
+   *
    * @param persistenceManager the persistence manager to use
    */
   public void setPersistenceManager(PersistenceManager persistenceManager) {
     this.persistenceManager = persistenceManager;
-  }
-
-  /**
-   * Sets the step class this adapter is for.
-   *
-   * @param stepClass the step class
-   */
-  public void setStepClass(Class<? extends ConfigurableStep> stepClass) {
-    this.stepClass = stepClass;
   }
 
   protected abstract ReactiveService<DomainIn, DomainOut> getService();
@@ -62,34 +46,6 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
   protected abstract GrpcOut toGrpc(DomainOut domainOut);
-
-  /**
-   * Get the step configuration for this service adapter.
-   * Override this method to provide specific configuration.
-   * 
-   * @return the step configuration, or null if not configured
-   */
-  protected StepConfig getStepConfig() {
-    if (stepClass != null) {
-      return StepConfigProvider.getStepConfig(stepClass);
-    }
-    return null;
-  }
-
-  /**
-   * Determines whether entities should be automatically persisted before processing.
-   * Override this method to enable auto-persistence.
-   * 
-   * @return true if entities should be auto-persisted, false otherwise
-   */
-  protected boolean isAutoPersistenceEnabled() {
-    if (stepClass != null) {
-      return StepConfigProvider.isAutoPersistenceEnabled(stepClass);
-    }
-    
-    StepConfig config = getStepConfig();
-    return config != null && config.autoPersist();
-  }
 
   public Uni<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
     DomainIn entity = fromGrpc(grpcRequest);
@@ -99,10 +55,12 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
 
       boolean autoPersistenceEnabled = isAutoPersistenceEnabled();
       Uni<DomainOut> withPersistence = autoPersistenceEnabled
-              ? processedResult.onItem().call(_ ->
-              // If auto-persistence is enabled, persist the input entity after successful processing
-              persistenceManager.persist(entity)
-      )
+              ? processedResult.call(_ ->
+              // guaranteed event-loop
+              switchToEventLoop()
+                  // If auto-persistence is enabled, persist the input entity after successful processing
+                  .call(() -> persistenceManager.persist(entity))
+              )
               : processedResult;
 
       if (!autoPersistenceEnabled) {
@@ -114,4 +72,5 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
               .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     });
   }
+
 }

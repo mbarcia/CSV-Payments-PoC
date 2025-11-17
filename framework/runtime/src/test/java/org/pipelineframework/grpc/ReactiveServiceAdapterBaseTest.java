@@ -27,8 +27,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive unit tests for ReactiveServiceAdapterBase.
- * Tests the switchToEventLoop functionality and auto-persistence detection.
+ * Comprehensive unit tests for ReactiveServiceAdapterBase. Tests the switchToEventLoop
+ * functionality and auto-persistence detection.
  */
 @QuarkusTest
 class ReactiveServiceAdapterBaseTest {

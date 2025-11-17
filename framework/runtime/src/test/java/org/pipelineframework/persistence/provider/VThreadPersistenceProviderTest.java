@@ -32,8 +32,8 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 /**
- * Comprehensive unit tests for VThreadPersistenceProvider.
- * Tests entity persistence, transaction handling, and virtual thread detection.
+ * Comprehensive unit tests for VThreadPersistenceProvider. Tests entity persistence, transaction
+ * handling, and virtual thread detection.
  */
 class VThreadPersistenceProviderTest {
 

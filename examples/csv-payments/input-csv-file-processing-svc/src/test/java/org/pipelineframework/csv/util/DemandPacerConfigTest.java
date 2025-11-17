@@ -26,8 +26,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive unit tests for DemandPacerConfig configuration mapping interface.
- * Tests default values and custom configuration loading.
+ * Comprehensive unit tests for DemandPacerConfig configuration mapping interface. Tests default
+ * values and custom configuration loading.
  */
 @QuarkusTest
 class DemandPacerConfigTest {

@@ -26,8 +26,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 /**
- * Comprehensive unit tests for PipelineStepConfig configuration mapping interface.
- * Tests the configuration loading from application.properties and default values.
+ * Comprehensive unit tests for PipelineStepConfig configuration mapping interface. Tests the
+ * configuration loading from application.properties and default values.
  */
 @QuarkusTest
 class PipelineStepConfigTest {
@@ -53,8 +53,7 @@ class PipelineStepConfigTest {
         assertEquals(3, defaults.retryLimit(), "Default retryLimit should be 3");
         assertEquals(2000L, defaults.retryWaitMs(), "Default retryWaitMs should be 2000");
         assertFalse(defaults.parallel(), "Default parallel should be false");
-        assertFalse(
-                defaults.recoverOnFailure(), "Default recoverOnFailure should be false");
+        assertFalse(defaults.recoverOnFailure(), "Default recoverOnFailure should be false");
         assertEquals(30000L, defaults.maxBackoff(), "Default maxBackoff should be 30000");
         assertFalse(defaults.jitter(), "Default jitter should be false");
         assertEquals(
@@ -83,8 +82,7 @@ class PipelineStepConfigTest {
 
         // Then - without specific configuration, map should be empty
         assertTrue(
-                stepMap.isEmpty(),
-                "Step map should be empty without specific step configuration");
+                stepMap.isEmpty(), "Step map should be empty without specific step configuration");
     }
 
     /** Test profile for custom property values */
@@ -148,8 +146,7 @@ class PipelineStepConfigTest {
         @Test
         void testPerStepConfigurationIsLoaded() {
             // Given
-            Map<String, PipelineStepConfig.StepConfig> stepMap =
-                    pipelineStepConfig.step();
+            Map<String, PipelineStepConfig.StepConfig> stepMap = pipelineStepConfig.step();
 
             // Then - verify step-specific configuration
             assertNotNull(stepMap);
@@ -174,8 +171,7 @@ class PipelineStepConfigTest {
         @Test
         void testPerStepConfigInheritsDefaultsForUnsetProperties() {
             // Given
-            Map<String, PipelineStepConfig.StepConfig> stepMap =
-                    pipelineStepConfig.step();
+            Map<String, PipelineStepConfig.StepConfig> stepMap = pipelineStepConfig.step();
             PipelineStepConfig.StepConfig myStepConfig = stepMap.get("com.example.MyStep");
 
             // Then - unset properties should use interface defaults

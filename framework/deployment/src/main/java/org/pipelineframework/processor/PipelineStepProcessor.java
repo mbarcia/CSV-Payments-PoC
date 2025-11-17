@@ -492,238 +492,34 @@ public class PipelineStepProcessor extends AbstractProcessor {
         if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepOneToMany")) {
             // For server streaming (unary input, streaming output) - e.g., ProcessFolderService
             // Creates the adapter inline as an anonymous class inside the method
-            TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
-                .superclass(ParameterizedTypeName.get(grpcAdapterClassName,
-                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
-                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
-                    inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
-                    outputType != null ? ClassName.get(outputType) : ClassName.OBJECT))
-                .addMethod(MethodSpec.methodBuilder("getService")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(ClassName.get(serviceClass))
-                    .addStatement("return $N", "service")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("fromGrpc")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(inputType != null ? ClassName.get(inputType) : ClassName.OBJECT)
-                    .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "grpcIn")
-                    .addStatement("return $N.fromGrpcFromDto(grpcIn)", "inboundMapper")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("toGrpc")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT)
-                    .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
-                    .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("isAutoPersistenceEnabled")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(TypeName.BOOLEAN)
-                    .addStatement("return $L", autoPersistenceEnabled)
-                    .build())
-                .build();
-
-            MethodSpec.Builder remoteProcessMethodBuilder = MethodSpec.methodBuilder("remoteProcess")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
-                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
-                .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "request")
-                .addStatement("$T adapter = $L",
-                    ParameterizedTypeName.get(grpcAdapterClassName,
-                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
-                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
-                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
-                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT),
-                    inlineAdapter)
-                .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
-                .addStatement("return adapter.remoteProcess(request)");
-
-            // Add @RunOnVirtualThread annotation if the property is enabled
-            if (runOnVirtualThreads) {
-                remoteProcessMethodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
-            }
-
-            grpcServiceBuilder.addMethod(remoteProcessMethodBuilder.build());
+            createAndAddRemoteProcessMethod(grpcServiceBuilder, grpcAdapterClassName,
+                inputGrpcType, outputGrpcType, inputType, outputType, serviceClass,
+                inboundMapperType, outboundMapperType, autoPersistenceEnabled, runOnVirtualThreads,
+                ClassName.get("io.smallrye.mutiny", "Multi"),
+                inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "request");
         } else if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepManyToOne")) {
             // For client streaming (streaming input, unary output) - e.g., ProcessCsvPaymentsOutputFileService
-            TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
-                .superclass(ParameterizedTypeName.get(grpcAdapterClassName, 
-                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
-                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
-                    inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
-                    outputType != null ? ClassName.get(outputType) : ClassName.OBJECT))
-                .addMethod(MethodSpec.methodBuilder("getService")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(ClassName.get(serviceClass))
-                    .addStatement("return $N", "service")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("fromGrpc")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(inputType != null ? ClassName.get(inputType) : ClassName.OBJECT)
-                    .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "grpcIn")
-                    .addStatement("return $N.fromGrpcFromDto(grpcIn)", "inboundMapper")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("toGrpc")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT)
-                    .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
-                    .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("isAutoPersistenceEnabled")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(TypeName.BOOLEAN)
-                    .addStatement("return $L", autoPersistenceEnabled)
-                    .build())
-                .build();
-
-            MethodSpec.Builder remoteProcessMethodBuilder = MethodSpec.methodBuilder("remoteProcess")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Uni"),
-                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
-                .addParameter(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
-                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT), "request")
-                .addStatement("$T adapter = $L",
-                    ParameterizedTypeName.get(grpcAdapterClassName,
-                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
-                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
-                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
-                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT),
-                    inlineAdapter)
-                .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
-                .addStatement("return adapter.remoteProcess(request)");
-
-            // Add @RunOnVirtualThread annotation if the property is enabled
-            if (runOnVirtualThreads) {
-                remoteProcessMethodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
-            }
-
-            grpcServiceBuilder.addMethod(remoteProcessMethodBuilder.build());
+            createAndAddRemoteProcessMethod(grpcServiceBuilder, grpcAdapterClassName,
+                inputGrpcType, outputGrpcType, inputType, outputType, serviceClass,
+                inboundMapperType, outboundMapperType, autoPersistenceEnabled, runOnVirtualThreads,
+                ClassName.get("io.smallrye.mutiny", "Uni"),
+                ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
+                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT), "request");
         } else if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepManyToMany")) {
             // For bidirectional streaming (streaming input, streaming output)
-            TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
-                .superclass(ParameterizedTypeName.get(grpcAdapterClassName, 
-                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
-                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
-                    inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
-                    outputType != null ? ClassName.get(outputType) : ClassName.OBJECT))
-                .addMethod(MethodSpec.methodBuilder("getService")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(ClassName.get(serviceClass))
-                    .addStatement("return $N", "service")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("fromGrpc")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(inputType != null ? ClassName.get(inputType) : ClassName.OBJECT)
-                    .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "grpcIn")
-                    .addStatement("return $N.fromGrpcFromDto(grpcIn)", "inboundMapper")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("toGrpc")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT)
-                    .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
-                    .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("isAutoPersistenceEnabled")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(TypeName.BOOLEAN)
-                    .addStatement("return $L", autoPersistenceEnabled)
-                    .build())
-                .build();
-
-            MethodSpec.Builder remoteProcessMethodBuilder = MethodSpec.methodBuilder("remoteProcess")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
-                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
-                .addParameter(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
-                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT), "request")
-                .addStatement("$T adapter = $L",
-                    ParameterizedTypeName.get(grpcAdapterClassName,
-                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
-                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
-                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
-                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT),
-                    inlineAdapter)
-                .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
-                .addStatement("return adapter.remoteProcess(request)");
-
-            // Add @RunOnVirtualThread annotation if the property is enabled
-            if (runOnVirtualThreads) {
-                remoteProcessMethodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
-            }
-
-            grpcServiceBuilder.addMethod(remoteProcessMethodBuilder.build());
+            createAndAddRemoteProcessMethod(grpcServiceBuilder, grpcAdapterClassName,
+                inputGrpcType, outputGrpcType, inputType, outputType, serviceClass,
+                inboundMapperType, outboundMapperType, autoPersistenceEnabled, runOnVirtualThreads,
+                ClassName.get("io.smallrye.mutiny", "Multi"),
+                ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
+                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT), "request");
         } else {
             // Default to unary (unary input, unary output) - e.g., ProcessPaymentStatusGrpcService
-            TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
-                .superclass(ParameterizedTypeName.get(grpcAdapterClassName, 
-                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
-                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
-                    inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
-                    outputType != null ? ClassName.get(outputType) : ClassName.OBJECT))
-                .addMethod(MethodSpec.methodBuilder("getService")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(ClassName.get(serviceClass))
-                    .addStatement("return $N", "service")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("fromGrpc")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(inputType != null ? ClassName.get(inputType) : ClassName.OBJECT)
-                    .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "grpcIn")
-                    .addStatement("return $N.fromGrpcFromDto(grpcIn)", "inboundMapper")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("toGrpc")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT)
-                    .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
-                    .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
-                    .build())
-                .addMethod(MethodSpec.methodBuilder("isAutoPersistenceEnabled")
-                    .addAnnotation(Override.class)
-                    .addModifiers(Modifier.PROTECTED)
-                    .returns(TypeName.BOOLEAN)
-                    .addStatement("return $L", autoPersistenceEnabled)
-                    .build())
-                .build();
-
-            MethodSpec.Builder remoteProcessMethodBuilder = MethodSpec.methodBuilder("remoteProcess")
-                .addAnnotation(Override.class)
-                .addModifiers(Modifier.PUBLIC)
-                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Uni"),
-                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
-                .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "request")
-                .addStatement("$T adapter = $L",
-                    ParameterizedTypeName.get(grpcAdapterClassName,
-                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
-                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
-                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
-                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT),
-                    inlineAdapter)
-                .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
-                .addStatement("return adapter.remoteProcess(request)");
-
-            // Add @RunOnVirtualThread annotation if the property is enabled
-            if (runOnVirtualThreads) {
-                remoteProcessMethodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
-            }
-
-            grpcServiceBuilder.addMethod(remoteProcessMethodBuilder.build());
+            createAndAddRemoteProcessMethod(grpcServiceBuilder, grpcAdapterClassName,
+                inputGrpcType, outputGrpcType, inputType, outputType, serviceClass,
+                inboundMapperType, outboundMapperType, autoPersistenceEnabled, runOnVirtualThreads,
+                ClassName.get("io.smallrye.mutiny", "Uni"),
+                inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "request");
         }
 
         TypeSpec grpcServiceClass = grpcServiceBuilder.build();
@@ -1205,10 +1001,97 @@ public class PipelineStepProcessor extends AbstractProcessor {
         // We need to check all interfaces implemented by the service class
         return implementsInterface(serviceClass, "org.pipelineframework.service.ReactiveService");
     }
-    
+
+    /**
+     * Creates and adds the remoteProcess method to the gRPC service builder based on the step type.
+     * This method extracts the common adapter generation logic used across different step types.
+     *
+     * @param grpcServiceBuilder the TypeSpec.Builder for the gRPC service class
+     * @param grpcAdapterClassName the gRPC adapter class name
+     * @param inputGrpcType the input gRPC type
+     * @param outputGrpcType the output gRPC type
+     * @param inputType the input domain type
+     * @param outputType the output domain type
+     * @param serviceClass the service class
+     * @param inboundMapperType the inbound mapper type
+     * @param outboundMapperType the outbound mapper type
+     * @param autoPersistenceEnabled whether auto-persistence is enabled
+     * @param runOnVirtualThreads whether to run on virtual threads
+     * @param returnType the return type of the remoteProcess method (Uni or Multi)
+     * @param parameterType the parameter type of the remoteProcess method
+     * @param parameterName the name of the parameter
+     */
+    private void createAndAddRemoteProcessMethod(TypeSpec.Builder grpcServiceBuilder,
+            ClassName grpcAdapterClassName,
+            TypeMirror inputGrpcType, TypeMirror outputGrpcType, TypeMirror inputType, TypeMirror outputType,
+            TypeElement serviceClass,
+            TypeMirror inboundMapperType, TypeMirror outboundMapperType,
+            boolean autoPersistenceEnabled, boolean runOnVirtualThreads,
+            ClassName returnType,
+            TypeName parameterType, String parameterName) {
+
+        // Create the inline adapter
+        TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
+            .superclass(ParameterizedTypeName.get(grpcAdapterClassName,
+                inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
+                outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
+                inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                outputType != null ? ClassName.get(outputType) : ClassName.OBJECT))
+            .addMethod(MethodSpec.methodBuilder("getService")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PROTECTED)
+                .returns(ClassName.get(serviceClass))
+                .addStatement("return $N", "service")
+                .build())
+            .addMethod(MethodSpec.methodBuilder("fromGrpc")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PROTECTED)
+                .returns(inputType != null ? ClassName.get(inputType) : ClassName.OBJECT)
+                .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "grpcIn")
+                .addStatement("return $N.fromGrpcFromDto(grpcIn)", "inboundMapper")
+                .build())
+            .addMethod(MethodSpec.methodBuilder("toGrpc")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PROTECTED)
+                .returns(outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT)
+                .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
+                .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
+                .build())
+            .addMethod(MethodSpec.methodBuilder("isAutoPersistenceEnabled")
+                .addAnnotation(Override.class)
+                .addModifiers(Modifier.PROTECTED)
+                .returns(TypeName.BOOLEAN)
+                .addStatement("return $L", autoPersistenceEnabled)
+                .build())
+            .build();
+
+        MethodSpec.Builder remoteProcessMethodBuilder = MethodSpec.methodBuilder("remoteProcess")
+            .addAnnotation(Override.class)
+            .addModifiers(Modifier.PUBLIC)
+            .returns(ParameterizedTypeName.get(returnType,
+                outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
+            .addParameter(parameterType, parameterName)
+            .addStatement("$T adapter = $L",
+                ParameterizedTypeName.get(grpcAdapterClassName,
+                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
+                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
+                    inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                    outputType != null ? ClassName.get(outputType) : ClassName.OBJECT),
+                inlineAdapter)
+            .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
+            .addStatement("return adapter.remoteProcess($N)", parameterName);
+
+        // Add @RunOnVirtualThread annotation if the property is enabled
+        if (runOnVirtualThreads) {
+            remoteProcessMethodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
+        }
+
+        grpcServiceBuilder.addMethod(remoteProcessMethodBuilder.build());
+    }
+
     /**
      * Recursively checks if a class implements a specific interface.
-     * 
+     *
      * @param classElement the class to check
      * @param interfaceClassName the fully qualified class name of the interface to look for
      * @return true if the class implements the interface, false otherwise

@@ -16,14 +16,14 @@
 
 package org.pipelineframework.csv.config;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.PipelineStepConfig;
 import org.pipelineframework.config.StepConfig;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @QuarkusTest
 class PipelineDefaultsIntegrationTest {
@@ -35,30 +35,12 @@ class PipelineDefaultsIntegrationTest {
     PipelineStepConfig pipelineStepConfig;
 
     @Test
-    void testPipelineConfigNewStepConfigInheritsDefaults() {
-        // Test that when creating new StepConfig instances via newStepConfig(),
-        // they inherit from the defaults (whether from the PipelineConfigInitializer or defaults)
-        StepConfig newStepConfig = pipelineConfig.newStepConfig();
+    void testNewStepConfigInheritsDefaults() {
+        // Verify that newStepConfig() inherits all default values from defaults()
         StepConfig defaults = pipelineConfig.defaults();
+        StepConfig newStepConfig = pipelineConfig.newStepConfig();
 
         // Verify inheritance between newStepConfig and defaults
-        assertEquals(defaults.retryLimit(), newStepConfig.retryLimit());
-        assertEquals(defaults.retryWait(), newStepConfig.retryWait());
-        assertEquals(defaults.parallel(), newStepConfig.parallel());
-        assertEquals(defaults.recoverOnFailure(), newStepConfig.recoverOnFailure());
-        assertEquals(defaults.maxBackoff(), newStepConfig.maxBackoff());
-        assertEquals(defaults.jitter(), newStepConfig.jitter());
-        assertEquals(defaults.backpressureBufferCapacity(), newStepConfig.backpressureBufferCapacity());
-        assertEquals(defaults.backpressureStrategy(), newStepConfig.backpressureStrategy());
-    }
-
-    @Test
-    void testPipelineConfigValuesAreConsistent() {
-        // Test that the PipelineConfig's defaults and newStepConfig use consistent values
-        StepConfig defaults = pipelineConfig.defaults();
-        StepConfig newStepConfig = pipelineConfig.newStepConfig();
-        
-        // Verify that newStepConfig inherits from defaults
         assertEquals(defaults.retryLimit(), newStepConfig.retryLimit());
         assertEquals(defaults.retryWait(), newStepConfig.retryWait());
         assertEquals(defaults.parallel(), newStepConfig.parallel());

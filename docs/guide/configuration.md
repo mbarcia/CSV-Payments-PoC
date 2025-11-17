@@ -15,7 +15,6 @@ pipeline.defaults.retry-wait-ms=3000
 pipeline.defaults.debug=true
 pipeline.defaults.parallel=false
 pipeline.defaults.recover-on-failure=true
-pipeline.defaults.parallel=false
 pipeline.defaults.max-backoff=60000
 pipeline.defaults.jitter=true
 pipeline.defaults.backpressure-buffer-capacity=2048
@@ -36,7 +35,7 @@ pipeline.step."org.example.MyStep".retry-limit=5
 pipeline.step."org.example.MyStep".debug=false
 pipeline.step."org.example.MyStep".parallel=true
 pipeline.step."org.example.MyStep".order=100
-pipeline.step."org.example.MyStep".parallel=true
+pipeline.step."org.example.MyStep".recover-on-failure=false
 ```
 
 ### Step Definition Configuration

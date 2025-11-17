@@ -28,11 +28,9 @@ import org.pipelineframework.config.StepConfig;
 @QuarkusTest
 class PipelineDefaultsIntegrationTest {
 
-    @Inject
-    PipelineConfig pipelineConfig;
+    @Inject PipelineConfig pipelineConfig;
 
-    @Inject
-    PipelineStepConfig pipelineStepConfig;
+    @Inject PipelineStepConfig pipelineStepConfig;
 
     @Test
     void testNewStepConfigInheritsDefaults() {
@@ -47,7 +45,8 @@ class PipelineDefaultsIntegrationTest {
         assertEquals(defaults.recoverOnFailure(), newStepConfig.recoverOnFailure());
         assertEquals(defaults.maxBackoff(), newStepConfig.maxBackoff());
         assertEquals(defaults.jitter(), newStepConfig.jitter());
-        assertEquals(defaults.backpressureBufferCapacity(), newStepConfig.backpressureBufferCapacity());
+        assertEquals(
+                defaults.backpressureBufferCapacity(), newStepConfig.backpressureBufferCapacity());
         assertEquals(defaults.backpressureStrategy(), newStepConfig.backpressureStrategy());
     }
 }

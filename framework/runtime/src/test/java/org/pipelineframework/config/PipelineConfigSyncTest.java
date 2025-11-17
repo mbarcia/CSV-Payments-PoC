@@ -16,59 +16,72 @@
 
 package org.pipelineframework.config;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import io.quarkus.test.junit.QuarkusTest;
 import jakarta.inject.Inject;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.step.ConfigFactory;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 @QuarkusTest
 class PipelineConfigSyncTest {
 
-    @Inject
-    PipelineConfig pipelineConfig;
+    @Inject PipelineConfig pipelineConfig;
 
-    @Inject
-    ConfigFactory configFactory;
+    @Inject ConfigFactory configFactory;
 
     @Test
     void testConfigFactoryUsesPipelineConfigDefaults() throws IllegalAccessException {
         // This test verifies that ConfigFactory now properly uses PipelineConfig's defaults
         // which have been initialized with values from application.properties
-        
+
         // Before our fix, ConfigFactory would get defaults directly from PipelineStepConfig
         // After our fix, ConfigFactory should get defaults from PipelineConfig.newStepConfig()
         // which contains the properly initialized values
-        
+
         // Create a mock step class for testing
         Class<?> mockStepClass = String.class; // Using String as a placeholder
-        
+
         // Get config from the factory when there's no specific config for the class
-        org.pipelineframework.config.StepConfig factoryConfig = 
-            configFactory.buildConfig(mockStepClass, pipelineConfig);
-        
+        org.pipelineframework.config.StepConfig factoryConfig =
+                configFactory.buildConfig(mockStepClass, pipelineConfig);
+
         // Get a new config from pipelineConfig directly
-        org.pipelineframework.config.StepConfig directConfig = 
-            pipelineConfig.newStepConfig();
-        
+        org.pipelineframework.config.StepConfig directConfig = pipelineConfig.newStepConfig();
+
         // With our fix, both configs should have the same values
         // as they both now come from the properly initialized PipelineConfig
-        assertEquals(directConfig.retryLimit(), factoryConfig.retryLimit(),
+        assertEquals(
+                directConfig.retryLimit(),
+                factoryConfig.retryLimit(),
                 "ConfigFactory should return config with same retryLimit as PipelineConfig");
-        assertEquals(directConfig.retryWait(), factoryConfig.retryWait(),
+        assertEquals(
+                directConfig.retryWait(),
+                factoryConfig.retryWait(),
                 "ConfigFactory should return config with same retryWait as PipelineConfig");
-        assertEquals(directConfig.parallel(), factoryConfig.parallel(),
+        assertEquals(
+                directConfig.parallel(),
+                factoryConfig.parallel(),
                 "ConfigFactory should return config with same parallel as PipelineConfig");
-        assertEquals(directConfig.recoverOnFailure(), factoryConfig.recoverOnFailure(),
+        assertEquals(
+                directConfig.recoverOnFailure(),
+                factoryConfig.recoverOnFailure(),
                 "ConfigFactory should return config with same recoverOnFailure as PipelineConfig");
-        assertEquals(directConfig.maxBackoff(), factoryConfig.maxBackoff(),
+        assertEquals(
+                directConfig.maxBackoff(),
+                factoryConfig.maxBackoff(),
                 "ConfigFactory should return config with same maxBackoff as PipelineConfig");
-        assertEquals(directConfig.jitter(), factoryConfig.jitter(),
+        assertEquals(
+                directConfig.jitter(),
+                factoryConfig.jitter(),
                 "ConfigFactory should return config with same jitter as PipelineConfig");
-        assertEquals(directConfig.backpressureBufferCapacity(), factoryConfig.backpressureBufferCapacity(),
+        assertEquals(
+                directConfig.backpressureBufferCapacity(),
+                factoryConfig.backpressureBufferCapacity(),
                 "ConfigFactory should return config with same backpressureBufferCapacity as PipelineConfig");
-        assertEquals(directConfig.backpressureStrategy(), factoryConfig.backpressureStrategy(),
+        assertEquals(
+                directConfig.backpressureStrategy(),
+                factoryConfig.backpressureStrategy(),
                 "ConfigFactory should return config with same backpressureStrategy as PipelineConfig");
     }
 }

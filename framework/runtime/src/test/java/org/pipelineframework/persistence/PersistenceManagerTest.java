@@ -97,18 +97,20 @@ class PersistenceManagerTest {
         // we need to use a PanacheEntityBase entity
         PanacheEntityBase entity = mock(PanacheEntityBase.class);
 
-        // Create a mock that extends ReactivePanachePersistenceProvider to pass the instanceof check
+        // Create a mock that extends ReactivePanachePersistenceProvider to pass the instanceof
+        // check
         // but with method implementations that don't depend on Vert.x context
-        ReactivePanachePersistenceProvider mockProvider = mock(ReactivePanachePersistenceProvider.class);
+        ReactivePanachePersistenceProvider mockProvider =
+                mock(ReactivePanachePersistenceProvider.class);
         when(mockProvider.supports(entity)).thenReturn(true);
-        when(mockProvider.supportsThreadContext()).thenReturn(true); // For regular threads, it should return true
+        when(mockProvider.supportsThreadContext())
+                .thenReturn(true); // For regular threads, it should return true
         when(mockProvider.persist(entity)).thenReturn(Uni.createFrom().item(entity));
         when(mockProvider.type()).thenReturn(PanacheEntityBase.class); // Need to mock this too
 
         // Set up the mock instance to use our specific provider
         when(mockProviderInstance.isUnsatisfied()).thenReturn(false);
-        when(mockProviderInstance.stream())
-                .thenReturn(java.util.stream.Stream.of(mockProvider));
+        when(mockProviderInstance.stream()).thenReturn(java.util.stream.Stream.of(mockProvider));
 
         // Re-initialize the provider list in the PersistenceManager
         reinitializeProviders();

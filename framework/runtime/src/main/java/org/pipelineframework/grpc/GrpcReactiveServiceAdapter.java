@@ -88,12 +88,18 @@ protected abstract GrpcOut toGrpc(DomainOut domainOut);
               // guaranteed event-loop
               switchToEventLoop()
                   // If auto-persistence is enabled, persist the input entity after successful processing
-                  .call(() -> persistenceManager.persist(entity))
+                  .call(() -> persistenceManager.persist(entity)
+                          // Apply retry logic for transient database errors similar to streaming adapters
+                          .onFailure(this::isTransientDbError)
+                          .retry().withBackOff(java.time.Duration.ofMillis(200), java.time.Duration.ofSeconds(2)).atMost(3)
+                  )
               )
               : processedResult;
 
       if (!autoPersistenceEnabled) {
         LOG.debug("Auto-persistence is disabled");
+      } else {
+        LOG.debug("Auto-persistence is enabled, will persist input after successful processing");
       }
 
       return withPersistence

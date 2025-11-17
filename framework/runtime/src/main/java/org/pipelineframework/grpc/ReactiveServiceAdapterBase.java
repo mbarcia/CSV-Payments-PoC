@@ -45,4 +45,18 @@ public abstract class ReactiveServiceAdapterBase {
     }
     return Uni.createFrom().emitter(em -> ctx.runOnContext(() -> em.complete(null)));
   }
+
+  /**
+   * Determines whether a Throwable represents a transient database connectivity issue.
+   *
+   * @param failure the throwable to inspect; its message will be checked for transient DB indicators
+   * @return `true` if the throwable's message contains "connection refused", "connection closed" or "timeout", `false` otherwise
+   */
+  protected boolean isTransientDbError(Throwable failure) {
+    String msg = failure.getMessage();
+    return msg != null
+        && (msg.contains("connection refused")
+            || msg.contains("connection closed")
+            || msg.contains("timeout"));
+  }
 }

@@ -113,12 +113,5 @@ protected abstract GrpcOut toGrpc(DomainOut domainOut);
             .onFailure().transform(new throwStatusRuntimeExceptionFunction());
   }
 
-  private boolean isTransientDbError(Throwable failure) {
-    String msg = failure.getMessage();
-    return msg != null && (
-            msg.contains("connection refused") ||
-                    msg.contains("connection closed") ||
-                    msg.contains("timeout")
-    );
-  }
+
 }

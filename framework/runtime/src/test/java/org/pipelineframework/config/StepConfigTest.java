@@ -236,7 +236,6 @@ class StepConfigTest {
         assertFalse(result.isEmpty());
         assertTrue(result.contains("StepConfig"));
     }
-}
 
     @Test
     void testConfigFromPipelineStepConfigWithNullConfig() {
@@ -643,3 +642,4 @@ class StepConfigTest {
         assertEquals(Integer.MAX_VALUE, config.backpressureBufferCapacity());
         assertEquals("DROP", config.backpressureStrategy());
     }
+}

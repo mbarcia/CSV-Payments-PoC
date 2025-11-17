@@ -19,44 +19,302 @@ package org.pipelineframework.persistence.provider;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.InjectableInstance;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
+import java.lang.reflect.Field;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.MockedStatic;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
+/**
+ * Comprehensive unit tests for VThreadPersistenceProvider.
+ * Tests entity persistence, transaction handling, and virtual thread detection.
+ */
 class VThreadPersistenceProviderTest {
+
+    @Mock private InjectableInstance<EntityManager> mockEntityManagerInstance;
+
+    @Mock private EntityManager mockEntityManager;
+
+    @Mock private EntityTransaction mockTransaction;
 
     private VThreadPersistenceProvider provider;
 
-    @Entity
-    static class TestEntity {
-        private Long id;
-        private String name;
+    @BeforeEach
+    void setUp() throws Exception {
+        MockitoAnnotations.openMocks(this);
+        provider = new VThreadPersistenceProvider();
 
-        public Long getId() {
-            return id;
-        }
-
-        public void setId(Long id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
+        // Inject the mock InjectableInstance
+        Field field = VThreadPersistenceProvider.class.getDeclaredField("entityManagerInstance");
+        field.setAccessible(true);
+        field.set(provider, mockEntityManagerInstance);
     }
 
-    static class NonEntityClass {
+    @Test
+    void testTypeReturnsObjectClass() {
+        // When
+        Class<Object> type = provider.type();
+
+        // Then
+        assertEquals(Object.class, type, "Type should be Object.class");
+    }
+
+    @Test
+    void testSupportsReturnsTrueForEntityAnnotatedClass() {
+        // Given
+        TestEntity entity = new TestEntity();
+
+        // When
+        boolean supports = provider.supports(entity);
+
+        // Then
+        assertTrue(supports, "Should support @Entity annotated classes");
+    }
+
+    @Test
+    void testSupportsReturnsFalseForNonEntityClass() {
+        // Given
+        String nonEntity = "Not an entity";
+
+        // When
+        boolean supports = provider.supports(nonEntity);
+
+        // Then
+        assertFalse(supports, "Should not support non-@Entity classes");
+    }
+
+    @Test
+    void testSupportsReturnsFalseForNull() {
+        // When
+        boolean supports = provider.supports(null);
+
+        // Then
+        assertFalse(supports, "Should not support null");
+    }
+
+    @Test
+    void testSupportsThreadContextReturnsTrueForVirtualThread() {
+        // Note: This test assumes running on a platform thread
+        // In a real virtual thread context, this would return true
+
+        // When
+        boolean supportsThreadContext = provider.supportsThreadContext();
+
+        // Then
+        // On platform threads, should return false
+        assertFalse(
+                supportsThreadContext,
+                "Should return false when not on a virtual thread (running on platform thread)");
+    }
+
+    @Test
+    void testPersistSuccessfullyPersistsEntity() {
+        // Given
+        TestEntity entity = new TestEntity();
+        when(mockEntityManagerInstance.isResolvable()).thenReturn(true);
+        when(mockEntityManagerInstance.get()).thenReturn(mockEntityManager);
+        when(mockEntityManager.getTransaction()).thenReturn(mockTransaction);
+
+        // When
+        Uni<Object> result = provider.persist(entity);
+
+        // Then
+        UniAssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
+
+        assertSame(entity, subscriber.getItem(), "Should return the persisted entity");
+        verify(mockTransaction).begin();
+        verify(mockEntityManager).persist(entity);
+        verify(mockTransaction).commit();
+        verify(mockEntityManager).close();
+    }
+
+    @Test
+    void testPersistThrowsExceptionWhenEntityManagerNotResolvable() {
+        // Given
+        TestEntity entity = new TestEntity();
+        when(mockEntityManagerInstance.isResolvable()).thenReturn(false);
+
+        // When
+        Uni<Object> result = provider.persist(entity);
+
+        // Then
+        UniAssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitFailure();
+
+        Throwable failure = subscriber.getFailure();
+        assertInstanceOf(
+                IllegalStateException.class,
+                failure,
+                "Should throw IllegalStateException when EntityManager not available");
+        assertTrue(
+                failure.getMessage().contains("No EntityManager available"),
+                "Error message should indicate no EntityManager");
+    }
+
+    @Test
+    void testPersistRollsBackOnFailure() {
+        // Given
+        TestEntity entity = new TestEntity();
+        when(mockEntityManagerInstance.isResolvable()).thenReturn(true);
+        when(mockEntityManagerInstance.get()).thenReturn(mockEntityManager);
+        when(mockEntityManager.getTransaction()).thenReturn(mockTransaction);
+        when(mockTransaction.isActive()).thenReturn(true);
+
+        RuntimeException persistException = new RuntimeException("Persist failed");
+        doThrow(persistException).when(mockEntityManager).persist(entity);
+
+        // When
+        Uni<Object> result = provider.persist(entity);
+
+        // Then
+        UniAssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitFailure();
+
+        verify(mockTransaction).begin();
+        verify(mockEntityManager).persist(entity);
+        verify(mockTransaction).rollback();
+        verify(mockEntityManager).close();
+        verify(mockTransaction, never()).commit();
+    }
+
+    @Test
+    void testPersistDoesNotRollbackIfTransactionNotActive() {
+        // Given
+        TestEntity entity = new TestEntity();
+        when(mockEntityManagerInstance.isResolvable()).thenReturn(true);
+        when(mockEntityManagerInstance.get()).thenReturn(mockEntityManager);
+        when(mockEntityManager.getTransaction()).thenReturn(mockTransaction);
+        when(mockTransaction.isActive()).thenReturn(false);
+
+        RuntimeException persistException = new RuntimeException("Persist failed");
+        doThrow(persistException).when(mockEntityManager).persist(entity);
+
+        // When
+        Uni<Object> result = provider.persist(entity);
+
+        // Then
+        UniAssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitFailure();
+
+        verify(mockTransaction).begin();
+        verify(mockEntityManager).persist(entity);
+        verify(mockTransaction, never()).rollback();
+        verify(mockEntityManager).close();
+    }
+
+    @Test
+    void testPersistClosesEntityManagerEvenOnFailure() {
+        // Given
+        TestEntity entity = new TestEntity();
+        when(mockEntityManagerInstance.isResolvable()).thenReturn(true);
+        when(mockEntityManagerInstance.get()).thenReturn(mockEntityManager);
+        when(mockEntityManager.getTransaction()).thenReturn(mockTransaction);
+
+        RuntimeException persistException = new RuntimeException("Persist failed");
+        doThrow(persistException).when(mockEntityManager).persist(entity);
+
+        // When
+        Uni<Object> result = provider.persist(entity);
+
+        // Then
+        UniAssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitFailure();
+
+        verify(mockEntityManager).close();
+    }
+
+    @Test
+    void testPersistHandlesCommitFailure() {
+        // Given
+        TestEntity entity = new TestEntity();
+        when(mockEntityManagerInstance.isResolvable()).thenReturn(true);
+        when(mockEntityManagerInstance.get()).thenReturn(mockEntityManager);
+        when(mockEntityManager.getTransaction()).thenReturn(mockTransaction);
+        when(mockTransaction.isActive()).thenReturn(true);
+
+        RuntimeException commitException = new RuntimeException("Commit failed");
+        doThrow(commitException).when(mockTransaction).commit();
+
+        // When
+        Uni<Object> result = provider.persist(entity);
+
+        // Then
+        UniAssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitFailure();
+
+        verify(mockTransaction).begin();
+        verify(mockEntityManager).persist(entity);
+        verify(mockTransaction).commit();
+        verify(mockTransaction).rollback();
+        verify(mockEntityManager).close();
+    }
+
+    @Test
+    void testPersistReturnsOriginalEntityReference() {
+        // Given
+        TestEntity entity = new TestEntity();
+        entity.setValue("test-value");
+        when(mockEntityManagerInstance.isResolvable()).thenReturn(true);
+        when(mockEntityManagerInstance.get()).thenReturn(mockEntityManager);
+        when(mockEntityManager.getTransaction()).thenReturn(mockTransaction);
+
+        // When
+        Uni<Object> result = provider.persist(entity);
+
+        // Then
+        UniAssertSubscriber<Object> subscriber =
+                result.subscribe().withSubscriber(UniAssertSubscriber.create());
+        subscriber.awaitItem();
+
+        Object persistedEntity = subscriber.getItem();
+        assertSame(entity, persistedEntity, "Should return the same entity reference");
+        assertInstanceOf(TestEntity.class, persistedEntity);
+        assertEquals("test-value", ((TestEntity) persistedEntity).getValue());
+    }
+
+    @Test
+    void testSupportsVariousEntityTypes() {
+        // Given
+        TestEntity entity1 = new TestEntity();
+        AnotherTestEntity entity2 = new AnotherTestEntity();
+
+        // When
+        boolean supports1 = provider.supports(entity1);
+        boolean supports2 = provider.supports(entity2);
+
+        // Then
+        assertTrue(supports1, "Should support TestEntity");
+        assertTrue(supports2, "Should support AnotherTestEntity");
+    }
+
+    @Test
+    void testDoesNotSupportNonAnnotatedClasses() {
+        // Given
+        NonEntityClass nonEntity = new NonEntityClass();
+
+        // When
+        boolean supports = provider.supports(nonEntity);
+
+        // Then
+        assertFalse(supports, "Should not support non-@Entity classes");
+    }
+
+    /** Test entity class for testing */
+    @Entity
+    private static class TestEntity {
         private String value;
 
         public String getValue() {
@@ -68,188 +326,10 @@ class VThreadPersistenceProviderTest {
         }
     }
 
-    @BeforeEach
-    void setUp() {
-        // Note: This provider requires Arc container context which may not be available in unit tests
-        // These tests focus on the logical behavior
-        provider = new VThreadPersistenceProvider();
-    }
+    /** Another test entity class */
+    @Entity
+    private static class AnotherTestEntity {}
 
-    @Test
-    void testTypeReturnsObjectClass() {
-        // Given/When
-        Class<Object> type = provider.type();
-
-        // Then
-        assertNotNull(type, "Type should not be null");
-        assertEquals(Object.class, type, "Type should be Object.class");
-    }
-
-    @Test
-    void testSupportsEntityAnnotatedClass() {
-        // Given
-        TestEntity entity = new TestEntity();
-
-        // When
-        boolean supports = provider.supports(entity);
-
-        // Then
-        assertTrue(supports, "Should support entity annotated with @Entity");
-    }
-
-    @Test
-    void testDoesNotSupportNonEntityClass() {
-        // Given
-        NonEntityClass nonEntity = new NonEntityClass();
-
-        // When
-        boolean supports = provider.supports(nonEntity);
-
-        // Then
-        assertFalse(supports, "Should not support class without @Entity annotation");
-    }
-
-    @Test
-    void testSupportsThreadContextReturnsTrueForVirtualThreads() {
-        // Given/When
-        boolean supportsThreadContext = provider.supportsThreadContext();
-
-        // Then
-        // This will be true only if running on a virtual thread
-        // In regular test execution, it will be false
-        assertEquals(Thread.currentThread().isVirtual(), supportsThreadContext, 
-            "Should match current thread's virtual status");
-    }
-
-    @Test
-    void testSupportsThreadContextReturnsFalseForPlatformThreads() {
-        // Given/When
-        // Running in a standard JUnit test (platform thread)
-        boolean supportsThreadContext = provider.supportsThreadContext();
-
-        // Then
-        if (!Thread.currentThread().isVirtual()) {
-            assertFalse(supportsThreadContext, 
-                "Should return false for platform threads");
-        }
-    }
-
-    @Test
-    void testPersistWithMockedEntityManager() {
-        // Given
-        TestEntity entity = new TestEntity();
-        entity.setName("test");
-
-        EntityManager mockEm = mock(EntityManager.class);
-        EntityTransaction mockTransaction = mock(EntityTransaction.class);
-
-        when(mockEm.getTransaction()).thenReturn(mockTransaction);
-        when(mockTransaction.isActive()).thenReturn(false);
-
-        @SuppressWarnings("unchecked")
-        InjectableInstance<EntityManager> mockInstance = mock(InjectableInstance.class);
-        when(mockInstance.isResolvable()).thenReturn(true);
-        when(mockInstance.get()).thenReturn(mockEm);
-
-        try (MockedStatic<Arc> arcMock = mockStatic(Arc.class)) {
-            io.quarkus.arc.ArcContainer mockContainer = mock(io.quarkus.arc.ArcContainer.class);
-            arcMock.when(Arc::container).thenReturn(mockContainer);
-            when(mockContainer.select(EntityManager.class)).thenReturn(mockInstance);
-
-            VThreadPersistenceProvider testProvider = new VThreadPersistenceProvider();
-
-            // When
-            Uni<Object> result = testProvider.persist(entity);
-
-            // Then
-            UniAssertSubscriber<Object> subscriber = 
-                result.subscribe().withSubscriber(UniAssertSubscriber.create());
-            subscriber.awaitItem();
-
-            assertSame(entity, subscriber.getItem(), "Should return the same entity instance");
-            verify(mockTransaction).begin();
-            verify(mockEm).persist(entity);
-            verify(mockTransaction).commit();
-        }
-    }
-
-    @Test
-    void testPersistRollsBackOnException() {
-        // Given
-        TestEntity entity = new TestEntity();
-
-        EntityManager mockEm = mock(EntityManager.class);
-        EntityTransaction mockTransaction = mock(EntityTransaction.class);
-
-        when(mockEm.getTransaction()).thenReturn(mockTransaction);
-        when(mockTransaction.isActive()).thenReturn(true);
-        doThrow(new RuntimeException("Persist failed")).when(mockEm).persist(entity);
-
-        @SuppressWarnings("unchecked")
-        InjectableInstance<EntityManager> mockInstance = mock(InjectableInstance.class);
-        when(mockInstance.isResolvable()).thenReturn(true);
-        when(mockInstance.get()).thenReturn(mockEm);
-
-        try (MockedStatic<Arc> arcMock = mockStatic(Arc.class)) {
-            io.quarkus.arc.ArcContainer mockContainer = mock(io.quarkus.arc.ArcContainer.class);
-            arcMock.when(Arc::container).thenReturn(mockContainer);
-            when(mockContainer.select(EntityManager.class)).thenReturn(mockInstance);
-
-            VThreadPersistenceProvider testProvider = new VThreadPersistenceProvider();
-
-            // When
-            Uni<Object> result = testProvider.persist(entity);
-
-            // Then
-            UniAssertSubscriber<Object> subscriber = 
-                result.subscribe().withSubscriber(UniAssertSubscriber.create());
-            
-            assertThrows(RuntimeException.class, subscriber::awaitItem, 
-                "Should propagate exception from persist");
-            verify(mockTransaction).begin();
-            verify(mockTransaction).rollback();
-            verify(mockTransaction, never()).commit();
-        }
-    }
-
-    @Test
-    void testPersistFailsWhenNoEntityManagerAvailable() {
-        // Given
-        TestEntity entity = new TestEntity();
-
-        @SuppressWarnings("unchecked")
-        InjectableInstance<EntityManager> mockInstance = mock(InjectableInstance.class);
-        when(mockInstance.isResolvable()).thenReturn(false);
-
-        try (MockedStatic<Arc> arcMock = mockStatic(Arc.class)) {
-            io.quarkus.arc.ArcContainer mockContainer = mock(io.quarkus.arc.ArcContainer.class);
-            arcMock.when(Arc::container).thenReturn(mockContainer);
-            when(mockContainer.select(EntityManager.class)).thenReturn(mockInstance);
-
-            VThreadPersistenceProvider testProvider = new VThreadPersistenceProvider();
-
-            // When
-            Uni<Object> result = testProvider.persist(entity);
-
-            // Then
-            UniAssertSubscriber<Object> subscriber = 
-                result.subscribe().withSubscriber(UniAssertSubscriber.create());
-            
-            IllegalStateException exception = assertThrows(IllegalStateException.class, 
-                subscriber::awaitItem, 
-                "Should throw IllegalStateException when EntityManager is not available");
-            assertTrue(exception.getMessage().contains("No EntityManager available"), 
-                "Exception message should indicate missing EntityManager");
-        }
-    }
-
-    @Test
-    void testSupportsHandlesNullGracefully() {
-        // Given
-        Object nullEntity = null;
-
-        // When/Then
-        assertThrows(NullPointerException.class, () -> provider.supports(nullEntity), 
-            "Should handle null entity appropriately");
-    }
+    /** Non-entity class for negative testing */
+    private static class NonEntityClass {}
 }

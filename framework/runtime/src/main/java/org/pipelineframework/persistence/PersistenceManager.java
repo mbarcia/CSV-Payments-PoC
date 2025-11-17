@@ -23,6 +23,8 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.List;
 import org.jboss.logging.Logger;
+import org.pipelineframework.persistence.provider.ReactivePanachePersistenceProvider;
+import org.pipelineframework.persistence.provider.VThreadPersistenceProvider;
 
 /**
  * Manager for persistence operations that delegates to registered PersistenceProvider implementations.
@@ -57,13 +59,17 @@ public class PersistenceManager {
 
         LOG.debugf("Entity to persist: %s", entity.getClass().getName());
         for (PersistenceProvider<?> provider : providers) {
-            if (provider.supports(entity)) {
-                @SuppressWarnings("unchecked")
-                PersistenceProvider<T> p = (PersistenceProvider<T>) provider;
-                LOG.debugf("About to persist with provider: %s", provider.getClass().getName());
+            if (!provider.supports(entity)) continue;
 
-                return p.persist(entity);
-            }
+            if (Thread.currentThread().isVirtual() && !(provider instanceof VThreadPersistenceProvider)) continue;
+
+            if (!Thread.currentThread().isVirtual() && !(provider instanceof ReactivePanachePersistenceProvider)) continue;
+
+            @SuppressWarnings("unchecked")
+            PersistenceProvider<T> p = (PersistenceProvider<T>) provider;
+            LOG.debugf("About to persist with provider: %s", provider.getClass().getName());
+
+            return p.persist(entity);
         }
 
         LOG.warnf("No persistence provider found for %s", entity.getClass().getName());

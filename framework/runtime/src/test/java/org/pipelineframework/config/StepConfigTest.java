@@ -236,7 +236,6 @@ class StepConfigTest {
         assertFalse(result.isEmpty());
         assertTrue(result.contains("StepConfig"));
     }
-}
 
     @Test
     void testConfigFromPipelineStepConfigWithNullConfig() {
@@ -276,8 +275,7 @@ class StepConfigTest {
         StepConfig config = new StepConfig();
 
         // When/Then
-        assertThrows(
-                IllegalArgumentException.class, () -> config.backpressureBufferCapacity(0));
+        assertThrows(IllegalArgumentException.class, () -> config.backpressureBufferCapacity(0));
     }
 
     @Test
@@ -286,8 +284,7 @@ class StepConfigTest {
         StepConfig config = new StepConfig();
 
         // When/Then
-        assertThrows(
-                IllegalArgumentException.class, () -> config.backpressureBufferCapacity(-1));
+        assertThrows(IllegalArgumentException.class, () -> config.backpressureBufferCapacity(-1));
     }
 
     @Test
@@ -354,8 +351,7 @@ class StepConfigTest {
         StepConfig config = new StepConfig();
 
         // When/Then
-        assertThrows(
-                IllegalArgumentException.class, () -> config.backpressureStrategy("INVALID"));
+        assertThrows(IllegalArgumentException.class, () -> config.backpressureStrategy("INVALID"));
     }
 
     @Test
@@ -404,8 +400,7 @@ class StepConfigTest {
         StepConfig config = new StepConfig();
 
         // When/Then
-        assertThrows(
-                IllegalArgumentException.class, () -> config.retryWait(Duration.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> config.retryWait(Duration.ZERO));
     }
 
     @Test
@@ -415,8 +410,7 @@ class StepConfigTest {
 
         // When/Then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> config.retryWait(Duration.ofMillis(-100)));
+                IllegalArgumentException.class, () -> config.retryWait(Duration.ofMillis(-100)));
     }
 
     @Test
@@ -425,8 +419,7 @@ class StepConfigTest {
         StepConfig config = new StepConfig();
 
         // When/Then
-        assertThrows(
-                IllegalArgumentException.class, () -> config.maxBackoff(Duration.ZERO));
+        assertThrows(IllegalArgumentException.class, () -> config.maxBackoff(Duration.ZERO));
     }
 
     @Test
@@ -436,8 +429,7 @@ class StepConfigTest {
 
         // When/Then
         assertThrows(
-                IllegalArgumentException.class,
-                () -> config.maxBackoff(Duration.ofSeconds(-1)));
+                IllegalArgumentException.class, () -> config.maxBackoff(Duration.ofSeconds(-1)));
     }
 
     @Test
@@ -643,3 +635,4 @@ class StepConfigTest {
         assertEquals(Integer.MAX_VALUE, config.backpressureBufferCapacity());
         assertEquals("DROP", config.backpressureStrategy());
     }
+}

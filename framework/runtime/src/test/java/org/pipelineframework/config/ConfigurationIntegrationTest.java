@@ -70,6 +70,10 @@ class ConfigurationIntegrationTest {
         // Then
         assertEquals(5, activeConfig.retryLimit());
         assertEquals(Duration.ofSeconds(1), activeConfig.retryWait());
+        assertFalse(activeConfig.parallel());
+        assertFalse(activeConfig.recoverOnFailure());
+        assertEquals(Duration.ofSeconds(30), activeConfig.maxBackoff());
+        assertFalse(activeConfig.jitter());
     }
 
     @Test

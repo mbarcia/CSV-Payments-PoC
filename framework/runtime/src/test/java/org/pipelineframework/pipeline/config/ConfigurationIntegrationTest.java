@@ -56,6 +56,8 @@ class ConfigurationIntegrationTest {
         // Other properties should still use defaults
         assertEquals(Duration.ofMillis(2000), config.retryWait());
         assertFalse(config.recoverOnFailure());
+        assertEquals(Duration.ofSeconds(30), config.maxBackoff());
+        assertFalse(config.jitter());
     }
 
     @Test
@@ -72,6 +74,10 @@ class ConfigurationIntegrationTest {
         // Then
         assertEquals(5, activeConfig.retryLimit());
         assertEquals(Duration.ofSeconds(1), activeConfig.retryWait());
+        assertFalse(activeConfig.parallel());
+        assertFalse(activeConfig.recoverOnFailure());
+        assertEquals(Duration.ofSeconds(30), activeConfig.maxBackoff());
+        assertFalse(activeConfig.jitter());
     }
 
     @Test

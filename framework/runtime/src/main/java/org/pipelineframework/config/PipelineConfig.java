@@ -30,7 +30,6 @@ public final class PipelineConfig {
     public PipelineConfig() {
         // initialize with a default profile
         StepConfig defaultConfig = new StepConfig();
-        defaultConfig.autoPersist(false); // Disable auto-persistence by default
         profiles.put("default", defaultConfig);
 
         // sync with Quarkus profile
@@ -67,13 +66,12 @@ public final class PipelineConfig {
     public StepConfig newStepConfig() {
         StepConfig base = defaults();
         return new StepConfig()
-                .autoPersist(base.autoPersist())
                 .retryLimit(base.retryLimit())
                 .retryWait(base.retryWait())
+                .backpressureBufferCapacity(base.backpressureBufferCapacity())
+                .backpressureStrategy(base.backpressureStrategy())
                 .parallel(base.parallel())
-                .debug(base.debug())
                 .recoverOnFailure(base.recoverOnFailure())
-                .runWithVirtualThreads(base.runWithVirtualThreads())
                 .maxBackoff(base.maxBackoff())
                 .jitter(base.jitter());
     }

@@ -43,8 +43,6 @@ class PipelineDefaultsIntegrationTest {
         // Get the defaults from PipelineConfig
         StepConfig configFromPipelineConfig = pipelineConfig.defaults();
 
-        System.out.println("PipelineStepConfig.retryWaitMs(): " + configFromStepConfig.retryWaitMs());
-        System.out.println("PipelineConfig.retryWait().toMillis(): " + configFromPipelineConfig.retryWait().toMillis());
 
         // Verify that both configurations have the same values
         // This proves that the PipelineConfigInitializer is correctly

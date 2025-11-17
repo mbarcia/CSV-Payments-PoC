@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+package org.pipelineframework.csv.common;
+
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 

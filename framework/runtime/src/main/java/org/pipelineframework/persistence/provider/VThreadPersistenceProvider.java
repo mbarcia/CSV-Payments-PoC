@@ -69,4 +69,10 @@ public class VThreadPersistenceProvider implements PersistenceProvider<Object> {
   public boolean supports(Object entity) {
     return entity.getClass().isAnnotationPresent(Entity.class);
   }
+
+  @Override
+  public boolean supportsThreadContext() {
+    // This provider is designed for virtual threads
+    return Thread.currentThread().isVirtual();
+  }
 }

@@ -23,8 +23,6 @@ import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
 import java.util.List;
 import org.jboss.logging.Logger;
-import org.pipelineframework.persistence.provider.ReactivePanachePersistenceProvider;
-import org.pipelineframework.persistence.provider.VThreadPersistenceProvider;
 
 /**
  * Manager for persistence operations that delegates to registered PersistenceProvider implementations.
@@ -61,9 +59,8 @@ public class PersistenceManager {
         for (PersistenceProvider<?> provider : providers) {
             if (!provider.supports(entity)) continue;
 
-            if (Thread.currentThread().isVirtual() && !(provider instanceof VThreadPersistenceProvider)) continue;
-
-            if (!Thread.currentThread().isVirtual() && !(provider instanceof ReactivePanachePersistenceProvider)) continue;
+            // Check if the provider supports the current thread context
+            if (!provider.supportsThreadContext()) continue;
 
             @SuppressWarnings("unchecked")
             PersistenceProvider<T> p = (PersistenceProvider<T>) provider;

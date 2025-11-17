@@ -42,5 +42,15 @@ public interface PersistenceProvider<T> {
      * @return true if this provider can handle the entity, false otherwise
      */
     boolean supports(Object entity);
+
+    /**
+     * Check if this provider supports the current thread context (virtual vs platform thread).
+     *
+     * @return true if this provider supports the current thread context, false otherwise
+     */
+    default boolean supportsThreadContext() {
+        // Default implementation returns true to maintain backward compatibility
+        return true;
+    }
 }
 

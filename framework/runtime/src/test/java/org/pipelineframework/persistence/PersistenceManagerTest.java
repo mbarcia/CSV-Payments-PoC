@@ -101,6 +101,7 @@ class PersistenceManagerTest {
         // but with method implementations that don't depend on Vert.x context
         ReactivePanachePersistenceProvider mockProvider = mock(ReactivePanachePersistenceProvider.class);
         when(mockProvider.supports(entity)).thenReturn(true);
+        when(mockProvider.supportsThreadContext()).thenReturn(true); // For regular threads, it should return true
         when(mockProvider.persist(entity)).thenReturn(Uni.createFrom().item(entity));
         when(mockProvider.type()).thenReturn(PanacheEntityBase.class); // Need to mock this too
 
@@ -120,6 +121,7 @@ class PersistenceManagerTest {
 
         assertSame(entity, subscriber.getItem());
         verify(mockProvider).supports(entity);
+        verify(mockProvider).supportsThreadContext();
         verify(mockProvider).persist(entity);
     }
 

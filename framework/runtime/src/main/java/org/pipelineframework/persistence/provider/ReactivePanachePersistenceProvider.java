@@ -62,4 +62,10 @@ public class ReactivePanachePersistenceProvider implements PersistenceProvider<P
     public boolean supports(Object entity) {
         return entity instanceof PanacheEntityBase;
     }
+
+    @Override
+    public boolean supportsThreadContext() {
+        // This provider is designed for reactive (non-virtual) threads
+        return !Thread.currentThread().isVirtual();
+    }
 }

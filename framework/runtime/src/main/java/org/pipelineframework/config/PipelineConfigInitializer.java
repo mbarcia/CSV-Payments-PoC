@@ -50,6 +50,7 @@ public class PipelineConfigInitializer {
         PipelineStepConfig.StepConfig config = stepConfig.defaults();
 
         logger.info("Initializing pipeline global/default configuration");
+        logger.infof("Order: %s", config.order());
         logger.infof("Parallel: %s", config.parallel());
         logger.infof("Retry limit: %s", config.retryLimit());
         logger.infof("Retry wait: %s ms", config.retryWaitMs());

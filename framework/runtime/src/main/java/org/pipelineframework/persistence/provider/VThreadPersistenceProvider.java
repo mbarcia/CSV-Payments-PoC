@@ -46,8 +46,15 @@ public class VThreadPersistenceProvider implements PersistenceProvider<Object> {
 
 	    try (EntityManager em = entityManagerInstance.get()) {
 		    em.getTransaction().begin();
-		    em.persist(entity);
-		    em.getTransaction().commit();
+		    try {
+			    em.persist(entity);
+			    em.getTransaction().commit();
+		    } catch (Exception e) {
+			    if (em.getTransaction().isActive()) {
+				    em.getTransaction().rollback();
+			    }
+			    throw e;
+		    }
 		    return entity;
 	    }
     });

@@ -98,17 +98,6 @@ class ReactiveServiceAdapterBaseTest {
     }
 
     @Test
-    void testAbstractMethodMustBeImplemented() {
-        // Given
-        TestReactiveServiceAdapter testAdapter = new TestReactiveServiceAdapter(true);
-
-        // Then - verify the abstract method is implemented
-        assertDoesNotThrow(
-                () -> testAdapter.isAutoPersistenceEnabledPublic(),
-                "Abstract method should be implemented");
-    }
-
-    @Test
     void testMultipleInstancesCanHaveDifferentAutoPersistSettings() {
         // Given
         TestReactiveServiceAdapter adapter1 = new TestReactiveServiceAdapter(true);

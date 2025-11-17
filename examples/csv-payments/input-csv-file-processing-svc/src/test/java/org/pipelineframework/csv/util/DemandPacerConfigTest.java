@@ -190,7 +190,7 @@ class DemandPacerConfigTest {
         long millisPeriod = config.millisPeriod();
 
         // When - calculate effective rate
-        double effectiveRate = (double) rowsPerPeriod / millisPeriod * 1000;
+        double effectiveRate = (rowsPerPeriod * 1000.0) / millisPeriod;
 
         // Then - should be calculable without errors
         assertTrue(effectiveRate > 0, "Effective rate should be positive");

@@ -18,7 +18,6 @@ package org.pipelineframework.config;
 
 import io.quarkus.arc.DefaultBean;
 import jakarta.enterprise.context.Dependent;
-import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -248,7 +247,7 @@ public class StepConfig {
      */
     @Override
     public String toString() {
-        return MessageFormat.format("StepConfig'{'retryLimit={0}, retryWait={1}, parallel={2}, recoverOnFailure={3}, maxBackoff={4}, jitter={5}, backpressureBufferCapacity={6}, backpressureStrategy={7}'}'",
+        return String.format("StepConfig{retryLimit=%d, retryWait=%s, parallel=%b, recoverOnFailure=%b, maxBackoff=%s, jitter=%b, backpressureBufferCapacity=%d, backpressureStrategy=%s}",
                 retryLimit(),
                 retryWait(),
                 parallel,

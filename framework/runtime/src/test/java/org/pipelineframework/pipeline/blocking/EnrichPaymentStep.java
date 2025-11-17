@@ -30,7 +30,7 @@ public class EnrichPaymentStep extends ConfigurableStep
     /**
      * Enriches a payment entity with additional data via a brief blocking simulation.
      *
-     * If the payment's status equals "VALIDATED" the status is changed to "ENRICHED".
+     * <p>If the payment's status equals "VALIDATED" the status is changed to "ENRICHED".
      *
      * @param payment the payment entity to process and potentially enrich
      * @return the input payment entity after enrichment

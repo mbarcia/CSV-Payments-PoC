@@ -55,11 +55,13 @@ public class TestSteps {
         }
 
         /**
-         * Initialises the step with the provided configuration, preserving any first non-default values as manual overrides.
+         * Initialises the step with the provided configuration, preserving any first non-default
+         * values as manual overrides.
          *
-         * <p>If this is the first time a non-default configuration is supplied, the method records the supplied
-         * `retryLimit` and `retryWait` as manual configuration. Once manual configuration exists, those stored values
-         * are applied to any subsequent incoming `config` before delegating to the superclass initialisation.</p>
+         * <p>If this is the first time a non-default configuration is supplied, the method records
+         * the supplied `retryLimit` and `retryWait` as manual configuration. Once manual
+         * configuration exists, those stored values are applied to any subsequent incoming `config`
+         * before delegating to the superclass initialisation.
          *
          * @param config the step configuration to apply; may be {@code null}
          */
@@ -208,15 +210,17 @@ public class TestSteps {
         }
 
         /**
-         * Initialise the step with the provided step configuration, preserving any first-seen non-default values as manual overrides.
+         * Initialise the step with the provided step configuration, preserving any first-seen
+         * non-default values as manual overrides.
          *
-         * If this is the first time the step receives a non-default configuration, the method records the incoming
-         * retryLimit, retryWait and recoverOnFailure as manual configuration. Once manual configuration is present,
-         * subsequent initialisation calls apply the recorded retryLimit, retryWait and recoverOnFailure to the incoming
-         * config before delegating to the superclass.
+         * <p>If this is the first time the step receives a non-default configuration, the method
+         * records the incoming retryLimit, retryWait and recoverOnFailure as manual configuration.
+         * Once manual configuration is present, subsequent initialisation calls apply the recorded
+         * retryLimit, retryWait and recoverOnFailure to the incoming config before delegating to
+         * the superclass.
          *
-         * The recoverOnFailure value provided by the step's constructor (if set) takes precedence over a value from the
-         * incoming config when deciding what to record or apply.
+         * <p>The recoverOnFailure value provided by the step's constructor (if set) takes
+         * precedence over a value from the incoming config when deciding what to record or apply.
          *
          * @param config the step configuration to apply; may be null
          */
@@ -266,14 +270,14 @@ public class TestSteps {
         /**
          * Record manual configuration values for retry behaviour and dead-letter recovery.
          *
-         * Sets the step into a manual-configured state and stores the provided retry limit and
+         * <p>Sets the step into a manual-configured state and stores the provided retry limit and
          * retry wait duration. The recoverOnFailure flag is stored only if it was not explicitly
          * set by the constructor.
          *
          * @param retryLimit the manual retry limit to apply
          * @param retryWait the manual duration to wait between retries
-         * @param recoverOnFailure whether failed items should be recovered instead of dead-lettered;
-         *                         ignored if the constructor previously fixed this behaviour
+         * @param recoverOnFailure whether failed items should be recovered instead of
+         *     dead-lettered; ignored if the constructor previously fixed this behaviour
          */
         private void setManualConfig(
                 int retryLimit, java.time.Duration retryWait, boolean recoverOnFailure) {

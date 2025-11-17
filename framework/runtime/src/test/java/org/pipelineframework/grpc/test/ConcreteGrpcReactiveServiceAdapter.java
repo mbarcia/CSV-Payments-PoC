@@ -46,7 +46,8 @@ public class ConcreteGrpcReactiveServiceAdapter
      * Convert a domain TestResult into its gRPC representation.
      *
      * @param domainOut the domain-level result to convert
-     * @return an Object representing the gRPC response; in this test implementation a newly created generic Object
+     * @return an Object representing the gRPC response; in this test implementation a newly created
+     *     generic Object
      */
     @Override
     protected Object toGrpc(TestResult domainOut) {

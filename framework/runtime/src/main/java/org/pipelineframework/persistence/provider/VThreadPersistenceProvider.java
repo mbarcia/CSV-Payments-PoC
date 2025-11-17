@@ -51,6 +51,10 @@ public class VThreadPersistenceProvider implements PersistenceProvider<Object> {
    */
   @Override
   public Uni<Object> persist(Object entity) {
+    if (entity == null) {
+      return Uni.createFrom().failure(new IllegalArgumentException("Cannot persist a null entity"));
+    }
+    
     return Uni.createFrom().item(() -> {
       if (!entityManagerInstance.isResolvable()) {
         throw new IllegalStateException("No EntityManager available for VThreadPersistenceProvider");
@@ -90,7 +94,7 @@ public class VThreadPersistenceProvider implements PersistenceProvider<Object> {
    */
   @Override
   public boolean supports(Object entity) {
-    return entity.getClass().isAnnotationPresent(Entity.class);
+    return entity != null && entity.getClass().isAnnotationPresent(Entity.class);
   }
 
   /**

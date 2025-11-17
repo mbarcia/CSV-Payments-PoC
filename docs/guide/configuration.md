@@ -136,22 +136,22 @@ The `@PipelineStep` annotation contains build-time properties:
 - `inboundMapper`, `outboundMapper` - Mapper classes
 - `stepType` - Step type class
 - `backendType` - Backend adapter type
-- `grpcClient` - GPRC client name
+- `grpcClient` - gRPC client name
 - `grpcEnabled` - Whether to enable gRPC generation
 - `restEnabled` - Whether to enable REST generation
-- `grpcServiceBaseClass` - GPRC service base class
+- `grpcServiceBaseClass` - gRPC service base class
 - `local` - Whether step is local to the runner
 - `runOnVirtualThreads` - Whether the service entrypoint method should be run on a virtual thread, instead of a Vert.x event thread.
 
 ## Performance Optimization Guidelines
-Hibernate Reactive requires queries to run on a Vert.x event thread/context. When runOnVirtualThreads=true and the step is set to autoPersist=true (configured i.e. via `application.properties`), the framework will make sure to "hop back on" onto an event thread to persist entities. Same when the service code is offloaded to run on a worker thread.
+Hibernate Reactive requires queries to run on a Vert.x event thread/context. When runOnVirtualThreads=true and the step is set to autoPersist=true (configured, i.e. via `application.properties`), the framework will make sure to "hop back on" onto an event thread to persist entities. Same when the service code is offloaded to run on a worker thread.
 
 ### For Item-Level Processing (1→1 Steps):
 1. **Set `parallel = true`** to enable concurrent processing of multiple input items
 2. **Monitor system resources** under load to determine optimal concurrency level
 
 ### For Aggregation Processing (N→1 Steps):
-1. **Use `parallel = true** to enable concurrent processing when beneficial
+1. **Use** `parallel = true` to enable concurrent processing when beneficial
 
 ### Monitoring and Tuning:
 - Start with conservative parallelism values and increase gradually

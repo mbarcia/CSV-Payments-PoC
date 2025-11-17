@@ -25,7 +25,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.FeatureBuildItem;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
-import org.pipelineframework.config.PipelineBuildTimeConfig;
+import org.pipelineframework.config.PipelineCliAppConfig;
 
 public class StepServerRegistrar {
 
@@ -54,7 +54,7 @@ public class StepServerRegistrar {
      */
     @BuildStep
     void registerGeneratedGrpcServices(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-                                  PipelineBuildTimeConfig config,
+                                  PipelineCliAppConfig config,
                                   CombinedIndexBuildItem combinedIndex) {
 
         if (config.generateCli()) {

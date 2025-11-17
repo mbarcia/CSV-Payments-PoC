@@ -27,7 +27,7 @@ import java.util.List;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
-import org.pipelineframework.config.PipelineBuildTimeConfig;
+import org.pipelineframework.config.PipelineCliAppConfig;
 
 public class StepClientRegistrar {
 
@@ -57,7 +57,7 @@ public class StepClientRegistrar {
      */
     @BuildStep
     void registerStepClients(BuildProducer<AdditionalBeanBuildItem> beans,
-                             PipelineBuildTimeConfig config,
+                             PipelineCliAppConfig config,
                              CombinedIndexBuildItem combinedIndex) {
         if (!config.generateCli()) {
             LOG.debug("Client generation disabled; skipping client step registration.");

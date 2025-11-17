@@ -175,17 +175,6 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.enterprise.context", "Dependent"))
                 .build());
 
-        // Add service class field, so we can recover the annotation at runtime
-        FieldSpec serviceClassField = FieldSpec.builder(
-                        Class.class,
-                        "ORIGINAL_SERVICE_CLASS",
-                        Modifier.PUBLIC,
-                        Modifier.STATIC,
-                        Modifier.FINAL)
-                .initializer("$T.class", serviceClass)
-                .build();
-
-        clientStepBuilder.addField(serviceClassField);
 
         // Add necessary imports as field declarations or annotations
         if (grpcStubType != null && !grpcStubType.toString().equals("void")) {
@@ -477,6 +466,10 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .build();
         grpcServiceBuilder.addField(persistenceManagerField);
 
+
+        // Get runOnVirtualThreads value to determine if we need to add @RunOnVirtualThread annotation
+        boolean runOnVirtualThreads = getAnnotationValueAsBoolean(annotationMirror, "runOnVirtualThreads", false);
+
         // Determine which gRPC adapter to use based on the step type
         ClassName grpcAdapterClassName;
         if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepOneToMany")) {
@@ -500,10 +493,10 @@ public class PipelineStepProcessor extends AbstractProcessor {
             // For server streaming (unary input, streaming output) - e.g., ProcessFolderService
             // Creates the adapter inline as an anonymous class inside the method
             TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
-                .superclass(ParameterizedTypeName.get(grpcAdapterClassName, 
-                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
-                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
-                    inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
+                .superclass(ParameterizedTypeName.get(grpcAdapterClassName,
+                    inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
+                    outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
+                    inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
                     outputType != null ? ClassName.get(outputType) : ClassName.OBJECT))
                 .addMethod(MethodSpec.methodBuilder("getService")
                     .addAnnotation(Override.class)
@@ -525,31 +518,36 @@ public class PipelineStepProcessor extends AbstractProcessor {
                     .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
                     .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
                     .build())
-                .addMethod(MethodSpec.methodBuilder("getStepConfig")
+                .addMethod(MethodSpec.methodBuilder("isAutoPersistenceEnabled")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PROTECTED)
-                    .returns(ClassName.get("org.pipelineframework.config", "StepConfig"))
-                    .addStatement("return new org.pipelineframework.config.StepConfig().autoPersist($L)", autoPersistenceEnabled)
+                    .returns(TypeName.BOOLEAN)
+                    .addStatement("return $L", autoPersistenceEnabled)
                     .build())
                 .build();
 
-            MethodSpec remoteProcessMethod = MethodSpec.methodBuilder("remoteProcess")
+            MethodSpec.Builder remoteProcessMethodBuilder = MethodSpec.methodBuilder("remoteProcess")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
-                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"), 
+                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
                     outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
                 .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "request")
-                .addStatement("$T adapter = $L", 
-                    ParameterizedTypeName.get(grpcAdapterClassName, 
-                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
-                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
-                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
-                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT), 
+                .addStatement("$T adapter = $L",
+                    ParameterizedTypeName.get(grpcAdapterClassName,
+                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
+                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
+                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT),
                     inlineAdapter)
                 .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
-                .addStatement("return adapter.remoteProcess(request)")
-                .build();
-            grpcServiceBuilder.addMethod(remoteProcessMethod);
+                .addStatement("return adapter.remoteProcess(request)");
+
+            // Add @RunOnVirtualThread annotation if the property is enabled
+            if (runOnVirtualThreads) {
+                remoteProcessMethodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
+            }
+
+            grpcServiceBuilder.addMethod(remoteProcessMethodBuilder.build());
         } else if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepManyToOne")) {
             // For client streaming (streaming input, unary output) - e.g., ProcessCsvPaymentsOutputFileService
             TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
@@ -578,32 +576,37 @@ public class PipelineStepProcessor extends AbstractProcessor {
                     .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
                     .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
                     .build())
-                .addMethod(MethodSpec.methodBuilder("getStepConfig")
+                .addMethod(MethodSpec.methodBuilder("isAutoPersistenceEnabled")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PROTECTED)
-                    .returns(ClassName.get("org.pipelineframework.config", "StepConfig"))
-                    .addStatement("return new org.pipelineframework.config.StepConfig().autoPersist($L)", autoPersistenceEnabled)
+                    .returns(TypeName.BOOLEAN)
+                    .addStatement("return $L", autoPersistenceEnabled)
                     .build())
                 .build();
 
-            MethodSpec remoteProcessMethod = MethodSpec.methodBuilder("remoteProcess")
+            MethodSpec.Builder remoteProcessMethodBuilder = MethodSpec.methodBuilder("remoteProcess")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
-                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Uni"), 
+                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Uni"),
                     outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
-                .addParameter(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"), 
+                .addParameter(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
                     inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT), "request")
-                .addStatement("$T adapter = $L", 
-                    ParameterizedTypeName.get(grpcAdapterClassName, 
-                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
-                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
-                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
-                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT), 
+                .addStatement("$T adapter = $L",
+                    ParameterizedTypeName.get(grpcAdapterClassName,
+                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
+                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
+                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT),
                     inlineAdapter)
                 .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
-                .addStatement("return adapter.remoteProcess(request)")
-                .build();
-            grpcServiceBuilder.addMethod(remoteProcessMethod);
+                .addStatement("return adapter.remoteProcess(request)");
+
+            // Add @RunOnVirtualThread annotation if the property is enabled
+            if (runOnVirtualThreads) {
+                remoteProcessMethodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
+            }
+
+            grpcServiceBuilder.addMethod(remoteProcessMethodBuilder.build());
         } else if (stepType != null && stepType.toString().equals("org.pipelineframework.step.StepManyToMany")) {
             // For bidirectional streaming (streaming input, streaming output)
             TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
@@ -632,32 +635,37 @@ public class PipelineStepProcessor extends AbstractProcessor {
                     .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
                     .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
                     .build())
-                .addMethod(MethodSpec.methodBuilder("getStepConfig")
+                .addMethod(MethodSpec.methodBuilder("isAutoPersistenceEnabled")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PROTECTED)
-                    .returns(ClassName.get("org.pipelineframework.config", "StepConfig"))
-                    .addStatement("return new org.pipelineframework.config.StepConfig().autoPersist($L)", autoPersistenceEnabled)
+                    .returns(TypeName.BOOLEAN)
+                    .addStatement("return $L", autoPersistenceEnabled)
                     .build())
                 .build();
 
-            MethodSpec remoteProcessMethod = MethodSpec.methodBuilder("remoteProcess")
+            MethodSpec.Builder remoteProcessMethodBuilder = MethodSpec.methodBuilder("remoteProcess")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
-                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"), 
+                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
                     outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
-                .addParameter(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"), 
+                .addParameter(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Multi"),
                     inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT), "request")
-                .addStatement("$T adapter = $L", 
-                    ParameterizedTypeName.get(grpcAdapterClassName, 
-                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
-                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
-                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
-                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT), 
+                .addStatement("$T adapter = $L",
+                    ParameterizedTypeName.get(grpcAdapterClassName,
+                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
+                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
+                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT),
                     inlineAdapter)
                 .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
-                .addStatement("return adapter.remoteProcess(request)")
-                .build();
-            grpcServiceBuilder.addMethod(remoteProcessMethod);
+                .addStatement("return adapter.remoteProcess(request)");
+
+            // Add @RunOnVirtualThread annotation if the property is enabled
+            if (runOnVirtualThreads) {
+                remoteProcessMethodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
+            }
+
+            grpcServiceBuilder.addMethod(remoteProcessMethodBuilder.build());
         } else {
             // Default to unary (unary input, unary output) - e.g., ProcessPaymentStatusGrpcService
             TypeSpec inlineAdapter = TypeSpec.anonymousClassBuilder("")
@@ -686,31 +694,36 @@ public class PipelineStepProcessor extends AbstractProcessor {
                     .addParameter(outputType != null ? ClassName.get(outputType) : ClassName.OBJECT, "output")
                     .addStatement("return $N.toDtoToGrpc(output)", "outboundMapper")
                     .build())
-                .addMethod(MethodSpec.methodBuilder("getStepConfig")
+                .addMethod(MethodSpec.methodBuilder("isAutoPersistenceEnabled")
                     .addAnnotation(Override.class)
                     .addModifiers(Modifier.PROTECTED)
-                    .returns(ClassName.get("org.pipelineframework.config", "StepConfig"))
-                    .addStatement("return new org.pipelineframework.config.StepConfig().autoPersist($L)", autoPersistenceEnabled)
+                    .returns(TypeName.BOOLEAN)
+                    .addStatement("return $L", autoPersistenceEnabled)
                     .build())
                 .build();
 
-            MethodSpec remoteProcessMethod = MethodSpec.methodBuilder("remoteProcess")
+            MethodSpec.Builder remoteProcessMethodBuilder = MethodSpec.methodBuilder("remoteProcess")
                 .addAnnotation(Override.class)
                 .addModifiers(Modifier.PUBLIC)
-                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Uni"), 
+                .returns(ParameterizedTypeName.get(ClassName.get("io.smallrye.mutiny", "Uni"),
                     outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT))
                 .addParameter(inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, "request")
-                .addStatement("$T adapter = $L", 
-                    ParameterizedTypeName.get(grpcAdapterClassName, 
-                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT, 
-                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT, 
-                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT, 
-                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT), 
+                .addStatement("$T adapter = $L",
+                    ParameterizedTypeName.get(grpcAdapterClassName,
+                        inputGrpcType != null ? ClassName.get(inputGrpcType) : ClassName.OBJECT,
+                        outputGrpcType != null ? ClassName.get(outputGrpcType) : ClassName.OBJECT,
+                        inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
+                        outputType != null ? ClassName.get(outputType) : ClassName.OBJECT),
                     inlineAdapter)
                 .addStatement("adapter.setPersistenceManager(this.persistenceManager)")
-                .addStatement("return adapter.remoteProcess(request)")
-                .build();
-            grpcServiceBuilder.addMethod(remoteProcessMethod);
+                .addStatement("return adapter.remoteProcess(request)");
+
+            // Add @RunOnVirtualThread annotation if the property is enabled
+            if (runOnVirtualThreads) {
+                remoteProcessMethodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
+            }
+
+            grpcServiceBuilder.addMethod(remoteProcessMethodBuilder.build());
         }
 
         TypeSpec grpcServiceClass = grpcServiceBuilder.build();
@@ -773,6 +786,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
         TypeMirror inboundMapperType = getAnnotationValue(annotationMirror, "inboundMapper");
         TypeMirror outboundMapperType = getAnnotationValue(annotationMirror, "outboundMapper");
         String path = getAnnotationValueAsString(annotationMirror, "path");
+        boolean runOnVirtualThreads = getAnnotationValueAsBoolean(annotationMirror, "runOnVirtualThreads", false);
 
         // Validate that required mappers are present for REST generation
         if (inboundMapperType == null || inboundMapperType.toString().equals("void") ||
@@ -897,23 +911,23 @@ public class PipelineStepProcessor extends AbstractProcessor {
         if (isReactiveStreamingService) {
             // For ReactiveStreamingService: input -> Multi<output>
             processMethod = createReactiveStreamingServiceProcessMethod(
-                inputDtoClassName, outputDtoClassName, 
-                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType);
+                inputDtoClassName, outputDtoClassName,
+                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType, runOnVirtualThreads);
         } else if (isReactiveStreamingClientService) {
             // For ReactiveStreamingClientService: Multi<input> -> output
             processMethod = createReactiveStreamingClientServiceProcessMethod(
-                inputDtoClassName, outputDtoClassName, 
-                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType);
+                inputDtoClassName, outputDtoClassName,
+                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType, runOnVirtualThreads);
         } else if (isReactiveBidirectionalStreamingService) {
             // For ReactiveBidirectionalStreamingService: Multi<input> -> Multi<output>
             processMethod = createReactiveBidirectionalStreamingServiceProcessMethod(
-                inputDtoClassName, outputDtoClassName, 
-                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType);
+                inputDtoClassName, outputDtoClassName,
+                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType, runOnVirtualThreads);
         } else {
             // For regular ReactiveService: input -> output
             processMethod = createReactiveServiceProcessMethod(
-                inputDtoClassName, outputDtoClassName, 
-                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType);
+                inputDtoClassName, outputDtoClassName,
+                inboundMapperFieldName, outboundMapperFieldName, inputType, outputType, runOnVirtualThreads);
         }
         
         resourceBuilder.addMethod(processMethod);
@@ -972,13 +986,14 @@ public class PipelineStepProcessor extends AbstractProcessor {
      * @param outboundMapperFieldName the field name of the mapper used to convert domain -> DTO
      * @param inputType              the domain input type from the service generics (may be null)
      * @param outputType             the domain output type from the service generics (may be null)
+     * @param runOnVirtualThreads    whether to add @RunOnVirtualThread annotation to the method
      * @return                       a MethodSpec for the generated REST `process` method
      */
     private MethodSpec createReactiveStreamingServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
             String inboundMapperFieldName, String outboundMapperFieldName,
-            TypeMirror inputType, TypeMirror outputType) {
-        
+            TypeMirror inputType, TypeMirror outputType, boolean runOnVirtualThreads) {
+
         TypeName multiOutputDto = ParameterizedTypeName.get(ClassName.get(Multi.class), outputDtoClassName);
 
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("process")
@@ -995,13 +1010,18 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .addParameter(inputDtoClassName, "inputDto");
 
         // Add the implementation code
-        methodBuilder.addStatement("$T inputDomain = $L.fromDto(inputDto)", 
+        methodBuilder.addStatement("$T inputDomain = $L.fromDto(inputDto)",
                 inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
                 inboundMapperFieldName != null ? inboundMapperFieldName : "/* mapper missing */");
 
         // Return the stream, allowing errors to propagate to the exception mapper
         methodBuilder.addStatement("return domainService.process(inputDomain).map(output -> $L.toDto(output))",
                 outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */");
+
+        // Add @RunOnVirtualThread annotation if the property is enabled
+        if (runOnVirtualThreads) {
+            methodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
+        }
 
         return methodBuilder.build();
     }
@@ -1021,13 +1041,14 @@ public class PipelineStepProcessor extends AbstractProcessor {
      * @param outboundMapperFieldName the field name of the outbound mapper used to convert domain objects to DTOs
      * @param inputType the domain input TypeMirror (may be null)
      * @param outputType the domain output TypeMirror (may be null)
+     * @param runOnVirtualThreads whether to add @RunOnVirtualThread annotation to the method
      * @return a MethodSpec for the REST `process` method that handles streaming inputs and produces a single output
      */
     private MethodSpec createReactiveStreamingClientServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
             String inboundMapperFieldName, String outboundMapperFieldName,
-            TypeMirror inputType, TypeMirror outputType) {
-        
+            TypeMirror inputType, TypeMirror outputType, boolean runOnVirtualThreads) {
+
         TypeName multiInputDto = ParameterizedTypeName.get(ClassName.get(Multi.class), inputDtoClassName);
         TypeName uniOutputDto = ParameterizedTypeName.get(ClassName.get(Uni.class), outputDtoClassName);
 
@@ -1043,13 +1064,18 @@ public class PipelineStepProcessor extends AbstractProcessor {
                 .build());
 
         // Add the implementation code
-        methodBuilder.addStatement("$T<$T> domainInputs = inputDtos.map(input -> $L.fromDto(input))", 
+        methodBuilder.addStatement("$T<$T> domainInputs = inputDtos.map(input -> $L.fromDto(input))",
                 ClassName.get(Multi.class),
                 inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
                 inboundMapperFieldName != null ? inboundMapperFieldName : "/* mapper missing */");
 
-        methodBuilder.addStatement("return domainService.process(domainInputs).map(output -> $L.toDto(output))", 
+        methodBuilder.addStatement("return domainService.process(domainInputs).map(output -> $L.toDto(output))",
                 outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */");
+
+        // Add @RunOnVirtualThread annotation if the property is enabled
+        if (runOnVirtualThreads) {
+            methodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
+        }
 
         return methodBuilder.build();
     }
@@ -1075,8 +1101,8 @@ public class PipelineStepProcessor extends AbstractProcessor {
     private MethodSpec createReactiveServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
             String inboundMapperFieldName, String outboundMapperFieldName,
-            TypeMirror inputType, TypeMirror outputType) {
-        
+            TypeMirror inputType, TypeMirror outputType, boolean runOnVirtualThreads) {
+
         TypeName uniOutputDto = ParameterizedTypeName.get(ClassName.get(Uni.class), outputDtoClassName);
 
         MethodSpec.Builder methodBuilder = MethodSpec.methodBuilder("process")
@@ -1090,12 +1116,17 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .addParameter(inputDtoClassName, "inputDto");
 
         // Add the implementation code
-        methodBuilder.addStatement("$T inputDomain = $L.fromDto(inputDto)", 
+        methodBuilder.addStatement("$T inputDomain = $L.fromDto(inputDto)",
                 inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
                 inboundMapperFieldName != null ? inboundMapperFieldName : "/* mapper missing */");
 
-        methodBuilder.addStatement("return domainService.process(inputDomain).map(output -> $L.toDto(output))", 
+        methodBuilder.addStatement("return domainService.process(inputDomain).map(output -> $L.toDto(output))",
                 outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */");
+
+        // Add @RunOnVirtualThread annotation if the property is enabled
+        if (runOnVirtualThreads) {
+            methodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
+        }
 
         return methodBuilder.build();
     }
@@ -1116,13 +1147,14 @@ public class PipelineStepProcessor extends AbstractProcessor {
      * @param outboundMapperFieldName the injected field name of the outbound mapper used to convert domain -> DTO
      * @param inputType the domain input type (used to reference the converted domain parameter)
      * @param outputType the domain output type (used for type references when mapping the result)
+     * @param runOnVirtualThreads whether to add @RunOnVirtualThread annotation to the method
      * @return a MethodSpec representing the generated `process` method that returns `Multi<OutputDto>`
      */
     private MethodSpec createReactiveBidirectionalStreamingServiceProcessMethod(
             TypeName inputDtoClassName, TypeName outputDtoClassName,
             String inboundMapperFieldName, String outboundMapperFieldName,
-            TypeMirror inputType, TypeMirror outputType) {
-        
+            TypeMirror inputType, TypeMirror outputType, boolean runOnVirtualThreads) {
+
         TypeName multiInputDto = ParameterizedTypeName.get(ClassName.get(Multi.class), inputDtoClassName);
         TypeName multiOutputDto = ParameterizedTypeName.get(ClassName.get(Multi.class), outputDtoClassName);
 
@@ -1146,13 +1178,18 @@ public class PipelineStepProcessor extends AbstractProcessor {
             .addParameter(multiInputDto, "inputDtos");
 
         // Add the implementation code
-        methodBuilder.addStatement("$T<$T> domainInputs = inputDtos.map(input -> $L.fromDto(input))", 
+        methodBuilder.addStatement("$T<$T> domainInputs = inputDtos.map(input -> $L.fromDto(input))",
                 ClassName.get(Multi.class),
                 inputType != null ? ClassName.get(inputType) : ClassName.OBJECT,
                 inboundMapperFieldName != null ? inboundMapperFieldName : "/* mapper missing */");
 
-        methodBuilder.addStatement("return domainService.process(domainInputs).map(output -> $L.toDto(output))", 
+        methodBuilder.addStatement("return domainService.process(domainInputs).map(output -> $L.toDto(output))",
                 outboundMapperFieldName != null ? outboundMapperFieldName : "/* mapper missing */");
+
+        // Add @RunOnVirtualThread annotation if the property is enabled
+        if (runOnVirtualThreads) {
+            methodBuilder.addAnnotation(ClassName.get("io.smallrye.common.annotation", "RunOnVirtualThread"));
+        }
 
         return methodBuilder.build();
     }

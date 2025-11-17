@@ -64,6 +64,7 @@
         <version.pipeline>0.9.0-SNAPSHOT</version.pipeline>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
+        <surefireArgLine></surefireArgLine>
     </properties>
 
     <modules>
@@ -163,7 +164,7 @@
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         </systemPropertyVariables>
-                        <argLine>--enable-preview -XX:+EnableDynamicAgentLoading</argLine>
+                        <argLine>${surefireArgLine} --enable-preview -XX:+EnableDynamicAgentLoading</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -293,6 +294,9 @@
                                 <goals>
                                     <goal>prepare-agent</goal>
                                 </goals>
+                                <configuration>
+                                    <propertyName>surefireArgLine</propertyName>
+                                </configuration>
                             </execution>
                             <execution>
                                 <id>report</id>
@@ -302,7 +306,6 @@
                                 </goals>
                                 <configuration>
                                     <dataFile>${project.build.directory}/jacoco.exec</dataFile>
-                                    <outputDirectory>target/site/jacoco</outputDirectory>
                                 </configuration>
                             </execution>
                         </executions>

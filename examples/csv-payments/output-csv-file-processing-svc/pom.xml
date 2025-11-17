@@ -40,7 +40,7 @@
             <artifactId>pipelineframework</artifactId>
             <version>${version.pipeline}</version>
         </dependency>
-        <!-- Hibernate -->
+        <!-- Hibernate Reactive and PostgreSQL reactive -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-reactive-panache</artifactId>

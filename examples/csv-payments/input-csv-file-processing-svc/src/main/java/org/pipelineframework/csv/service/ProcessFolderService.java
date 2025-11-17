@@ -37,7 +37,6 @@ import org.jboss.logging.MDC;
 
 @ApplicationScoped
 @PipelineStep(
-    order = 1,
     inputType = CsvFolder.class,
     outputType = CsvPaymentsInputFile.class,
     inputGrpcType = org.pipelineframework.csv.grpc.InputCsvFileProcessingSvc.CsvFolder.class,
@@ -49,9 +48,7 @@ import org.jboss.logging.MDC;
     inboundMapper = CsvFolderMapper.class,
     outboundMapper = CsvPaymentsInputFileMapper.class,
     grpcClient = "process-folder",
-    autoPersist = true,
-    parallel = true,
-    debug = true
+    autoPersist = true
 )
 public class ProcessFolderService implements org.pipelineframework.service.ReactiveStreamingService<CsvFolder, CsvPaymentsInputFile> {
 

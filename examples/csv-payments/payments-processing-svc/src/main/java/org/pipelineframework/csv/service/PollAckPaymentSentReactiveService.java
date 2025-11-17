@@ -17,18 +17,22 @@
 package org.pipelineframework.csv.service;
 
 import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
+import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
 import org.pipelineframework.csv.common.domain.AckPaymentSent;
 import org.pipelineframework.csv.common.domain.PaymentStatus;
-import org.pipelineframework.service.ReactiveService;
 
 @ApplicationScoped
+@Alternative
+@Priority(1)
 public class PollAckPaymentSentReactiveService
-    implements ReactiveService<AckPaymentSent, PaymentStatus> {
+    implements PollAckPaymentSentService<AckPaymentSent, PaymentStatus> {
 
   private final Logger logger =
       Logger.getLogger(getClass());
@@ -61,6 +65,9 @@ public class PollAckPaymentSentReactiveService
 
       return Uni.createFrom()
           .item(detachedAckPaymentSent)
+          // ---- IMPORTANT! Offload the entire chain ----
+          .runSubscriptionOn(Infrastructure.getDefaultExecutor())
+          // ----------------------------------------------
           .onItem()
           .transformToUni(ack -> {
             long time = (long) (Math.random() * config.waitMilliseconds() + 1);

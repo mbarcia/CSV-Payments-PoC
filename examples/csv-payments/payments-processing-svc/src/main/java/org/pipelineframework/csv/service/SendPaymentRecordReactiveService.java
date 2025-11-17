@@ -33,7 +33,6 @@ import org.pipelineframework.csv.grpc.MutinySendPaymentRecordServiceGrpc;
 import org.pipelineframework.service.ReactiveService;
 
 @PipelineStep(
-  order = 3,
   inputType = PaymentRecord.class,
   outputType = AckPaymentSent.class,
   inputGrpcType = org.pipelineframework.csv.grpc.InputCsvFileProcessingSvc.PaymentRecord.class,
@@ -45,9 +44,7 @@ import org.pipelineframework.service.ReactiveService;
   inboundMapper = PaymentRecordMapper.class,
   outboundMapper = AckPaymentSentMapper.class,
   grpcClient = "send-payment-record",
-  autoPersist = true,
-  parallel = true,
-  debug = true
+  autoPersist = true
 )
 @ApplicationScoped
 @Getter

@@ -50,7 +50,6 @@ import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
  * streaming characteristics than list-based writing.
  */
 @PipelineStep(
-  order = 6,
   inputType = PaymentOutput.class,
   outputType = CsvPaymentsOutputFile.class,
   inputGrpcType = org.pipelineframework.csv.grpc.PaymentStatusSvc.PaymentOutput.class,
@@ -62,9 +61,7 @@ import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
   inboundMapper = PaymentOutputMapper.class,
   outboundMapper = CsvPaymentsOutputFileMapper.class,
   grpcClient = "process-csv-payments-output-file",
-  parallel = true,
-  autoPersist = true,
-  debug = true
+  autoPersist = true
 )
 @ApplicationScoped
 public class ProcessCsvPaymentsOutputFileReactiveService

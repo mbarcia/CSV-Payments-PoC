@@ -36,7 +36,11 @@
             <version>1.0</version>
             <scope>compile</scope>
         </dependency>
-        <!-- PostgreSQL reactive -->
+        <!-- Hibernate Reactive and PostgreSQL reactive -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-reactive-panache</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-pg-client</artifactId>

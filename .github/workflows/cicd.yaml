@@ -75,7 +75,7 @@ jobs:
         run: ./mvnw -B -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -Dquarkus.generate-code.skip=true -f framework/pom.xml --no-transfer-progress
 
       - name: Build CSV Payments example services (framework already installed)
-        run: ./mvnw $MAVEN_ARGS -DskipTests -pl examples/csv-oayments package --no-transfer-progress
+        run: ./mvnw $MAVEN_ARGS -DskipTests -pl examples/csv-payments package --no-transfer-progress
 
       # Keeps this build focused on producing artifacts; long ITs will run in tests-integration
       - name: Ensure Maven wrapper has execute permissions

@@ -39,7 +39,7 @@ class ProcessCsvPaymentsOutputFileRestResourceTest {
         RestAssured.config =
                 RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
         // Update the port to match the HTTPS port
-        RestAssured.port = 8444;
+        RestAssured.port = 8447;
     }
 
     @Test

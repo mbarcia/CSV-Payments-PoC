@@ -207,8 +207,8 @@ jobs:
     env:
       GRAALVM_OPTS: "--no-fallback --install-exit-handlers -H:+UnlockExperimentalVMOptions -H:InlineAllFields"
 
-    # Restrict native builds to main or release branches
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
+    # Restrict native builds to main, release branches, or tag pushes
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/'))
 
     steps:
       - name: Checkout repository

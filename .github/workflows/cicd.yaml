@@ -70,20 +70,12 @@ jobs:
           echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
           echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR)" >> $GITHUB_ENV
 
-      # Build and install the entire framework (runtime and deployment) ensuring proper build order
-      # Using -N (non-recursive) to prevent reactor build issues with Quarkus extensions
-      - name: Install framework parent POM only (non-recursive)
-        run: ./mvnw -B -T 1C -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -N -f framework/pom.xml --no-transfer-progress
+      # Build and install the entire framework at once to handle Quarkus extension circular dependencies properly
+      - name: Install framework to local repository (build framework modules together)
+        run: ./mvnw -B -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -f framework/pom.xml --no-transfer-progress
 
-      # Now build runtime and deployment modules individually to avoid circular dependency
-      - name: Install framework runtime module
-        run: ./mvnw -B -T 1C -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -f framework/runtime/pom.xml --no-transfer-progress
-
-      - name: Install framework deployment module
-        run: ./mvnw -B -T 1C -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -f framework/deployment/pom.xml --no-transfer-progress
-
-      - name: Build example services (framework already installed)
-        run: ./mvnw $MAVEN_ARGS -DskipTests -pl examples/ package --no-transfer-progress
+      - name: Build CSV Payments example services (framework already installed)
+        run: ./mvnw $MAVEN_ARGS -DskipTests -pl examples/csv-oayments package --no-transfer-progress
 
       # Keeps this build focused on producing artifacts; long ITs will run in tests-integration
       - name: Ensure Maven wrapper has execute permissions

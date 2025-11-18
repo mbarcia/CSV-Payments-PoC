@@ -61,7 +61,7 @@ For strict sequential processing, leave that as false (the default).
 
 ## Avoid breaking parallelism in the pipeline
 
-###Important
+### Important
 
 If any previous step uses `parallel = false` (the default), the pipeline will serialize the stream at that point.
 

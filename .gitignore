@@ -71,6 +71,8 @@ QWEN.md
 
 # Template generator
 /template-generator-node/test-output/
+/template-generator-node/node_modules/
+/template-generator-node/dist/
 
 # Test data
 /examples/csv-payments/input-csv-file-processing-svc/multi-file-e2e-test-output/

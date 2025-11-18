@@ -25,7 +25,7 @@ jobs:
       - name: Build
         run: ./mvnw --batch-mode -DskipTests package --no-transfer-progress -T 1C
       - name: Verify
-        run: ./mvnw -B verify -P coverage --no-transfer-progress -T 1C
+        run: ./mvnw -B verify -P coverage --no-transfer-progress
       - name: Coverage
         uses: codecov/codecov-action@v4
         with:

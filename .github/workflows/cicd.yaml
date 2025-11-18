@@ -76,11 +76,11 @@ jobs:
           echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
           echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR)" >> $GITHUB_ENV
 
-      # Build and install the entire framework at once to handle Quarkus extension circular dependencies properly
+      # Build and install the framework first of all
       - name: Install framework to local repository (build framework modules together)
-        run: ./mvnw -B -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -f framework/pom.xml --no-transfer-progress
+        run: ./mvnw $MAVEN_ARGS clean install -DskipTests -f framework/pom.xml --no-transfer-progress
 
-      - name: Build CSV Payments example services (framework already installed)
+      - name: Build CSV Payments example services (with the framework already installed)
         run: ./mvnw $MAVEN_ARGS -DskipTests -pl examples/csv-payments package --no-transfer-progress
 
       - name: Run unit and quick integration tests not requiring slow infra

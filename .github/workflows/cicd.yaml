@@ -68,10 +68,18 @@ jobs:
       - name: Configure JVM & Maven for low-memory runners
         run: |
           echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
-          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR)" >> $GITHUB_ENV
+          if [ "${IS_PR}" == "true" ]; then
+            MAVEN_ARGS_BASE="-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $MAVEN_FLAGS_PR"
+            FRAMEWORK_MAVEN_ARGS_BASE="-B -T 1C -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $MAVEN_FLAGS_PR"
+          else
+            MAVEN_ARGS_BASE="-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none"
+            FRAMEWORK_MAVEN_ARGS_BASE="-B -T 1C -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none"
+          fi
+          echo "MAVEN_ARGS=$MAVEN_ARGS_BASE" >> $GITHUB_ENV
+          echo "FRAMEWORK_MAVEN_ARGS=$FRAMEWORK_MAVEN_ARGS_BASE" >> $GITHUB_ENV
 
       - name: Install framework to local repository (build framework modules)
-        run: ./mvnw $MAVEN_ARGS clean install -DskipTests -f framework/pom.xml --no-transfer-progress
+        run: ./mvnw $FRAMEWORK_MAVEN_ARGS clean install -DskipTests -f framework/pom.xml --no-transfer-progress
 
       - name: Build whole project (package, skip tests here)
         run: ./mvnw $MAVEN_ARGS -DskipTests package --no-transfer-progress

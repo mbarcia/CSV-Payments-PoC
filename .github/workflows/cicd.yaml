@@ -240,10 +240,10 @@ jobs:
       - name: Cache GraalVM
         uses: actions/cache@v4
         with:
-         path: ${{ env.GRAALVM_HOME }}
-         key: ${{ runner.os }}-graalvm-${{ hashFiles('**/pom.xml') }}
-         restore-keys: |
-           ${{ runner.os }}-graalvm-
+          path: ${{ env.GRAALVM_HOME }}
+          key: ${{ runner.os }}-graalvm-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-graalvm-
 
       - name: Show native build target
         run: |

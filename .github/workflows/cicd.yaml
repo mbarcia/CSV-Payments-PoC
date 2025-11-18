@@ -141,7 +141,7 @@ jobs:
           echo "MAVEN_ARGS=-B -T 1 -M -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
 
       - name: Run unit tests
-        run: ./mvnw $MAVEN_ARGS -DskipITs -DskipIT -DskipITs=true verify --fail-at-end
+        run: ./mvnw $MAVEN_ARGS -DskipITs verify --fail-at-end
 
   ####################################################################
   # INTEGRATION TESTS - heavier tests (split out)

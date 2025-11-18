@@ -27,6 +27,7 @@ import java.nio.file.Paths;
 import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.csv.common.domain.AckPaymentSent;
@@ -46,6 +47,12 @@ class ProcessCsvPaymentsOutputFileRestResourceIT {
                 RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
         // Update the port to match the HTTPS port
         RestAssured.port = 8447;
+    }
+
+    @AfterAll
+    static void tearDown() {
+        // Reset RestAssured to default configuration
+        RestAssured.reset();
     }
 
     @Test

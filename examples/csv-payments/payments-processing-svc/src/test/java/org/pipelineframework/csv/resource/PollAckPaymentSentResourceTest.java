@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.util.Currency;
 import java.util.UUID;
 import lombok.SneakyThrows;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.csv.common.dto.PaymentRecordDto;
@@ -47,11 +48,17 @@ class PollAckPaymentSentResourceTest {
         RestAssured.config =
                 RestAssured.config().sslConfig(SSLConfig.sslConfig().relaxedHTTPSValidation());
         // Update the port to match the HTTPS port
-        RestAssured.port = 8446;
+        RestAssured.port = 8445;
 
         PaymentRecordDto paymentRecordDto = createTestPaymentRecordDto();
         ObjectMapper mapper = new ObjectMapper();
         json = getJson(mapper, paymentRecordDto);
+    }
+
+    @AfterAll
+    static void tearDown() {
+        // Reset RestAssured to default configuration
+        RestAssured.reset();
     }
 
     private static PaymentRecordDto createTestPaymentRecordDto() {

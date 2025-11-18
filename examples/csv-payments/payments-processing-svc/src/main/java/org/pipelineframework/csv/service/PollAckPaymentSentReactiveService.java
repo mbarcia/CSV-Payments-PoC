@@ -18,9 +18,7 @@ package org.pipelineframework.csv.service;
 
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
-import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 import java.time.Duration;
 import org.jboss.logging.Logger;
@@ -29,8 +27,6 @@ import org.pipelineframework.csv.common.domain.AckPaymentSent;
 import org.pipelineframework.csv.common.domain.PaymentStatus;
 
 @ApplicationScoped
-@Alternative
-@Priority(1)
 public class PollAckPaymentSentReactiveService
     implements PollAckPaymentSentService<AckPaymentSent, PaymentStatus> {
 

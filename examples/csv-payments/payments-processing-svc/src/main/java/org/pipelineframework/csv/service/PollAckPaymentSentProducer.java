@@ -16,11 +16,11 @@
 
 package org.pipelineframework.csv.service;
 
+import jakarta.enterprise.context.Dependent;
 import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
-import jakarta.enterprise.context.RequestScoped;
 
-@RequestScoped
+@Dependent
 public class PollAckPaymentSentProducer {
 
 	@Inject

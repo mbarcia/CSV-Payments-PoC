@@ -17,9 +17,7 @@
 package org.pipelineframework.csv.service;
 
 import io.smallrye.mutiny.Uni;
-import jakarta.annotation.Priority;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Alternative;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
@@ -27,8 +25,6 @@ import org.pipelineframework.csv.common.domain.AckPaymentSent;
 import org.pipelineframework.csv.common.domain.PaymentStatus;
 
 @ApplicationScoped
-@Alternative
-@Priority(1)
 public class PollAckPaymentSentOnVirtualThreadReactiveService
     implements PollAckPaymentSentService<AckPaymentSent, PaymentStatus> {
 
@@ -58,7 +54,7 @@ public class PollAckPaymentSentOnVirtualThreadReactiveService
 
     /**
      * Processes an AckPaymentSent by polling the payment provider and returning the resulting payment status.
-     *
+     * <p>
      * Simulates a polling delay up to the configured wait period, invokes the payment provider to obtain the
      * PaymentStatus for the given AckPaymentSent, and propagates any processing failures through the returned Uni.
      *

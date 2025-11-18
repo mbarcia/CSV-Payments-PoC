@@ -27,7 +27,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
@@ -73,8 +72,8 @@ class GrpcServiceBidirectionalStreamingAdapterTest {
         }
 
         @Override
-        protected StepConfig getStepConfig() {
-            return new StepConfig().autoPersist(autoPersist);
+        protected boolean isAutoPersistenceEnabled() {
+            return autoPersist;
         }
 
         // Override to bypass Panache transaction context requirement for testing

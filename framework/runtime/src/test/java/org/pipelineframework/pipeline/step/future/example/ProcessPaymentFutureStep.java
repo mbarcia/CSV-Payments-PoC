@@ -43,7 +43,6 @@ public class ProcessPaymentFutureStep extends ConfigurableStep
 
                     // Process the payment request
                     return "Processed: " + paymentRequest;
-                },
-                getExecutor());
+                });
     }
 }

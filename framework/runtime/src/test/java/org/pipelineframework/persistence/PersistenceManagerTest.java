@@ -19,6 +19,7 @@ package org.pipelineframework.persistence;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import io.quarkus.hibernate.reactive.panache.PanacheEntityBase;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.helpers.test.UniAssertSubscriber;
 import jakarta.enterprise.inject.Instance;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.pipelineframework.persistence.provider.ReactivePanachePersistenceProvider;
 
 class PersistenceManagerTest {
 
@@ -91,28 +93,38 @@ class PersistenceManagerTest {
 
     @Test
     void persist_WithSupportedProvider_ShouldUseProvider() {
-        Object entity = new Object();
-        PersistenceProvider<Object> specificMockProvider = mock(PersistenceProvider.class);
+        // Since ReactivePanachePersistenceProvider is bound to PanacheEntityBase,
+        // we need to use a PanacheEntityBase entity
+        PanacheEntityBase entity = mock(PanacheEntityBase.class);
+
+        // Create a mock that extends ReactivePanachePersistenceProvider to pass the instanceof
+        // check
+        // but with method implementations that don't depend on Vert.x context
+        ReactivePanachePersistenceProvider mockProvider =
+                mock(ReactivePanachePersistenceProvider.class);
+        when(mockProvider.supports(entity)).thenReturn(true);
+        when(mockProvider.supportsThreadContext())
+                .thenReturn(true); // For regular threads, it should return true
+        when(mockProvider.persist(entity)).thenReturn(Uni.createFrom().item(entity));
+        when(mockProvider.type()).thenReturn(PanacheEntityBase.class); // Need to mock this too
 
         // Set up the mock instance to use our specific provider
         when(mockProviderInstance.isUnsatisfied()).thenReturn(false);
-        when(mockProviderInstance.stream())
-                .thenReturn(java.util.stream.Stream.of(specificMockProvider));
-        when(specificMockProvider.supports(entity)).thenReturn(true);
-        when(specificMockProvider.persist(entity)).thenReturn(Uni.createFrom().item(entity));
+        when(mockProviderInstance.stream()).thenReturn(java.util.stream.Stream.of(mockProvider));
 
         // Re-initialize the provider list in the PersistenceManager
         reinitializeProviders();
 
-        Uni<Object> resultUni = persistenceManager.persist(entity);
+        Uni<PanacheEntityBase> resultUni = persistenceManager.persist(entity);
 
-        UniAssertSubscriber<Object> subscriber =
+        UniAssertSubscriber<PanacheEntityBase> subscriber =
                 resultUni.subscribe().withSubscriber(UniAssertSubscriber.create());
         subscriber.awaitItem();
 
         assertSame(entity, subscriber.getItem());
-        verify(specificMockProvider).supports(entity);
-        verify(specificMockProvider).persist(entity);
+        verify(mockProvider).supports(entity);
+        verify(mockProvider).supportsThreadContext();
+        verify(mockProvider).persist(entity);
     }
 
     @Test

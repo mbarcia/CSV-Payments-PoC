@@ -43,7 +43,7 @@ class ConfigurableStepTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
 

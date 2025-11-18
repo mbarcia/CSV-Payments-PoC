@@ -20,35 +20,57 @@ import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
 import jakarta.inject.Inject;
+import java.time.Duration;
 import org.jboss.logging.Logger;
 
 /**
- * Configuration initializer that loads static configuration into the dynamic configuration holder
- * at application startup.
+ * Initializes the PipelineConfig with values from the application configuration.
+ * This ensures that the global pipeline defaults defined in application.properties
+ * (e.g., pipeline.defaults.parallel=false) are properly applied to the PipelineConfig.
  */
 @ApplicationScoped
 public class PipelineConfigInitializer {
-    
-    private static final Logger LOG = Logger.getLogger(PipelineConfigInitializer.class);
-    
+
+    private static final Logger logger = Logger.getLogger(PipelineConfigInitializer.class);
+
     @Inject
-    PipelineInitialConfig staticConfig;
-    
+    PipelineConfig pipelineConfig;
+
     @Inject
-    PipelineDynamicConfig dynamicConfig;
-    
+    PipelineStepConfig stepConfig;
+
     /**
-     * Initialize the dynamic configuration with values from the static configuration
-     * at application startup.
-     * @param event the startup event
+     * Initializes the PipelineConfig with values from application configuration
+     * when the application starts up.
      */
     void onStart(@Observes StartupEvent event) {
-        LOG.infof("Initializing pipeline configuration");
-        LOG.infof("Parallel: %s", staticConfig.parallel());
-        LOG.infof("Retry limit: %s", staticConfig.retryLimit());
-        LOG.infof("Retry wait: %sms", staticConfig.retryWaitMs());
-        
-        dynamicConfig.updateConfig(staticConfig);
-        LOG.infof("Pipeline configuration initialized successfully");
+        logger.debug("Initializing PipelineConfig with application configuration defaults");
+
+        // Get the defaults from the configuration system
+        PipelineStepConfig.StepConfig config = stepConfig.defaults();
+
+        logger.info("Initializing pipeline global/default configuration");
+        logger.infof("Order: %s", config.order());
+        logger.infof("Parallel: %s", config.parallel());
+        logger.infof("Retry limit: %s", config.retryLimit());
+        logger.infof("Retry wait: %s ms", config.retryWaitMs());
+        logger.infof("Backpressure buffer capacity: %s", config.backpressureBufferCapacity());
+        logger.infof("Backpressure strategy: %s", config.backpressureStrategy());
+        logger.infof("Jitter: %s", config.jitter());
+        logger.infof("Max backoff: %s ms", config.maxBackoff());
+        logger.infof("Recover on failure: %s", config.recoverOnFailure());
+
+        // Apply these values to the PipelineConfig
+        StepConfig defaults = pipelineConfig.defaults()
+                .retryLimit(config.retryLimit())
+                .retryWait(Duration.ofMillis(config.retryWaitMs()))
+                .parallel(config.parallel())
+                .recoverOnFailure(config.recoverOnFailure())
+                .maxBackoff(Duration.ofMillis(config.maxBackoff()))
+                .jitter(config.jitter())
+                .backpressureBufferCapacity(config.backpressureBufferCapacity())
+                .backpressureStrategy(config.backpressureStrategy());
+
+        logger.info("Pipeline configuration loaded from Quarkus config system");
     }
 }

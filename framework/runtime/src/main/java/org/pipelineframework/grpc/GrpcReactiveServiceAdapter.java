@@ -19,29 +19,23 @@ package org.pipelineframework.grpc;
 import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
-import org.pipelineframework.annotation.StepConfigProvider;
-import org.pipelineframework.config.StepConfig;
+import org.jboss.logging.Logger;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
-import org.pipelineframework.step.ConfigurableStep;
-import org.jboss.logging.Logger;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
-public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> extends ReactiveServiceAdapterBase {
 
   private static final Logger LOG = Logger.getLogger(GrpcReactiveServiceAdapter.class);
 
   @Inject
   PersistenceManager persistenceManager;
-  
-  // The step class this adapter is for
-  private Class<? extends ConfigurableStep> stepClass;
-  
+
   /**
-   * Sets the persistence manager for this adapter.
-   * This method is useful when the adapter is not managed by CDI (e.g., anonymous inner classes).
-   * 
+   * Sets the persistence manager for this adapter. This method is useful when the adapter is not
+   * managed by CDI (e.g., anonymous inner classes).
+   *
    * @param persistenceManager the persistence manager to use
    */
   public void setPersistenceManager(PersistenceManager persistenceManager) {
@@ -49,48 +43,39 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
   }
 
   /**
-   * Sets the step class this adapter is for.
+ * Provides the reactive service responsible for processing domain inputs into domain outputs.
+ *
+ * @return the ReactiveService that processes DomainIn to produce DomainOut.
+ */
+protected abstract ReactiveService<DomainIn, DomainOut> getService();
+
+  /**
+ * Convert a gRPC input object into the corresponding domain input representation.
+ *
+ * @param grpcIn the gRPC input object to convert
+ * @return the resulting domain input object
+ */
+protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
+
+  /**
+ * Convert a domain-layer output value into its gRPC representation.
+ *
+ * @param domainOut the domain-layer result to convert
+ * @return the corresponding gRPC output instance
+ */
+protected abstract GrpcOut toGrpc(DomainOut domainOut);
+
+  /**
+   * Process a gRPC request through the reactive domain service and optionally persist the input entity.
    *
-   * @param stepClass the step class
+   * Converts the provided gRPC request to a domain input, invokes the underlying reactive service,
+   * and converts the resulting domain output back to a gRPC response. If auto-persistence is enabled,
+   * the input entity is persisted after successful processing within the correct Vert.x event-loop and transaction.
+   *
+   * @param grpcRequest the incoming gRPC request to convert and process
+   * @return the gRPC response message corresponding to the processed domain result
+   * @throws io.grpc.StatusRuntimeException if processing or persistence fails; failures are mapped to an appropriate gRPC status
    */
-  public void setStepClass(Class<? extends ConfigurableStep> stepClass) {
-    this.stepClass = stepClass;
-  }
-
-  protected abstract ReactiveService<DomainIn, DomainOut> getService();
-
-  protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
-
-  protected abstract GrpcOut toGrpc(DomainOut domainOut);
-
-  /**
-   * Get the step configuration for this service adapter.
-   * Override this method to provide specific configuration.
-   * 
-   * @return the step configuration, or null if not configured
-   */
-  protected StepConfig getStepConfig() {
-    if (stepClass != null) {
-      return StepConfigProvider.getStepConfig(stepClass);
-    }
-    return null;
-  }
-
-  /**
-   * Determines whether entities should be automatically persisted before processing.
-   * Override this method to enable auto-persistence.
-   * 
-   * @return true if entities should be auto-persisted, false otherwise
-   */
-  protected boolean isAutoPersistenceEnabled() {
-    if (stepClass != null) {
-      return StepConfigProvider.isAutoPersistenceEnabled(stepClass);
-    }
-    
-    StepConfig config = getStepConfig();
-    return config != null && config.autoPersist();
-  }
-
   public Uni<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
     DomainIn entity = fromGrpc(grpcRequest);
     // Panache.withTransaction(...) creates the correct Vert.x context and transaction
@@ -99,14 +84,22 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
 
       boolean autoPersistenceEnabled = isAutoPersistenceEnabled();
       Uni<DomainOut> withPersistence = autoPersistenceEnabled
-              ? processedResult.onItem().call(_ ->
-              // If auto-persistence is enabled, persist the input entity after successful processing
-              persistenceManager.persist(entity)
-      )
+              ? processedResult.call(_ ->
+              // guaranteed event-loop
+              switchToEventLoop()
+                  // If auto-persistence is enabled, persist the input entity after successful processing
+                  .call(() -> persistenceManager.persist(entity)
+                          // Apply retry logic for transient database errors similar to streaming adapters
+                          .onFailure(this::isTransientDbError)
+                          .retry().withBackOff(java.time.Duration.ofMillis(200), java.time.Duration.ofSeconds(2)).atMost(3)
+                  )
+              )
               : processedResult;
 
       if (!autoPersistenceEnabled) {
         LOG.debug("Auto-persistence is disabled");
+      } else {
+        LOG.debug("Auto-persistence is enabled, will persist input after successful processing");
       }
 
       return withPersistence
@@ -114,4 +107,5 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
               .onFailure().transform(new throwStatusRuntimeExceptionFunction());
     });
   }
+
 }

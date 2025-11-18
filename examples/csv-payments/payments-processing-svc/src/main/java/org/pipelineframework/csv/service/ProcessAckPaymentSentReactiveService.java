@@ -31,7 +31,6 @@ import org.pipelineframework.grpc.GrpcReactiveServiceAdapter;
 import org.pipelineframework.service.ReactiveService;
 
 @PipelineStep(
-    order = 4,
     inputType = AckPaymentSent.class,
     outputType = PaymentStatus.class,
     inputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.AckPaymentSent.class,
@@ -44,9 +43,7 @@ import org.pipelineframework.service.ReactiveService;
     outboundMapper = PaymentStatusMapper.class,
     grpcClient = "process-ack-payment-sent",
     restEnabled = true,
-    autoPersist = false,
-    parallel = true,
-    debug = true
+    autoPersist = true
 )
 @ApplicationScoped
 @Getter
@@ -55,11 +52,16 @@ public class ProcessAckPaymentSentReactiveService
     
   private static final Logger LOG = Logger.getLogger(ProcessAckPaymentSentReactiveService.class);
 
-  private final PollAckPaymentSentReactiveService pollAckPaymentSentService;
+  PollAckPaymentSentService pollAckPaymentSentService;
 
+  /**
+   * Create a ProcessAckPaymentSentReactiveService and wire its dependency.
+   *
+   * @param pollAckPaymentSentService the service used to process AckPaymentSent messages into PaymentStatus
+   */
   @Inject
   public ProcessAckPaymentSentReactiveService(
-      PollAckPaymentSentReactiveService pollAckPaymentSentService) {
+          PollAckPaymentSentService pollAckPaymentSentService) {
     this.pollAckPaymentSentService = pollAckPaymentSentService;
     LOG.debug("ProcessAckPaymentSentReactiveService initialized");
   }

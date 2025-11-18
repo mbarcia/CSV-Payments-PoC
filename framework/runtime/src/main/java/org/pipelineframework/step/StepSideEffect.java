@@ -39,5 +39,4 @@ public interface StepSideEffect<I> extends Configurable, StepOneToOne<I, I>, Dea
      * Indicates whether this step should run with virtual threads.
      * @return true if virtual threads should be used, false otherwise (defaults to false)
      */
-    default boolean runWithVirtualThreads() { return false; }
 }

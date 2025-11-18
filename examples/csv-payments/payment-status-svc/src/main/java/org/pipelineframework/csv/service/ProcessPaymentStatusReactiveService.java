@@ -33,7 +33,6 @@ import org.pipelineframework.csv.common.mapper.PaymentStatusMapper;
 import org.pipelineframework.service.ReactiveService;
 
 @PipelineStep(
-    order = 5,
     inputType = PaymentStatus.class,
     outputType = PaymentOutput.class,
     inputGrpcType = org.pipelineframework.csv.grpc.PaymentsProcessingSvc.PaymentStatus.class,
@@ -46,9 +45,7 @@ import org.pipelineframework.service.ReactiveService;
     outboundMapper = PaymentOutputMapper.class,
     grpcClient = "process-payment-status",
     restEnabled = true,
-    autoPersist = true,
-    parallel = true,
-    debug = true
+    autoPersist = true
 )
 @ApplicationScoped
 @Getter

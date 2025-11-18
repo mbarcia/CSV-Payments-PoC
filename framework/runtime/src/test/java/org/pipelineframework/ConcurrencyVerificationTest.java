@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.ConfigurableStep;
@@ -126,9 +125,8 @@ class ConcurrencyVerificationTest {
 
         // Given - Default step config (parallel = false)
         TrackingStepOneToOne step = new TrackingStepOneToOne();
-        LiveStepConfig liveConfig =
-                new LiveStepConfig(new StepConfig(), pipelineConfig); // default config
-        step.initialiseWithConfig(liveConfig); // defaults: parallel=false
+        StepConfig stepConfig = new StepConfig();
+        step.initialiseWithConfig(stepConfig); // defaults: parallel=false
 
         // When
         Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
@@ -158,9 +156,9 @@ class ConcurrencyVerificationTest {
 
         // Given - Enable parallel processing
         TrackingStepOneToOne step = new TrackingStepOneToOne();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.parallel(true);
+        step.initialiseWithConfig(stepConfig);
 
         // When - Use items where some are slow to demonstrate concurrent processing
         Multi<String> input = Multi.createFrom().items("slow", "fast1", "fast2");
@@ -190,9 +188,9 @@ class ConcurrencyVerificationTest {
 
         // Given - Blocking step with parallel processing enabled
         TrackingStepOneToOneBlocking step = new TrackingStepOneToOneBlocking();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.parallel(true);
+        step.initialiseWithConfig(stepConfig);
 
         // When - Use items where some are slow to demonstrate concurrent processing
         Multi<String> input = Multi.createFrom().items("slow", "fast1", "fast2");
@@ -221,9 +219,9 @@ class ConcurrencyVerificationTest {
 
         // Given - CompletableFuture step with parallel processing enabled
         TrackingStepOneToOneCompletableFuture step = new TrackingStepOneToOneCompletableFuture();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.parallel(true);
+        step.initialiseWithConfig(stepConfig);
 
         // When - Use items where some are slow to demonstrate concurrent processing
         Multi<String> input = Multi.createFrom().items("slow", "fast1", "fast2");
@@ -252,9 +250,9 @@ class ConcurrencyVerificationTest {
 
         // Given - Explicitly set parallel to false (should behave as before)
         TrackingStepOneToOne step = new TrackingStepOneToOne();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(false);
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.parallel(false);
+        step.initialiseWithConfig(stepConfig);
 
         // When
         Multi<String> input = Multi.createFrom().items("itemA", "itemB");

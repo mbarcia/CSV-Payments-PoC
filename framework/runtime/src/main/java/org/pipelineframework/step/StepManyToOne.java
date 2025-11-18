@@ -27,12 +27,16 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
     Logger LOG = Logger.getLogger(StepManyToOne.class);
 
     /**
-     * Apply the step to a stream of inputs, producing a single output reactively.
-     * This method serves as a client-side wrapper that provides cross-cutting concerns
-     * like retry logic, error handling, and backpressure management for gRPC calls.
+     * Apply the step to a stream of inputs and produce a single aggregated output.
      *
-     * @param input The stream of inputs as a Multi
-     * @return The single output as a Uni
+     * <p>The method applies the configured backpressure strategy to the provided input stream,
+     * applies retry semantics on failures (excluding NullPointerException), and — if configured —
+     * recovers failed processing by delegating the collected stream to the dead-letter handler.
+     *
+     * @param input the stream of inputs to be processed
+     * @return a Uni that emits the step's single output; if retries are exhausted the Uni will
+     *         either fail with the original error or, if recovery is enabled, emit the value
+     *         produced by the dead-letter handling (which may be null)
      */
     @Override
     default Uni<O> apply(Multi<I> input) {
@@ -52,7 +56,7 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
 
         return applyReduce(finalInput)
             .onItem().invoke(resultValue -> {
-                if (debug()) {
+                if (LOG.isDebugEnabled()) {
                     LOG.debugf("Reactive Step %s processed stream into output: %s",
                         this.getClass().getSimpleName(), resultValue);
                 }
@@ -64,10 +68,11 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
             .atMost(retryLimit())
             .onFailure().recoverWithUni(error -> {
                 if (recoverOnFailure()) {
-                    if (debug()) {
+                    if (LOG.isDebugEnabled()) {
                         LOG.debugf("Reactive Step %s: failed to process stream: %s",
                             this.getClass().getSimpleName(), error.getMessage());
                     }
+
                     return deadLetterStream(finalInput, error);
                 } else {
                     return Uni.createFrom().failure(error);

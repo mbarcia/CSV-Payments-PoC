@@ -18,9 +18,6 @@ package org.pipelineframework.step.future;
 
 import io.smallrye.mutiny.Uni;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import org.jboss.logging.Logger;
 import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
@@ -36,20 +33,33 @@ import org.pipelineframework.step.functional.OneToOne;
  * and imperative representations.
  */
 public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Configurable, DeadLetterQueue<I, O> {
-    CompletableFuture<O> applyAsync(I in);
+    /**
+ * Process the given input and produce an output asynchronously.
+ *
+ * @param in the input item to process
+ * @return a CompletableFuture completing with the produced output, or completing exceptionally if processing fails
+ */
+CompletableFuture<O> applyAsync(I in);
 
-    default Executor getExecutor() { 
-        return ForkJoinPool.commonPool(); 
-    }
-
-	default boolean runWithVirtualThreads() { return false; }
-
+    /**
+     * Adapts a Mutiny Uni input into the CompletableFuture-based processing defined by {@link #applyAsync(Object)},
+     * applies retry/backoff/jitter policies, and performs optional dead-letter recovery and logging.
+     *
+     * <p>Behaviour summary:
+     * - For each item emitted by {@code inputUni} the method delegates processing to {@link #applyAsync(Object)}.
+     * - Failures are retried with exponential backoff and optional jitter up to {@link #retryLimit()} attempts;
+     *   {@link NullPointerException} is excluded from retries.
+     * - After exhausting retries an informational log entry is emitted identifying the step and retry limit.
+     * - On success a debug log records the processed item; if recovery is enabled via {@link #recoverOnFailure()}
+     *   a failed item is routed to the dead-letter queue via {@link #deadLetter(Uni, Throwable)} and a debug
+     *   log records the failure, otherwise the failure is propagated.
+     *
+     * @param inputUni the Uni that emits input items to be processed
+     * @return a Uni that emits processed output items or fails/recovers according to the configured retry and recovery policies
+     */
     @Override
     default Uni<O> apply(Uni<I> inputUni) {
         final Logger LOG = Logger.getLogger(this.getClass());
-        final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        final boolean runWithVirtualThreads = runWithVirtualThreads();
-        final Executor executor = runWithVirtualThreads ? vThreadExecutor : null;
 
         return inputUni
             .onItem().transformToUni(input -> {
@@ -57,13 +67,7 @@ public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Con
                 CompletableFuture<O> future = applyAsync(input);
 
                 // wrap it into a Uni
-                Uni<O> uni = Uni.createFrom().completionStage(future);
-
-                // optionally run on a specific executor
-                if (executor != null) {
-                    uni = uni.runSubscriptionOn(executor);
-                }
-                return uni;
+                return Uni.createFrom().completionStage(future);
             })
             // retry / backoff / jitter
             .onFailure(t -> !(t instanceof NullPointerException)).retry()
@@ -71,25 +75,23 @@ public interface StepOneToOneCompletableFuture<I, O> extends OneToOne<I, O>, Con
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())
             .onFailure().invoke(t -> {
-                if (debug()) {
-                    LOG.infof(
-                        "Step %s completed all retries (%s attempts) with failure: %s",
-                        this.getClass().getSimpleName(),
-                        retryLimit(),
-                        t.getMessage()
-                    );
-                }
+                LOG.infof(
+                    "Step %s completed all retries (%s attempts) with failure: %s",
+                    this.getClass().getSimpleName(),
+                    retryLimit(),
+                    t.getMessage()
+                );
             })
             // debug logging
             .onItem().invoke(i -> {
-                if (debug()) {
+                if (LOG.isDebugEnabled()) {
                     LOG.debugf("Step %s processed item: %s", this.getClass().getSimpleName(), i);
                 }
             })
             // recover with dead letter queue if needed
             .onFailure().recoverWithUni(err -> {
                 if (recoverOnFailure()) {
-                    if (debug()) {
+                    if (LOG.isDebugEnabled()) {
                         LOG.debugf(
                                 "Step %s: failed item=%s after %s retries: %s",
                                 this.getClass().getSimpleName(), inputUni, retryLimit(), err

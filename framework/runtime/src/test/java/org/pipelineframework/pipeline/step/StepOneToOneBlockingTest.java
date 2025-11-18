@@ -53,7 +53,7 @@ class StepOneToOneBlockingTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Use the config provided
         }
     }
@@ -81,24 +81,6 @@ class StepOneToOneBlockingTest {
 
         // Then
         assertFalse(parallel);
-    }
-
-    @Test
-    void testDefaultRunWithVirtualThreads() {
-        // Given
-        TestStepBlocking step = new TestStepBlocking();
-
-        // When
-        boolean runWithVirtualThreads = step.runWithVirtualThreads();
-
-        // Then
-        // The default value should be false, but in some test environments it might be true
-        // We're not asserting a specific value here because it depends on the test environment
-        // The important thing is that the method works
-        //noinspection DuplicateCondition,ConstantValue
-        assertTrue(
-                runWithVirtualThreads
-                        || !runWithVirtualThreads); // Always true, just testing the method works
     }
 
     @Test

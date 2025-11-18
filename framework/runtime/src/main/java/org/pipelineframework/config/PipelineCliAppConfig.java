@@ -25,11 +25,15 @@ import java.util.Optional;
 /**
  * Build-time config for the Pipeline Framework extension.
  */
-@ConfigMapping(prefix = "pipeline.build")
+@ConfigMapping(prefix = "pipeline-cli")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)
-public interface PipelineBuildTimeConfig {
+public interface PipelineCliAppConfig {
 
-    /** Generate CLI entrypoint? */
+    /**
+     * Indicates whether the build should generate a CLI entrypoint.
+     *
+     * @return `true` if a CLI entrypoint will be generated, `false` otherwise.
+     */
     @WithDefault("false")
     Boolean generateCli();
 

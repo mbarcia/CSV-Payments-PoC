@@ -30,12 +30,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PipelineStep {
-    /**
-     * The order of this step in the pipeline.
-     * @return the order of the step
-     */
-    int order() default 0;
-
     Class<?> inputType() default Void.class;
 
     Class<?> outputType() default Void.class;
@@ -71,13 +65,13 @@ public @interface PipelineStep {
      * @return the inbound mapper class
      */
     Class<?> inboundMapper() default Void.class;
-    
+
     /**
      * The outbound mapper class for this pipeline service/step.
      * @return the outbound mapper class
      */
     Class<?> outboundMapper() default Void.class;
-    
+
     /**
      * The step type class for this pipeline step. This can be any of the following
      * <p>
@@ -95,7 +89,7 @@ public @interface PipelineStep {
      * @return the step type class
      */
     Class<?> stepType() default Void.class;
-    
+
     /**
      * The backend adapter type class for this pipeline step.
      * <p>
@@ -107,7 +101,7 @@ public @interface PipelineStep {
      * @return the backend adapter type class
      */
     Class<?> backendType() default Void.class;
-    
+
     /**
      * The gRPC client name for this pipeline step.
      * @return the gRPC client name
@@ -115,22 +109,10 @@ public @interface PipelineStep {
     String grpcClient() default "";
 
     /**
-     * Whether to enable auto-persistence for this step.
+     * Whether to enable auto-persistence for this service.
      * @return true if auto-persistence should be enabled, false otherwise
      */
     boolean autoPersist() default false;
-
-    /**
-     * Whether to enable debug mode for this step.
-     * @return true if debug mode should be enabled, false otherwise
-     */
-    boolean debug() default false;
-
-    /**
-     * Whether to enable failure recovery for this step.
-     * @return true if failure recovery should be enabled, false otherwise
-     */
-    boolean recoverOnFailure() default false;
 
     /**
      * Whether to enable gRPC adapter generation for this step.
@@ -145,21 +127,6 @@ public @interface PipelineStep {
     boolean restEnabled() default false;
 
     /**
-     * The backpressure buffer capacity for this step (default=1024)
-     * @return the buffer capacity for backpressure handling
-     */
-    int backpressureBufferCapacity() default 1024;
-
-    /**
-     * The backpressure strategy for this step (default="BUFFER")
-     * Valid values: "BUFFER", "DROP"
-     * Note: "ERROR" strategy is not available in Mutiny 2.9.4. By default, 
-     * Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
-     * @return the backpressure strategy for this step
-     */
-    String backpressureStrategy() default "BUFFER";
-
-    /**
      * The gRPC service base class for this pipeline step.
      * Used to extend the proper gRPC service base class.
      * @return the gRPC service base class
@@ -172,25 +139,9 @@ public @interface PipelineStep {
      * @return true if the step is local, false if it requires a gRPC client
      */
     boolean local() default false;
-
     /**
-     * The batch size for collecting inputs before processing (default=10)
-     * Set to a very large number to effectively disable batching
-     * @return the batch size for this step
+     * Whether the entrypoint method (REST or gRPC) should run on a virtual thread (default=false)
+     * @return true if virtual threads should be used, false otherwise
      */
-    int batchSize() default 10;
-
-    /**
-     * The time window in milliseconds to wait before processing a batch,
-     * even if the batch size hasn't been reached (default=1000ms)
-     * @return the time window in milliseconds for this step
-     */
-    long batchTimeoutMs() default 1000L;
-
-    /**
-     * Whether to enable parallel processing for this step (default=false)
-     * When true, enables concurrent processing of multiple items within the same stream.
-     * @return true if parallel processing should be enabled, false otherwise
-     */
-    boolean parallel() default false;
+    boolean runOnVirtualThreads() default false;
 }

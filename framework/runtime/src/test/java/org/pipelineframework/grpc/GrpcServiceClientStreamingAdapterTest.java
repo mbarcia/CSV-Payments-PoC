@@ -64,6 +64,11 @@ class GrpcServiceClientStreamingAdapterTest {
                     protected GrpcOut toGrpc(DomainOut domainOut) {
                         return new GrpcOut();
                     }
+
+                    @Override
+                    protected boolean isAutoPersistenceEnabled() {
+                        return false;
+                    }
                 };
     }
 
@@ -179,6 +184,11 @@ class GrpcServiceClientStreamingAdapterTest {
                             protected GrpcOut toGrpc(DomainOut domainOut) {
                                 return new GrpcOut();
                             }
+
+                            @Override
+                            protected boolean isAutoPersistenceEnabled() {
+                                return false;
+                            }
                         };
 
         // When
@@ -219,6 +229,11 @@ class GrpcServiceClientStreamingAdapterTest {
                     protected GrpcOut toGrpc(DomainOut domainOut) {
                         toGrpcCalled[0] = true;
                         return new GrpcOut();
+                    }
+
+                    @Override
+                    protected boolean isAutoPersistenceEnabled() {
+                        return false;
                     }
                 };
 
@@ -268,6 +283,11 @@ class GrpcServiceClientStreamingAdapterTest {
                     protected GrpcOut toGrpc(DomainOut domainOut) {
                         return new GrpcOut();
                     }
+
+                    @Override
+                    protected boolean isAutoPersistenceEnabled() {
+                        return false;
+                    }
                 };
 
         // When
@@ -313,6 +333,11 @@ class GrpcServiceClientStreamingAdapterTest {
                     @Override
                     protected GrpcOut toGrpc(DomainOut domainOut) {
                         throw transformationException;
+                    }
+
+                    @Override
+                    protected boolean isAutoPersistenceEnabled() {
+                        return false;
                     }
                 };
 

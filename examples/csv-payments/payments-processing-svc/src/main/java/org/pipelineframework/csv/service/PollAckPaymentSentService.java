@@ -14,14 +14,8 @@
  * limitations under the License.
  */
 
-import io.quarkus.test.junit.QuarkusTest;
-import org.junit.jupiter.api.Test;
+package org.pipelineframework.csv.service;
 
-@QuarkusTest
-class FakeQuarkusTest {
+import org.pipelineframework.service.ReactiveService;
 
-    @Test
-    void test() {
-        // This test is here to enable jacoco coverage reports
-    }
-}
+public interface PollAckPaymentSentService<I, O> extends ReactiveService<I, O> {}

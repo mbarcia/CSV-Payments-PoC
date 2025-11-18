@@ -45,7 +45,7 @@ class StepManyToOneBlockingTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Use the config provided
         }
     }

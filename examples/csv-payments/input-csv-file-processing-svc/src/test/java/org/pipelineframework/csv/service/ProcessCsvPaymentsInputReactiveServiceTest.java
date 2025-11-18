@@ -35,6 +35,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.MockitoAnnotations;
 import org.pipelineframework.csv.common.domain.CsvPaymentsInputFile;
 import org.pipelineframework.csv.common.domain.PaymentRecord;
+import org.pipelineframework.csv.util.DemandPacerConfig;
 
 class ProcessCsvPaymentsInputReactiveServiceTest {
 
@@ -55,7 +56,19 @@ class ProcessCsvPaymentsInputReactiveServiceTest {
                         + ",Jane Smith,200.50,EUR\n";
         Files.writeString(tempCsvFile, csvContent);
         MockitoAnnotations.openMocks(this);
-        service = new ProcessCsvPaymentsInputReactiveService(Runnable::run);
+        service =
+                new ProcessCsvPaymentsInputReactiveService(
+                        new DemandPacerConfig() {
+                            @Override
+                            public long rowsPerPeriod() {
+                                return 1;
+                            }
+
+                            @Override
+                            public long millisPeriod() {
+                                return 100;
+                            }
+                        });
     }
 
     @AfterEach

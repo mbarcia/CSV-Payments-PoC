@@ -29,7 +29,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.ConfigurableStep;
@@ -142,9 +141,9 @@ class ParallelProcessingSmokeTest {
     void testSequentialProcessingWorks() {
         // Given
         TestStepOneToOne step = new TestStepOneToOne();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
+        StepConfig stepConfig = new StepConfig();
         // Keep default parallel=false
-        step.initialiseWithConfig(liveConfig);
+        step.initialiseWithConfig(stepConfig);
 
         // When
         Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
@@ -166,9 +165,9 @@ class ParallelProcessingSmokeTest {
     void testParallelProcessingWorks() {
         // Given
         TestStepOneToOne step = new TestStepOneToOne();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.parallel(true);
+        step.initialiseWithConfig(stepConfig);
 
         // When
         Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
@@ -222,9 +221,9 @@ class ParallelProcessingSmokeTest {
     void testCompletableFutureParallelProcessingWorks() {
         // Given
         TestStepOneToOneCompletableFuture step = new TestStepOneToOneCompletableFuture();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), pipelineConfig);
-        liveConfig.overrides().parallel(true);
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.parallel(true);
+        step.initialiseWithConfig(stepConfig);
 
         // When
         Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");

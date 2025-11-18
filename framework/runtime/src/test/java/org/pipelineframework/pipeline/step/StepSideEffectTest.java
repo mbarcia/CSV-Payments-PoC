@@ -45,7 +45,7 @@ class StepSideEffectTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Use the passed config
         }
     }
@@ -73,18 +73,6 @@ class StepSideEffectTest {
 
         // Then
         assertFalse(parallel);
-    }
-
-    @Test
-    void testDefaultRunWithVirtualThreads() {
-        // Given
-        TestStep step = new TestStep();
-
-        // When
-        boolean runWithVirtualThreads = step.runWithVirtualThreads();
-
-        // Then
-        assertFalse(runWithVirtualThreads);
     }
 
     @Test

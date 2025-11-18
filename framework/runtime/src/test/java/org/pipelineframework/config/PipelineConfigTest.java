@@ -33,7 +33,7 @@ class PipelineConfigTest {
         // Then
         assertNotNull(defaults);
         assertEquals(3, defaults.retryLimit());
-        assertFalse(defaults.debug());
+
         assertFalse(defaults.parallel());
     }
 
@@ -43,7 +43,7 @@ class PipelineConfigTest {
         PipelineConfig pipelineConfig = new PipelineConfig();
 
         // When
-        pipelineConfig.profile("test", new StepConfig().retryLimit(5).debug(true).parallel(true));
+        pipelineConfig.profile("test", new StepConfig().retryLimit(5).parallel(true));
         pipelineConfig.activate("test");
 
         StepConfig activeConfig = pipelineConfig.defaults();
@@ -51,7 +51,6 @@ class PipelineConfigTest {
         // Then
         assertEquals("test", pipelineConfig.activeProfile());
         assertEquals(5, activeConfig.retryLimit());
-        assertTrue(activeConfig.debug());
         assertTrue(activeConfig.parallel());
     }
 
@@ -59,14 +58,13 @@ class PipelineConfigTest {
     void testNewStepConfigInheritsDefaults() {
         // Given
         PipelineConfig pipelineConfig = new PipelineConfig();
-        pipelineConfig.defaults().retryLimit(7).debug(true).parallel(true);
+        pipelineConfig.defaults().retryLimit(7).parallel(true);
 
         // When
         StepConfig stepConfig = pipelineConfig.newStepConfig();
 
         // Then
         assertEquals(7, stepConfig.retryLimit());
-        assertTrue(stepConfig.debug());
         assertTrue(stepConfig.parallel());
     }
 }

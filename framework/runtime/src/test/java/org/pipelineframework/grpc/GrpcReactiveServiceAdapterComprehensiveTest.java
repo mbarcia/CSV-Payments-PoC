@@ -29,7 +29,6 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.domain.TestEntity;
 import org.pipelineframework.domain.TestResult;
 import org.pipelineframework.persistence.PersistenceManager;
@@ -133,8 +132,8 @@ class GrpcReactiveServiceAdapterComprehensiveTest {
                     }
 
                     @Override
-                    protected StepConfig getStepConfig() {
-                        return new StepConfig().autoPersist(true);
+                    protected boolean isAutoPersistenceEnabled() {
+                        return true;
                     }
 
                     // Override remoteProcess to bypass Panache transaction for testing purposes
@@ -251,8 +250,8 @@ class GrpcReactiveServiceAdapterComprehensiveTest {
                             }
 
                             @Override
-                            protected StepConfig getStepConfig() {
-                                return new StepConfig().autoPersist(false);
+                            protected boolean isAutoPersistenceEnabled() {
+                                return false;
                             }
 
                             // Override to bypass Panache transaction for testing purposes

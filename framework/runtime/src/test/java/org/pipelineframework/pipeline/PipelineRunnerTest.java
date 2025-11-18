@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.PipelineRunner;
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 
@@ -193,9 +192,9 @@ class PipelineRunnerTest {
         RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(2);
 
         // Configure retry settings by initializing the step with proper configuration
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        liveConfig.overrides().retryLimit(3).retryWait(Duration.ofMillis(10));
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.retryLimit(3).retryWait(Duration.ofMillis(10));
+        step.initialiseWithConfig(stepConfig);
 
         Multi<Object> result = (Multi<Object>) runner.run(input, List.of((Object) step));
 
@@ -214,9 +213,9 @@ class PipelineRunnerTest {
         RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(3);
 
         // Configure retry settings - only 2 retries, but need 3 failures to pass
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        liveConfig.overrides().retryLimit(2).retryWait(Duration.ofMillis(10));
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.retryLimit(2).retryWait(Duration.ofMillis(10));
+        step.initialiseWithConfig(stepConfig);
 
         Multi<Object> result = (Multi<Object>) runner.run(input, List.of((Object) step));
 
@@ -236,13 +235,9 @@ class PipelineRunnerTest {
         RetryTestSteps.AsyncFailNTimesStep step = new RetryTestSteps.AsyncFailNTimesStep(3);
 
         // Configure recovery and retry settings
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        liveConfig
-                .overrides()
-                .recoverOnFailure(true)
-                .retryLimit(2)
-                .retryWait(Duration.ofMillis(10));
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.recoverOnFailure(true).retryLimit(2).retryWait(Duration.ofMillis(10));
+        step.initialiseWithConfig(stepConfig);
 
         Multi<Object> result = (Multi<Object>) runner.run(input, List.of((Object) step));
 
@@ -263,9 +258,9 @@ class PipelineRunnerTest {
         TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
 
         // Configure the step before running it through the pipeline
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        liveConfig.overrides().retryLimit(5).retryWait(Duration.ofMillis(100)).debug(true);
-        step.initialiseWithConfig(liveConfig);
+        StepConfig stepConfig = new StepConfig();
+        stepConfig.retryLimit(5).retryWait(Duration.ofMillis(100));
+        step.initialiseWithConfig(stepConfig);
 
         List<Object> steps = List.of(step);
 
@@ -278,35 +273,5 @@ class PipelineRunnerTest {
         // Verify the configuration was applied
         assertEquals(5, step.retryLimit());
         assertEquals(Duration.ofMillis(100), step.retryWait());
-        assertTrue(step.debug());
-    }
-
-    @Test
-    void testRunWithAutoPersistEnabled() {
-        Multi<String> input = Multi.createFrom().items("item1", "item2", "item3");
-
-        // Create a step with auto-persist enabled by initializing it properly
-        TestSteps.TestStepOneToOneBlocking step = new TestSteps.TestStepOneToOneBlocking();
-        LiveStepConfig liveConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        liveConfig.overrides().autoPersist(true);
-        step.initialiseWithConfig(liveConfig);
-
-        List<Object> steps = List.of(step);
-
-        Multi<Object> result = (Multi<Object>) runner.run(input, steps);
-
-        AssertSubscriber<Object> subscriber =
-                result.subscribe().withSubscriber(AssertSubscriber.create(3));
-        subscriber.awaitItems(3, Duration.ofSeconds(5)).assertCompleted();
-
-        // Grab all items
-        List<Object> actualItems = subscriber.getItems();
-
-        // Expected items (same as without persistence, as persistence is a side effect)
-        Set<String> expectedItems =
-                Set.of("Processed: item1", "Processed: item2", "Processed: item3");
-
-        // Assert ignoring order
-        assertEquals(expectedItems, new HashSet<>(actualItems));
     }
 }

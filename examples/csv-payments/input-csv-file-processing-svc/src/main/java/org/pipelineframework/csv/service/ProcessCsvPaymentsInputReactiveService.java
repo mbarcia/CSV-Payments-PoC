@@ -18,13 +18,14 @@ package org.pipelineframework.csv.service;
 
 import com.opencsv.bean.CsvToBeanBuilder;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.smallrye.mutiny.subscription.FixedDemandPacer;
 import io.smallrye.mutiny.unchecked.Unchecked;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Iterator;
-import java.util.concurrent.Executor;
 import lombok.Getter;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
@@ -34,10 +35,10 @@ import org.pipelineframework.csv.common.domain.PaymentRecord;
 import org.pipelineframework.csv.common.mapper.CsvPaymentsInputFileMapper;
 import org.pipelineframework.csv.common.mapper.PaymentRecordMapper;
 import org.pipelineframework.csv.grpc.MutinyProcessCsvPaymentsInputFileServiceGrpc;
+import org.pipelineframework.csv.util.DemandPacerConfig;
 import org.pipelineframework.service.ReactiveStreamingService;
 
 @PipelineStep(
-    order = 2,
     inputType = CsvPaymentsInputFile.class,
     outputType = PaymentRecord.class,
     inputGrpcType = org.pipelineframework.csv.grpc.InputCsvFileProcessingSvc.CsvPaymentsInputFile.class,
@@ -49,25 +50,47 @@ import org.pipelineframework.service.ReactiveStreamingService;
     inboundMapper = CsvPaymentsInputFileMapper.class,
     outboundMapper = PaymentRecordMapper.class,
     grpcClient = "process-csv-payments-input-file",
-    autoPersist = true,
-    parallel = true,
-    backpressureBufferCapacity = 10000, // the default is only 128
-    debug = true
+    autoPersist = true
 )
 @ApplicationScoped
 @Getter
 public class ProcessCsvPaymentsInputReactiveService
     implements ReactiveStreamingService<CsvPaymentsInputFile, PaymentRecord> {
 
-  private static final Logger LOGGER = Logger.getLogger(ProcessCsvPaymentsInputReactiveService.class);
+  private static final Logger LOG = Logger.getLogger(ProcessCsvPaymentsInputReactiveService.class);
+  private final long rowsPerPeriod;
+  private final long millisPeriod;
 
-  Executor executor;
+    /**
+     * Create a service instance configured with demand-pacing parameters.
+     *
+     * Initialises the instance fields used for pacing from the supplied configuration and logs the configured values.
+     *
+     * @param config configuration supplying the number of rows per pacing period and the period duration in milliseconds
+     */
+    @Inject
+    public ProcessCsvPaymentsInputReactiveService(DemandPacerConfig config) {
+        rowsPerPeriod = config.rowsPerPeriod();
+        millisPeriod = config.millisPeriod();
 
-  @Inject
-  public ProcessCsvPaymentsInputReactiveService(@Named("virtualExecutor") Executor executor) {
-    this.executor = executor;
-  }
+        LOG.infof(
+                "ProcessCsvPaymentsInputReactiveService initialized: rowsPerPeriod=%d, periodMillis=%d",
+                config.rowsPerPeriod(),
+                config.millisPeriod());
+    }
 
+  /**
+   * Stream parsed PaymentRecord objects from the provided CSV input file with demand pacing.
+   *
+   * <p>The returned stream emits records parsed from the CSV using the input's mapping strategy and
+   * applies a fixed-rate demand pacer configured for this service. The underlying reader is closed
+   * when the stream terminates and each emitted record is logged with a service identifier.
+   *
+   * @param input the CSV input file wrapper providing the reader, source name and mapping strategy
+   * @return a {@code Multi<PaymentRecord>} that emits parsed payment records paced by the service's
+   *     configured rows-per-period and period duration
+   * @throws RuntimeException if an I/O error occurs while opening or preparing the CSV reader
+   */
   @Override
   public Multi<PaymentRecord> process(CsvPaymentsInputFile input) {
     return Multi.createFrom()
@@ -91,24 +114,32 @@ public class ProcessCsvPaymentsInputReactiveService
                     Iterator<PaymentRecord> iterator = csvReader.iterator();
                     Iterable<PaymentRecord> iterable = () -> iterator;
 
+                    // rate limiter
+                    FixedDemandPacer pacer =
+                        new FixedDemandPacer(rowsPerPeriod, Duration.ofMillis(millisPeriod));
+
                     return Multi.createFrom()
                         .iterable(iterable)
+                        .paceDemand()
+                        .on(Infrastructure.getDefaultWorkerPool())
+                        .using(pacer)
                         .onItem()
                         .invoke(
                             rec -> {
                               MDC.put("serviceId", serviceId);
-                              LOGGER.infof(
+                              LOG.infof(
                                   "Executed command on %s --> %s", input.getSourceName(), rec);
                               MDC.remove("serviceId");
-                        })
+                            })
                         .onTermination()
-                        .invoke(() -> {
-                          try {
-                            reader.close();
-                          } catch (IOException e) {
-                            LOGGER.warn("Failed to close CSV reader", e);
-                          }
-                        });
+                        .invoke(
+                            () -> {
+                              try {
+                                reader.close();
+                              } catch (IOException e) {
+                                LOG.warn("Failed to close CSV reader", e);
+                              }
+                            });
                   } catch (IOException e) {
                     throw new RuntimeException("CSV processing error", e);
                   }

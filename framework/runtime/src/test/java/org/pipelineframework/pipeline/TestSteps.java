@@ -36,8 +36,13 @@ public class TestSteps {
         private boolean hasManualConfig = false;
         private int manualRetryLimit = -1;
         private java.time.Duration manualRetryWait = null;
-        private boolean manualDebug = false;
 
+        /**
+         * Process an input string with a short blocking simulation.
+         *
+         * @param input the string to process
+         * @return the processed string prefixed with "Processed: "
+         */
         @Override
         public Uni<String> apply(String input) {
             // This is a blocking operation that simulates processing
@@ -49,8 +54,19 @@ public class TestSteps {
             return Uni.createFrom().item("Processed: " + input);
         }
 
+        /**
+         * Initialises the step with the provided configuration, preserving any first non-default
+         * values as manual overrides.
+         *
+         * <p>If this is the first time a non-default configuration is supplied, the method records
+         * the supplied `retryLimit` and `retryWait` as manual configuration. Once manual
+         * configuration exists, those stored values are applied to any subsequent incoming `config`
+         * before delegating to the superclass initialisation.
+         *
+         * @param config the step configuration to apply; may be {@code null}
+         */
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Check if this is the first time being configured with non-default values
             // If so, preserve these as manual configuration
             if (!hasManualConfig && config != null) {
@@ -58,19 +74,15 @@ public class TestSteps {
                 final org.pipelineframework.config.StepConfig defaultCfg =
                         new org.pipelineframework.config.StepConfig();
                 if (config.retryLimit() != defaultCfg.retryLimit()
-                        || !java.util.Objects.equals(config.retryWait(), defaultCfg.retryWait())
-                        || config.debug() != defaultCfg.debug()) {
+                        || !java.util.Objects.equals(config.retryWait(), defaultCfg.retryWait())) {
                     // This looks like manual configuration - save the values
-                    setManualConfig(config.retryLimit(), config.retryWait(), config.debug());
+                    setManualConfig(config.retryLimit(), config.retryWait());
                 }
             }
 
             if (hasManualConfig) {
                 if (config != null) {
-                    config.overrides()
-                            .retryLimit(manualRetryLimit)
-                            .retryWait(manualRetryWait)
-                            .debug(manualDebug);
+                    config.retryLimit(manualRetryLimit).retryWait(manualRetryWait);
                 }
                 super.initialiseWithConfig(config);
             } else {
@@ -78,26 +90,42 @@ public class TestSteps {
             }
         }
 
-        // Method to mark that manual config has been set
-        public void setManualConfig(int retryLimit, java.time.Duration retryWait, boolean debug) {
+        /**
+         * Record manual retry configuration and mark the step as manually configured.
+         *
+         * @param retryLimit the manual retry limit to apply
+         * @param retryWait the manual wait duration between retries to apply
+         */
+        public void setManualConfig(int retryLimit, java.time.Duration retryWait) {
             this.hasManualConfig = true;
             this.manualRetryLimit = retryLimit;
             this.manualRetryWait = retryWait;
-            this.manualDebug = debug;
         }
 
+        /**
+         * Gets the retry limit applied to this step.
+         *
+         * @return the maximum number of retry attempts allowed by the effective configuration
+         */
         public int retryLimit() {
             return effectiveConfig().retryLimit();
         }
 
+        /**
+         * Get the wait duration used between retry attempts from the effective step configuration.
+         *
+         * @return the configured wait duration between retry attempts
+         */
         public java.time.Duration retryWait() {
             return effectiveConfig().retryWait();
         }
 
-        public boolean debug() {
-            return effectiveConfig().debug();
-        }
-
+        /**
+         * Process a single input value and produce a corresponding output value.
+         *
+         * @param input the value to process
+         * @return the processed string
+         */
         public Uni<String> applyOneToOne(String input) {
             return apply(input);
         }
@@ -133,7 +161,6 @@ public class TestSteps {
         private boolean hasManualConfig = false;
         private int manualRetryLimit = -1;
         private java.time.Duration manualRetryWait = null;
-        private boolean manualDebug = false;
         private boolean manualRecoverOnFailure = false;
         private boolean manualRecoverOnFailureSet =
                 false; // Sentinel to track if constructor set the value
@@ -164,9 +191,7 @@ public class TestSteps {
         }
 
         /**
-         * Handle a failed item by logging the dead-letter event with error context and returning
-         * the original item unchanged. This method is invoked when a step fails and recovery is
-         * enabled.
+         * Handle a failed input by logging a dead-letter event and returning the original item.
          *
          * @param failedItem a Uni that produces the item that failed processing
          * @param cause the throwable that caused the failure
@@ -183,8 +208,23 @@ public class TestSteps {
                                             item, cause.getMessage()));
         }
 
+        /**
+         * Initialise the step with the provided step configuration, preserving any first-seen
+         * non-default values as manual overrides.
+         *
+         * <p>If this is the first time the step receives a non-default configuration, the method
+         * records the incoming retryLimit, retryWait and recoverOnFailure as manual configuration.
+         * Once manual configuration is present, subsequent initialisation calls apply the recorded
+         * retryLimit, retryWait and recoverOnFailure to the incoming config before delegating to
+         * the superclass.
+         *
+         * <p>The recoverOnFailure value provided by the step's constructor (if set) takes
+         * precedence over a value from the incoming config when deciding what to record or apply.
+         *
+         * @param config the step configuration to apply; may be null
+         */
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             // Check if this is the first time being configured with non-default values
             // If so, preserve these as manual configuration (like AsyncFailNTimesStep)
             if (!hasManualConfig && config != null) {
@@ -195,7 +235,6 @@ public class TestSteps {
                         config.recoverOnFailure() != defaultCfg.recoverOnFailure();
                 if (config.retryLimit() != defaultCfg.retryLimit()
                         || !java.util.Objects.equals(config.retryWait(), defaultCfg.retryWait())
-                        || config.debug() != defaultCfg.debug()
                         || hasConfigRecoverOnFailure) {
                     // This looks like manual configuration - save the values
                     // Only set recoverOnFailure from config if constructor didn't set it
@@ -203,46 +242,46 @@ public class TestSteps {
                             manualRecoverOnFailureSet
                                     ? manualRecoverOnFailure
                                     : config.recoverOnFailure();
-                    setManualConfig(
-                            config.retryLimit(),
-                            config.retryWait(),
-                            config.debug(),
-                            recoverOnFailureToUse);
+                    setManualConfig(config.retryLimit(), config.retryWait(), recoverOnFailureToUse);
                 }
             }
 
             if (hasManualConfig) {
                 if (config != null) {
-                    config.overrides()
-                            .retryLimit(manualRetryLimit)
+                    config.retryLimit(manualRetryLimit)
                             .retryWait(manualRetryWait)
-                            .debug(manualDebug)
                             .recoverOnFailure(manualRecoverOnFailure);
                 }
                 super.initialiseWithConfig(config);
             } else {
                 if (config != null) {
-                    // Only apply config's recoverOnFailure if constructor didn't set it
-                    if (!manualRecoverOnFailureSet) {
-                        config.overrides().recoverOnFailure(config.recoverOnFailure());
-                    } else {
-                        config.overrides().recoverOnFailure(manualRecoverOnFailure);
+                    // Only apply manual recoverOnFailure if it was explicitly set
+                    if (manualRecoverOnFailureSet) {
+                        config.recoverOnFailure(manualRecoverOnFailure);
                     }
+                    // Otherwise, leave config as-is (do nothing)
                 }
                 super.initialiseWithConfig(config);
             }
         }
 
-        // Method to mark that manual config has been set
+        /**
+         * Record manual configuration values for retry behaviour and dead-letter recovery.
+         *
+         * <p>Sets the step into a manual-configured state and stores the provided retry limit and
+         * retry wait duration. The recoverOnFailure flag is stored only if it was not explicitly
+         * set by the constructor.
+         *
+         * @param retryLimit the manual retry limit to apply
+         * @param retryWait the manual duration to wait between retries
+         * @param recoverOnFailure whether failed items should be recovered instead of
+         *     dead-lettered; ignored if the constructor previously fixed this behaviour
+         */
         private void setManualConfig(
-                int retryLimit,
-                java.time.Duration retryWait,
-                boolean debug,
-                boolean recoverOnFailure) {
+                int retryLimit, java.time.Duration retryWait, boolean recoverOnFailure) {
             this.hasManualConfig = true;
             this.manualRetryLimit = retryLimit;
             this.manualRetryWait = retryWait;
-            this.manualDebug = debug;
             // Only update manualRecoverOnFailure if it wasn't set by constructor
             if (!manualRecoverOnFailureSet) {
                 this.manualRecoverOnFailure = recoverOnFailure;

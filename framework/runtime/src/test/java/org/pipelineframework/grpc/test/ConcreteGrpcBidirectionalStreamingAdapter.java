@@ -18,7 +18,6 @@ package org.pipelineframework.grpc.test;
 
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.grpc.GrpcServiceBidirectionalStreamingAdapter;
 import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
 
@@ -42,14 +41,25 @@ public class ConcreteGrpcBidirectionalStreamingAdapter
         return "domain_" + grpcIn;
     }
 
+    /**
+     * Convert a domain output string to its gRPC representation.
+     *
+     * @param domainOut the domain output string to convert
+     * @return the gRPC-formatted string prefixed with "grpc_"
+     */
     @Override
     protected String toGrpc(String domainOut) {
         return "grpc_" + domainOut;
     }
 
+    /**
+     * Indicates whether automatic persistence of streaming messages is enabled.
+     *
+     * @return `true` if automatic persistence is enabled, `false` otherwise.
+     */
     @Override
-    protected StepConfig getStepConfig() {
-        return new StepConfig().autoPersist(autoPersist);
+    protected boolean isAutoPersistenceEnabled() {
+        return autoPersist;
     }
 
     // Public methods for testing

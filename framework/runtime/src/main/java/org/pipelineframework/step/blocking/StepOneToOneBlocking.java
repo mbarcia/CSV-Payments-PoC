@@ -30,7 +30,14 @@ import org.pipelineframework.step.StepOneToOne;
  * to prevent platform thread blocking.
  */
 public interface StepOneToOneBlocking<I, O> extends StepOneToOne<I, O> {
-    Uni<O> apply(I in);
+    /**
+ * Process the given input and produce the corresponding output.
+ *
+ * Implementations perform blocking work to transform the input into an output.
+ *
+ * @param in the input element to process
+ * @return the output produced from the provided input
+ */
+Uni<O> apply(I in);
 
-	default boolean runWithVirtualThreads() { return true; }
 }

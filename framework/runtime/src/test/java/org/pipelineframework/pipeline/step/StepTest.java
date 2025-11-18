@@ -42,7 +42,7 @@ class StepTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             this.config = config;
         }
     }
@@ -55,9 +55,7 @@ class StepTest {
         // When & Then
         assertEquals(3, step.retryLimit());
         assertEquals(Duration.ofMillis(2000), step.retryWait());
-        assertFalse(step.debug());
         assertFalse(step.recoverOnFailure());
-        assertFalse(step.runWithVirtualThreads());
         assertEquals(Duration.ofSeconds(30), step.maxBackoff());
         assertFalse(step.jitter());
     }

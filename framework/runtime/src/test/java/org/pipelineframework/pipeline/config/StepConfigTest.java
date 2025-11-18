@@ -33,9 +33,7 @@ class StepConfigTest {
         assertEquals(3, config.retryLimit());
         assertEquals(Duration.ofMillis(2000), config.retryWait());
         assertFalse(config.parallel());
-        assertFalse(config.debug());
         assertFalse(config.recoverOnFailure());
-        assertFalse(config.runWithVirtualThreads());
         assertEquals(Duration.ofSeconds(30), config.maxBackoff());
         assertFalse(config.jitter());
     }
@@ -90,19 +88,6 @@ class StepConfigTest {
     }
 
     @Test
-    void testDebugSetter() {
-        // Given
-        StepConfig config = new StepConfig();
-
-        // When
-        StepConfig result = config.debug(true);
-
-        // Then
-        assertTrue(config.debug());
-        assertSame(config, result); // Fluent API
-    }
-
-    @Test
     void testRecoverOnFailureSetter() {
         // Given
         StepConfig config = new StepConfig();
@@ -135,19 +120,6 @@ class StepConfigTest {
 
         // Then
         assertFalse(config.recoverOnFailure());
-        assertSame(config, result); // Fluent API
-    }
-
-    @Test
-    void testRunWithVirtualThreadsSetter() {
-        // Given
-        StepConfig config = new StepConfig();
-
-        // When
-        StepConfig result = config.runWithVirtualThreads(true);
-
-        // Then
-        assertTrue(config.runWithVirtualThreads());
         assertSame(config, result); // Fluent API
     }
 

@@ -17,7 +17,6 @@
 package org.pipelineframework.grpc.test;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.domain.TestEntity;
 import org.pipelineframework.domain.TestResult;
 import org.pipelineframework.grpc.GrpcReactiveServiceAdapter;
@@ -43,14 +42,26 @@ public class ConcreteGrpcReactiveServiceAdapter
         return new TestEntity("test", "description");
     }
 
+    /**
+     * Convert a domain TestResult into its gRPC representation.
+     *
+     * @param domainOut the domain-level result to convert
+     * @return an Object representing the gRPC response; in this test implementation a newly created
+     *     generic Object
+     */
     @Override
     protected Object toGrpc(TestResult domainOut) {
         return new Object(); // This is just for testing
     }
 
+    /**
+     * Indicates whether automatic persistence is enabled for this adapter.
+     *
+     * @return `true` if auto-persistence is enabled, `false` otherwise.
+     */
     @Override
-    protected StepConfig getStepConfig() {
-        return new StepConfig().autoPersist(autoPersist);
+    protected boolean isAutoPersistenceEnabled() {
+        return autoPersist;
     }
 
     // Public methods for testing

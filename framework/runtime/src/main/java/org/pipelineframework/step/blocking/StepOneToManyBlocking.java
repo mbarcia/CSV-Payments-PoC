@@ -19,8 +19,6 @@ package org.pipelineframework.step.blocking;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
@@ -39,14 +37,27 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
 
     Logger LOG = Logger.getLogger(StepOneToManyBlocking.class);
 
-    List<O> applyList(I in);
+    /**
+ * Produce a list of output items from a single input item.
+ *
+ * @param in the input item to be transformed
+ * @return a List of output items produced from the input; an empty list if there are no outputs
+ */
+List<O> applyList(I in);
 
-	default boolean runWithVirtualThreads() { return false; }
 
+    /**
+     * Convert a single-item reactive input into a stream of outputs produced by {@link #applyList(Object)}.
+     *
+     * For each item emitted by the provided Uni, this method emits each element of the List returned by
+     * applyList for that item. On failures (except NullPointerException) it retries according to the
+     * step's backoff, jitter and retry limit configuration; when all retries are exhausted it logs the final failure.
+     *
+     * @param inputUni a Uni that supplies the input item to be expanded into multiple outputs
+     * @return a Multi that emits each output element produced from the input by {@link #applyList(Object)}
+     */
     @Override
     default Multi<O> apply(Uni<I> inputUni) {
-        final Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        final Executor executor = runWithVirtualThreads() ? vThreadExecutor : null;
 
         return inputUni
             .onItem().transformToMulti(item -> {
@@ -58,12 +69,8 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
                     }
                 });
 
-                if (executor != null) {
-                    multi = multi.runSubscriptionOn(executor);
-                }
-
                 return multi.onItem().invoke(o -> {
-                    if (debug()) {
+                    if (LOG.isDebugEnabled()) {
                         LOG.debugf("Blocking Step %s emitted item: %s", this.getClass().getSimpleName(), o);
                     }
                 });
@@ -73,14 +80,12 @@ public interface StepOneToManyBlocking<I, O> extends Configurable, OneToMany<I, 
             .withJitter(jitter() ? 0.5 : 0.0)
             .atMost(retryLimit())
             .onFailure().invoke(t -> {
-                if (debug()) {
-                    LOG.infof(
-                        "Blocking Step %s completed all retries (%s attempts) with failure: %s",
-                        this.getClass().getSimpleName(),
-                        retryLimit(),
-                        t.getMessage()
-                    );
-                }
+                LOG.infof(
+                    "Blocking Step %s completed all retries (%s attempts) with failure: %s",
+                    this.getClass().getSimpleName(),
+                    retryLimit(),
+                    t.getMessage()
+                );
             });
     }
 }

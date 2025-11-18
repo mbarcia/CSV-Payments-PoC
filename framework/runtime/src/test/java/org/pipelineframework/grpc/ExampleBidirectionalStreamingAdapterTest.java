@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.service.ReactiveBidirectionalStreamingService;
 
 class ExampleBidirectionalStreamingAdapterTest {
@@ -55,8 +54,8 @@ class ExampleBidirectionalStreamingAdapterTest {
         }
 
         @Override
-        protected StepConfig getStepConfig() {
-            return new StepConfig().autoPersist(false);
+        protected boolean isAutoPersistenceEnabled() {
+            return false;
         }
     }
 

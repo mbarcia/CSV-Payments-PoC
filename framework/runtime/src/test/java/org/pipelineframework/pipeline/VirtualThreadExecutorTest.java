@@ -47,11 +47,6 @@ class VirtualThreadExecutorTest {
             // This is a simple test to verify the step is working
             return Multi.createFrom().items(input + "-vt1", input + "-vt2");
         }
-
-        @Override
-        public boolean runWithVirtualThreads() {
-            return true; // Enable virtual threads
-        }
     }
 
     @Test

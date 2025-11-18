@@ -20,13 +20,13 @@ import io.quarkus.hibernate.reactive.panache.Panache;
 import io.smallrye.mutiny.Multi;
 import jakarta.inject.Inject;
 import org.jboss.logging.Logger;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
-public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut>
+        extends ReactiveServiceAdapterBase {
 
   private static final Logger LOG = Logger.getLogger(GrpcServiceStreamingAdapter.class);
 
@@ -47,29 +47,24 @@ public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, Dom
 
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
-  protected abstract GrpcOut toGrpc(DomainOut domainOut);
+  /**
+ * Convert a domain-level output object to its gRPC representation.
+ *
+ * @param domainOut the domain output to convert
+ * @return the corresponding gRPC output
+ */
+protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
   /**
-   * Get the step configuration for this service adapter.
-   * Override this method to provide specific configuration.
-   * 
-   * @return the step configuration, or null if not configured
+   * Adapts a gRPC request into the domain stream, processes it and returns a stream of gRPC responses.
+   *
+   * <p>If auto-persistence is enabled the original domain input will be persisted after the stream
+   * completes successfully (the persistence occurs within a transaction). Processing failures are
+   * converted to gRPC status runtime exceptions.
+   *
+   * @param grpcRequest the incoming gRPC request to convert into a domain input
+   * @return a Multi stream of gRPC responses corresponding to processed domain outputs; failures are mapped to status exceptions
    */
-  protected StepConfig getStepConfig() {
-    return null;
-  }
-
-  /**
-   * Determines whether entities should be automatically persisted before processing.
-   * Override this method to enable auto-persistence.
-   * 
-   * @return true if entities should be auto-persisted, false otherwise
-   */
-  protected boolean isAutoPersistenceEnabled() {
-    StepConfig config = getStepConfig();
-    return config != null && config.autoPersist();
-  }
-
   public Multi<GrpcOut> remoteProcess(GrpcIn grpcRequest) {
     DomainIn entity = fromGrpc(grpcRequest);
     Multi<DomainOut> processedResult = getService().process(entity); // Multi<DomainOut>
@@ -86,11 +81,13 @@ public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, Dom
     return processedResult
             // After the stream completes successfully
             .onCompletion().call(() ->
+                switchToEventLoop().call(() ->
                     // Panache.withTransaction(...) creates the correct Vert.x context and transaction
                     Panache.withTransaction(() ->
                             persistenceManager.persist(entity)
                                     .replaceWithVoid()
                     )
+                )
             )
             // Continue with the normal outbound transformation
             .onItem().transform(this::toGrpc)

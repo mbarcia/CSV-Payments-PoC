@@ -1,32 +1,52 @@
 # Configuration
 
-Configure pipeline behavior through application properties and environment-specific profiles.
+The Pipeline Framework uses a Quarkus-based configuration system for managing step configuration properties. This system provides both global defaults and per-step overrides for various configuration properties.
 
-## Application Properties
+## Configuration Properties
 
-Configure pipeline behavior through application properties:
+### Global Configuration
+
+All configuration properties are accessed under the `pipeline.defaults` prefix:
 
 ```properties
-# application.properties
-# Pipeline configuration
-pipeline.retry-limit=3
-pipeline.debug=false
-pipeline.auto-persist=true
+# Global defaults for all steps
+pipeline.defaults.retry-limit=10
+pipeline.defaults.retry-wait-ms=3000
+pipeline.defaults.debug=true
+pipeline.defaults.parallel=false
+pipeline.defaults.recover-on-failure=true
+pipeline.defaults.max-backoff=60000
+pipeline.defaults.jitter=true
+pipeline.defaults.backpressure-buffer-capacity=2048
+pipeline.defaults.backpressure-strategy=DROP
 
 # gRPC clients
 quarkus.grpc.clients.process-payment.host=localhost
 quarkus.grpc.clients.process-payment.port=8080
 ```
 
+### Per-Step Configuration
+
+You can override configuration for specific steps using the fully qualified class name:
+
+```properties
+# Override for specific step
+pipeline.step."org.example.MyStep".retry-limit=5
+pipeline.step."org.example.MyStep".debug=false
+pipeline.step."org.example.MyStep".parallel=true
+pipeline.step."org.example.MyStep".order=100
+pipeline.step."org.example.MyStep".recover-on-failure=false
+```
+
+### Step Definition Configuration
+
+Steps are defined using the `pipeline.step.<step-class>.order` configuration.
+
+The `order` property determines the execution order of the steps in the pipeline.
+
 ## Parallel Processing Configuration
 
-For any step type, you can configure parallel processing to process multiple items from the same stream concurrently using the `@PipelineStep` annotation:
-
-```java
-@PipelineStep(
-    parallel = true          // Enable parallel processing for this step
-)
-```
+For any step type, you can configure parallel processing to process multiple items from the same stream concurrently. This can be set globally or per-step using the same configuration mechanisms described in the [Global Configuration](#global-configuration) and [Per-Step Configuration](#per-step-configuration) sections above.
 
 ### Parallel Processing Parameters
 
@@ -35,23 +55,27 @@ For any step type, you can configure parallel processing to process multiple ite
 ### Choosing the Right Parallel Strategy
 
 For maximum performance when order doesn't matter, use:
-- `parallel = true` 
+- `pipeline.step."FQCN".parallel=true`
 
-For strict sequential processing, use the defaults:
-- `parallel = false` (default, sequential processing)
+For strict sequential processing, leave that as false (the default).
 
 ## Avoid breaking parallelism in the pipeline
 
-*Important*
+### Important
 
-If any previous step uses `parallel = false` (the default), the pipeline will serialize the stream at that point. 
+If any previous step uses `parallel = false` (the default), the pipeline will serialize the stream at that point.
 
-Downstream the pipeline cannot “rewind” concurrency — the upstream won’t push items faster than it finished 
+Downstream, the pipeline cannot "rewind" concurrency — the upstream won't push items faster than it finished
 sequentially.
 
 Hence, the more "downstream" you can push the `parallel = false` moment, the faster the pipeline will process streams.
 
+### Parallel Processing vs Virtual Threads
 
+It's important to understand the difference between these two configuration options:
+
+- **`parallel`**: For client-side steps, enables concurrent processing of multiple items from the same stream
+- **`runOnVirtualThreads`**: For server-side gRPC services, enables execution on virtual threads for better I/O handling
 
 ## Understanding Pipeline Step Cardinalities
 
@@ -60,43 +84,26 @@ The Pipeline Framework supports four different cardinality types that determine 
 ### 1. One-to-One (1→1) - Single Input to Single Output
 - **Use case**: Transform each individual item into another item
 - **Example**: Convert a payment record into a payment status
-- **Parallelism**: Item-level parallelism with `parallel` parameter
 - **Best for**: Individual processing operations that can benefit from concurrent execution
-
-```java
-@PipelineStep(
-    stepType = StepOneToOne.class,
-    parallel = true  // Process multiple payment records concurrently
-)
-public class ProcessPaymentService implements StepOneToOne<PaymentRecord, PaymentStatus> {
-    @Override
-    public Uni<PaymentStatus> applyOneToOne(PaymentRecord input) {
-        // Each payment record is processed independently
-        // With parallel=true, multiple records can be processed concurrently
-        return sendPayment(input);
-    }
-}
-```
 
 ### 2. One-to-Many (1→N) - Single Input to Multiple Outputs
 - **Use case**: Expand a single item into multiple related items
 - **Example**: Split a batch job into individual tasks
-- **Parallelism**: Item-level parallelism with `parallel` parameter
 
 ### 3. Many-to-One (N→1) - Multiple Inputs to Single Output
 - **Use case**: Aggregate multiple related items into a single result
 - **Example**: Collect payment outputs and write them to a single CSV file
-- **Parallelism**: Processing-level parallelism with `parallel` parameter
 - **Best for**: Aggregation operations that can benefit from concurrent processing
 
 ```java
 @PipelineStep(
+    ...
     stepType = StepManyToOne.class,
-    parallel = true  // Process with concurrent capabilities
+    ...
 )
-public class ProcessCsvPaymentsOutputFileReactiveService 
+public class ProcessCsvPaymentsOutputFileReactiveService
     implements ReactiveStreamingClientService<PaymentOutput, CsvPaymentsOutputFile> {
-    
+
     @Override
     public Uni<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputList) {
         // Process all payment outputs to generate a single CSV file
@@ -106,94 +113,40 @@ public class ProcessCsvPaymentsOutputFileReactiveService
 }
 ```
 
-**Important Consideration for File Operations**: When using StepManyToOne for file writing operations (like CSV generation), ensure all related records are available before starting the write operation. Some file writing libraries like OpenCSV may truncate files if data is provided in chunks. When implementing file processing operations:
-- Collect all related records before starting the file writing operation
-- Consider the trade-offs between memory usage (storing more records) versus correctness (avoiding file truncation)
-- For file operations that require all related data to be available, ensure your implementation collects all necessary data before processing
-
-**Approach for Complete File Processing**: It may be more appropriate to collect all related records before processing them. This ensures that file writing operations receive all records for a file at once, avoiding truncation issues:
-
-```java
-@Override
-public Multi<CsvPaymentsOutputFile> process(Multi<PaymentOutput> paymentOutputMulti) {
-    // Collect all elements before processing to ensure all records 
-    // for a file are processed together, preventing file truncation issues
-    return paymentOutputMulti
-        .collect()
-        .asList()
-        .onItem()
-        .transformToMulti(paymentOutputs -> {
-            // Group the collected list by input file path
-            java.util.Map<java.nio.file.Path, java.util.List<PaymentOutput>> groupedOutputs = 
-                paymentOutputs.stream()
-                    .collect(java.util.stream.Collectors.groupingBy(paymentOutput -> {
-                        // Extract the input file path to group related records
-                        PaymentStatus paymentStatus = paymentOutput.getPaymentStatus();
-                        AckPaymentSent ackPaymentSent = paymentStatus.getAckPaymentSent();
-                        PaymentRecord paymentRecord = ackPaymentSent.getPaymentRecord();
-                        return paymentRecord.getCsvPaymentsInputFilePath().getFileName();
-                    }));
-            
-            // Process each group of related records together
-            return Multi.createFrom().iterable(groupedOutputs.entrySet())
-                .flatMap(entry -> {
-                    // Process all records in the group together
-                    java.util.List<PaymentOutput> outputsForFile = entry.getValue();
-                    // Write all records to the same file in a single operation to prevent truncation
-                    return writeToFile(outputsForFile, entry.getKey());
-                });
-        });
-}
-```
-
 ### 4. Many-to-Many (N→N) - Multiple Inputs to Multiple Outputs
 - **Use case**: Transform a stream of items where each may produce multiple outputs
 - **Example**: Filter and transform a stream of records
-- **Parallelism**: Item-level parallelism available
 
-## Practical Example: CSV Payments Pipeline Optimization
+## @PipelineStep Annotation
 
-The CSV payments pipeline demonstrates how to use parallelism for optimal performance:
+The `@PipelineStep` annotation contains build-time properties:
 
-### Scenario: Processing Multiple Payment Records Concurrently
-1. **CSV file contains** multiple payment records
-2. **Each record** needs to be sent to a third-party payment provider
-3. **Some records** take longer to process than others
-4. **Goal**: Don't let slow records block fast records
-
-### Solution: Use Parallel Processing in SendPayment Step
-```java
-@PipelineStep(
-    order = 2,
-    inputType = PaymentRecord.class,
-    outputType = AckPaymentSent.class,
-    stepType = StepOneToOne.class,
-    parallel = true  // Send multiple payment records concurrently
-)
-public class SendPaymentRecordReactiveService 
-    implements StepOneToOne<PaymentRecord, AckPaymentSent> {
-    
-    @Override
-    public Uni<AckPaymentSent> applyOneToOne(PaymentRecord paymentRecord) {
-        // This method is called for each payment record
-        // With parallel=true, multiple records can be processed simultaneously
-        // Fast records complete quickly without waiting for slow ones
-        return sendToThirdPartyPaymentProvider(paymentRecord);
-    }
-}
-```
+- `inputType`, `outputType` - Type information for code generation
+- `inputGrpcType`, `outputGrpcType` - gRPC type information
+- `grpcStub`, `grpcImpl` - gRPC classes
+- `inboundMapper`, `outboundMapper` - Mapper classes
+- `stepType` - Step type class
+- `backendType` - Backend adapter type
+- `grpcClient` - gRPC client name
+- `grpcEnabled` - Whether to enable gRPC generation
+- `restEnabled` - Whether to enable REST generation
+- `grpcServiceBaseClass` - gRPC service base class
+- `local` - Whether step is local to the runner
+- `runOnVirtualThreads` - Whether the service entrypoint method should be run on a virtual thread, instead of a Vert.x event thread.
 
 ## Performance Optimization Guidelines
+Hibernate Reactive requires queries to run on a Vert.x event thread/context. When runOnVirtualThreads=true and the step is set to autoPersist=true (configured, i.e. via `application.properties`), the framework will make sure to "hop back on" onto an event thread to persist entities. Same when the service code is offloaded to run on a worker thread.
 
 ### For Item-Level Processing (1→1 Steps):
 1. **Set `parallel = true`** to enable concurrent processing of multiple input items
 2. **Monitor system resources** under load to determine optimal concurrency level
 
 ### For Aggregation Processing (N→1 Steps):
-1. **Use `parallel = true`** to enable concurrent processing when beneficial
+1. **Use** `parallel = true` to enable concurrent processing when beneficial
 
 ### Monitoring and Tuning:
 - Start with conservative parallelism values and increase gradually
 - Monitor system resource usage (CPU, memory, network) under load
 - Adjust `parallel` setting based on observed performance
 - Consider the downstream service capacity limits when setting parallelism values
+- Enable virtual threads (`run-on-virtual-threads=true`) for I/O-bound server-side operations to improve throughput

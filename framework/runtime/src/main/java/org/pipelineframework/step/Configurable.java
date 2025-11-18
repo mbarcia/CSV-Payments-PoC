@@ -17,7 +17,6 @@
 package org.pipelineframework.step;
 
 import java.time.Duration;
-import org.pipelineframework.config.LiveStepConfig;
 import org.pipelineframework.config.StepConfig;
 
 public interface Configurable {
@@ -28,26 +27,61 @@ public interface Configurable {
      */
     StepConfig effectiveConfig();
 
-    // Default configuration accessors
+    /**
+ * Retrieve the configured maximum number of retry attempts for the step.
+ *
+ * @return the maximum number of retry attempts allowed for the step
+ */
     default int retryLimit() { return effectiveConfig().retryLimit(); }
-    default Duration retryWait() { return effectiveConfig().retryWait(); }
-    default boolean debug() { return effectiveConfig().debug(); }
-    default boolean recoverOnFailure() { return effectiveConfig().recoverOnFailure(); }
-    default boolean runWithVirtualThreads() { return effectiveConfig().runWithVirtualThreads(); }
-    default Duration maxBackoff() { return effectiveConfig().maxBackoff(); }
-    default boolean jitter() { return effectiveConfig().jitter(); }
-    default int backpressureBufferCapacity() { return effectiveConfig().backpressureBufferCapacity(); }
-    default String backpressureStrategy() { return effectiveConfig().backpressureStrategy(); }
-    default boolean parallel() { return effectiveConfig().parallel(); }
+    /**
+ * Gets the configured wait duration between retry attempts.
+ *
+ * @return the duration to wait between retry attempts
+ */
+default Duration retryWait() { return effectiveConfig().retryWait(); }
+    /**
+ * Indicates whether the step should attempt recovery when a failure occurs.
+ *
+ * @return {@code true} if the step should attempt recovery after a failure, {@code false} otherwise.
+ */
+default boolean recoverOnFailure() { return effectiveConfig().recoverOnFailure(); }
+    /**
+ * Maximum backoff duration applied between retry attempts.
+ *
+ * @return the maximum backoff {@link Duration} used when applying retry backoff
+ */
+default Duration maxBackoff() { return effectiveConfig().maxBackoff(); }
+    /**
+ * Indicates whether jitter is enabled for retry backoff.
+ *
+ * @return `true` if jitter is enabled, `false` otherwise.
+ */
+default boolean jitter() { return effectiveConfig().jitter(); }
+    /**
+ * Provides the backpressure buffer capacity configured for this step.
+ *
+ * @return the maximum number of items the backpressure buffer can hold
+ */
+default int backpressureBufferCapacity() { return effectiveConfig().backpressureBufferCapacity(); }
+    /**
+ * Get the configured backpressure strategy for the step.
+ *
+ * @return the backpressure strategy name from the effective configuration
+ */
+default String backpressureStrategy() { return effectiveConfig().backpressureStrategy(); }
+    /**
+ * Indicates whether the step should run in parallel.
+ *
+ * @return `true` if the step should run in parallel, `false` otherwise.
+ */
+default boolean parallel() { return effectiveConfig().parallel(); }
 
     /**
-     * Get the live configuration for this step that can be modified at runtime
-     * @return the live step configuration, or null if this step doesn't use live configuration
-     */
-    default LiveStepConfig liveConfig() {
-        // Subclasses should override this method if they support live configuration
-        return null;
-    }
-
-    void initialiseWithConfig(LiveStepConfig config);
+ * Initialises the implementing object using the provided step configuration.
+ *
+ * Implementations must apply values from the given {@code StepConfig} to configure the step before use.
+ *
+ * @param config the configuration to apply; serves as the effective configuration for this step
+ */
+void initialiseWithConfig(StepConfig config);
 }

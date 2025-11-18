@@ -35,6 +35,12 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
 
   Uni<O> applyOneToOne(I in);
 
+  /**
+   * Orchestrates the asynchronous one-to-one transformation of an emitted input item, performing input null checks, applying retries, and routing failures to a dead letter queue when configured.
+   *
+   * @param input the {@code Uni} that emits the input item to be transformed
+   * @return the {@code Uni} that emits the transformed output item on success, or fails with the final error; if {@code recoverOnFailure()} is true a dead-lettered {@code Uni} may be returned instead of a propagated failure
+   */
   @Override
   default Uni<O> apply(Uni<I> input) {
     final Logger LOG = Logger.getLogger(this.getClass());
@@ -69,9 +75,10 @@ public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLe
         .transformToUni(
             (item, failure) -> {
               if (failure == null) {
-                if (debug()) {
+                if (LOG.isDebugEnabled()) {
                   LOG.debugf("Step %s processed item: %s", this.getClass().getSimpleName(), item);
                 }
+
                 return Uni.createFrom().item(item);
               }
 

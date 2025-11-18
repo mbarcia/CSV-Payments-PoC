@@ -36,11 +36,22 @@ public interface PersistenceProvider<T> {
     Uni<T> persist(T entity);
 
     /**
-     * Check if this provider can handle the given entity type.
-     *
-     * @param entity The entity to check
-     * @return true if this provider can handle the entity, false otherwise
-     */
+ * Determine whether this provider can handle the given entity instance.
+ *
+ * @param entity the entity instance to evaluate; its runtime type is used to decide compatibility
+ * @return `true` if the provider can persist the entity's runtime type, `false` otherwise
+ */
     boolean supports(Object entity);
-}
 
+    /**
+         * Indicates whether the provider supports the current thread context (virtual or platform threads).
+         *
+         * <p>Default implementation returns {@code true} to preserve backward compatibility.</p>
+         *
+         * @return {@code true} if the provider supports the current thread context, {@code false} otherwise
+         */
+    default boolean supportsThreadContext() {
+        // Default implementation returns true to maintain backward compatibility
+        return true;
+    }
+}

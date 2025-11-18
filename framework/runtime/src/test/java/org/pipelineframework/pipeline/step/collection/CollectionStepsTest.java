@@ -26,8 +26,6 @@ import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.pipelineframework.PipelineRunner;
-import org.pipelineframework.config.LiveStepConfig;
-import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.step.ConfigurableStep;
 import org.pipelineframework.step.StepOneToMany;
@@ -45,14 +43,12 @@ public class CollectionStepsTest {
         // Create steps and configure them properly
         ValidatePaymentStepBlocking validateStep = new ValidatePaymentStepBlocking();
         // Configure step without calling liveConfig() directly
-        LiveStepConfig validateConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        validateConfig.overrides().autoPersist(false);
+        StepConfig validateConfig = new StepConfig();
         validateStep.initialiseWithConfig(validateConfig);
 
         // Create ExpandPaymentCollectionStep using the same pattern
         ExpandPaymentCollectionStep expandStep = new ExpandPaymentCollectionStep();
-        LiveStepConfig expandConfig = new LiveStepConfig(new StepConfig(), new PipelineConfig());
-        expandConfig.overrides().autoPersist(false);
+        StepConfig expandConfig = new StepConfig();
         expandStep.initialiseWithConfig(expandConfig);
 
         // When: Run pipeline
@@ -94,7 +90,7 @@ public class CollectionStepsTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
     }
@@ -112,7 +108,7 @@ public class CollectionStepsTest {
         }
 
         @Override
-        public void initialiseWithConfig(org.pipelineframework.config.LiveStepConfig config) {
+        public void initialiseWithConfig(org.pipelineframework.config.StepConfig config) {
             super.initialiseWithConfig(config);
         }
     }

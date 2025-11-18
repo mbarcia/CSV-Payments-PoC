@@ -19,11 +19,8 @@ package org.pipelineframework.rest;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.inject.Inject;
-import org.pipelineframework.annotation.StepConfigProvider;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveService;
-import org.pipelineframework.step.ConfigurableStep;
 
 /**
  * Base class for REST resources that provides auto-persistence functionality.
@@ -36,41 +33,31 @@ public abstract class RestReactiveServiceAdapter<DomainIn, DomainOut, DtoOut> {
 
     @Inject
     PersistenceManager persistenceManager;
-    
-    // The step class this adapter is for
-    private Class<? extends ConfigurableStep> stepClass;
-
-    protected abstract ReactiveService<DomainIn, DomainOut> getService();
-
-    protected abstract DtoOut toDto(DomainOut domainOut);
 
     /**
-     * Get the step configuration for this service adapter.
-     * Override this method to provide specific configuration.
-     * 
-     * @return the step configuration, or null if not configured
-     */
-    protected StepConfig getStepConfig() {
-        if (stepClass != null) {
-            return StepConfigProvider.getStepConfig(stepClass);
-        }
-        return null;
-    }
+ * Provides the reactive service used to process domain inputs into domain outputs.
+ *
+ * @return the {@code ReactiveService<DomainIn, DomainOut>} instance used to process domain objects
+ */
+protected abstract ReactiveService<DomainIn, DomainOut> getService();
 
     /**
-     * Determines whether entities should be automatically persisted before processing.
-     * Override this method to enable auto-persistence.
-     * 
-     * @return true if entities should be auto-persisted, false otherwise
-     */
-    protected boolean isAutoPersistenceEnabled() {
-        if (stepClass != null) {
-            return StepConfigProvider.isAutoPersistenceEnabled(stepClass);
-        }
-        
-        StepConfig config = getStepConfig();
-        return config != null && config.autoPersist();
-    }
+ * Convert a processed domain object to its REST DTO representation.
+ *
+ * @param domainOut the processed domain model instance to convert
+ * @return the DTO representation to be returned by the REST resource
+ */
+protected abstract DtoOut toDto(DomainOut domainOut);
+
+    /**
+ * Indicate whether entities must be persisted automatically before processing.
+ *
+ * Implementations (typically generated service adapters) should return the auto-persist
+ * setting derived from the @PipelineStep annotation.
+ *
+ * @return `true` if entities must be auto-persisted before processing, `false` otherwise
+ */
+    protected abstract boolean isAutoPersistenceEnabled();
 
     /**
      * Process a single domain object with auto-persistence support.

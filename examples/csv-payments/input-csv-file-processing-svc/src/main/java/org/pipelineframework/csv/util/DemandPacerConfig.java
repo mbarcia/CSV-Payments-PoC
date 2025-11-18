@@ -14,14 +14,26 @@
  * limitations under the License.
  */
 
-import io.quarkus.test.junit.QuarkusTest;
-import org.junit.jupiter.api.Test;
+package org.pipelineframework.csv.util;
 
-@QuarkusTest
-class FakeQuarkusTest {
+import io.smallrye.config.ConfigMapping;
+import io.smallrye.config.WithDefault;
 
-    @Test
-    void test() {
-        // This test is here to enable jacoco coverage reports
-    }
+@ConfigMapping(prefix = "csv-poc.reader-demand-pacer")
+public interface DemandPacerConfig {
+  /**
+   * Number of rows permitted in each rate-limiting period.
+   *
+   * @return the maximum number of rows allowed per period
+   */
+  @WithDefault("10")
+  long rowsPerPeriod();
+
+  /**
+   * Rate-limiting period for demand pacing, expressed in milliseconds.
+   *
+   * @return the period length in milliseconds
+   */
+  @WithDefault("100")
+  long millisPeriod();
 }

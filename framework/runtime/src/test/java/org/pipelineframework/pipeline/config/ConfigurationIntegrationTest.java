@@ -36,9 +36,8 @@ class ConfigurationIntegrationTest {
         assertEquals(3, defaults.retryLimit());
         assertEquals(Duration.ofMillis(2000), defaults.retryWait());
         assertFalse(defaults.parallel());
-        assertFalse(defaults.debug());
+
         assertFalse(defaults.recoverOnFailure());
-        assertFalse(defaults.runWithVirtualThreads());
         assertEquals(Duration.ofSeconds(30), defaults.maxBackoff());
         assertFalse(defaults.jitter());
     }
@@ -49,15 +48,16 @@ class ConfigurationIntegrationTest {
         StepConfig config = new StepConfig();
 
         // When
-        config.retryLimit(10).parallel(true).debug(true);
+        config.retryLimit(10).parallel(true);
 
         // Then
         assertEquals(10, config.retryLimit());
         assertTrue(config.parallel());
-        assertTrue(config.debug());
         // Other properties should still use defaults
         assertEquals(Duration.ofMillis(2000), config.retryWait());
         assertFalse(config.recoverOnFailure());
+        assertEquals(Duration.ofSeconds(30), config.maxBackoff());
+        assertFalse(config.jitter());
     }
 
     @Test
@@ -65,8 +65,7 @@ class ConfigurationIntegrationTest {
         // Given
         PipelineConfig pipelineConfig = new PipelineConfig();
         pipelineConfig.profile(
-                "test",
-                new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)).debug(true));
+                "test", new StepConfig().retryLimit(5).retryWait(Duration.ofSeconds(1)));
 
         // When
         pipelineConfig.activate("test");
@@ -75,7 +74,10 @@ class ConfigurationIntegrationTest {
         // Then
         assertEquals(5, activeConfig.retryLimit());
         assertEquals(Duration.ofSeconds(1), activeConfig.retryWait());
-        assertTrue(activeConfig.debug());
+        assertFalse(activeConfig.parallel());
+        assertFalse(activeConfig.recoverOnFailure());
+        assertEquals(Duration.ofSeconds(30), activeConfig.maxBackoff());
+        assertFalse(activeConfig.jitter());
     }
 
     @Test

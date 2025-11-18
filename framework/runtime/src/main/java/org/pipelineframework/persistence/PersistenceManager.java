@@ -44,10 +44,10 @@ public class PersistenceManager {
     }
 
     /**
-     * Persist an entity using the appropriate provider.
+     * Persist the given entity using a registered persistence provider that supports it and the current thread context.
      *
-     * @param entity The entity to persist
-     * @return A Uni that completes with the persisted entity, or the original entity if no provider supports it
+     * @param entity the entity to persist
+     * @return the persisted entity if a suitable provider handled it, otherwise the original entity; if the input was null the Uni emits `null`
      */
     public <T> Uni<T> persist(T entity) {
         if (entity == null) {
@@ -57,13 +57,16 @@ public class PersistenceManager {
 
         LOG.debugf("Entity to persist: %s", entity.getClass().getName());
         for (PersistenceProvider<?> provider : providers) {
-            if (provider.supports(entity)) {
-                @SuppressWarnings("unchecked")
-                PersistenceProvider<T> p = (PersistenceProvider<T>) provider;
-                LOG.debugf("About to persist with provider: %s", provider.getClass().getName());
+            if (!provider.supports(entity)) continue;
 
-                return p.persist(entity);
-            }
+            // Check if the provider supports the current thread context
+            if (!provider.supportsThreadContext()) continue;
+
+            @SuppressWarnings("unchecked")
+            PersistenceProvider<T> p = (PersistenceProvider<T>) provider;
+            LOG.debugf("About to persist with provider: %s", provider.getClass().getName());
+
+            return p.persist(entity);
         }
 
         LOG.warnf("No persistence provider found for %s", entity.getClass().getName());

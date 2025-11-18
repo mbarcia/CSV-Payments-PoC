@@ -24,13 +24,13 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import org.jboss.logging.Logger;
-import org.pipelineframework.config.StepConfig;
 import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingClientService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 
 @SuppressWarnings("LombokSetterMayBeUsed")
-public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> {
+public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut>
+        extends ReactiveServiceAdapterBase {
 
   private static final Logger LOG = Logger.getLogger(GrpcServiceClientStreamingAdapter.class);
 
@@ -51,29 +51,25 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
 
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
-  protected abstract GrpcOut toGrpc(DomainOut domainOut);
+  /**
+ * Convert a domain output object to its gRPC representation.
+ *
+ * @param domainOut the domain-layer result to convert to a gRPC message
+ * @return the corresponding gRPC output message
+ */
+protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
   /**
-   * Get the step configuration for this service adapter.
-   * Override this method to provide specific configuration.
-   * 
-   * @return the step configuration, or null if not configured
+   * Orchestrates processing of a client-streaming gRPC request into a single gRPC response, optionally persisting all inputs after successful processing.
+   *
+   * When auto-persistence is disabled the incoming stream is forwarded directly to the domain service for processing.
+   * When auto-persistence is enabled the adapter captures all domain-converted inputs in memory, passes them to the domain service,
+   * and after a successful domain result persists all captured inputs in a single transaction; persistence retries on transient
+   * database errors are applied. All failures are converted to a StatusRuntimeException.
+   *
+   * @param requestStream the incoming stream of gRPC input messages
+   * @return the gRPC output message produced from the domain result
    */
-  protected StepConfig getStepConfig() {
-    return null;
-  }
-
-  /**
-   * Determines whether entities should be automatically persisted before processing.
-   * Override this method to enable auto-persistence.
-   * 
-   * @return true if entities should be auto-persisted, false otherwise
-   */
-  protected boolean isAutoPersistenceEnabled() {
-    StepConfig config = getStepConfig();
-    return config != null && config.autoPersist();
-  }
-
   public Uni<GrpcOut> remoteProcess(Multi<GrpcIn> requestStream) {
     // 1️⃣ Convert incoming gRPC messages to domain objects
     Multi<DomainIn> domainStream = requestStream.onItem().transform(this::fromGrpc);
@@ -99,6 +95,7 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
     // After processing completes successfully, persist all inputs inside one transaction
     return processedResult
             .onItem().call(result ->
+                switchToEventLoop().call(() ->
                     Panache.withTransaction(() ->
                         Multi.createFrom().iterable(capturedInputs)
                                 // Persist each DomainIn sequentially inside this transaction
@@ -107,21 +104,14 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
                                 // Replace with original result when done
                                 .replaceWith(result)
                     )
-                    // Optionally, retry on transient DB issues
-                    .onFailure(this::isTransientDbError)
-                    .retry().withBackOff(Duration.ofMillis(200), Duration.ofSeconds(2)).atMost(3)
+                )
+                // Optionally, retry on transient DB issues
+                .onFailure(this::isTransientDbError)
+                .retry().withBackOff(Duration.ofMillis(200), Duration.ofSeconds(2)).atMost(3)
             )
             .onItem().transform(this::toGrpc)
             .onFailure().transform(new throwStatusRuntimeExceptionFunction());
   }
 
-  private boolean isTransientDbError(Throwable failure) {
-    String msg = failure.getMessage();
-    return msg != null && (
-            msg.contains("connection refused") ||
-                    msg.contains("connection closed") ||
-                    msg.contains("timeout")
-    );
-  }
-}
 
+}

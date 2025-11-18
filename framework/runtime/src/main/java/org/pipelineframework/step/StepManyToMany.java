@@ -17,7 +17,6 @@
 package org.pipelineframework.step;
 
 import io.smallrye.mutiny.Multi;
-import java.util.concurrent.Executors;
 import org.jboss.logging.Logger;
 import org.pipelineframework.step.functional.ManyToMany;
 
@@ -25,11 +24,18 @@ import org.pipelineframework.step.functional.ManyToMany;
 public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, DeadLetterQueue<I, O> {
     Multi<O> applyTransform(Multi<I> input);
 
-	@Override
+	/**
+     * Apply the step's transformation to the given input stream and attach backpressure handling, per-item debug logging and retry/backoff behaviour.
+     *
+     * <p>The resulting stream applies the configured overflow strategy, logs each emitted item at debug level, retries failures other than {@code NullPointerException}
+     * using the configured backoff, jitter and retry limit, and logs an informational message if all retries are exhausted.</p>
+     *
+     * @param input the upstream Multi of input items to be transformed
+     * @return a Multi emitting transformed output items with backpressure handling, per-item debug logging, and retry/backoff applied for failures (excluding {@code NullPointerException})
+     */
+    @Override
     default Multi<O> apply(Multi<I> input) {
         final Logger LOG = Logger.getLogger(this.getClass());
-        final java.util.concurrent.Executor vThreadExecutor = Executors.newVirtualThreadPerTaskExecutor();
-        java.util.concurrent.Executor executor = effectiveConfig().runWithVirtualThreads() ? vThreadExecutor : null;
 
         // Apply the transformation
         Multi<O> output = applyTransform(input);
@@ -44,13 +50,8 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
             output = output.onOverflow().buffer(128); // default buffer size
         }
 
-        if (executor != null) {
-            // shift blocking subscription work to virtual threads
-            output = output.runSubscriptionOn(executor);
-        }
-
         return output.onItem().transform(item -> {
-            if (debug()) {
+            if (LOG.isDebugEnabled()) {
                 LOG.debugf(
                     "Step %s emitted item: %s",
                     this.getClass().getSimpleName(), item
@@ -63,14 +64,12 @@ public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, De
         .withJitter(jitter() ? 0.5 : 0.0)
         .atMost(retryLimit())
         .onFailure().invoke(t -> {
-            if (debug()) {
-                LOG.infof(
-                    "Step %s completed all retries (%s attempts) with failure: %s",
-                    this.getClass().getSimpleName(),
-                    retryLimit(),
-                    t.getMessage()
-                );
-            }
+            LOG.infof(
+                "Step %s completed all retries (%s attempts) with failure: %s",
+                this.getClass().getSimpleName(),
+                retryLimit(),
+                t.getMessage()
+            );
         });
     }
 }

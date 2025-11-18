@@ -25,13 +25,6 @@ env:
 # (we'll use them as working directories for native builds)
 # -- all CSV example services as you requested
 # NOTE: these are the paths used with -f and -pl; adjust if repo layout differs
-# noinspection YAMLSchemaValidation
-x-native-services: &native-services
-  - examples/csv-payments/orchestrator-svc
-  - examples/csv-payments/input-csv-file-processing-svc
-  - examples/csv-payments/payment-status-svc
-  - examples/csv-payments/payments-processing-svc
-  - examples/csv-payments/output-csv-file-processing-svc
 
 jobs:
   ####################################################################
@@ -85,7 +78,7 @@ jobs:
 
       # Keeps this build focused on producing artifacts; long ITs will run in tests-integration
       - name: Run unit and quick integration tests not requiring slow infra
-        if: ${{ !env.IS_PR }}
+        if: ${{ env.IS_PR != 'true' }}
         run: |
           mvn $MAVEN_ARGS verify \
             -Pcoverage \
@@ -155,7 +148,7 @@ jobs:
   ####################################################################
   tests-integration:
     name: Tests — Integration
-    if: ${{ !env.IS_PR }}
+    if: ${{ env.IS_PR != 'true' }}
     runs-on: ubuntu-latest
     needs: tests-unit
     steps:
@@ -199,7 +192,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: *native-services
+        service:
+          - examples/csv-payments/orchestrator-svc
+          - examples/csv-payments/input-csv-file-processing-svc
+          - examples/csv-payments/payment-status-svc
+          - examples/csv-payments/payments-processing-svc
+          - examples/csv-payments/output-csv-file-processing-svc
     env:
       GRAALVM_OPTS: "--no-fallback --install-exit-handlers -H:+UnlockExperimentalVMOptions -H:InlineAllFields"
 

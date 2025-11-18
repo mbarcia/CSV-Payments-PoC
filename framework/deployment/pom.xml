@@ -121,32 +121,16 @@
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
             <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>generate-code</id>
-                        <goals>
-                            <goal>generate-code</goal>
-                        </goals>
-                        <!-- Skip this execution to avoid circular dependency during CI builds -->
-                        <phase>none</phase>
-                    </execution>
-                    <execution>
-                        <id>generate-code-tests</id>
-                        <goals>
-                            <goal>generate-code-tests</goal>
-                        </goals>
-                        <!-- Skip this execution to avoid circular dependency during CI builds -->
-                        <phase>none</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
             </plugin>
-            
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
             <!-- Versions Maven Plugin for consistent version management across modules -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

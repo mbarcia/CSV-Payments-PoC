@@ -40,8 +40,7 @@ public class ConfigFactory {
      * @param pipelineConfig the pipeline-wide configuration providing default step settings
      * @return a StepConfig with per-step overrides applied if available, or the pipeline defaults otherwise
      */
-    public StepConfig buildConfig(Class<?> stepClass, PipelineConfig pipelineConfig)
-        throws IllegalAccessException {
+    public StepConfig buildConfig(Class<?> stepClass, PipelineConfig pipelineConfig) {
 
         // Get the new Quarkus configuration
         PipelineStepConfig pipelineStepConfig = CDI.current()

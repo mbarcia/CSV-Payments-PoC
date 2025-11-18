@@ -87,11 +87,7 @@ public class PipelineRunner implements AutoCloseable {
             }
             
             if (step instanceof Configurable c) {
-                try {
-                   c.initialiseWithConfig(configFactory.buildConfig(step.getClass(), pipelineConfig));
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException("Could not initialise step " + c , e);
-                }
+               c.initialiseWithConfig(configFactory.buildConfig(step.getClass(), pipelineConfig));
             }
 
             Class<?> clazz = step.getClass();

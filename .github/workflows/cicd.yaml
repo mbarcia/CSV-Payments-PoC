@@ -1,0 +1,366 @@
+name: CI / CD - Pipeline Framework
+
+# Triggers:
+on:
+  push:
+    branches:
+      - 'main'  # Only trigger on pushes to main branch
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - '**'  # Trigger on pull requests to any branch
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MAVEN_OPTS: -Xmx1g -Xms512m
+  IS_PR: ${{ github.event_name == 'pull_request' }}
+  MAVEN_FLAGS_PR: "-DskipITs -DskipSlowITs -DskipNative=true -T 1"
+
+# Services to build natively (matrix)
+# Keep these in sync with your repository layout
+# (we'll use them as working directories for native builds)
+# -- all CSV example services as you requested
+# NOTE: these are the paths used with -f and -pl; adjust if repo layout differs
+
+jobs:
+  ####################################################################
+  # BUILD - single build that produces installed artifacts in ~/.m2
+  ####################################################################
+  build:
+    name: Build (produce artifacts)
+    runs-on: ubuntu-latest
+    # Only run once: for PRs on pull_request event, for main branches on push event
+    if: ${{ (github.event_name == 'push' && github.ref != 'refs/heads/main') || github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
+    outputs:
+      m2-artifact: ${{ steps.upload-m2.outputs.artifact-id }}
+    steps:
+      - name: Show CI mode
+        run: |
+          if [ "${IS_PR}" == "true" ]; then
+            echo "Running in PR lightweight mode 🟡"
+          else
+            echo "Running in full CI mode 🟢"
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Keeps this build focused on producing artifacts; long ITs will run in tests-integration
+      - name: Ensure Maven wrapper has execute permissions
+        run: chmod +x ./mvnw
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Cache Maven dependencies (restore)
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-m2-${{ github.head_ref }}-
+            ${{ runner.os }}-m2-
+
+      - name: Show Java version
+        run: java -version
+
+      - name: Configure JVM & Maven for low-memory runners
+        run: |
+          echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
+          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR)" >> $GITHUB_ENV
+
+      # Build and install the entire framework at once to handle Quarkus extension circular dependencies properly
+      - name: Install framework to local repository (build framework modules together)
+        run: ./mvnw -B -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -f framework/pom.xml --no-transfer-progress
+
+      - name: Build CSV Payments example services (framework already installed)
+        run: ./mvnw $MAVEN_ARGS -DskipTests -pl examples/csv-payments package --no-transfer-progress
+
+      - name: Run unit and quick integration tests not requiring slow infra
+        if: ${{ env.IS_PR != 'true' }}
+        run: |
+          ./mvnw $MAVEN_ARGS verify \
+            -Pcoverage \
+            -DskipNative=true \
+            -DskipSlowITs=true        
+
+      - name: Package local Maven repository
+        run: |
+          mkdir -p artifacts
+          # Create a compressed archive of only the repository directory to keep size reasonable
+          tar -C ~/.m2 -czf artifacts/m2-repo.tar.gz repository
+
+      - name: Upload Maven repository artifact
+        id: upload-m2
+        uses: actions/upload-artifact@v4
+        with:
+          name: m2-repo
+          path: artifacts/m2-repo.tar.gz
+          retention-days: 3
+
+      - name: Upload built jars (optional)
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-jars
+          path: '**/target/*.jar'
+          retention-days: 3
+
+  ####################################################################
+  # UNIT TESTS - fast unit tests
+  ####################################################################
+  tests-unit:
+    name: Tests — Unit
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download m2 repo artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: m2-repo
+          path: ./artifacts
+
+      - name: Restore Maven repo
+        run: |
+          mkdir -p ~/.m2
+          tar -xzf ./artifacts/m2-repo.tar.gz -C ~/.m2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Configure JVM & Maven for low-memory runners
+        run: |
+          echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
+          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
+
+      - name: Run unit tests
+        run: ./mvnw $MAVEN_ARGS -DskipITs verify --fail-at-end
+
+  ####################################################################
+  # INTEGRATION TESTS - heavier tests (split out)
+  ####################################################################
+  tests-integration:
+    name: Tests — Integration
+    if: ${{ github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    needs: tests-unit
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download m2 repo artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: m2-repo
+          path: ./artifacts
+
+      - name: Restore Maven repo
+        run: |
+          mkdir -p ~/.m2
+          tar -xzf ./artifacts/m2-repo.tar.gz -C ~/.m2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Configure JVM & Maven for low-memory runners
+        run: |
+          echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
+          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
+
+      - name: Run integration tests
+        run: ./mvnw $MAVEN_ARGS verify -Pit --fail-at-end
+
+  ####################################################################
+  # NATIVE BUILD - matrix across example services (parallel)
+  # runs only on main or release branches OR on merged PRs to main
+  ####################################################################
+  native:
+    name: Native build — ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: tests-integration
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - examples/csv-payments/orchestrator-svc
+          - examples/csv-payments/input-csv-file-processing-svc
+          - examples/csv-payments/payment-status-svc
+          - examples/csv-payments/payments-processing-svc
+          - examples/csv-payments/output-csv-file-processing-svc
+    env:
+      GRAALVM_OPTS: "--no-fallback --install-exit-handlers -H:+UnlockExperimentalVMOptions -H:InlineAllFields"
+
+    # Restrict native builds to main, release branches, or tag pushes
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/') || startsWith(github.ref, 'refs/tags/'))
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download m2 repo artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: m2-repo
+          path: ./artifacts
+
+      - name: Restore Maven repo
+        run: |
+          mkdir -p ~/.m2
+          tar -xzf ./artifacts/m2-repo.tar.gz -C ~/.m2
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '21'
+          distribution: 'graal'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Cache GraalVM installations across runs
+      - name: Cache GraalVM
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.GRAALVM_HOME }}
+          key: ${{ runner.os }}-graalvm-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-graalvm-
+
+      - name: Show native build target
+        run: |
+          echo "Native build target: ${{ matrix.service }}"
+          ls -la ${{ matrix.service }}
+
+      - name: Configure JVM & Maven for low-memory runners
+        run: |
+          echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
+          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
+
+      - name: Build native executable for selected service
+        run: |
+          # Run package in native mode for that service only, using -f to target the specific service pom.xml
+          ./mvnw $MAVEN_ARGS -f ${{ matrix.service }}/pom.xml -Dquarkus.native.additional-build-args="--gc=serial $GRAALVM_OPTS" -Dquarkus.native.enabled=true -Pnative package --no-transfer-progress
+
+      - name: Inspect generated native executable(s)
+        run: |
+          echo "Listing native-runner files under ${{ matrix.service }}:"
+          find . -maxdepth 4 -type f -name "*-runner" -executable -print -exec ls -la {} \; || true
+
+      - name: Upload native executable artifact (per service)
+        uses: actions/upload-artifact@v4
+        with:
+          # Unique artifact name per matrix entry
+          name: native-${{ matrix.service }}
+          path: |
+            ${{ matrix.service }}/target/*-runner
+            ${{ matrix.service }}/target/*-runner.*
+            ${{ matrix.service }}/target/*-native-image*
+          retention-days: 7
+
+  ####################################################################
+  # PUBLISH - only on tags v*; require native success
+  # publish only framework runtime + deployment modules
+  ####################################################################
+  publish:
+    name: Publish to Maven Central (framework)
+    runs-on: ubuntu-latest
+    needs: [build, tests-integration, native]
+    # Only run for tags like v1.2.3
+    if: startsWith(github.ref, 'refs/tags/v')
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download m2 repo artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: m2-repo
+          path: ./artifacts
+
+      - name: Restore Maven repo
+        run: |
+          mkdir -p ~/.m2
+          tar -xzf ./artifacts/m2-repo.tar.gz -C ~/.m2
+
+      - name: Set up JDK 21 (with GPG)
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          server-id: ossrh
+          server-username: OSSRH_USERNAME
+          server-password: OSSRH_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: GPG_PASSPHRASE
+
+      - name: Configure Maven settings
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOF
+          <settings>
+            <servers>
+              <server>
+                <id>ossrh</id>
+                <username>$OSSRH_USERNAME</username>
+                <password>$OSSRH_PASSWORD</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
+
+      - name: Install framework to local repository (ensure release profile artifacts)
+        run: ./mvnw -B -f framework/pom.xml clean install -DskipTests -Prelease -T 1C
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Deploy framework modules to Maven Central
+        # Deploy only the framework modules (runtime & deployment)
+        run: ./mvnw -B -f framework/pom.xml clean deploy -Prelease -DskipTests -U -T 1C
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Create GitHub release (attached notes)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true
+          body: |
+            ## Release ${{ github.ref_name }}
+            
+            ### Artifacts
+            - Framework modules published to Maven Central (runtime + deployment)
+            - Reference implementation native builds validated (CSV Payments)

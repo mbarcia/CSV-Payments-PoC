@@ -30,9 +30,20 @@ import org.junit.jupiter.api.Test;
  * values and custom configuration loading.
  */
 @QuarkusTest
+@TestProfile(DemandPacerConfigTest.DefaultConfigProfile.class)
 class DemandPacerConfigTest {
 
     @Inject DemandPacerConfig config;
+
+    /** Test profile to ensure default config values are used in tests */
+    public static class DefaultConfigProfile implements QuarkusTestProfile {
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of(
+                    "csv-poc.reader-demand-pacer.rows-per-period", "10",
+                    "csv-poc.reader-demand-pacer.millis-period", "100");
+        }
+    }
 
     @Test
     void testConfigIsInjectable() {

@@ -274,7 +274,7 @@ jobs:
           path: |
             ${{ matrix.service }}/target/*-runner
             ${{ matrix.service }}/target/*-runner.*
-            ${{ matrix.service }}/target/*-native-image* || true
+            ${{ matrix.service }}/target/*-native-image*
           retention-days: 7
 
   ####################################################################

@@ -68,7 +68,7 @@ jobs:
       - name: Configure JVM & Maven for low-memory runners
         run: |
           echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
-          echo "MAVEN_ARGS=-B -T 1 -M -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR)" >> $GITHUB_ENV
+          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR)" >> $GITHUB_ENV
 
       - name: Install framework to local repository (build framework modules)
         run: ./mvnw $MAVEN_ARGS clean install -DskipTests -f framework/pom.xml --no-transfer-progress
@@ -138,7 +138,7 @@ jobs:
       - name: Configure JVM & Maven for low-memory runners
         run: |
           echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
-          echo "MAVEN_ARGS=-B -T 1 -M -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
+          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
 
       - name: Run unit tests
         run: ./mvnw $MAVEN_ARGS -DskipITs verify --fail-at-end
@@ -176,7 +176,7 @@ jobs:
       - name: Configure JVM & Maven for low-memory runners
         run: |
           echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
-          echo "MAVEN_ARGS=-B -T 1 -M -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
+          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
 
       - name: Run integration tests
         run: ./mvnw $MAVEN_ARGS verify -Pit --fail-at-end

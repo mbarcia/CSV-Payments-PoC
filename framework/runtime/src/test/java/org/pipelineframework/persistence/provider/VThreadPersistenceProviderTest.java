@@ -322,9 +322,7 @@ class VThreadPersistenceProviderTest {
     @Entity
     private static class TestEntity {
         private String value;
-        @jakarta.persistence.Id
-        private Long id;
-
+        @jakarta.persistence.Id private Long id;
     }
 
     /** Another test entity class */
@@ -332,9 +330,7 @@ class VThreadPersistenceProviderTest {
     @Getter
     @Entity
     private static class AnotherTestEntity {
-        @jakarta.persistence.Id
-        private Long id;
-
+        @jakarta.persistence.Id private Long id;
     }
 
     /** Non-entity class for negative testing */

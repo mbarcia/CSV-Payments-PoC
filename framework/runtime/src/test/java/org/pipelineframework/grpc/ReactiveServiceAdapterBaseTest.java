@@ -66,14 +66,17 @@ class ReactiveServiceAdapterBaseTest {
         // This test is skipped because properly testing the success case requires
         // an active Vert.x context which is complex to set up in unit tests
         // The main functionality is tested in integration tests
-        org.junit.jupiter.api.Assumptions.assumeTrue(false, "Skipping test that requires active Vert.x context");
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                false, "Skipping test that requires active Vert.x context");
     }
 
     @Test
     void testSwitchToEventLoopFailsWithoutVertxContext() {
         // Note: In a @QuarkusTest environment, there might be a Vert.x context available
         // So we can't reliably test the failure path in this environment
-        org.junit.jupiter.api.Assumptions.assumeTrue(false, "Skipping test that assumes no Vert.x context available in Quarkus test environment");
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                false,
+                "Skipping test that assumes no Vert.x context available in Quarkus test environment");
     }
 
     @Test
@@ -97,14 +100,16 @@ class ReactiveServiceAdapterBaseTest {
     void testSwitchToEventLoopExecutesOnEventLoop() {
         // This test is skipped because properly testing execution on event loop requires
         // an active Vert.x context which is complex to set up in unit tests
-        org.junit.jupiter.api.Assumptions.assumeTrue(false, "Skipping test that requires active Vert.x context");
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                false, "Skipping test that requires active Vert.x context");
     }
 
     @Test
     void testSwitchToEventLoopCanBeChained() {
         // This test is skipped because properly testing chained operations requires
         // an active Vert.x context which is complex to set up in unit tests
-        org.junit.jupiter.api.Assumptions.assumeTrue(false, "Skipping test that requires active Vert.x context");
+        org.junit.jupiter.api.Assumptions.assumeTrue(
+                false, "Skipping test that requires active Vert.x context");
     }
 
     @Test

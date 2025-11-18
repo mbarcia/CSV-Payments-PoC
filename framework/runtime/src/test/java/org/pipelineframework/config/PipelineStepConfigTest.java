@@ -180,8 +180,14 @@ class PipelineStepConfigTest {
             PipelineStepConfig.StepConfig defaults = pipelineStepConfig.defaults();
 
             // Then - unset properties should use interface defaults
-            assertEquals(defaults.retryWaitMs(), myStepConfig.retryWaitMs(), "Should use default retryWaitMs");
-            assertEquals(defaults.maxBackoff(), myStepConfig.maxBackoff(), "Should use default maxBackoff");
+            assertEquals(
+                    defaults.retryWaitMs(),
+                    myStepConfig.retryWaitMs(),
+                    "Should use default retryWaitMs");
+            assertEquals(
+                    defaults.maxBackoff(),
+                    myStepConfig.maxBackoff(),
+                    "Should use default maxBackoff");
             assertEquals(defaults.jitter(), myStepConfig.jitter(), "Should use default jitter");
             assertEquals(
                     defaults.backpressureBufferCapacity(),
@@ -193,5 +199,4 @@ class PipelineStepConfigTest {
                     "Should use default backpressureStrategy");
         }
     }
-
 }

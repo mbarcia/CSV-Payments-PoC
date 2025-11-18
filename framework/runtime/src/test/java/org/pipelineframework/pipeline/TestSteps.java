@@ -161,7 +161,7 @@ public class TestSteps {
         private boolean hasManualConfig = false;
         private int manualRetryLimit = -1;
         private java.time.Duration manualRetryWait = null;
-	    private boolean manualRecoverOnFailure = false;
+        private boolean manualRecoverOnFailure = false;
         private boolean manualRecoverOnFailureSet =
                 false; // Sentinel to track if constructor set the value
 

@@ -34,7 +34,7 @@ jobs:
     name: Build (produce artifacts)
     runs-on: ubuntu-latest
     outputs:
-      m2-artifact: ${{ steps.upload-m2.outputs.artifact-name }}
+      m2-artifact: ${{ steps.upload-m2.outputs.artifact-id }}
     steps:
       - name: Show CI mode
         run: |
@@ -148,7 +148,7 @@ jobs:
   ####################################################################
   tests-integration:
     name: Tests — Integration
-    if: ${{ env.IS_PR != 'true' }}
+    if: ${{ github.event_name != 'pull_request' }}
     runs-on: ubuntu-latest
     needs: tests-unit
     steps:

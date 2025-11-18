@@ -4,12 +4,12 @@ name: CI / CD - Pipeline Framework
 on:
   push:
     branches:
-      - '**'
+      - 'main'  # Only trigger on pushes to main branch
     tags:
       - 'v*'
   pull_request:
     branches:
-      - '**'
+      - '**'  # Trigger on pull requests to any branch
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -33,6 +33,8 @@ jobs:
   build:
     name: Build (produce artifacts)
     runs-on: ubuntu-latest
+    # Only run once: for PRs on pull_request event, for main branches on push event
+    if: ${{ (github.event_name == 'push' && github.ref != 'refs/heads/main') || github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
     outputs:
       m2-artifact: ${{ steps.upload-m2.outputs.artifact-id }}
     steps:

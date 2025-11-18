@@ -125,19 +125,7 @@
                 <artifactId>quarkus-maven-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>generate-code</id>
-                        <goals>
-                            <goal>generate-code</goal>
-                        </goals>
-                        <!-- Skip this execution to avoid circular dependency during CI builds -->
-                        <phase>none</phase>
-                    </execution>
-                    <execution>
-                        <id>generate-code-tests</id>
-                        <goals>
-                            <goal>generate-code-tests</goal>
-                        </goals>
-                        <!-- Skip this execution to avoid circular dependency during CI builds -->
+                        <id>default-generate-code</id>
                         <phase>none</phase>
                     </execution>
                 </executions>

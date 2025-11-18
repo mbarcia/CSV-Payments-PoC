@@ -1,0 +1,69 @@
+quarkus.package.main-class={{basePackage}}.orchestrator.OrchestratorApplication
+
+quarkus.hibernate-orm.enabled=false
+
+# Pipeline Configuration
+pipeline.defaults.retry-limit=10
+pipeline.defaults.retry-wait-ms=500
+pipeline.defaults.recover-on-failure=false
+pipeline.defaults.max-backoff=30000
+pipeline.defaults.jitter=false
+pipeline.defaults.parallel=false
+
+pipeline-cli.generate-cli=true
+pipeline-cli.version=0.9.0
+pipeline-cli.cli-version=0.9.0
+pipeline-cli.cli-description="{{appName}} CLI"
+pipeline-cli.cli-name="{{appName}} Processing System"
+
+# Pipeline step configurations - these define the sequence of processing steps
+# Each step has an order which determines its position in the pipeline
+{{#each steps}}
+pipeline.step."{{../basePackage}}.{{serviceNameForPackage}}.pipeline.{{this.serviceNameFormatted}}ClientStep".order={{this.order}}
+{{#if this.parallel}}
+pipeline.step."{{../basePackage}}.{{serviceNameForPackage}}.pipeline.{{this.serviceNameFormatted}}ClientStep".parallel=true
+{{/if}}
+{{/each}}
+
+{{#each steps}}
+# Talk to {{serviceName}} service
+quarkus.grpc.clients.{{grpcClientName}}.host=localhost
+quarkus.grpc.clients.{{grpcClientName}}.port={{#portNumber}}{{add 8443 order}}{{/portNumber}}
+quarkus.grpc.clients.{{grpcClientName}}.plain-text=false
+quarkus.grpc.clients.{{grpcClientName}}.use-quarkus-grpc-client=true
+quarkus.grpc.clients.{{grpcClientName}}.tls.enabled=true
+{{/each}}
+
+# Talk to orchestrator-svc (self)
+quarkus.grpc.clients.orchestrator-service.host=localhost
+quarkus.grpc.clients.orchestrator-service.port=8443
+quarkus.grpc.clients.orchestrator-service.plain-text=false
+quarkus.grpc.clients.orchestrator-service.use-quarkus-grpc-client=true
+quarkus.grpc.clients.orchestrator-service.tls.enabled=true
+
+# Vert.x configuration
+quarkus.http.host-enabled=false
+
+# gRPC server configuration
+quarkus.grpc.server.use-separate-server=false
+quarkus.grpc.server.port=8450
+# Increase msg size limit for all clients to 32M
+quarkus.grpc.clients.default.max-inbound-message-size=33554432
+
+# TLS configuration
+quarkus.tls.trust-store.jks.path=client-truststore.jks
+quarkus.tls.trust-store.jks.password=secret
+
+# Micrometer configuration
+quarkus.micrometer.export.prometheus.enabled=true
+quarkus.micrometer.export.prometheus.path=/q/metrics
+quarkus.micrometer.binder.http-server.enabled=true
+quarkus.micrometer.binder.http-client.enabled=true
+
+# OpenTelemetry configuration
+quarkus.otel.enabled=true
+quarkus.otel.exporter.otlp.endpoint=http://otel-collector:4317
+quarkus.otel.exporter.otlp.protocol=grpc
+quarkus.otel.traces.enabled=true
+quarkus.otel.metrics.enabled=true
+quarkus.otel.logs.enabled=true

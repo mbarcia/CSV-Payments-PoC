@@ -1,0 +1,11 @@
+# Development-specific configuration
+quarkus.hibernate-orm.database.generation=drop-and-create
+quarkus.hibernate-orm.sql-load-script=import.sql
+quarkus.hibernate-orm.log.sql=true
+
+# Development logging
+quarkus.log.level=INFO
+quarkus.log.category."org.pipelineframework".level=DEBUG
+
+# OTLP endpoint for development (if using local collector)
+# quarkus.otel.exporter.otlp.endpoint=http://localhost:4317

@@ -42,9 +42,11 @@ quarkus.grpc.clients.orchestrator-service.use-quarkus-grpc-client=true
 quarkus.grpc.clients.orchestrator-service.tls.enabled=true
 
 # Vert.x configuration
+# Server endpoints are disabled as the orchestrator is purely a gRPC client
 quarkus.http.host-enabled=false
 
 # gRPC server configuration
+# Server endpoints are disabled as the orchestrator is purely a gRPC client
 quarkus.grpc.server.use-separate-server=false
 quarkus.grpc.server.port=8450
 # Increase msg size limit for all clients to 32M

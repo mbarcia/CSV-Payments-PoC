@@ -77,10 +77,13 @@ jobs:
         run: ./mvnw $MAVEN_ARGS -DskipTests -pl examples/ package --no-transfer-progress
 
       # Keeps this build focused on producing artifacts; long ITs will run in tests-integration
+      - name: Ensure Maven wrapper has execute permissions
+        run: chmod +x ./mvnw
+
       - name: Run unit and quick integration tests not requiring slow infra
         if: ${{ env.IS_PR != 'true' }}
         run: |
-          mvn $MAVEN_ARGS verify \
+          ./mvnw $MAVEN_ARGS verify \
             -Pcoverage \
             -DskipNative=true \
             -DskipSlowITs=true        
@@ -201,11 +204,8 @@ jobs:
     env:
       GRAALVM_OPTS: "--no-fallback --install-exit-handlers -H:+UnlockExperimentalVMOptions -H:InlineAllFields"
 
-    # Restrict native builds to main or release branches for push/merged PRs
-    if: >
-      github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
-      ||
-      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && (github.base_ref == 'main' || startsWith(github.base_ref, 'release/')))
+    # Restrict native builds to main or release branches
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/'))
 
     steps:
       - name: Checkout repository
@@ -253,13 +253,12 @@ jobs:
       - name: Configure JVM & Maven for low-memory runners
         run: |
           echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
-          echo "MAVEN_ARGS=-B -T 1 -M -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
+          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
 
       - name: Build native executable for selected service
-        working-directory: ${{ matrix.service }}
         run: |
-          # Run package in native mode for that service only
-          ../../mvnw $MAVEN_ARGS -Dquarkus.native.additional-build-args="--gc=serial $GRAALVM_OPTS" -Dquarkus.native.enabled=true -Pnative package --no-transfer-progress
+          # Run package in native mode for that service only, using -f to target the specific service pom.xml
+          ./mvnw $MAVEN_ARGS -f ${{ matrix.service }}/pom.xml -Dquarkus.native.additional-build-args="--gc=serial $GRAALVM_OPTS" -Dquarkus.native.enabled=true -Pnative package --no-transfer-progress
 
       - name: Inspect generated native executable(s)
         run: |
@@ -317,6 +316,10 @@ jobs:
           gpg-passphrase: GPG_PASSPHRASE
 
       - name: Configure Maven settings
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           mkdir -p ~/.m2
           cat > ~/.m2/settings.xml <<EOF
@@ -324,8 +327,8 @@ jobs:
             <servers>
               <server>
                 <id>ossrh</id>
-                <username>${{ secrets.OSSRH_USERNAME }}</username>
-                <password>${{ secrets.OSSRH_PASSWORD }}</password>
+                <username>$OSSRH_USERNAME</username>
+                <password>$OSSRH_PASSWORD</password>
               </server>
             </servers>
           </settings>

@@ -109,13 +109,78 @@ public abstract class ReactiveServiceAdapterBase {
       return true;
     }
 
-    // Additional database driver specific transient exceptions
-    if (throwableClassName.contains("org.postgresql.util.PSQLException") ||
-        throwableClassName.contains("com.mysql.cj.exceptions") ||
-        throwableClassName.contains("oracle") ||
-        throwableClassName.contains("sqlserver")) {
-      // For specific database exceptions that might be transient
-      return true;
+    // PostgreSQL-specific connection-related exceptions
+    if (throwableClassName.equals("org.postgresql.util.PSQLException")) {
+      // Check for SQL state codes that indicate connection issues
+      // 08xxx = Connection Exception
+      try {
+        java.lang.reflect.Method getSQLStateMethod = throwable.getClass().getMethod("getSQLState");
+        Object result = getSQLStateMethod.invoke(throwable);
+        if (result != null) {
+          String sqlState = result.toString();
+          if (sqlState != null && sqlState.startsWith("08")) {
+            return true;
+          }
+        }
+      } catch (Exception e) {
+        // If we can't access the SQL state through reflection, fall back to message inspection
+        String message = throwable.getMessage();
+        if (message != null) {
+          String lowerMessage = message.toLowerCase();
+          // Check for connection-related keywords in PostgreSQL exception messages
+          if (lowerMessage.contains("connection refused") ||
+              lowerMessage.contains("connection closed") ||
+              lowerMessage.contains("connection lost") ||
+              lowerMessage.contains("terminating connection") ||
+              lowerMessage.contains("connection timeout")) {
+            return true;
+          }
+        }
+      }
+      return false; // Only return true for actual connection-related PSQLExceptions
+    }
+
+    // MySQL-specific connection exceptions (more specific than just checking package name)
+    if (throwableClassName.startsWith("com.mysql.cj.exceptions.")) {
+      // Check for specific MySQL connection-related exception types
+      if (throwableClassName.contains("CommunicationsException") ||
+          throwableClassName.contains("ConnectionException") ||
+          throwableClassName.contains("MySQLTimeoutException") ||
+          throwableClassName.contains("SSLException")) {
+        return true;
+      }
+      return false; // Only return true for specific connection-related MySQL exceptions
+    }
+
+    // Oracle-specific connection exceptions
+    if (throwableClassName.startsWith("oracle.jdbc")) {
+      // Check for Oracle connection-related exceptions
+      if (throwableClassName.contains("OracleConnection") ||
+          throwableClassName.contains("SQLRecoverableException")) {
+        return true;
+      }
+      return false; // Only return true for connection-related Oracle exceptions
+    }
+
+    // Microsoft SQL Server exceptions
+    if (throwableClassName.startsWith("com.microsoft.sqlserver.jdbc")) {
+      // Check for SQL Server connection-related exceptions
+      if (throwableClassName.contains("SQLServerException")) {
+        // Check if the message indicates a connection issue
+        String message = throwable.getMessage();
+        if (message != null) {
+          String lowerMessage = message.toLowerCase();
+          // Common connection-related messages in SQL Server exceptions
+          if (lowerMessage.contains("connection timed out") ||
+              lowerMessage.contains("connection reset") ||
+              lowerMessage.contains("the connection is closed") ||
+              lowerMessage.contains("tcp provider") ||
+              lowerMessage.contains("connection was terminated")) {
+            return true;
+          }
+        }
+      }
+      return false; // Only return true for connection-related SQL Server exceptions
     }
 
     return false;

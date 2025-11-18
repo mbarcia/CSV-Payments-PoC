@@ -25,6 +25,14 @@ Handlebars.registerHelper('replace', function(str, find, repl) {
     return str.split(find).join(repl);
 });
 
+// Register helper for adding numbers
+Handlebars.registerHelper('add', function(a, b) {
+    const numA = Number(a);
+    const numB = Number(b);
+    if (isNaN(numA) || isNaN(numB)) return 0;
+    return numA + numB;
+});
+
 // Register helper for converting to lowercase
 Handlebars.registerHelper('lowercase', function(str) {
     return typeof str === 'string' ? str.toLowerCase() : str;
@@ -654,6 +662,8 @@ class HandlebarsTemplateEngine {
         // Convert hyphens to underscores for valid Java package names
         const serviceNameForPackage = safeServiceName.replace('-svc', '').replace(/-/g, '_');
         await fs.ensureDir(path.join(stepPath, 'src/main/java', this.toPath(basePackage + '.' + serviceNameForPackage + '.service')));
+        await fs.ensureDir(path.join(stepPath, 'src/main/resources'));
+        await fs.ensureDir(path.join(stepPath, 'src/main/resources', 'META-INF'));
 
         // Add rootProjectName to step map
         step.rootProjectName = appName.toLowerCase().replace(/[^a-zA-Z0-9]/g, '-');
@@ -664,8 +674,20 @@ class HandlebarsTemplateEngine {
         // Generate the service class
         await this.generateStepServiceClass(appName, basePackage, step, stepPath, stepIndex, allSteps);
 
+        // Generate application.properties
+        await this.generateApplicationProperties(step, basePackage, stepPath);
+
+        // Generate application-dev.properties
+        await this.generateApplicationDevProperties(step, basePackage, stepPath);
+
+        // Generate beans.xml
+        await this.generateBeansXml(step, basePackage, stepPath);
+
         // Generate Dockerfile
         await this.generateDockerfile(step.serviceName, stepPath);
+
+        // Copy binary resource files (e.g., keystore)
+        await this.copyBinaryResourceFiles(stepPath);
     }
 
     async generateStepPom(step, basePackage, stepPath) {
@@ -751,6 +773,28 @@ class HandlebarsTemplateEngine {
         await fs.writeFile(servicePath, rendered);
     }
 
+    async generateOrchestratorApplicationProperties(appName, basePackage, steps, orchPath) {
+        // Create context for orchestrator properties
+        const context = { appName, basePackage, steps };
+        // Process steps to add additional properties for template
+        context.steps = steps.map((step, index) => ({
+            ...step,
+            order: index + 1,
+            serviceNameForPackage: step.serviceName.replace('-svc', '').replace(/-/g, '_'),
+            serviceNameFormatted: this.formatForProtoClassName(step.serviceName) // This will be 'Process' + entity name
+        }));
+        const rendered = this.render('orchestrator-application-properties', context);
+        const appPropsPath = path.join(orchPath, 'src/main/resources', 'application.properties');
+        await fs.writeFile(appPropsPath, rendered);
+    }
+
+    async generateOrchestratorApplicationDevProperties(appName, basePackage, steps, orchPath) {
+        const context = { basePackage, steps };
+        const rendered = this.render('orchestrator-application-dev-properties', context);
+        const appDevPropsPath = path.join(orchPath, 'src/main/resources', 'application-dev.properties');
+        await fs.writeFile(appDevPropsPath, rendered);
+    }
+
     async generateDockerfile(serviceName, stepPath) {
         const context = { serviceName };
         const rendered = this.render('dockerfile', context);
@@ -758,10 +802,88 @@ class HandlebarsTemplateEngine {
         await fs.writeFile(dockerfilePath, rendered);
     }
 
+    async generateApplicationProperties(step, basePackage, stepPath) {
+        const context = { ...step, basePackage };
+        const rendered = this.render('application-properties', context);
+        const appPropsPath = path.join(stepPath, 'src/main/resources', 'application.properties');
+        await fs.writeFile(appPropsPath, rendered);
+    }
+
+    async generateApplicationDevProperties(step, basePackage, stepPath) {
+        const context = { ...step, basePackage };
+        const rendered = this.render('application-dev-properties', context);
+        const appDevPropsPath = path.join(stepPath, 'src/main/resources', 'application-dev.properties');
+        await fs.writeFile(appDevPropsPath, rendered);
+    }
+
+    async generateBeansXml(step, basePackage, stepPath) {
+        const context = { ...step, basePackage };
+        const rendered = this.render('beans-xml', context);
+        const beansXmlPath = path.join(stepPath, 'src/main/resources', 'META-INF', 'beans.xml');
+        await fs.writeFile(beansXmlPath, rendered);
+    }
+
+    // Copy binary files like keystore to the resources directory
+    async copyBinaryResourceFiles(stepPath) {
+        // This would copy the server-keystore.jks from a default location if available
+        const sourceKeystorePath = path.join(__dirname, '../templates/server-keystore.jks');
+        const targetKeystorePath = path.join(stepPath, 'src/main/resources', 'server-keystore.jks');
+
+        // Check if source keystore exists before copying
+        if (fs.existsSync(sourceKeystorePath)) {
+            await fs.copy(sourceKeystorePath, targetKeystorePath);
+        } else {
+            // If the keystore doesn't exist in the templates, create a notice file instead
+            const noticeContent = `# Keystore File Needed
+#
+# This application requires a server-keystore.jks file for SSL/TLS functionality.
+#
+# Please generate or obtain a keystore file and place it in this location:
+#
+# ${targetKeystorePath}
+#
+# For development purposes, you can create a self-signed certificate using:
+# keytool -genkey -alias server -keyalg RSA -keystore server-keystore.jks -storetype PKCS12
+#
+# For production, please use a proper certificate from a trusted CA.
+`;
+            await fs.writeFile(path.join(stepPath, 'src/main/resources', 'keystore-README.txt'), noticeContent);
+        }
+    }
+
+    // Copy orchestrator-specific binary files like truststore
+    async copyOrchestratorBinaryResourceFiles(orchPath) {
+        // This would copy the client-truststore.jks from a default location if available
+        const sourceTruststorePath = path.join(__dirname, '../templates/client-truststore.jks');
+        const targetTruststorePath = path.join(orchPath, 'src/main/resources', 'client-truststore.jks');
+
+        // Check if source truststore exists before copying
+        if (fs.existsSync(sourceTruststorePath)) {
+            await fs.copy(sourceTruststorePath, targetTruststorePath);
+        } else {
+            // If the truststore doesn't exist in the templates, create a notice file instead
+            const noticeContent = `# Truststore File Needed
+#
+# This application requires a client-truststore.jks file for SSL/TLS client functionality.
+#
+# Please generate or obtain a truststore file and place it in this location:
+#
+# ${targetTruststorePath}
+#
+# For development purposes, you can create a truststore using:
+# keytool -import -alias server -file server-cert.pem -keystore client-truststore.jks
+#
+# For production, please use a proper certificate from a trusted CA.
+`;
+            await fs.writeFile(path.join(orchPath, 'src/main/resources', 'truststore-README.txt'), noticeContent);
+        }
+    }
+
     async generateOrchestrator(appName, basePackage, steps, outputPath) {
         const orchPath = path.join(outputPath, 'orchestrator-svc');
         const classPath = path.join(orchPath, 'src/main/java', this.toPath(basePackage + '.orchestrator.service'));
         await fs.ensureDir(classPath);
+        await fs.ensureDir(path.join(orchPath, 'src/main/resources'));
 
         // Generate orchestrator application
         await this.generateOrchestratorApplication(appName, basePackage, classPath, steps[0].inputTypeName);
@@ -769,8 +891,17 @@ class HandlebarsTemplateEngine {
         // Generate orchestrator POM
         await this.generateOrchestratorPom(appName, basePackage, orchPath);
 
+        // Generate orchestrator application.properties
+        await this.generateOrchestratorApplicationProperties(appName, basePackage, steps, orchPath);
+
+        // Generate orchestrator application-dev.properties
+        await this.generateOrchestratorApplicationDevProperties(appName, basePackage, steps, orchPath);
+
         // Generate Dockerfile
         await this.generateDockerfile('orchestrator-svc', orchPath);
+
+        // Copy orchestrator binary resource files (e.g., truststore)
+        await this.copyOrchestratorBinaryResourceFiles(orchPath);
     }
 
     async generateOrchestratorPom(appName, basePackage, orchPath) {

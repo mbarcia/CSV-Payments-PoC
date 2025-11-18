@@ -27,6 +27,7 @@ import org.jboss.logging.Logger;
     outboundMapper = {{basePackage}}.common.mapper.{{outputTypeName}}Mapper.class,
     grpcClient = "{{serviceName}}",
     autoPersist = true,
+    runOnVirtualThreads = false,
     debug = true
 )
 @ApplicationScoped

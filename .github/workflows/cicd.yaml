@@ -70,16 +70,15 @@ jobs:
           echo "MAVEN_OPTS=-Xmx1g -Xms512m" >> $GITHUB_ENV
           echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR)" >> $GITHUB_ENV
 
-      # Build and install framework modules individually to avoid Quarkus extension circular dependency
-      # First, build and install the parent POM
-      - name: Install framework parent POM
-        run: ./mvnw -B -T 1C -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -f framework/pom.xml --no-transfer-progress
-      
-      # Then, build and install the runtime module
+      # Build and install the entire framework (runtime and deployment) ensuring proper build order
+      # Using -N (non-recursive) to prevent reactor build issues with Quarkus extensions
+      - name: Install framework parent POM only (non-recursive)
+        run: ./mvnw -B -T 1C -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -N -f framework/pom.xml --no-transfer-progress
+
+      # Now build runtime and deployment modules individually to avoid circular dependency
       - name: Install framework runtime module
         run: ./mvnw -B -T 1C -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -f framework/runtime/pom.xml --no-transfer-progress
-      
-      # Finally, build and install the deployment module (this should resolve the circular dependency issue)
+
       - name: Install framework deployment module
         run: ./mvnw -B -T 1C -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none $([[ $IS_PR == 'true' ]] && echo $MAVEN_FLAGS_PR) clean install -DskipTests -f framework/deployment/pom.xml --no-transfer-progress
 

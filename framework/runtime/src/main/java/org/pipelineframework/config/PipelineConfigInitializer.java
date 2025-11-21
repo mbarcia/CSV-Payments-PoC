@@ -16,6 +16,7 @@
 
 package org.pipelineframework.config;
 
+import io.quarkus.arc.properties.IfBuildProperty;
 import io.quarkus.runtime.StartupEvent;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -29,6 +30,7 @@ import org.jboss.logging.Logger;
  * (e.g., pipeline.defaults.parallel=false) are properly applied to the PipelineConfig.
  */
 @ApplicationScoped
+@IfBuildProperty(name = "pipeline-cli.generate-cli", stringValue = "true")
 public class PipelineConfigInitializer {
 
     private static final Logger logger = Logger.getLogger(PipelineConfigInitializer.class);
@@ -50,7 +52,6 @@ public class PipelineConfigInitializer {
         PipelineStepConfig.StepConfig config = stepConfig.defaults();
 
         logger.info("Initializing pipeline global/default configuration");
-        logger.infof("Order: %s", config.order());
         logger.infof("Parallel: %s", config.parallel());
         logger.infof("Retry limit: %s", config.retryLimit());
         logger.infof("Retry wait: %s ms", config.retryWaitMs());

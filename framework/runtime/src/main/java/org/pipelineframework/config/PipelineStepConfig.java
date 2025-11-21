@@ -34,10 +34,10 @@ import java.util.Map;
 public interface PipelineStepConfig {
     
     /**
- * Default configuration applied to all pipeline steps unless a step defines overrides.
- *
- * @return the global StepConfig used as defaults for steps
- */
+     * Default configuration applied to all pipeline steps unless a step defines overrides.
+     *
+     * @return the global StepConfig used as defaults for steps
+     */
     StepConfig defaults();
     
     /**
@@ -54,9 +54,12 @@ public interface PipelineStepConfig {
         /**
          * Execution order for this step within the pipeline.
          *
-         * @return the step order; 100 if not specified
+         * @return the step order; 0 if not specified for a specific step.
+         * Note: This value is not meaningful when used as global defaults (pipeline.defaults),
+         * since global defaults should not define execution order.
+         * When used in global defaults, this value is ignored since order is specific to each step.
          */
-        @WithDefault("100")
+        @WithDefault("0")
         Integer order();
 
         /**

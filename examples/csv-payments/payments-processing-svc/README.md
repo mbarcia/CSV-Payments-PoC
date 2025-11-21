@@ -146,7 +146,6 @@ Returns a PaymentStatusDto object in JSON format.
 ## Performance Features
 
 - **Rate Limiting**: Implements Guava's RateLimiter to simulate real-world API throttling
-- **Virtual Threads**: Uses virtual threads for efficient concurrency
 - **Reactive Processing**: Leverages Mutiny for non-blocking operations
 - **Timeout Handling**: Configurable timeouts for payment provider interactions
 
@@ -195,9 +194,9 @@ mvn test
 
 The service uses the following configuration properties:
 
-- `payment.provider.permits-per-second`: Rate limiting configuration (default: 1000.0)
-- `payment.provider.timeout-millis`: Timeout for acquiring permits (default: 2000)
-- `payment.provider.wait-milliseconds`: Simulated wait time for polling (default: 1000)
+- `csv-payments.payment-provider.permits-per-second`: Rate limiting configuration (default: 1000.0)
+- `csv-payments.payment-provider.timeout-millis`: Timeout for acquiring permits (default: 2000)
+- `csv-payments.payment-provider.wait-milliseconds`: Simulated wait time for polling (default: 1000)
 
 ## Integration with Other Services
 

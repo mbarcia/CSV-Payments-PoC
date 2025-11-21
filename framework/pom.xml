@@ -137,11 +137,13 @@
                         <jvmArgs>--enable-preview</jvmArgs>
                     </configuration>
                     <executions>
+                        <!-- Prevent dev and build goals from running on extensions -->
                         <execution>
+                            <id>disable-dev</id>
+                            <phase>none</phase>
                             <goals>
+                                <goal>dev</goal>
                                 <goal>build</goal>
-                                <goal>generate-code</goal>
-                                <goal>generate-code-tests</goal>
                             </goals>
                         </execution>
                     </executions>

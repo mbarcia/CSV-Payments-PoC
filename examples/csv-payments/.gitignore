@@ -35,6 +35,7 @@ target/
 
 # Generated files
 dependency-reduced-pom.xml
+**/.flattened-pom.xml
 *SUMMARY.md
 
 # Observability

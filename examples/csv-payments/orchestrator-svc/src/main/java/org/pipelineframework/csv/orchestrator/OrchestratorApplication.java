@@ -37,7 +37,7 @@ import picocli.CommandLine.Option;
 public class OrchestratorApplication implements QuarkusApplication, Callable<Integer> {
 
     @Option(
-        names = {"-i", "--input"}, 
+        names = {"-i", "--input"},
         description = "Input value for the pipeline",
         defaultValue = "csv"
     )
@@ -61,19 +61,19 @@ public class OrchestratorApplication implements QuarkusApplication, Callable<Int
         if (actualInput == null || actualInput.trim().isEmpty()) {
             actualInput = System.getenv("PIPELINE_INPUT");
         }
-        
+
         if (actualInput == null || actualInput.trim().isEmpty()) {
             System.out.println("Input parameter is empty");
             return CommandLine.ExitCode.USAGE;
         }
-        
+
         Multi<InputCsvFileProcessingSvc.CsvFolder> inputMulti = getInputMulti(actualInput);
 
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti)
                 .collect().asList()
                 .await().indefinitely();
-        
+
         System.out.println("Pipeline execution completed");
         return CommandLine.ExitCode.OK;
     }

@@ -35,11 +35,6 @@
             <artifactId>common</artifactId>
             <version>1.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.pipelineframework</groupId>
-            <artifactId>pipelineframework</artifactId>
-            <version>${version.pipeline}</version>
-        </dependency>
         <!-- Hibernate Reactive and PostgreSQL reactive -->
         <dependency>
             <groupId>io.quarkus</groupId>

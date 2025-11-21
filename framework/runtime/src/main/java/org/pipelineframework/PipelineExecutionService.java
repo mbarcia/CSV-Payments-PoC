@@ -16,15 +16,20 @@
 
 package org.pipelineframework;
 
+import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
+import java.lang.reflect.Field;
 import java.text.MessageFormat;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.time.StopWatch;
-import org.pipelineframework.config.PipelineConfig;
 import org.jboss.logging.Logger;
+import org.pipelineframework.config.PipelineConfig;
+import org.pipelineframework.config.PipelineStepConfig;
 
 /**
  * Service responsible for executing pipeline logic.
@@ -42,6 +47,9 @@ public class PipelineExecutionService {
   @Inject
   protected PipelineRunner pipelineRunner;
 
+  @Inject
+  protected HealthCheckService healthCheckService;
+
   /**
    * Execute the pipeline with a given input.
    * This method is used by PipelineApplication.
@@ -49,45 +57,163 @@ public class PipelineExecutionService {
    * @param input the input Multi for the pipeline
    */
   public Multi<?> executePipeline(Multi<?> input) {
-
-	  return Multi.createFrom().deferred(() -> {
+    return Multi.createFrom().deferred(() -> {
       // This code is executed at subscription time
       StopWatch watch = new StopWatch();
-      Object result = pipelineRunner.run(input);
 
-	    return switch (result) {
-		    case null -> Multi.createFrom().failure(new IllegalStateException(
-				    "PipelineRunner returned null"));
-		    case Multi<?> multi1 -> multi1
-				    .onSubscription().invoke(_ -> {
-					    LOG.info("PIPELINE BEGINS processing");
-					    watch.start();
-				    })
-				    .onCompletion().invoke(() -> {
-					    watch.stop();
-					    LOG.infof("✅ PIPELINE FINISHED processing in %s seconds", watch.getTime(TimeUnit.SECONDS));
-				    })
-				    .onFailure().invoke(failure -> {
-					    watch.stop();
-					    LOG.errorf(failure, "❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS));
-				    });
-		    case Uni<?> uni -> uni.toMulti()
-				    .onSubscription().invoke(_ -> {
-					    LOG.info("PIPELINE BEGINS processing");
-					    watch.start();
-				    })
-				    .onCompletion().invoke(() -> {
-					    watch.stop();
-					    LOG.infof("✅ PIPELINE FINISHED processing in %s seconds", watch.getTime(TimeUnit.SECONDS));
-				    })
-				    .onFailure().invoke(failure -> {
-					    watch.stop();
-					    LOG.errorf(failure, "❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS));
-				    });
-		    default -> Multi.createFrom().failure(new IllegalStateException(
-				    MessageFormat.format("PipelineRunner returned unexpected type: {0}", result.getClass().getName())
-		    ));
-	    };
+      // Check health of dependent services before proceeding with pipeline execution
+      List<Object> steps = loadPipelineSteps();
+      if (!healthCheckService.checkHealthOfDependentServices(steps)) {
+        return Multi.createFrom().failure(new RuntimeException("One or more dependent services are not healthy. Pipeline execution aborted after retries."));
+      }
+
+      Object result = pipelineRunner.run(input, steps);
+
+      return switch (result) {
+        case null -> Multi.createFrom().failure(new IllegalStateException(
+          "PipelineRunner returned null"));
+        case Multi<?> multi1 -> multi1
+          .onSubscription().invoke(_ -> {
+            LOG.info("PIPELINE BEGINS processing");
+            watch.start();
+          })
+          .onCompletion().invoke(() -> {
+            watch.stop();
+            LOG.infof("✅ PIPELINE FINISHED processing in %s seconds", watch.getTime(TimeUnit.SECONDS));
+          })
+          .onFailure().invoke(failure -> {
+            watch.stop();
+            LOG.errorf(failure, "❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS));
+          });
+        case Uni<?> uni -> uni.toMulti()
+          .onSubscription().invoke(_ -> {
+            LOG.info("PIPELINE BEGINS processing");
+            watch.start();
+          })
+          .onCompletion().invoke(() -> {
+            watch.stop();
+            LOG.infof("✅ PIPELINE FINISHED processing in %s seconds", watch.getTime(TimeUnit.SECONDS));
+          })
+          .onFailure().invoke(failure -> {
+            watch.stop();
+            LOG.errorf(failure, "❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS));
+          });
+        default -> Multi.createFrom().failure(new IllegalStateException(
+          MessageFormat.format("PipelineRunner returned unexpected type: {0}", result.getClass().getName())
+        ));
+      };
     });
+  }
+
+
+  /**
+   * Extracts gRPC client names from the fields of a step object using reflection.
+   *
+   * @param step the step object to inspect
+   * @return a set of gRPC client names used by the step
+   */
+  private Set<String> extractGrpcClientNames(Object step) {
+    Set<String> grpcClientNames = new HashSet<>();
+    Class<?> stepClass = step.getClass();
+
+    // Check all fields in the step class
+    for (Field field : stepClass.getDeclaredFields()) {
+      if (field.isAnnotationPresent(GrpcClient.class)) {
+        GrpcClient grpcClientAnnotation = field.getAnnotation(GrpcClient.class);
+        String clientName = grpcClientAnnotation.value();
+
+        // If the value is empty, use the field name as default
+        if (clientName.isEmpty()) {
+          clientName = field.getName();
+        }
+
+        grpcClientNames.add(clientName);
+      }
+    }
+
+    // Also check superclass fields if any
+    Class<?> superClass = stepClass.getSuperclass();
+    while (superClass != null && superClass != Object.class) {
+      for (Field field : superClass.getDeclaredFields()) {
+        if (field.isAnnotationPresent(GrpcClient.class)) {
+          GrpcClient grpcClientAnnotation = field.getAnnotation(GrpcClient.class);
+          String clientName = grpcClientAnnotation.value();
+
+          // If the value is empty, use the field name as default
+          if (clientName.isEmpty()) {
+            clientName = field.getName();
+          }
+
+          grpcClientNames.add(clientName);
+        }
+      }
+      superClass = superClass.getSuperclass();
+    }
+
+    return grpcClientNames;
+  }
+
+
+  /**
+   * Load and instantiate pipeline steps configured via PipelineStepConfig.
+   *
+   * <p>Reads the mapped step configurations, instantiates CDI-managed step objects for each
+   * configured entry, and returns them in execution order. Steps are ordered by their
+   * `order` property; entries without an `order` are treated as 100. If the configuration
+   * cannot be read or an error occurs, an empty list is returned.
+   *
+   * @return the instantiated pipeline step objects in execution order, or an empty list if configuration cannot be read
+   */
+  private List<Object> loadPipelineSteps() {
+    try {
+      // Use the structured configuration mapping to get all pipeline steps
+      PipelineStepConfig pipelineStepConfig = CDI.current()
+        .select(PipelineStepConfig.class).get();
+
+      Map<String, org.pipelineframework.config.PipelineStepConfig.StepConfig> stepConfigs =
+        pipelineStepConfig.step();
+
+      // Sort the steps by their order property
+      List<Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig>> sortedStepEntries =
+        stepConfigs.entrySet().stream()
+          .sorted(Map.Entry.comparingByValue(
+            Comparator.comparingInt(config -> config.order() != null ? config.order() : 100)))
+          .toList();
+
+      List<Object> steps = new ArrayList<>();
+      for (Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig> entry : sortedStepEntries) {
+        String stepClassName = entry.getKey();  // The fully qualified class name
+        org.pipelineframework.config.PipelineStepConfig.StepConfig stepConfig = entry.getValue();
+        Object step = createStepFromConfig(stepClassName, stepConfig);
+        if (step != null) {
+          steps.add(step);
+        }
+      }
+
+      if (LOG.isDebugEnabled()) {
+        LOG.debugf("Loaded %d pipeline steps from application properties", steps.size());
+      }
+      return steps;
+    } catch (Exception e) {
+      LOG.errorf(e, "Failed to load configuration: %s", e.getMessage());
+      return Collections.emptyList();
+    }
+  }
+
+  /**
+   * Instantiate a pipeline step from its configuration and return a CDI-managed instance.
+   *
+   * @param stepClassName the fully qualified class name of the step
+   * @param config the step configuration containing other properties
+   * @return a CDI-managed instance of the configured class, or `null` if instantiation fails
+   */
+  private Object createStepFromConfig(String stepClassName, org.pipelineframework.config.PipelineStepConfig.StepConfig config) {
+    try {
+      Class<?> stepClass = Thread.currentThread().getContextClassLoader().loadClass(stepClassName);
+      return io.quarkus.arc.Arc.container().instance(stepClass).get();
+    } catch (Exception e) {
+      LOG.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
+      return null;
+    }
   }
 }

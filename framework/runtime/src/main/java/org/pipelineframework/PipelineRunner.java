@@ -16,18 +16,15 @@
 
 package org.pipelineframework;
 
-import io.quarkus.arc.Arc;
 import io.quarkus.arc.Unremovable;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
 import java.text.MessageFormat;
 import java.util.*;
 import org.jboss.logging.Logger;
 import org.pipelineframework.config.PipelineConfig;
-import org.pipelineframework.config.PipelineStepConfig;
 import org.pipelineframework.step.*;
 import org.pipelineframework.step.blocking.StepOneToManyBlocking;
 import org.pipelineframework.step.functional.ManyToOne;
@@ -45,38 +42,13 @@ public class PipelineRunner implements AutoCloseable {
     @Inject
     PipelineConfig pipelineConfig;
 
-
     /**
      * Execute the configured pipeline steps against the provided Multi input.
      *
      * @param input the source Multi of items to process through the pipeline
+     * @param steps the list of steps to apply
      * @return the pipeline's resulting reactive stream — either a `Multi<?>` or a `Uni<?>` representing the final stage
      */
-    public Object run(Multi<?> input) {
-        List<Object> steps = loadPipelineSteps();
-
-        if (steps.isEmpty()) {
-            logger.warn("No steps available to execute - pipeline will not process data");
-        }
-
-        return run(input, steps);
-    }
-
-    /**
-     * Apply an ordered sequence of pipeline steps to the provided input stream.
-     *
-     * <p>Each non-null entry in {@code steps} is applied in sequence to the pipeline state.
-     * Steps that implement {@code Configurable} are initialised with a configuration built
-     * from the injected {@code configFactory} and {@code pipelineConfig} before application.
-     * Null entries are skipped and unrecognised step types are logged and ignored.</p>
-     *
-     * @param input the initial Multi stream to be processed
-     * @param steps an ordered list of pipeline step instances; null entries are skipped and
-     *              {@code Configurable} steps are initialised prior to being applied
-     * @return      the resulting pipeline output, typically a {@code Uni<?>} or {@code Multi<?>}
-     * @throws RuntimeException if initialisation of a {@code Configurable} step fails due to access restrictions
-     */
-    @SuppressWarnings({"rawtypes", "unchecked"})
     public Object run(Multi<?> input, List<Object> steps) {
         Object current = input;
 
@@ -85,7 +57,7 @@ public class PipelineRunner implements AutoCloseable {
                 logger.warn("Warning: Found null step in configuration, skipping...");
                 continue;
             }
-            
+
             if (step instanceof Configurable c) {
                c.initialiseWithConfig(configFactory.buildConfig(step.getClass(), pipelineConfig));
             }
@@ -108,68 +80,6 @@ public class PipelineRunner implements AutoCloseable {
         }
 
         return current; // could be Uni<?> or Multi<?>
-    }
-
-    /**
-     * Load and instantiate pipeline steps configured via PipelineStepConfig.
-     *
-     * <p>Reads the mapped step configurations, instantiates CDI-managed step objects for each
-     * configured entry, and returns them in execution order. Steps are ordered by their
-     * `order` property; entries without an `order` are treated as 100. If the configuration
-     * cannot be read or an error occurs, an empty list is returned.
-     *
-     * @return the instantiated pipeline step objects in execution order, or an empty list if configuration cannot be read
-     */
-    private List<Object> loadPipelineSteps() {
-        try {
-            // Use the structured configuration mapping to get all pipeline steps
-            PipelineStepConfig pipelineStepConfig = CDI.current()
-                .select(PipelineStepConfig.class).get();
-
-            Map<String, org.pipelineframework.config.PipelineStepConfig.StepConfig> stepConfigs =
-                pipelineStepConfig.step();
-
-            // Sort the steps by their order property
-            List<Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig>> sortedStepEntries =
-                stepConfigs.entrySet().stream()
-                    .sorted(Map.Entry.comparingByValue(
-                        Comparator.comparingInt(config -> config.order() != null ? config.order() : 100)))
-                    .toList();
-
-            List<Object> steps = new ArrayList<>();
-            for (Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig> entry : sortedStepEntries) {
-                String stepClassName = entry.getKey();  // The fully qualified class name
-                org.pipelineframework.config.PipelineStepConfig.StepConfig stepConfig = entry.getValue();
-                Object step = createStepFromConfig(stepClassName, stepConfig);
-                if (step != null) {
-                    steps.add(step);
-                }
-            }
-
-            logger.debugf("Loaded %d pipeline steps from application properties", steps.size());
-            return steps;
-        } catch (Exception e) {
-            logger.errorf(e, "Failed to load configuration: %s", e.getMessage());
-            return Collections.emptyList();
-        }
-    }
-
-    /**
-     * Instantiate a pipeline step from its configuration and return a CDI-managed instance.
-     *
-     * @param stepClassName the fully qualified class name of the step
-     * @param config the step configuration containing other properties
-     * @return a CDI-managed instance of the configured class, or `null` if instantiation fails
-     */
-    private Object createStepFromConfig(String stepClassName, org.pipelineframework.config.PipelineStepConfig.StepConfig config) {
-        try {
-            Class<?> stepClass = Thread.currentThread().getContextClassLoader().loadClass(stepClassName);
-            Object step = Arc.container().instance(stepClass).get();
-            return step;
-        } catch (Exception e) {
-            logger.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
-            return null;
-        }
     }
 
     @SuppressWarnings({"unchecked"})

@@ -19,7 +19,7 @@ package org.pipelineframework.csv.service;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "csv-poc.payment-provider")
+@ConfigMapping(prefix = "csv-payments.payment-provider")
 public interface PaymentProviderConfig {
   /**
    * Rate-limiting of the 3rd party service (in seconds)

@@ -40,8 +40,8 @@ class DemandPacerConfigTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "csv-poc.reader-demand-pacer.rows-per-period", "10",
-                    "csv-poc.reader-demand-pacer.millis-period", "100");
+                    "csv-payments.reader-demand-pacer.rows-per-period", "10",
+                    "csv-payments.reader-demand-pacer.millis-period", "100");
         }
     }
 
@@ -85,8 +85,8 @@ class DemandPacerConfigTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "csv-poc.reader-demand-pacer.rows-per-period", "20",
-                    "csv-poc.reader-demand-pacer.millis-period", "200");
+                    "csv-payments.reader-demand-pacer.rows-per-period", "20",
+                    "csv-payments.reader-demand-pacer.millis-period", "200");
         }
     }
 
@@ -131,8 +131,8 @@ class DemandPacerConfigTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "csv-poc.reader-demand-pacer.rows-per-period", "1000",
-                    "csv-poc.reader-demand-pacer.millis-period", "100");
+                    "csv-payments.reader-demand-pacer.rows-per-period", "1000",
+                    "csv-payments.reader-demand-pacer.millis-period", "100");
         }
     }
 
@@ -160,8 +160,8 @@ class DemandPacerConfigTest {
         @Override
         public Map<String, String> getConfigOverrides() {
             return Map.of(
-                    "csv-poc.reader-demand-pacer.rows-per-period", "1",
-                    "csv-poc.reader-demand-pacer.millis-period", "1000");
+                    "csv-payments.reader-demand-pacer.rows-per-period", "1",
+                    "csv-payments.reader-demand-pacer.millis-period", "1000");
         }
     }
 

@@ -19,7 +19,7 @@ package org.pipelineframework.csv.util;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
-@ConfigMapping(prefix = "csv-poc.reader-demand-pacer")
+@ConfigMapping(prefix = "csv-payments.reader-demand-pacer")
 public interface DemandPacerConfig {
   /**
    * Number of rows permitted in each rate-limiting period.

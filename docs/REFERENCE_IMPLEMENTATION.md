@@ -213,10 +213,12 @@ my-pipeline-app/
 │   └── Dockerfile
 ├── orchestrator-svc/             # Orchestrator service
 │   ├── pom.xml
-├── examples/                     # Example implementations
-│   └── csv-payments/             # CSV payments example
-├── src/test/resources/          # Test configuration files
-│   └── application-test.properties # Test-specific configuration
+│   ├── README.md
+│   ├── src/main/java/...        # Service implementation
+│   ├── src/main/resources/...   # Configuration files
+│   ├── src/test/...             # Test files
+│   ├── multi-file-e2e-test-input/ # E2E test input files
+│   └── multi-file-e2e-test-output/ # E2E test output files
 ├── mvnw                          # Maven wrapper (Unix)
 ├── mvnw.cmd                      # Maven wrapper (Windows)
 ├── .mvn/wrapper/                 # Maven wrapper files

@@ -37,15 +37,9 @@ target/
 # Generated files
 dependency-reduced-pom.xml
 *SUMMARY.md
-
-# Observability
-prometheus_data/
-grafana_data/
-tempo_data/
+**/.flattened-pom.xml
 
 # Local configuration and logs
-examples/csv-payments/docker-compose.local.yml
-docker-compose.orchestrator.local.yml
 *.log
 *.pid
 
@@ -64,7 +58,6 @@ ui-dashboard/node_modules/
 
 # Vite cache
 web-ui/node_modules/.vite/
-ANNOTATION_BASED_ADAPTERS.md
 
 # AI Agents
 QWEN.md
@@ -73,6 +66,3 @@ QWEN.md
 /template-generator-node/test-output/
 /template-generator-node/node_modules/
 /template-generator-node/dist/
-
-# Test data
-/examples/csv-payments/input-csv-file-processing-svc/multi-file-e2e-test-output/

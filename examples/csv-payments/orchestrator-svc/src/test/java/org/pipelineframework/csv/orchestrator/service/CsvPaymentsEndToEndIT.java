@@ -33,6 +33,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.jboss.logging.Logger;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.BindMode;
@@ -41,7 +42,6 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
-@SuppressWarnings("resource")
 @QuarkusIntegrationTest
 class CsvPaymentsEndToEndIT {
 
@@ -245,20 +245,22 @@ class CsvPaymentsEndToEndIT {
     private void cleanTestOutputDirectory(Path outputDir) throws IOException {
         // Delete any existing CSV and OUT files in the test output directory
         if (Files.exists(outputDir)) {
-            Files.list(outputDir)
-                    .filter(
-                            path ->
-                                    path.toString().endsWith(".csv")
-                                            || path.toString().endsWith(".out"))
-                    .forEach(
-                            path -> {
-                                try {
-                                    Files.deleteIfExists(path);
-                                    LOG.infof("Deleted existing file: %s", path);
-                                } catch (IOException e) {
-                                    LOG.warnf(e, "Failed to delete existing file: %s", path);
-                                }
-                            });
+            try (var files = Files.list(outputDir)) {
+                files
+                        .filter(
+                                path ->
+                                        path.toString().endsWith(".csv")
+                                                || path.toString().endsWith(".out"))
+                        .forEach(
+                                path -> {
+                                    try {
+                                        Files.deleteIfExists(path);
+                                        LOG.infof("Deleted existing file: %s", path);
+                                    } catch (IOException e) {
+                                        LOG.warnf(e, "Failed to delete existing file: %s", path);
+                                    }
+                                });
+            }
         }
     }
 
@@ -289,9 +291,11 @@ class CsvPaymentsEndToEndIT {
                         .getBytes());
 
         LOG.info("Created test CSV files:");
-        Files.list(Paths.get(TEST_E2E_DIR))
-                .filter(path -> path.toString().endsWith(".csv"))
-                .forEach(path -> LOG.infof("- %s", path));
+        try (var files = Files.list(Paths.get(TEST_E2E_DIR))) {
+            files
+                    .filter(path -> path.toString().endsWith(".csv"))
+                    .forEach(path -> LOG.infof("- %s", path));
+        }
     }
 
     @SuppressWarnings("BusyWait")
@@ -304,9 +308,10 @@ class CsvPaymentsEndToEndIT {
 
         while (System.currentTimeMillis() - startTime < timeout) {
             // Check if output files exist in the expected output directory
-            boolean outputFilesExist =
-                    Files.list(Paths.get(TEST_E2E_DIR))
-                            .anyMatch(path -> path.toString().endsWith(".out"));
+            boolean outputFilesExist;
+            try (var files = Files.list(Paths.get(TEST_E2E_DIR))) {
+                outputFilesExist = files.anyMatch(path -> path.toString().endsWith(".out"));
+            }
 
             if (outputFilesExist) {
                 LOG.info("Output files detected, pipeline processing completed");
@@ -324,10 +329,12 @@ class CsvPaymentsEndToEndIT {
         LOG.info("Verifying output files...");
 
         // Check if output files exist in the output directory
-        List<Path> outputFiles =
-                Files.list(Paths.get(testOutputTargetDir))
-                        .filter(path -> path.toString().endsWith(".out"))
-                        .toList();
+        List<Path> outputFiles;
+        try (var files = Files.list(Paths.get(testOutputTargetDir))) {
+            outputFiles = files
+                    .filter(path -> path.toString().endsWith(".out"))
+                    .toList();
+        }
 
         // Output files should be generated
         assertFalse(outputFiles.isEmpty(), "Output files should be generated");
@@ -448,5 +455,28 @@ class CsvPaymentsEndToEndIT {
         }
 
         LOG.info("All expected records found in database");
+    }
+
+    @AfterAll
+    static void tearDown() {
+        // Stop all containers to prevent resource leaks
+        if (outputCsvService != null && outputCsvService.isRunning()) {
+            outputCsvService.stop();
+        }
+        if (paymentStatusService != null && paymentStatusService.isRunning()) {
+            paymentStatusService.stop();
+        }
+        if (paymentsProcessingService != null && paymentsProcessingService.isRunning()) {
+            paymentsProcessingService.stop();
+        }
+        if (inputCsvService != null && inputCsvService.isRunning()) {
+            inputCsvService.stop();
+        }
+        if (postgresContainer != null && postgresContainer.isRunning()) {
+            postgresContainer.stop();
+        }
+        if (network != null) {
+            network.close();
+        }
     }
 }

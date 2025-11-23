@@ -134,6 +134,13 @@ class CsvPaymentsEndToEndIT {
                                     .allowInsecure()
                                     .withStartupTimeout(Duration.ofSeconds(60)));
 
+    /**
+     * Initialises and starts the test containers required for the end-to-end CSV payments test.
+     *
+     * <p>Starts the PostgreSQL container first, then starts each service container so the test
+     * services (input CSV, payments processing, payment status and output CSV) are available
+     * before tests execute.
+     */
     @BeforeAll
     static void startServices() {
         // Start database first
@@ -146,6 +153,12 @@ class CsvPaymentsEndToEndIT {
         outputCsvService.start();
     }
 
+    /**
+     * Runs a full end-to-end integration test of the CSV payments processing pipeline.
+     *
+     * Sets up the test input directory and CSV files, invokes the orchestrator to process them,
+     * waits for pipeline completion, and verifies both generated output files and database persistence.
+     */
     @Test
     void fullPipelineWorks() throws Exception {
         LOG.info("Running full end-to-end pipeline test");
@@ -175,6 +188,12 @@ class CsvPaymentsEndToEndIT {
         LOG.info("End-to-end processing test completed successfully!");
     }
 
+    /**
+     * Launches the orchestrator JAR as a separate JVM process configured to use the test services and the given input directory.
+     *
+     * @param inputDir path to the directory containing input CSV files that the orchestrator should process
+     * @throws Exception if the process cannot be started or if it exits with a non-zero exit code
+     */
     @SuppressWarnings("SameParameterValue")
     private void orchestratorTriggerRun(String inputDir) throws Exception {
         LOG.infof("Triggering Orchestrator with input dir: %s", inputDir);
@@ -242,6 +261,12 @@ class CsvPaymentsEndToEndIT {
         assertEquals(0, exitCode, "Orchestrator exited with non-zero code");
     }
 
+    /**
+     * Remove any existing "*.csv" and "*.out" files from the given test output directory.
+     *
+     * @param outputDir the path to the test output directory to clean
+     * @throws IOException if an I/O error occurs while accessing or listing the directory
+     */
     private void cleanTestOutputDirectory(Path outputDir) throws IOException {
         // Delete any existing CSV and OUT files in the test output directory
         if (Files.exists(outputDir)) {
@@ -263,6 +288,13 @@ class CsvPaymentsEndToEndIT {
         }
     }
 
+    /**
+     * Create two CSV input files in the test directory containing five payment records used by the end-to-end test.
+     *
+     * The files created are "payments_first.csv" (three records) and "payments_second.csv" (two records). The method logs the created CSV filenames.
+     *
+     * @throws IOException if an I/O error occurs while writing the files or listing the directory
+     */
     private void createTestCsvFiles() throws IOException {
         LOG.info("Creating test CSV files...");
 
@@ -296,6 +328,16 @@ class CsvPaymentsEndToEndIT {
         }
     }
 
+    /**
+     * Waits for pipeline output files to appear in the test directory by polling for a limited time.
+     *
+     * Polls the TEST_E2E_DIR for files whose names end with ".out", checking once per second
+     * and returning as soon as any such file is detected. If no output files are found within
+     * the 10-second timeout the method logs a warning and returns.
+     *
+     * @throws InterruptedException if the thread is interrupted while sleeping between polls
+     * @throws IOException if an I/O error occurs when listing the test directory
+     */
     @SuppressWarnings("BusyWait")
     private void waitForPipelineComplete() throws InterruptedException, IOException {
         LOG.info("Waiting for pipeline to complete processing...");
@@ -322,6 +364,16 @@ class CsvPaymentsEndToEndIT {
         LOG.warn("Pipeline completion timeout reached, proceeding with verification anyway");
     }
 
+    /**
+     * Verifies generated output files in the given target directory contain the expected records.
+     *
+     * Checks that at least one `.out` file exists, that the combined number of data records
+     * (excluding header lines) is at least five, and that output contains records for the
+     * recipients John Doe, Jane Smith, Bob Johnson, Alice Brown and Charlie Wilson.
+     *
+     * @param testOutputTargetDir path to the directory containing generated output files
+     * @throws IOException if an I/O error occurs while listing or reading output files
+     */
     @SuppressWarnings("SameParameterValue")
     private void verifyOutputFiles(String testOutputTargetDir) throws IOException {
         LOG.info("Verifying output files...");
@@ -385,6 +437,16 @@ class CsvPaymentsEndToEndIT {
         LOG.info("All expected records found in output files");
     }
 
+    /**
+     * Verify that the expected payment records were persisted to the test PostgreSQL database.
+     *
+     * Performs the following checks against the test container database:
+     * - the `paymentrecord` table exists,
+     * - the table contains exactly five records,
+     * - specific recipient records are present.
+     *
+     * @throws Exception if a JDBC driver or connection error occurs or verification cannot be performed
+     */
     private void verifyDatabasePersistence() throws Exception {
         LOG.info("Verifying database persistence...");
 
@@ -428,6 +490,15 @@ class CsvPaymentsEndToEndIT {
         }
     }
 
+    /**
+     * Verify that expected payment recipient records exist in the database.
+     *
+     * Checks that a row exists in the `paymentrecord` table for each of the predefined recipient names
+     * and fails the test if any expected record is missing.
+     *
+     * @param connection a JDBC connection to the database containing the `paymentrecord` table
+     * @throws SQLException if a database access error occurs while querying for records
+     */
     private void verifySpecificRecordsInDatabase(Connection connection) throws SQLException {
         LOG.info("Verifying specific records in database...");
 

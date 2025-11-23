@@ -51,10 +51,17 @@ public class PipelineExecutionService {
   protected HealthCheckService healthCheckService;
 
   /**
-   * Execute the pipeline with a given input.
-   * This method is used by PipelineApplication.
+   * Execute the configured pipeline using the provided input.
    *
-   * @param input the input Multi for the pipeline
+   * Performs a health check of dependent services before running the pipeline. If the health check fails,
+   * returns a failed Multi with a RuntimeException. If the pipeline runner returns null or an unexpected
+   * type, returns a failed Multi with an IllegalStateException. On success returns the Multi produced by
+   * the pipeline (a Uni is converted to a Multi) with lifecycle hooks attached for timing and logging.
+   *
+   * @param input the input Multi supplied to the pipeline steps
+   * @return the pipeline result as a Multi; if dependent services are unhealthy the Multi fails with a
+   *         RuntimeException, and if the runner returns null or an unexpected type the Multi fails with
+   *         an IllegalStateException
    */
   public Multi<?> executePipeline(Multi<?> input) {
     return Multi.createFrom().deferred(() -> {
@@ -106,14 +113,12 @@ public class PipelineExecutionService {
   }
 
   /**
-   * Load and instantiate pipeline steps configured via PipelineStepConfig.
+   * Load configured pipeline steps, instantiate them as CDI-managed beans and return them in execution order.
    *
-   * <p>Reads the mapped step configurations, instantiates CDI-managed step objects for each
-   * configured entry, and returns them in execution order. Steps are ordered by their
-   * `order` property; entries without an `order` are treated as 0. If the configuration
-   * cannot be read or an error occurs, an empty list is returned.
+   * <p>Steps are ordered by their `order` property; entries without an `order` are treated as 0. If configuration
+   * cannot be read or an error occurs while instantiating steps, an empty list is returned.
    *
-   * @return the instantiated pipeline step objects in execution order, or an empty list if configuration cannot be read
+   * @return the instantiated pipeline step objects in execution order, or an empty list if configuration cannot be read or instantiation fails
    */
   private List<Object> loadPipelineSteps() {
     try {
@@ -152,11 +157,11 @@ public class PipelineExecutionService {
   }
 
   /**
-   * Instantiate a pipeline step from its configuration and return a CDI-managed instance.
+   * Instantiates a pipeline step class and returns the CDI-managed bean.
    *
-   * @param stepClassName the fully qualified class name of the step
-   * @param config the step configuration containing other properties
-   * @return a CDI-managed instance of the configured class, or `null` if instantiation fails
+   * @param stepClassName the fully qualified class name of the pipeline step
+   * @param config the step configuration
+   * @return the CDI-managed instance of the step, or null if instantiation fails
    */
   private Object createStepFromConfig(String stepClassName, org.pipelineframework.config.PipelineStepConfig.StepConfig config) {
     try {

@@ -43,11 +43,13 @@ public class PipelineRunner implements AutoCloseable {
     PipelineConfig pipelineConfig;
 
     /**
-     * Execute the configured pipeline steps against the provided Multi input.
+     * Run a sequence of pipeline steps against the provided reactive source.
      *
-     * @param input the source Multi of items to process through the pipeline
-     * @param steps the list of steps to apply
-     * @return the pipeline's resulting reactive stream — either a `Multi<?>` or a `Uni<?>` representing the final stage
+     * Configurable steps are initialised with configuration built from the injected factories before being applied.
+     *
+     * @param input the source Multi of items to process through the pipeline; may be transformed to a Uni/Multi by steps
+     * @param steps the ordered list of step instances to apply; null entries are skipped
+     * @return either a Multi containing the resulting stream of items or a Uni containing the final single result
      */
     public Object run(Multi<?> input, List<Object> steps) {
         Object current = input;
@@ -82,6 +84,14 @@ public class PipelineRunner implements AutoCloseable {
         return current; // could be Uni<?> or Multi<?>
     }
 
+    /**
+     * Apply a one-to-one pipeline step to the provided reactive stream and produce the transformed stream.
+     *
+     * @param step    the step that transforms items of type I to type O
+     * @param current a Uni<?> or Multi<?> that provides the input items; other types are not supported
+     * @return        the resulting Uni<?> or Multi<?> after applying the step
+     * @throws IllegalArgumentException if {@code current} is neither a Uni<?> nor a Multi<?>
+     */
     @SuppressWarnings({"unchecked"})
     public static <I, O> Object applyOneToOneUnchecked(StepOneToOne<I, O> step, Object current) {
         if (current instanceof Uni<?>) {

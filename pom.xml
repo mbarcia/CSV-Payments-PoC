@@ -286,6 +286,7 @@
                                     <includes>
                                         <include>**/*IT.java</include>
                                         <include>**/*ITCase.java</include>
+                                        <include>**/*IntegrationTest.java</include>
                                     </includes>
 
                                     <!-- Avoid clashing with Quarkus test harness -->

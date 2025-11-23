@@ -191,7 +191,7 @@ public class HealthCheckService {
             if (e.getCause() instanceof java.util.concurrent.TimeoutException) {
                 LOG.info("✗ gRPC client '" + grpcClientName + "' service health check timed out");
             } else {
-                LOG.info("✗ gRPC client '" + grpcClientName + "' service is not accessible. Error: " + e.getCause().getMessage());
+                LOG.info("✗ gRPC client '" + grpcClientName + "' service is not accessible. Error: " + e.getMessage());
             }
             return false;
         } catch (Exception e) {

@@ -41,7 +41,7 @@ public class OrchestratorApplication implements QuarkusApplication, Callable<Int
         description = "Input value for the pipeline",
         defaultValue = "csv"
     )
-    String input;
+    public String input;
 
     @Inject
     PipelineExecutionService pipelineExecutionService;

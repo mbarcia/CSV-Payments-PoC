@@ -104,24 +104,26 @@ Your application is now ready to run! The template generator creates a complete 
 - Common module with domain entities, DTOs, and mappers
 - Individual service modules for each pipeline step
 - Orchestrator module with CLI application and configuration
-- Docker Compose orchestration files
-- Observability stack (Prometheus, Grafana, Tempo, Loki, OpenTelemetry)
-- Utility scripts for local and Docker deployment
+- Test configuration files for different environments
+- Integration tests with Testcontainers
+- Maven configuration for builds and testing
 
 ## Running Your Generated Application
 
-Run your application using the standard Quarkus commands or the provided utility scripts:
+Run your application using Quarkus Dev Mode in your IDE:
 
 ```bash
-# Development mode
+# For command-line development (if needed):
 ./mvnw quarkus:dev
+
+# For fastest development feedback, use Quarkus Dev Mode in your IDE
 
 # Production mode
 ./mvnw clean package
 java -jar target/my-app-runner.jar
 
-# Using Docker Compose (if configured)
-./up-docker.sh
+# Running Integration Tests (in service modules)
+./mvnw verify -Pit -Denable.container.build=true
 
 # Native mode
 ./mvnw clean package -Pnative

@@ -213,15 +213,10 @@ my-pipeline-app/
 │   └── Dockerfile
 ├── orchestrator-svc/             # Orchestrator service
 │   ├── pom.xml
-│   └── Dockerfile
-├── docker-compose.yml            # Service orchestration
-├── up-docker.sh                  # Docker startup script
-├── down-docker.sh                # Docker shutdown script
-├── otel-collector-config.yaml    # OpenTelemetry configuration
-├── prometheus.yml                # Prometheus configuration
-├── grafana-datasources.yaml      # Grafana data sources
-├── grafana-dashboards.yaml       # Grafana dashboards
-├── tempo.yaml                    # Tempo configuration
+├── examples/                     # Example implementations
+│   └── csv-payments/             # CSV payments example
+├── src/test/resources/          # Test configuration files
+│   └── application-test.properties # Test-specific configuration
 ├── mvnw                          # Maven wrapper (Unix)
 ├── mvnw.cmd                      # Maven wrapper (Windows)
 ├── .mvn/wrapper/                 # Maven wrapper files

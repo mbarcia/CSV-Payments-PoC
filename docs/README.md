@@ -17,6 +17,8 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 - **Visual Design Canvas**: Create and configure pipelines with the visual designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>
 - **gRPC and REST Support**: Automatically generates adapters for both communication protocols
 - **Modular Design**: Clear separation between runtime and deployment components
+- **Test Integration**: Built-in support for integration tests with Testcontainers
+- **CI/CD Ready**: Pre-configured GitHub Actions workflow for testing and publishing
 - **Auto-Generation**: Generates necessary infrastructure at build time
 - **Observability**: Built-in metrics, tracing, and logging support
 - **Error Handling**: Comprehensive error handling with DLQ support

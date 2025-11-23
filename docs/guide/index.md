@@ -13,6 +13,7 @@ The Pipeline Framework includes a visual canvas designer at <a href="https://app
 - **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
 - **gRPC and REST Support**: Automatically generates adapters for both communication protocols
 - **Modular Design**: Clear separation between runtime and deployment components
+- **Test Integration**: Built-in support for unit and integration tests with Testcontainers
 
 ## Framework Overview
 

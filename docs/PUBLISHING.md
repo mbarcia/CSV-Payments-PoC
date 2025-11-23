@@ -14,6 +14,8 @@ The release process is fully automated with GitHub Actions:
 
 The GitHub Actions workflow automatically:
 - Builds and tests the complete project
+- Runs unit and integration tests
+- Builds native executables for example services (on main branch)
 - Signs all artifacts with GPG
 - Deploys to Sonatype OSSRH
 - Closes and releases the staging repository

@@ -105,61 +105,12 @@ public class PipelineExecutionService {
     });
   }
 
-
-  /**
-   * Extracts gRPC client names from the fields of a step object using reflection.
-   *
-   * @param step the step object to inspect
-   * @return a set of gRPC client names used by the step
-   */
-  private Set<String> extractGrpcClientNames(Object step) {
-    Set<String> grpcClientNames = new HashSet<>();
-    Class<?> stepClass = step.getClass();
-
-    // Check all fields in the step class
-    for (Field field : stepClass.getDeclaredFields()) {
-      if (field.isAnnotationPresent(GrpcClient.class)) {
-        GrpcClient grpcClientAnnotation = field.getAnnotation(GrpcClient.class);
-        String clientName = grpcClientAnnotation.value();
-
-        // If the value is empty, use the field name as default
-        if (clientName.isEmpty()) {
-          clientName = field.getName();
-        }
-
-        grpcClientNames.add(clientName);
-      }
-    }
-
-    // Also check superclass fields if any
-    Class<?> superClass = stepClass.getSuperclass();
-    while (superClass != null && superClass != Object.class) {
-      for (Field field : superClass.getDeclaredFields()) {
-        if (field.isAnnotationPresent(GrpcClient.class)) {
-          GrpcClient grpcClientAnnotation = field.getAnnotation(GrpcClient.class);
-          String clientName = grpcClientAnnotation.value();
-
-          // If the value is empty, use the field name as default
-          if (clientName.isEmpty()) {
-            clientName = field.getName();
-          }
-
-          grpcClientNames.add(clientName);
-        }
-      }
-      superClass = superClass.getSuperclass();
-    }
-
-    return grpcClientNames;
-  }
-
-
   /**
    * Load and instantiate pipeline steps configured via PipelineStepConfig.
    *
    * <p>Reads the mapped step configurations, instantiates CDI-managed step objects for each
    * configured entry, and returns them in execution order. Steps are ordered by their
-   * `order` property; entries without an `order` are treated as 100. If the configuration
+   * `order` property; entries without an `order` are treated as 0. If the configuration
    * cannot be read or an error occurs, an empty list is returned.
    *
    * @return the instantiated pipeline step objects in execution order, or an empty list if configuration cannot be read
@@ -177,7 +128,7 @@ public class PipelineExecutionService {
       List<Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig>> sortedStepEntries =
         stepConfigs.entrySet().stream()
           .sorted(Map.Entry.comparingByValue(
-            Comparator.comparingInt(config -> config.order() != null ? config.order() : 100)))
+            Comparator.comparingInt(config -> config.order() != null ? config.order() : 0)))
           .toList();
 
       List<Object> steps = new ArrayList<>();

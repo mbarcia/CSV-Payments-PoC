@@ -16,6 +16,7 @@
 
 package org.pipelineframework;
 
+import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -61,8 +62,7 @@ public class HealthCheckService {
         } catch (Exception e) {
             LOG.warn("Failed to create insecure SSL context, proceeding with default", e);
             try {
-                javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getDefault();
-                return sslContext;
+	            return javax.net.ssl.SSLContext.getDefault();
             } catch (Exception ex) {
                 LOG.error("Failed to get default SSL context", ex);
                 throw new RuntimeException(ex);
@@ -95,10 +95,8 @@ public class HealthCheckService {
             return true;
         }
 
-        int maxRetries = 24; // 2 minutes / 5 seconds = 24 checks
-        int retryIntervalSeconds = 5;
-
-        for (int attempt = 0; attempt < maxRetries; attempt++) {
+        // Create a Uni that performs the health checks and apply retry logic
+        Uni<Boolean> healthCheckUni = Uni.createFrom().item(() -> {
             boolean allHealthy = true;
             Set<String> unhealthyServices = new HashSet<>();
 
@@ -114,23 +112,20 @@ public class HealthCheckService {
                 LOG.info("All dependent services are healthy. Proceeding with pipeline execution.");
                 return true;
             } else {
-                LOG.warn("Attempt " + (attempt + 1) + " failed. Services not healthy: " + unhealthyServices);
-                if (attempt < maxRetries - 1) { // Don't sleep on the last attempt
-                    LOG.info("Retrying health checks in " + retryIntervalSeconds + " seconds...");
-                    try {
-                        Thread.sleep(retryIntervalSeconds * 1000L);
-                    } catch (InterruptedException e) {
-                        LOG.warn("Health check interrupted, aborting pipeline execution...");
-                        // Restore the interrupted status
-                        Thread.currentThread().interrupt();
-                        return false;
-                    }
-                }
+                LOG.warn("Health check failed. Services not healthy: " + unhealthyServices);
+                throw new RuntimeException("Health check failed: " + unhealthyServices);
             }
-        }
+        })
+        .onFailure().retry()
+        .withBackOff(Duration.ofSeconds(5), Duration.ofSeconds(5))
+        .atMost(24); // 24 attempts with 5s backoff = ~2 minutes
 
-        LOG.error("Health checks failed after " + maxRetries + " attempts. Pipeline execution will not proceed.");
-        return false;
+        try {
+            return healthCheckUni.await().indefinitely();
+        } catch (Exception e) {
+            LOG.error("Health checks failed after maximum attempts. Pipeline execution will not proceed.");
+            return false;
+        }
     }
 
     /**
@@ -158,9 +153,14 @@ public class HealthCheckService {
                     .getOptionalValue("quarkus.grpc.clients." + grpcClientName + ".tls.enabled", Boolean.class)
                     .orElse(false);
 
-            // Construct the health check URL (typically served at /q/health)
+            // Get health endpoint path from configuration, default to /q/health
+            String healthPath = ConfigProvider.getConfig()
+                    .getOptionalValue("quarkus.grpc.clients." + grpcClientName + ".health-path", String.class)
+                    .orElse("/q/health");
+
+            // Construct the health check URL
             String protocol = useTls ? "https" : "http";
-            String healthUrl = String.format("%s://%s:%d/q/health", protocol, host, port);
+            String healthUrl = String.format("%s://%s:%d%s", protocol, host, port, healthPath);
 
             // Create and execute the HTTP request
             HttpRequest request = HttpRequest.newBuilder()
@@ -206,23 +206,28 @@ public class HealthCheckService {
      * @param step the step object to inspect
      * @return a set of gRPC client names used by the step
      */
-    private Set<String> extractGrpcClientNames(Object step) {
+    public Set<String> extractGrpcClientNames(Object step) {
         Set<String> grpcClientNames = new HashSet<>();
-        Class<?> stepClass = step.getClass();
 
-        // Check all fields in the step class
-        for (Field field : stepClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(io.quarkus.grpc.GrpcClient.class)) {
-                io.quarkus.grpc.GrpcClient grpcClientAnnotation = field.getAnnotation(io.quarkus.grpc.GrpcClient.class);
-                String clientName = grpcClientAnnotation.value();
+	    // Walk the class hierarchy to check all fields including superclasses
+        Class<?> currentClass = step.getClass();
+        while (currentClass != null && currentClass != Object.class) {
+            // Check all declared fields in the current class
+            for (Field field : currentClass.getDeclaredFields()) {
+                if (field.isAnnotationPresent(io.quarkus.grpc.GrpcClient.class)) {
+                    io.quarkus.grpc.GrpcClient grpcClientAnnotation = field.getAnnotation(io.quarkus.grpc.GrpcClient.class);
+                    String clientName = grpcClientAnnotation.value();
 
-                // If the value is empty, use the field name as default
-                if (clientName.isEmpty()) {
-                    clientName = field.getName();
+                    // If the value is empty, use the field name as default
+                    if (clientName.isEmpty()) {
+                        clientName = field.getName();
+                    }
+
+                    grpcClientNames.add(clientName);
                 }
-
-                grpcClientNames.add(clientName);
             }
+            // Move to the superclass
+            currentClass = currentClass.getSuperclass();
         }
 
         return grpcClientNames;

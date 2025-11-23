@@ -45,7 +45,6 @@ Add the framework to your Maven project:
 
 - **[Full Documentation](https://pipelineframework.org)** - Complete documentation site
 - **[Getting Started Guide](https://pipelineframework.org/guide/getting-started)** - Step-by-step tutorial
-- **[Framework Overview](https://pipelineframework.org/FRAMEWORK_OVERVIEW)** - Architecture and concepts
 - **[Canvas Designer Guide](https://pipelineframework.org/CANVAS_GUIDE)** - Visual design tool
 - **[API Reference](https://pipelineframework.org/annotations/pipeline-step)** - Annotation documentation
 
@@ -53,7 +52,7 @@ Add the framework to your Maven project:
 
 The framework follows a modular architecture:
 
-```
+```text
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
 │   Orchestrator  │───▶│ Backend Service  │───▶│ Backend Service │
 │   (Coordinates) │    │     (Step 1)     │    │     (Step 2)    │

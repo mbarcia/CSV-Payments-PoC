@@ -15,11 +15,15 @@
 #
 
 # Enable debug logging for pipeline framework
-#quarkus.log.category."{{basePackage}}.orchestrator".level=DEBUG
-#quarkus.log.category."org.pipelineframework".level=DEBUG
+quarkus.log.category."{{basePackage}}.orchestrator".level=DEBUG
+quarkus.log.category."org.pipelineframework".level=DEBUG
 
+# Pipeline configuration for development
+pipeline.defaults.retry-limit=5
+pipeline.defaults.retry-wait-ms=200
 
-# OpenTelemetry configuration
+# Disable OpenTelemetry in development
+quarkus.otel.sdk.disabled=true
 quarkus.otel.enabled=false
 quarkus.otel.traces.enabled=false
 quarkus.otel.metrics.enabled=false

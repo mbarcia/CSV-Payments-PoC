@@ -1,0 +1,11 @@
+# Test-specific configuration
+quarkus.http.test-port=0
+
+# Disable OTEL during tests
+quarkus.otel.enabled=false
+quarkus.otel.traces.enabled=false
+quarkus.otel.metrics.enabled=false
+quarkus.otel.logs.enabled=false
+
+# Micrometer configuration
+quarkus.micrometer.export.prometheus.enabled=false

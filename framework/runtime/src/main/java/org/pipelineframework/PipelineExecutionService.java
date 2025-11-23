@@ -16,13 +16,11 @@
 
 package org.pipelineframework;
 
-import io.quarkus.grpc.GrpcClient;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.spi.CDI;
 import jakarta.inject.Inject;
-import java.lang.reflect.Field;
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -52,7 +50,7 @@ public class PipelineExecutionService {
 
   /**
    * Execute the configured pipeline using the provided input.
-   *
+   * <p>
    * Performs a health check of dependent services before running the pipeline. If the health check fails,
    * returns a failed Multi with a RuntimeException. If the pipeline runner returns null or an unexpected
    * type, returns a failed Multi with an IllegalStateException. On success returns the Multi produced by
@@ -69,7 +67,14 @@ public class PipelineExecutionService {
       StopWatch watch = new StopWatch();
 
       // Check health of dependent services before proceeding with pipeline execution
-      List<Object> steps = loadPipelineSteps();
+      List<Object> steps;
+      try {
+          steps = loadPipelineSteps();
+      } catch (PipelineConfigurationException e) {
+          LOG.errorf(e, "Failed to load pipeline configuration: %s", e.getMessage());
+          return Multi.createFrom().failure(e);
+      }
+
       if (!healthCheckService.checkHealthOfDependentServices(steps)) {
         return Multi.createFrom().failure(new RuntimeException("One or more dependent services are not healthy. Pipeline execution aborted after retries."));
       }
@@ -116,9 +121,11 @@ public class PipelineExecutionService {
    * Load configured pipeline steps, instantiate them as CDI-managed beans and return them in execution order.
    *
    * <p>Steps are ordered by their `order` property; entries without an `order` are treated as 0. If configuration
-   * cannot be read or an error occurs while instantiating steps, an empty list is returned.
+   * cannot be read or an error occurs while instantiating steps, an exception is thrown to indicate the failure,
+   * except when no steps are configured (empty stepConfigs map), which returns an empty list.
    *
-   * @return the instantiated pipeline step objects in execution order, or an empty list if configuration cannot be read or instantiation fails
+   * @return the instantiated pipeline step objects in execution order, or an empty list if no steps are configured
+   * @throws PipelineConfigurationException if there are configuration or instantiation failures
    */
   private List<Object> loadPipelineSteps() {
     try {
@@ -128,6 +135,12 @@ public class PipelineExecutionService {
 
       Map<String, org.pipelineframework.config.PipelineStepConfig.StepConfig> stepConfigs =
         pipelineStepConfig.step();
+
+      // Check if no steps are configured - this is a valid state that returns an empty list
+      if (stepConfigs == null || stepConfigs.isEmpty()) {
+        LOG.info("No pipeline steps configured, returning empty list");
+        return Collections.emptyList();
+      }
 
       // Sort the steps by their order property
       List<Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig>> sortedStepEntries =
@@ -139,8 +152,7 @@ public class PipelineExecutionService {
       List<Object> steps = new ArrayList<>();
       for (Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig> entry : sortedStepEntries) {
         String stepClassName = entry.getKey();  // The fully qualified class name
-        org.pipelineframework.config.PipelineStepConfig.StepConfig stepConfig = entry.getValue();
-        Object step = createStepFromConfig(stepClassName, stepConfig);
+	      Object step = createStepFromConfig(stepClassName);
         if (step != null) {
           steps.add(step);
         }
@@ -152,7 +164,7 @@ public class PipelineExecutionService {
       return steps;
     } catch (Exception e) {
       LOG.errorf(e, "Failed to load configuration: %s", e.getMessage());
-      return Collections.emptyList();
+      throw new PipelineConfigurationException("Failed to load pipeline configuration: " + e.getMessage(), e);
     }
   }
 
@@ -160,10 +172,9 @@ public class PipelineExecutionService {
    * Instantiates a pipeline step class and returns the CDI-managed bean.
    *
    * @param stepClassName the fully qualified class name of the pipeline step
-   * @param config the step configuration
    * @return the CDI-managed instance of the step, or null if instantiation fails
    */
-  private Object createStepFromConfig(String stepClassName, org.pipelineframework.config.PipelineStepConfig.StepConfig config) {
+  private Object createStepFromConfig(String stepClassName) {
     try {
       Class<?> stepClass = Thread.currentThread().getContextClassLoader().loadClass(stepClassName);
       return io.quarkus.arc.Arc.container().instance(stepClass).get();
@@ -171,5 +182,18 @@ public class PipelineExecutionService {
       LOG.errorf(e, "Failed to instantiate pipeline step: %s, error: %s", stepClassName, e.getMessage());
       return null;
     }
+  }
+
+  /**
+   * Exception thrown when there are configuration issues related to pipeline setup.
+   */
+  public static class PipelineConfigurationException extends RuntimeException {
+      public PipelineConfigurationException(String message) {
+          super(message);
+      }
+
+      public PipelineConfigurationException(String message, Throwable cause) {
+          super(message, cause);
+      }
   }
 }

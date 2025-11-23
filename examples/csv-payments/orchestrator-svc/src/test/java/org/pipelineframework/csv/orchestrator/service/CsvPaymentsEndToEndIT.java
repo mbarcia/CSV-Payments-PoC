@@ -246,8 +246,7 @@ class CsvPaymentsEndToEndIT {
         // Delete any existing CSV and OUT files in the test output directory
         if (Files.exists(outputDir)) {
             try (var files = Files.list(outputDir)) {
-                files
-                        .filter(
+                files.filter(
                                 path ->
                                         path.toString().endsWith(".csv")
                                                 || path.toString().endsWith(".out"))
@@ -292,8 +291,7 @@ class CsvPaymentsEndToEndIT {
 
         LOG.info("Created test CSV files:");
         try (var files = Files.list(Paths.get(TEST_E2E_DIR))) {
-            files
-                    .filter(path -> path.toString().endsWith(".csv"))
+            files.filter(path -> path.toString().endsWith(".csv"))
                     .forEach(path -> LOG.infof("- %s", path));
         }
     }
@@ -331,9 +329,7 @@ class CsvPaymentsEndToEndIT {
         // Check if output files exist in the output directory
         List<Path> outputFiles;
         try (var files = Files.list(Paths.get(testOutputTargetDir))) {
-            outputFiles = files
-                    .filter(path -> path.toString().endsWith(".out"))
-                    .toList();
+            outputFiles = files.filter(path -> path.toString().endsWith(".out")).toList();
         }
 
         // Output files should be generated

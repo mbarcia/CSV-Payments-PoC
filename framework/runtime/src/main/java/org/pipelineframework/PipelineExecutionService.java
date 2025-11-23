@@ -150,12 +150,22 @@ public class PipelineExecutionService {
           .toList();
 
       List<Object> steps = new ArrayList<>();
+      List<String> failedSteps = new ArrayList<>();
       for (Map.Entry<String, org.pipelineframework.config.PipelineStepConfig.StepConfig> entry : sortedStepEntries) {
         String stepClassName = entry.getKey();  // The fully qualified class name
 	      Object step = createStepFromConfig(stepClassName);
         if (step != null) {
           steps.add(step);
+        } else {
+          failedSteps.add(stepClassName);
         }
+      }
+
+      if (!failedSteps.isEmpty()) {
+        String message = String.format("Failed to instantiate %d step(s): %s",
+          failedSteps.size(), String.join(", ", failedSteps));
+        LOG.error(message);
+        throw new PipelineConfigurationException(message);
       }
 
       if (LOG.isDebugEnabled()) {

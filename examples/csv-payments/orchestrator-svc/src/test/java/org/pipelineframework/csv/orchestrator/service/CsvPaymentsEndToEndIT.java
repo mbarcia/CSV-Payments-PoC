@@ -257,7 +257,9 @@ class CsvPaymentsEndToEndIT {
 
         pb.inheritIO();
         Process p = pb.start();
-        int exitCode = p.waitFor();
+        boolean completed = p.waitFor(60, TimeUnit.SECONDS);
+        assertTrue(completed, "Orchestrator process timed out");
+        int exitCode = p.exitValue();
         assertEquals(0, exitCode, "Orchestrator exited with non-zero code");
     }
 
@@ -461,10 +463,9 @@ class CsvPaymentsEndToEndIT {
         try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password)) {
             // Verify that the paymentrecord table exists
             DatabaseMetaData metaData = connection.getMetaData();
-            ResultSet tables =
-                    metaData.getTables(null, null, "paymentrecord", new String[] {"TABLE"});
-
-            assertTrue(tables.next(), "paymentrecord table should exist in the database");
+            try (ResultSet tables = metaData.getTables(null, null, "paymentrecord", new String[] {"TABLE"})) {
+                assertTrue(tables.next(), "paymentrecord table should exist in the database");
+            }
 
             // Query the paymentrecord table to ensure records were persisted
             String query = "SELECT COUNT(*) FROM paymentrecord";
@@ -524,6 +525,11 @@ class CsvPaymentsEndToEndIT {
         LOG.info("All expected records found in database");
     }
 
+    /**
+     * Cleans up resources by stopping all containers and closing the network.
+     * This method runs after all tests in the class have completed to ensure
+     * all Testcontainers resources are properly released.
+     */
     @AfterAll
     static void tearDown() {
         // Stop all containers to prevent resource leaks

@@ -89,7 +89,15 @@ public void checkServerTrusted(java.security.cert.X509Certificate[] certs, Strin
     }
 
     /**
-     * Creates an SSL context based on the gRPC client's truststore configuration
+     * Creates an SSL context based on the gRPC client's truststore configuration.
+     *
+     * Supports the following keystore types based on file extension:
+     * - JKS (Java KeyStore) for files with .jks extension
+     * - PKCS12 for files with .p12, .pfx, or .pkcs12 extensions
+     * - Defaults to JKS if no recognized extension is found
+     *
+     * @param grpcClientName the name of the gRPC client whose truststore configuration to use
+     * @return SSL context with trust anchors loaded from the configured truststore
      */
     private javax.net.ssl.SSLContext createSslContextForGrpcClient(String grpcClientName) {
         try {
@@ -137,7 +145,9 @@ public void checkServerTrusted(java.security.cert.X509Certificate[] certs, Strin
                         javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(
                                 javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
 
-                        java.security.KeyStore ts = java.security.KeyStore.getInstance("JKS");
+                        // Determine keystore type based on file extension, default to JKS
+                        String keyStoreType = determineKeyStoreType(trustStorePath);
+                        java.security.KeyStore ts = java.security.KeyStore.getInstance(keyStoreType);
                         try (trustStoreStream) {
                             ts.load(trustStoreStream, trustStorePassword.toCharArray());
                         }
@@ -186,6 +196,31 @@ public void checkServerTrusted(java.security.cert.X509Certificate[] certs, Strin
             }
         }
         return trustStoreStream;
+    }
+
+    /**
+     * Determines the keystore type based on the file extension.
+     *
+     * Currently supports:
+     * - .p12, .pfx: PKCS12 format
+     * - .jks: JKS format
+     * - .pkcs12: PKCS12 format
+     * - Default: JKS format
+     *
+     * @param trustStorePath the path to the truststore file
+     * @return the appropriate keystore type string
+     */
+    private String determineKeyStoreType(String trustStorePath) {
+        if (trustStorePath != null) {
+            String lowerPath = trustStorePath.toLowerCase();
+            if (lowerPath.endsWith(".p12") || lowerPath.endsWith(".pfx") || lowerPath.endsWith(".pkcs12")) {
+                return "PKCS12";
+            } else if (lowerPath.endsWith(".jks")) {
+                return "JKS";
+            }
+        }
+        // Default to JKS if no specific extension is recognized
+        return "JKS";
     }
 
     /**

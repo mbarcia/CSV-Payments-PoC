@@ -18,6 +18,8 @@ package org.pipelineframework;
 
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -36,13 +38,7 @@ public class HealthCheckService {
 
     private static final Logger LOG = Logger.getLogger(HealthCheckService.class);
 
-    private final HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5))
-            .sslContext(createInsecureSslContext())
-            .build();
-
-
-    /**
+	/**
      * Creates an SSL context that ignores certificate validation, similar to curl -k
      */
     private javax.net.ssl.SSLContext createInsecureSslContext() {
@@ -68,6 +64,106 @@ public class HealthCheckService {
                 throw new RuntimeException(ex);
             }
         }
+    }
+
+    /**
+     * Creates an SSL context based on the gRPC client's truststore configuration
+     */
+    private javax.net.ssl.SSLContext createSslContextForGrpcClient(String grpcClientName) {
+        try {
+            // First, try to get the truststore configuration for this specific gRPC client
+            String trustStorePath = ConfigProvider.getConfig()
+                    .getOptionalValue("quarkus.grpc.clients." + grpcClientName + ".tls.trust-store-file", String.class)
+                    .orElse(ConfigProvider.getConfig()
+                            .getOptionalValue("quarkus.grpc.clients." + grpcClientName + ".tls.trust-store", String.class)
+                            .orElse(null));
+
+            String trustStorePassword = ConfigProvider.getConfig()
+                    .getOptionalValue("quarkus.grpc.clients." + grpcClientName + ".tls.trust-store-password", String.class)
+                    .orElse(ConfigProvider.getConfig()
+                            .getOptionalValue("quarkus.grpc.clients." + grpcClientName + ".tls.trust-password", String.class)
+                            .orElse(null));
+
+            // If client-specific truststore is not configured, try the global truststore
+            if (trustStorePath == null) {
+                trustStorePath = ConfigProvider.getConfig()
+                        .getOptionalValue("quarkus.tls.trust-store.jks.path", String.class)
+                        .orElse(ConfigProvider.getConfig()
+                                .getOptionalValue("quarkus.tls.trust-store.path", String.class)
+                                .orElse(null));
+
+                if (trustStorePath != null) {
+                    trustStorePassword = ConfigProvider.getConfig()
+                            .getOptionalValue("quarkus.tls.trust-store.jks.password", String.class)
+                            .orElse(ConfigProvider.getConfig()
+                                    .getOptionalValue("quarkus.tls.trust-store.password", String.class)
+                                    .orElse("secret")); // Default to 'secret' if not specified
+                }
+            }
+
+            // Use default password if not specified
+            if (trustStorePassword == null) {
+                trustStorePassword = "changeit"; // Default Java truststore password
+            }
+
+            if (trustStorePath != null) {
+                // Try to load the truststore from the classpath first, then as a file
+                InputStream trustStoreStream = getTrustStoreStream(trustStorePath);
+
+                if (trustStoreStream != null) {
+                    try {
+                        javax.net.ssl.TrustManagerFactory tmf = javax.net.ssl.TrustManagerFactory.getInstance(
+                                javax.net.ssl.TrustManagerFactory.getDefaultAlgorithm());
+
+                        java.security.KeyStore ts = java.security.KeyStore.getInstance("JKS");
+                        try (trustStoreStream) {
+                            ts.load(trustStoreStream, trustStorePassword.toCharArray());
+                        }
+                        tmf.init(ts);
+
+                        javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
+                        sslContext.init(null, tmf.getTrustManagers(), null);
+
+                        LOG.info("Using custom truststore for gRPC client '" + grpcClientName + "'");
+                        return sslContext;
+                    } catch (Exception e) {
+                        LOG.warn("Failed to load truststore from: " + trustStorePath, e);
+                    }
+                } else {
+                    LOG.warn("Truststore file not found for gRPC client '" + grpcClientName + "': " + trustStorePath);
+                }
+            }
+
+            // If no specific truststore is configured, fall back to the default
+            return javax.net.ssl.SSLContext.getDefault();
+        } catch (Exception e) {
+            LOG.warn("Failed to create SSL context with custom truststore, falling back to default", e);
+            try {
+                return javax.net.ssl.SSLContext.getDefault();
+            } catch (Exception ex) {
+                LOG.error("Failed to get default SSL context", ex);
+                throw new RuntimeException(ex);
+            }
+        }
+    }
+
+    private static InputStream getTrustStoreStream(String trustStorePath) throws FileNotFoundException {
+        InputStream trustStoreStream = null;
+
+        // Try loading from classpath first
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader != null) {
+            trustStoreStream = classLoader.getResourceAsStream(trustStorePath);
+        }
+
+        if (trustStoreStream == null) {
+            // If not found in classpath, try as a regular file
+            java.io.File trustStoreFile = new java.io.File(trustStorePath);
+            if (trustStoreFile.exists()) {
+                trustStoreStream = new java.io.FileInputStream(trustStoreFile);
+            }
+        }
+        return trustStoreStream;
     }
 
     /**
@@ -158,6 +254,32 @@ public class HealthCheckService {
                     .getOptionalValue("quarkus.grpc.clients." + grpcClientName + ".health-path", String.class)
                     .orElse("/q/health");
 
+            // Use a custom SSL context based on service configuration
+            boolean allowInsecureSSL = ConfigProvider.getConfig()
+                    .getOptionalValue("quarkus.grpc.clients." + grpcClientName + ".allow-insecure-ssl", Boolean.class)
+                    .orElse(
+                            ConfigProvider.getConfig()
+                                    .getOptionalValue("quarkus.grpc.clients.allow-insecure-ssl", Boolean.class)
+                                    .orElse(false));
+
+            HttpClient.Builder clientBuilder = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(5));
+
+            if (useTls) {
+                javax.net.ssl.SSLContext sslContext;
+                if (allowInsecureSSL) {
+                    LOG.warn("Using insecure SSL context with disabled certificate validation for gRPC client '" +
+                            grpcClientName + "'. This setting MUST NOT be enabled in production!");
+                    sslContext = createInsecureSslContext();
+                } else {
+                    // Try to use the same truststore configuration as the gRPC client
+                    sslContext = createSslContextForGrpcClient(grpcClientName);
+                }
+                clientBuilder.sslContext(sslContext);
+            }
+
+            HttpClient serviceHttpClient = clientBuilder.build();
+
             // Construct the health check URL
             String protocol = useTls ? "https" : "http";
             String healthUrl = String.format("%s://%s:%d%s", protocol, host, port, healthPath);
@@ -171,7 +293,7 @@ public class HealthCheckService {
 
             // Use sendAsync with a timeout to avoid blocking indefinitely and handle interruptions better
             CompletableFuture<HttpResponse<String>> responseFuture =
-                    httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
+                    serviceHttpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString());
 
             // Wait for the response with timeout
             HttpResponse<String> response = responseFuture

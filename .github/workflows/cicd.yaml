@@ -185,7 +185,7 @@ jobs:
           echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
 
       - name: Run integration tests
-        run: ./mvnw $MAVEN_ARGS verify -Pit --fail-at-end
+        run: ./mvnw $MAVEN_ARGS verify -Pit -Denable.container.build=true --fail-at-end
 
   ####################################################################
   # NATIVE BUILD - matrix across example services (parallel)

@@ -43,9 +43,9 @@ import org.testcontainers.containers.wait.strategy.Wait;
 
 @SuppressWarnings("resource")
 @QuarkusIntegrationTest
-class CsvPaymentsEndToEndIntegrationTest {
+class CsvPaymentsEndToEndIT {
 
-    private static final Logger LOG = Logger.getLogger(CsvPaymentsEndToEndIntegrationTest.class);
+    private static final Logger LOG = Logger.getLogger(CsvPaymentsEndToEndIT.class);
 
     private static final Network network = Network.newNetwork();
 

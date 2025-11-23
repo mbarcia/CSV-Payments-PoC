@@ -43,18 +43,40 @@ public class HealthCheckService {
 
 
     /**
-     * Creates an SSL context that ignores certificate validation, similar to curl -k
+     * Creates an SSLContext that accepts all certificates (insecure).
+     *
+     * If building the permissive context fails, returns the platform default SSLContext.
+     *
+     * @return an SSLContext that does not validate peer certificates, or the default SSLContext if creation of an insecure context fails
+     * @throws RuntimeException if both creation of the insecure context and retrieval of the default SSLContext fail
      */
     private javax.net.ssl.SSLContext createInsecureSslContext() {
         try {
             javax.net.ssl.SSLContext sslContext = javax.net.ssl.SSLContext.getInstance("TLS");
             javax.net.ssl.TrustManager[] trustAllCerts = new javax.net.ssl.TrustManager[] {
                     new javax.net.ssl.X509TrustManager() {
+                        /**
+                         * List the certificate issuer authorities trusted by this trust manager.
+                         *
+                         * @return an array of trusted CA issuer certificates, or `null` if no specific issuers are defined
+                         */
                         public java.security.cert.X509Certificate[] getAcceptedIssuers() {
                             return null;
                         }
-                        public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) { }
-                        public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) { }
+                        /**
+ * Accepts any client certificate chain without performing validation.
+ *
+ * @param certs the client certificate chain presented during the TLS handshake; may be null or empty
+ * @param authType the key exchange algorithm used for authentication (for example "RSA"); ignored
+ */
+public void checkClientTrusted(java.security.cert.X509Certificate[] certs, String authType) { }
+                        /**
+ * Accepts any X.509 certificate chain without performing validation.
+ *
+ * @param certs the certificate chain presented by the peer, may be null or empty
+ * @param authType the authentication type based on the certificate, typically a key exchange algorithm (e.g. "RSA")
+ */
+public void checkServerTrusted(java.security.cert.X509Certificate[] certs, String authType) { }
                     }
             };
             sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
@@ -201,10 +223,12 @@ public class HealthCheckService {
     }
 
     /**
-     * Extracts gRPC client names from the fields of a step object using reflection.
+     * Finds gRPC client names declared on the given step by scanning its fields and superclasses for the `@GrpcClient` annotation.
      *
-     * @param step the step object to inspect
-     * @return a set of gRPC client names used by the step
+     * If the annotation's value is empty, the field name is used as the client name.
+     *
+     * @param step the step instance to inspect for gRPC client fields
+     * @return a set of discovered gRPC client names
      */
     public Set<String> extractGrpcClientNames(Object step) {
         Set<String> grpcClientNames = new HashSet<>();

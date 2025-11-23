@@ -138,8 +138,8 @@ class CsvPaymentsEndToEndIT {
      * Initialises and starts the test containers required for the end-to-end CSV payments test.
      *
      * <p>Starts the PostgreSQL container first, then starts each service container so the test
-     * services (input CSV, payments processing, payment status and output CSV) are available
-     * before tests execute.
+     * services (input CSV, payments processing, payment status and output CSV) are available before
+     * tests execute.
      */
     @BeforeAll
     static void startServices() {
@@ -156,8 +156,9 @@ class CsvPaymentsEndToEndIT {
     /**
      * Runs a full end-to-end integration test of the CSV payments processing pipeline.
      *
-     * Sets up the test input directory and CSV files, invokes the orchestrator to process them,
-     * waits for pipeline completion, and verifies both generated output files and database persistence.
+     * <p>Sets up the test input directory and CSV files, invokes the orchestrator to process them,
+     * waits for pipeline completion, and verifies both generated output files and database
+     * persistence.
      */
     @Test
     void fullPipelineWorks() throws Exception {
@@ -189,9 +190,11 @@ class CsvPaymentsEndToEndIT {
     }
 
     /**
-     * Launches the orchestrator JAR as a separate JVM process configured to use the test services and the given input directory.
+     * Launches the orchestrator JAR as a separate JVM process configured to use the test services
+     * and the given input directory.
      *
-     * @param inputDir path to the directory containing input CSV files that the orchestrator should process
+     * @param inputDir path to the directory containing input CSV files that the orchestrator should
+     *     process
      * @throws Exception if the process cannot be started or if it exits with a non-zero exit code
      */
     @SuppressWarnings("SameParameterValue")
@@ -291,9 +294,11 @@ class CsvPaymentsEndToEndIT {
     }
 
     /**
-     * Create two CSV input files in the test directory containing five payment records used by the end-to-end test.
+     * Create two CSV input files in the test directory containing five payment records used by the
+     * end-to-end test.
      *
-     * The files created are "payments_first.csv" (three records) and "payments_second.csv" (two records). The method logs the created CSV filenames.
+     * <p>The files created are "payments_first.csv" (three records) and "payments_second.csv" (two
+     * records). The method logs the created CSV filenames.
      *
      * @throws IOException if an I/O error occurs while writing the files or listing the directory
      */
@@ -331,11 +336,12 @@ class CsvPaymentsEndToEndIT {
     }
 
     /**
-     * Waits for pipeline output files to appear in the test directory by polling for a limited time.
+     * Waits for pipeline output files to appear in the test directory by polling for a limited
+     * time.
      *
-     * Polls the TEST_E2E_DIR for files whose names end with ".out", checking once per second
-     * and returning as soon as any such file is detected. If no output files are found within
-     * the 10-second timeout the method logs a warning and returns.
+     * <p>Polls the TEST_E2E_DIR for files whose names end with ".out", checking once per second and
+     * returning as soon as any such file is detected. If no output files are found within the
+     * 10-second timeout the method logs a warning and returns.
      *
      * @throws InterruptedException if the thread is interrupted while sleeping between polls
      * @throws IOException if an I/O error occurs when listing the test directory
@@ -369,7 +375,7 @@ class CsvPaymentsEndToEndIT {
     /**
      * Verifies generated output files in the given target directory contain the expected records.
      *
-     * Checks that at least one `.out` file exists, that the combined number of data records
+     * <p>Checks that at least one `.out` file exists, that the combined number of data records
      * (excluding header lines) is at least five, and that output contains records for the
      * recipients John Doe, Jane Smith, Bob Johnson, Alice Brown and Charlie Wilson.
      *
@@ -442,12 +448,12 @@ class CsvPaymentsEndToEndIT {
     /**
      * Verify that the expected payment records were persisted to the test PostgreSQL database.
      *
-     * Performs the following checks against the test container database:
-     * - the `paymentrecord` table exists,
-     * - the table contains exactly five records,
-     * - specific recipient records are present.
+     * <p>Performs the following checks against the test container database: - the `paymentrecord`
+     * table exists, - the table contains exactly five records, - specific recipient records are
+     * present.
      *
-     * @throws Exception if a JDBC driver or connection error occurs or verification cannot be performed
+     * @throws Exception if a JDBC driver or connection error occurs or verification cannot be
+     *     performed
      */
     private void verifyDatabasePersistence() throws Exception {
         LOG.info("Verifying database persistence...");
@@ -463,7 +469,8 @@ class CsvPaymentsEndToEndIT {
         try (Connection connection = DriverManager.getConnection(jdbcUrl, username, password)) {
             // Verify that the paymentrecord table exists
             DatabaseMetaData metaData = connection.getMetaData();
-            try (ResultSet tables = metaData.getTables(null, null, "paymentrecord", new String[] {"TABLE"})) {
+            try (ResultSet tables =
+                    metaData.getTables(null, null, "paymentrecord", new String[] {"TABLE"})) {
                 assertTrue(tables.next(), "paymentrecord table should exist in the database");
             }
 
@@ -494,8 +501,8 @@ class CsvPaymentsEndToEndIT {
     /**
      * Verify that expected payment recipient records exist in the database.
      *
-     * Checks that a row exists in the `paymentrecord` table for each of the predefined recipient names
-     * and fails the test if any expected record is missing.
+     * <p>Checks that a row exists in the `paymentrecord` table for each of the predefined recipient
+     * names and fails the test if any expected record is missing.
      *
      * @param connection a JDBC connection to the database containing the `paymentrecord` table
      * @throws SQLException if a database access error occurs while querying for records
@@ -526,9 +533,9 @@ class CsvPaymentsEndToEndIT {
     }
 
     /**
-     * Cleans up resources by stopping all containers and closing the network.
-     * This method runs after all tests in the class have completed to ensure
-     * all Testcontainers resources are properly released.
+     * Cleans up resources by stopping all containers and closing the network. This method runs
+     * after all tests in the class have completed to ensure all Testcontainers resources are
+     * properly released.
      */
     @AfterAll
     static void tearDown() {

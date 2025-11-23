@@ -20,25 +20,9 @@ This will compile all modules and verify that there are no syntax or dependency 
 
 ## Running the Application
 
-### With Docker
-
-```bash
-./up-docker.sh
-```
-
 ### In Development Mode
 
-1. Start the database with Docker:
-
-```bash
-docker run --name pipeline-postgres -p 5432:5432 -e POSTGRES_DB=pipeline -e POSTGRES_USER=user -e POSTGRES_PASSWORD=password -d postgres:17
-```
-
-2. Run each service in development mode:
-
-```bash
-cd <service-name> && mvn quarkus:dev
-```
+Use the Quarkus plugin in IntelliJ IDEA.
 
 ## Architecture
 

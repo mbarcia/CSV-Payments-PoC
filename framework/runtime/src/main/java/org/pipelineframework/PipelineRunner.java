@@ -48,10 +48,12 @@ public class PipelineRunner implements AutoCloseable {
      * Configurable steps are initialised with configuration built from the injected factories before being applied.
      *
      * @param input the source Multi of items to process through the pipeline; may be transformed to a Uni/Multi by steps
-     * @param steps the ordered list of step instances to apply; null entries are skipped
+     * @param steps the ordered list of step instances to apply; must not be null; null entries are skipped
      * @return either a Multi containing the resulting stream of items or a Uni containing the final single result
+     * @throws NullPointerException if steps is null
      */
     public Object run(Multi<?> input, List<Object> steps) {
+        Objects.requireNonNull(steps, "Steps list must not be null");
         Object current = input;
 
         for (Object step : steps) {

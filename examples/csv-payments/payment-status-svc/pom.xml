@@ -45,15 +45,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-reactive-pg-client</artifactId>
         </dependency>
-        <!-- Hibernate ORM and JDBC PostreSQL -->
-<!--        <dependency>-->
-<!--            <groupId>io.quarkus</groupId>-->
-<!--            <artifactId>quarkus-hibernate-orm</artifactId>-->
-<!--        </dependency>-->
-<!--        <dependency>-->
-<!--            <groupId>org.postgresql</groupId>-->
-<!--            <artifactId>postgresql</artifactId>-->
-<!--        </dependency>-->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -121,6 +112,24 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jacoco</artifactId>
             <scope>test</scope>
+        </dependency>
+        <!-- Observability-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-observability-devservices-lgtm</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-micrometer-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image-jib</artifactId>
         </dependency>
     </dependencies>
 

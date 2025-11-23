@@ -13,33 +13,21 @@ To verify that the application was generated correctly:
 
 ```bash
 cd {{appName}}
-./mvnw clean compile
+./mvnw clean verify
 ```
 
-This will compile all modules and verify that there are no syntax or dependency issues.
+This will compile all modules, run tests, and verify that there are no syntax or dependency issues.
 
 ## Running the Application
 
-### With Docker
-
-```bash
-./up-docker.sh
-```
-
 ### In Development Mode
 
-1. Start the database with Docker:
+Use the Quarkus plugin in IntelliJ IDEA or run with:
 
 ```bash
-docker run --name pipeline-postgres -p 5432:5432 -e POSTGRES_DB=pipeline -e POSTGRES_USER=user -e POSTGRES_PASSWORD=password -d postgres:17
-```
-
-2. Run each service in development mode:
-
-```bash
-cd <service-name> && mvn quarkus:dev
+./mvnw compile quarkus:dev
 ```
 
 ## Architecture
 
-This application follows the pipeline pattern with multiple microservices, each responsible for a specific step in the processing workflow.
+This application follows the pipeline pattern with multiple microservices, each responsible for a specific step in the processing workflow. Services communicate via gRPC, and the orchestrator coordinates the overall pipeline execution.

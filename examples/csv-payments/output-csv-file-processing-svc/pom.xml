@@ -35,11 +35,6 @@
             <artifactId>common</artifactId>
             <version>1.0</version>
         </dependency>
-        <dependency>
-            <groupId>org.pipelineframework</groupId>
-            <artifactId>pipelineframework</artifactId>
-            <version>${version.pipeline}</version>
-        </dependency>
         <!-- Hibernate Reactive and PostgreSQL reactive -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -130,6 +125,24 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jacoco</artifactId>
             <scope>test</scope>
+        </dependency>
+        <!-- Observability-->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-observability-devservices-lgtm</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-micrometer-opentelemetry</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-container-image-jib</artifactId>
         </dependency>
     </dependencies>
 

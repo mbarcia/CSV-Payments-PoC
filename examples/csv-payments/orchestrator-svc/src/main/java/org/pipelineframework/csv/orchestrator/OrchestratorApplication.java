@@ -37,11 +37,11 @@ import picocli.CommandLine.Option;
 public class OrchestratorApplication implements QuarkusApplication, Callable<Integer> {
 
     @Option(
-        names = {"-i", "--input"}, 
+        names = {"-i", "--input"},
         description = "Input value for the pipeline",
         defaultValue = "csv"
     )
-    String input;
+    public String input;
 
     @Inject
     PipelineExecutionService pipelineExecutionService;
@@ -55,25 +55,32 @@ public class OrchestratorApplication implements QuarkusApplication, Callable<Int
         return new CommandLine(this).execute(args);
     }
 
+    /**
+     * Orchestrates pipeline execution using a CSV input path from the CLI option or the PIPELINE_INPUT environment variable.
+     *
+     * If the CLI option `input` is empty, the environment variable `PIPELINE_INPUT` is used. If no input is available, a usage exit code is printed and returned. Otherwise the method constructs the input Multi, invokes the injected pipelineExecutionService to execute the pipeline and waits for completion, then prints a completion message.
+     *
+     * @return CommandLine.ExitCode.USAGE (non‑zero) if no input was provided, CommandLine.ExitCode.OK on successful execution
+     */
     public Integer call() {
         // Use command line option if provided, otherwise fall back to environment variable
         String actualInput = input;
         if (actualInput == null || actualInput.trim().isEmpty()) {
             actualInput = System.getenv("PIPELINE_INPUT");
         }
-        
+
         if (actualInput == null || actualInput.trim().isEmpty()) {
             System.out.println("Input parameter is empty");
             return CommandLine.ExitCode.USAGE;
         }
-        
+
         Multi<InputCsvFileProcessingSvc.CsvFolder> inputMulti = getInputMulti(actualInput);
 
         // Execute the pipeline with the processed input using injected service
         pipelineExecutionService.executePipeline(inputMulti)
                 .collect().asList()
                 .await().indefinitely();
-        
+
         System.out.println("Pipeline execution completed");
         return CommandLine.ExitCode.OK;
     }

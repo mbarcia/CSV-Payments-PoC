@@ -17,7 +17,7 @@ Orchestrator services are responsible for:
 When you use the template generator to create a pipeline application, it automatically generates a complete orchestrator service with:
 - A CLI application class that implements `QuarkusApplication`
 - Proper configuration in `application.properties`
-- Docker configuration for containerized deployment
+- Test configuration for integration testing
 - Integration with the framework's pipeline execution engine
 
 The Pipeline Framework automatically generates the core pipeline execution logic when backend services are annotated with `@PipelineStep`, leaving orchestrator services to focus on input provisioning and output handling.

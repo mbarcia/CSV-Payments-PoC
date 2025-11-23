@@ -59,22 +59,6 @@ The application checks for these options in the following priority:
 
 When running in dev mode via IDE, make sure the environment variable is properly set in your run configuration.
 
-### External Interfaces
-
-#### gRPC Endpoint
-The service exposes a gRPC endpoint for processing CSV folders:
-- Service: `OrchestratorService`
-- Method: `Process(ProcessRequest) returns (ProcessResponse)`
-- Port: 8443 (TLS enabled)
-- Request: `ProcessRequest` with `csv_folder_path` field
-- Response: `ProcessResponse` with `success` and `message` fields
-
-#### REST Endpoint
-The service also exposes a REST endpoint for processing CSV folders:
-- POST `/orchestrator/process` - Accepts CSV folder path in request body
-- POST `/orchestrator/process-query` - Accepts CSV folder path as query parameter
-- Both endpoints return JSON with `success` and `message` fields
-
 ### Core Processing Flow
 
 ```mermaid
@@ -116,10 +100,6 @@ The service communicates with other services via gRPC, using clients injected wi
 - Processing payment statuses
 - Processing output CSV files
 
-### Concurrency
-- Uses Java's virtual threads for concurrent processing, which is efficient for I/O-bound operations
-- Controls concurrency with a limit of 1000 concurrent record processing pipelines
-
 ### Error Handling
 - Implements retry mechanisms with exponential backoff for transient errors (like throttling)
 - Handles errors gracefully with detailed logging
@@ -131,7 +111,6 @@ The orchestrator service uses a flexible configuration system that allows you to
 - **Pipeline-level configuration**: Configure defaults and profiles for the entire pipeline
 - **Step-level configuration**: Override settings for individual steps
 - **Profile management**: Switch between different configurations based on environment (dev, prod, etc.)
-- **Hot reload**: Configuration changes are applied dynamically without restarting
 
 For detailed information on how to use the configuration system, see [Configuration Guide](../pipeline-framework/docs/CONFIGURATION_CONSOLIDATED.md).
 

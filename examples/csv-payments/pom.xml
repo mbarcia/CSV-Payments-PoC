@@ -1,3 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
 <!--
   ~ Copyright (c) 2023-2025 Mariano Barcia
   ~
@@ -12,9 +14,7 @@
   ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
-  -->
-
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  --><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.pipelineframework</groupId>
     <artifactId>csv-payments-parent</artifactId>
@@ -36,7 +36,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <enablePreview>true</enablePreview>
-        <quarkus.platform.version>3.29.2</quarkus.platform.version>
+        <quarkus.platform.version>3.29.4</quarkus.platform.version>
         <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <protobuf.version>4.28.2</protobuf.version>
@@ -45,6 +45,13 @@
         <version.pipeline>0.9.0-SNAPSHOT</version.pipeline>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
+        <!-- Default: don't build containers unless specifically enabled -->
+        <quarkus.container-image.build>false</quarkus.container-image.build>
+        <quarkus.container-image.registry>localhost</quarkus.container-image.registry>
+        <quarkus.container-image.tag>latest</quarkus.container-image.tag>
+        <quarkus.container-image.group>csv-payments</quarkus.container-image.group>
+        <quarkus.container-image.platforms>linux/amd64,linux/arm64/v8</quarkus.container-image.platforms>
+        <quarkus.jib.jvm-additional-arguments>--enable-preview</quarkus.jib.jvm-additional-arguments>
     </properties>
 
     <dependencyManagement>
@@ -64,6 +71,12 @@
                 <version>${version.pipeline}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Pipeline Framework Runtime Module -->
+            <dependency>
+                <groupId>org.pipelineframework</groupId>
+                <artifactId>pipelineframework</artifactId>
+                <version>${version.pipeline}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -167,7 +180,7 @@
                                 <version>${google-java-format.version}</version>
                                 <style>AOSP</style>
                             </googleJavaFormat>
-                            <removeUnusedImports/>
+                            <removeUnusedImports />
                         </java>
                         <formats>
                             <format>
@@ -265,6 +278,18 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <!-- Profile activated during integration tests -->
+        <profile>
+            <id>integration-test-containers</id>
+            <activation>
+                <property>
+                    <name>enable.container.build</name>
+                </property>
+            </activation>
+            <properties>
+                <quarkus.container-image.build>true</quarkus.container-image.build>
+            </properties>
         </profile>
     </profiles>
 

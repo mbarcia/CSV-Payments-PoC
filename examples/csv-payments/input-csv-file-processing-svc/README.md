@@ -120,7 +120,6 @@ Returns a list of PaymentRecordDto objects in JSON format:
 ## Performance Features
 
 - **Reactive Processing**: Uses Mutiny for non-blocking operations
-- **Virtual Threads**: Leverages virtual threads for efficient concurrency
 - **Streaming**: Processes and streams data without loading entire files into memory
 
 ## Getting Started

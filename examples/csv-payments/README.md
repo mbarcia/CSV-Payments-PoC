@@ -47,7 +47,6 @@ The services use the following ports:
 - payments-processing-svc: 8445
 - payment-status-svc: 8446
 - output-csv-file-processing-svc: 8447
-- orchestrator-svc: 8443 (gRPC)
 
 All services communicate over HTTPS with self-signed certificates.
 
@@ -218,7 +217,6 @@ sequenceDiagram
 
 - Java 21
 - Maven 3.6+
-- Docker (optional, for containerized deployment)
 
 ### Installation
 
@@ -242,26 +240,7 @@ mvn clean package
 
 #### Development Mode
 
-To run the application in development mode with hot reloading:
-
-```bash
-# Start the services (excluding orchestrator-svc which is a CLI application)
-./up-local.sh
-
-# Or, for more control, start services individually:
-# In separate terminals, run:
-# cd input-csv-file-processing-svc && mvn quarkus:dev
-# cd payments-processing-svc && mvn quarkus:dev
-# cd payment-status-svc && mvn quarkus:dev
-# cd output-csv-file-processing-svc && mvn quarkus:dev
-
-# Run the orchestrator-svc as a CLI application (after all services are up)
-# In a separate terminal:
-# cd orchestrator-svc && mvn quarkus:dev
-#
-# Stop the services
-./down-local.sh
-```
+To run the application in development mode with hot reloading, install IntelliJ IDEA and use its Quarkus plugin.
 
 #### Running as JAR Files
 
@@ -275,7 +254,10 @@ mvn clean package
 # Start each service in a separate terminal
 java -jar input-csv-file-processing-svc/target/input-csv-file-processing-svc-1.0.jar
 java -jar payments-processing-svc/target/payments-processing-svc-1.0.jar
-java -jar payment-status-svc/target/payment-status-svc-1.0.jar\njava -jar output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0.jar\n\n# Run the orchestrator-svc as a CLI application (after all services are up)
+java -jar payment-status-svc/target/payment-status-svc-1.0.jar
+java -jar output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0.jar
+
+# Run the orchestrator-svc as a CLI application (after all services are up)
 java -jar orchestrator-svc/target/orchestrator-svc-1.0.jar --csv-folder=/path/to/csv/files
 
 # Note: You'll need to stop each service manually in each terminal
@@ -292,7 +274,10 @@ mvn clean package -Pnative
 # Start each service in a separate terminal
 ./input-csv-file-processing-svc/target/input-csv-file-processing-svc-1.0-runner
 ./payments-processing-svc/target/payments-processing-svc-1.0-runner
-./payment-status-svc/target/payment-status-svc-1.0-runner\n./output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0-runner\n\n# Run the orchestrator-svc as a CLI application (after all services are up)
+./payment-status-svc/target/payment-status-svc-1.0-runner
+./output-csv-file-processing-svc/target/output-csv-file-processing-svc-1.0-runner
+
+# Run the orchestrator-svc as a CLI application (after all services are up)
 ./orchestrator-svc/target/orchestrator-svc-1.0-runner --csv-folder=/path/to/csv/files
 
 # Note: You'll need to stop each service manually in each terminal
@@ -311,10 +296,6 @@ The application uses environment variables for configuration:
 
 See [application.properties](./orchestrator-svc/src/main/resources/application.properties) for complete configuration options.
 
-For development with Dev Services, the following environment variables can be used:
-
-- `QUARKUS_DATASOURCE_DEVSERVICES_PORT`: Port to map the Dev Services database container to (default: randomly assigned)
-- `QUARKUS_DATASOURCE_DEVSERVICES_IMAGE_NAME`: Docker image to use for the database (default: postgres:16)
 - `QUARKUS_DATASOURCE_DEVSERVICES_DB_NAME`: Name of the database to create (default: quarkus)
 - `QUARKUS_DATASOURCE_DEVSERVICES_USERNAME`: Username for the database (default: quarkus)
 - `QUARKUS_DATASOURCE_DEVSERVICES_PASSWORD`: Password for the database (default: quarkus)
@@ -393,23 +374,6 @@ If you encounter certificate errors:
 
 The certificate is intended for development use only and should never be used in production environments.
 
-### Docker Certificate Handling
-
-When running the services in Docker, the `up-docker.sh` script automatically generates certificates that include the Docker service names as Subject Alternative Names (SANs). This ensures that the services can communicate with each other securely within the Docker network.
-
-The generated certificates include the following SANs:
-- DNS: localhost
-- DNS: input-csv-file-processing-svc
-- DNS: payments-processing-svc
-- DNS: payment-status-svc
-- DNS: output-csv-file-processing-svc
-- DNS: orchestrator-svc
-- DNS: kong
-- IP: 127.0.0.1
-- IP: ::1 (IPv6 localhost)
-
-The Docker environment is configured to disable TLS hostname verification for gRPC clients through environment variables in the docker-compose.yml file. This allows the services to communicate with each other using the generated certificates even when the hostnames don't exactly match the certificate's CN.
-
 If you need to regenerate the Docker certificates manually, you can use the `generate-dev-certs.sh` script:
 
 ```bash
@@ -430,67 +394,7 @@ The CSV Payments Processing Application includes a comprehensive observability s
 - **Loki**: Aggregates and stores logs from all services
 
 ### Running with Observability
-
-To run the application with the full observability stack:
-
-```bash
-# Start the services (excluding orchestrator-svc which is a CLI application)
-./up-docker.sh
-
-# Run the orchestrator-svc as a CLI application (after all services are up)
-# Using Maven (in a separate terminal):
-# cd orchestrator-svc && mvn quarkus:dev
-# 
-# Or build and run the JAR:
-# mvn package && java -jar target/orchestrator-svc-1.0.jar --csv-folder=/path/to/csv/files
-#
-# Or using Docker:
-# ./run-orchestrator-docker.sh
-
-# Stop the services
-./down-docker.sh
-```
-
-This command starts all microservices (except the orchestrator-svc) along with the observability components. The following ports are exposed:
-
-- **Grafana**: http://localhost:3000 (admin/admin)
-- **Prometheus**: http://localhost:9090
-- **Tempo**: http://localhost:3200
-- **Loki**: http://localhost:3100
-
-
-### Using the Convenience Scripts
-
-For easier management of the development environment, the project includes several convenience scripts:
-
-- `up-local.sh` / `down-local.sh`: Start/stop services in development mode using Maven
-- `up-docker.sh` / `down-docker.sh`: Start/stop services using Docker with the local override file
-
-To use the Maven-based development scripts:
-```bash
-# Start services
-./up-local.sh
-
-# Stop services
-./down-local.sh
-```
-
-To use the Docker-based scripts:
-```bash
-# Start services (creates docker-compose.local.yml from template if it doesn't exist)
-./up-docker.sh
-
-# Stop services
-./down-docker.sh
-```
-
-The `docker-compose.override.local.yml` and `docker-compose.orchestrator.yml` files are created from their respective template files on first run and are ignored by Git, allowing you to customize them for your local environment without affecting other developers.
-
-# Stop services
-./down-docker.sh
-```
-
-The `docker-compose.override.local.yml` and `docker-compose.orchestrator.yml` files are created from their respective template files on first run and are ignored by Git, allowing you to customize them for your local environment without affecting other developers.
+Simply running Quarkus in dev mode will spin up Quarkus Dev Services with the Observability stack.
 
 ### Dashboards
 
@@ -534,10 +438,6 @@ Each service exposes a `/q/metrics` endpoint that provides Prometheus-formatted 
 - [Payment Status Service](./payment-status-svc/README.md): Processes payment statuses
 - [Output CSV File Processing Service](./output-csv-file-processing-svc/README.md): Generates output CSV files
 - [Common Module](./common/README.md): Shared domain models and utilities
-- [Pipeline Framework](./pipeline-framework/docs/HOWTO_NEW_STEP.md): How to create new pipeline steps (client-side orchestration)
-- [Pipeline Benefits](./pipeline-framework/docs/PIPELINE_BENEFITS.md): Detailed benefits of the pipeline framework
-
-For more information about the pipeline framework, see [pipeline-framework/README.md](./pipeline-framework/README.md).
 
 ## Documentation
 
@@ -548,27 +448,8 @@ Comprehensive documentation for the Pipeline Framework is available at our [docu
 - Examples and best practices
 - Deployment instructions
 
-The documentation source is located in the `docs` directory and is built using VitePress. For information on how to contribute to the documentation or run it locally, see [docs/README.md](./docs/README.md).
-
-## External Interfaces
-
-The Orchestrator Service now exposes both gRPC and REST interfaces for external consumption:
-
-### gRPC Endpoint
-- Service: `OrchestratorService`
-- Method: `Process(ProcessRequest) returns (ProcessResponse)`
-- Port: 8443 (TLS enabled)
-- Request: `ProcessRequest` with `csv_folder_path` field
-- Response: `ProcessResponse` with `success` and `message` fields
-
-### REST Endpoint
-- POST `/orchestrator/process` - Accepts CSV folder path in request body
-- POST `/orchestrator/process-query` - Accepts CSV folder path as query parameter
-- Both endpoints return JSON with `success` and `message` fields
-
-## Observability
-
-For detailed information about the observability stack, see [OBSERVABILITY.md](./OBSERVABILITY.md).
+The documentation source is located in the `docs` directory and is built using VitePress. For information on how to 
+contribute to the documentation or run it locally, see [docs/README.md](../../docs/README.md).
 
 ## Contributing
 
@@ -580,4 +461,4 @@ For detailed information about the observability stack, see [OBSERVABILITY.md](.
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Apache License 2.0 - see the [LICENSE](../../LICENSE) file for details.

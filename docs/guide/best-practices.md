@@ -14,6 +14,8 @@ Follow these best practices when designing and implementing pipeline application
 - Use the framework's testing utilities
 - Validate mapper correctness
 - Test error scenarios
+- Implement integration tests with Testcontainers
+- Use Quarkus Dev Mode in your IDE for development
 
 ## Observability
 

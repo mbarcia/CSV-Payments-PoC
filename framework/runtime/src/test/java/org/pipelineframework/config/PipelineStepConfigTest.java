@@ -49,7 +49,7 @@ class PipelineStepConfigTest {
         PipelineStepConfig.StepConfig defaults = pipelineStepConfig.defaults();
 
         // Then - verify all default values from @WithDefault annotations
-        assertEquals(100, defaults.order(), "Default order should be 100");
+        assertEquals(0, defaults.order(), "Default order should be 0");
         assertEquals(3, defaults.retryLimit(), "Default retryLimit should be 3");
         assertEquals(2000L, defaults.retryWaitMs(), "Default retryWaitMs should be 2000");
         assertFalse(defaults.parallel(), "Default parallel should be false");

@@ -554,12 +554,6 @@ class BrowserTemplateEngine {
         await fileCallback(filePath, rendered);
     }
 
-    async generateDockerfile(serviceName, fileCallback) {
-        const context = { serviceName };
-        const rendered = this.render('dockerfile', context);
-        await fileCallback(`${serviceName}/Dockerfile`, rendered);
-    }
-
     async generateOrchestrator(appName, basePackage, steps, fileCallback) {
         // Generate orchestrator POM
         await this.generateOrchestratorPom(appName, basePackage, fileCallback);
@@ -577,65 +571,6 @@ class BrowserTemplateEngine {
 
         const rendered = this.render('orchestrator-pom', context);
         await fileCallback('orchestrator-svc/pom.xml', rendered);
-    }
-
-    async generateDockerCompose(appName, steps, fileCallback) {
-        // Process steps to add additional properties
-        const processedSteps = steps.map((step, i) => ({
-            ...step,
-            portNumber: 8444 + i,
-            serviceNameUpperCase: step.serviceName.toUpperCase().replace(/-/g, '_')
-        }));
-
-        const context = {
-            appName,
-            steps: processedSteps
-        };
-
-        const rendered = this.render('docker-compose', context);
-        await fileCallback('docker-compose.yml', rendered);
-    }
-
-    async generateUtilityScripts(fileCallback) {
-        // Generate up-docker.sh
-        const context = {};
-        const upDockerContent = this.render('up-docker', context);
-        await fileCallback('up-docker.sh', upDockerContent);
-
-        // Generate down-docker.sh
-        const downDockerContent = this.render('down-docker', context);
-        await fileCallback('down-docker.sh', downDockerContent);
-
-        // Generate up-local.sh
-        const upLocalContent = this.render('up-local', context);
-        await fileCallback('up-local.sh', upLocalContent);
-
-        // Generate down-local.sh
-        const downLocalContent = this.render('down-local', context);
-        await fileCallback('down-local.sh', downLocalContent);
-    }
-
-    async generateObservabilityConfigs(fileCallback) {
-        // Generate otel-collector-config.yaml
-        const context = {};
-        const otelContent = this.render('otel-collector-config', context);
-        await fileCallback('otel-collector-config.yaml', otelContent);
-
-        // Generate prometheus.yml
-        const prometheusContent = this.render('prometheus', context);
-        await fileCallback('prometheus.yml', prometheusContent);
-
-        // Generate grafana datasources
-        const grafanaDatasourcesContent = this.render('grafana-datasources', context);
-        await fileCallback('grafana-datasources.yaml', grafanaDatasourcesContent);
-
-        // Generate grafana dashboards
-        const grafanaDashboardsContent = this.render('grafana-dashboards', context);
-        await fileCallback('grafana-dashboards.yaml', grafanaDashboardsContent);
-
-        // Generate tempo config
-        const tempoContent = this.render('tempo', context);
-        await fileCallback('tempo.yaml', tempoContent);
     }
 
     async generateMvNWFiles(fileCallback) {

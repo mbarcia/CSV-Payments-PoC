@@ -1,8 +1,0 @@
-version: '3.8'
-
-# Template for local docker-compose override file.
-# This file is under version control and should not contain any local-specific configurations.
-# To customize for your local environment, copy this file to `docker-compose.local.yml`
-# and modify that file. The `docker-compose.local.yml` file is ignored by Git.
-
-services: []

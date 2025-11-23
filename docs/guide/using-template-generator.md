@@ -14,9 +14,9 @@ The template generator is a command-line tool that creates complete Maven multi-
 - Creating common module with domain entities, DTOs, and mappers
 - Generating individual service modules for each pipeline step
 - Creating orchestrator module with CLI application and configuration
-- Setting up Docker Compose orchestration files
-- Configuring observability stack (Prometheus, Grafana, Tempo, Loki, OpenTelemetry)
-- Generating utility scripts for local and Docker deployment
+- Creating configuration for test environments
+- Setting up proper Maven build configurations
+- Configuring service communication via gRPC
 
 ## Prerequisites
 
@@ -126,14 +126,10 @@ my-pipeline-app/
 │   ├── pom.xml
 │   └── src/main/java/
 │       └── com/example/app/orchestrator/
-├── docker-compose.yml              # Service orchestration
-├── up-docker.sh                     # Docker startup script
-├── down-docker.sh                   # Docker shutdown script
-├── otel-collector-config.yaml       # OpenTelemetry configuration
-├── prometheus.yml                   # Prometheus configuration
-├── grafana-datasources.yaml         # Grafana data sources
-├── grafana-dashboards.yaml          # Grafana dashboards
-├── tempo.yaml                       # Tempo configuration
+├── src/test/resources/              # Test configuration
+│   └── application-test.properties  # Test-specific configuration
+├── src/test/java/                   # Integration tests
+│   └── **/*IT.java                  # Integration test classes
 └── mvnw                             # Maven wrapper
 ```
 

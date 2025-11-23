@@ -3,7 +3,7 @@
 This guide will help you quickly get started with The Pipeline Framework using the visual Canvas designer - the fastest and easiest way to create your first pipeline application!
 
 <Callout type="tip" title="Prerequisites">
-Before you begin, ensure you have Java 21+ and Maven 3.8+ installed on your system for building and running the generated applications.
+Before you begin, ensure you have Java 21+, Maven 3.8+, and an IDE with Quarkus Dev Mode support (like IntelliJ IDEA or VS Code) installed on your system for building and running the generated applications.
 </Callout>
 
 ## Quick Start with Visual Canvas Designer

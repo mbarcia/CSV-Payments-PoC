@@ -10,9 +10,8 @@ Observability in The Pipeline Framework encompasses:
 2. **Tracing**: Tracking requests as they flow through the pipeline
 3. **Logging**: Structured logging with context for debugging
 4. **Health Checks**: Monitoring service availability and readiness
-5. **Alerting**: Automated notifications for critical events
 
-The framework integrates with popular observability stacks including Prometheus, Grafana, Tempo, Loki, and OpenTelemetry.
+The framework provides built-in support for metrics and health checks through Quarkus and Micrometer.
 
 ## Metrics Collection
 

@@ -240,15 +240,7 @@ mvn clean package
 
 #### Development Mode
 
-To run the application in development mode with hot reloading:
-
-```bash
-# Start the services (excluding orchestrator-svc which is a CLI application)
-./up-local.sh
-
-# Stop the services
-./down-local.sh
-```
+To run the application in development mode with hot reloading, install IntelliJ IDEA and use its Quarkus plugin.
 
 #### Running as JAR Files
 
@@ -396,7 +388,7 @@ The CSV Payments Processing Application includes a comprehensive observability s
 - **Loki**: Aggregates and stores logs from all services
 
 ### Running with Observability
-Simply running `./up-local.sh` will spin up Quarkus Dev Services with the Observability stack.
+Simply running Quarkus in dev mode will spin up Quarkus Dev Services with the Observability stack.
 
 ### Dashboards
 

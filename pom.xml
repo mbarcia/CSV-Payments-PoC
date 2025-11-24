@@ -23,7 +23,7 @@
 
     <groupId>org.pipelineframework</groupId>
     <artifactId>pipeline-framework-root</artifactId>
-    <version>0.9.0-SNAPSHOT</version>
+    <version>0.9.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>The Pipeline Framework - Root POM</name>
     <description>The root POM for the Pipeline Framework project, managing both framework components and example applications</description>
@@ -62,7 +62,7 @@
         <version.jandex>3.5.0</version.jandex>
         <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.63.0</grpc.version>
-        <version.pipeline>0.9.0-SNAPSHOT</version.pipeline>
+        <version.pipeline>0.9.1-SNAPSHOT</version.pipeline>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
         <surefireArgLine></surefireArgLine>
@@ -255,68 +255,7 @@
 
     <profiles>
         <profile>
-            <id>it</id>
-
-            <!-- Activated explicitly: mvn verify -Pit -->
-            <build>
-                <plugins>
-
-                    <!-- Failsafe for Integration Tests -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-failsafe-plugin</artifactId>
-                        <version>3.5.1</version>
-                        <executions>
-                            <execution>
-                                <id>integration-tests</id>
-                                <goals>
-                                    <goal>integration-test</goal>
-                                    <goal>verify</goal>
-                                </goals>
-                                <configuration>
-                                    <!-- Disable preview unless you need it -->
-                                    <argLine>${surefireArgLine} --enable-preview</argLine>
-
-                                    <!-- Recommended for GitHub runners -->
-                                    <parallel>none</parallel>
-                                    <forkCount>1</forkCount>
-                                    <reuseForks>true</reuseForks>
-
-                                    <!-- Test file patterns -->
-                                    <includes>
-                                        <include>**/*IT.java</include>
-                                        <include>**/*ITCase.java</include>
-                                        <include>**/*IntegrationTest.java</include>
-                                    </includes>
-
-                                    <!-- Avoid clashing with Quarkus test harness -->
-                                    <systemPropertyVariables>
-                                        <quarkus.test.profile>integration-tests</quarkus.test.profile>
-                                    </systemPropertyVariables>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-
-                    <!-- Disable Surefire during IT runs -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <skipTests>true</skipTests>
-                        </configuration>
-                    </plugin>
-
-                </plugins>
-            </build>
-        </profile>
-        <profile>
             <id>coverage</id>
-            <activation>
-                <property>
-                    <name>!skipTests</name>
-                </property>
-            </activation>
             <build>
                 <plugins>
                     <plugin>

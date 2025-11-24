@@ -44,7 +44,7 @@
         <protobuf.version>4.28.2</protobuf.version>
         <grpc.version>1.63.0</grpc.version>
         <version.jandex>3.5.0</version.jandex>
-        <version.pipeline>0.9.0-SNAPSHOT</version.pipeline>
+        <version.pipeline>0.9.1-SNAPSHOT</version.pipeline>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
         <!-- Default: don't build containers unless specifically enabled -->

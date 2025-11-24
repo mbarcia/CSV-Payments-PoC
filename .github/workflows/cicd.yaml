@@ -89,12 +89,13 @@ jobs:
       - name: Build CSV Payments example services (with the framework already installed)
         run: ./mvnw $MAVEN_ARGS -DskipTests -pl examples/csv-payments package --no-transfer-progress
 
-      - name: Run unit and quick integration tests not requiring slow infra
+      - name: Run unit tests not requiring slow infra
         if: ${{ env.IS_PR != 'true' }}
         run: |
           ./mvnw $MAVEN_ARGS verify \
             -Pcoverage \
             -DskipNative=true \
+            -DskipITs \
             -Dtest="**/*Test.java,**/*TestCase.java" \
             -DfailIfNoTests=false        
 
@@ -161,13 +162,11 @@ jobs:
       # Build only the container images for the CSV payment services (the JARs are already built)
       - name: Build container images for integration tests
         run: |
-          # Build the Docker images for each service using the already-built JARs
-          # This skips compilation and only builds the container images
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests -Dmaven.main.skip=true -Dmaven.test.skip=true quarkus:build -Dquarkus.package.jar.type=uber-jar -pl examples/csv-payments/input-csv-file-processing-svc --no-transfer-progress
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests -Dmaven.main.skip=true -Dmaven.test.skip=true quarkus:build -Dquarkus.package.jar.type=uber-jar -pl examples/csv-payments/payments-processing-svc --no-transfer-progress
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests -Dmaven.main.skip=true -Dmaven.test.skip=true quarkus:build -Dquarkus.package.jar.type=uber-jar -pl examples/csv-payments/payment-status-svc --no-transfer-progress
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests -Dmaven.main.skip=true -Dmaven.test.skip=true quarkus:build -Dquarkus.package.jar.type=uber-jar -pl examples/csv-payments/output-csv-file-processing-svc --no-transfer-progress
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests -Dmaven.main.skip=true -Dmaven.test.skip=true quarkus:build -Dquarkus.package.jar.type=uber-jar -pl examples/csv-payments/orchestrator-svc --no-transfer-progress
+          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests quarkus:image-build -pl examples/csv-payments/input-csv-file-processing-svc/pom.xml
+          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests quarkus:image-build -pl examples/csv-payments/payments-processing-svc/pom.xml
+          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests quarkus:image-build -pl examples/csv-payments/payment-status-svc/pom.xml
+          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests quarkus:image-build -pl examples/csv-payments/output-csv-file-processing-svc/pom.xml
+          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests quarkus:image-build -pl examples/csv-payments/orchestrator-svc/pom.xml
 
       - name: Run integration tests
         run: ./mvnw $MAVEN_ARGS verify --fail-at-end

@@ -87,8 +87,6 @@ The available overflow strategies are:
 - **BUFFER** (default): Buffers items when the downstream consumer cannot keep up (using `onOverflow().buffer(capacity)`)
 - **DROP**: Drops items when the downstream consumer cannot keep up (using `onOverflow().drop()`)
 
-Note: In Mutiny 2.9.4, the explicit `onOverflow().fail()` method is not available. By default, Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
-
 Programmatic configuration is also possible:
 
 ```java

@@ -7,7 +7,7 @@ The Pipeline Framework follows an immutable architecture where no database updat
 </Callout>
 
 <Callout type="tip" title="Prerequisites">
-Before you begin, ensure you have Java 21+ and Maven 3.8+ installed on your system.
+Before you begin, ensure you have IntelliJ IDEA or VS Code running on Java 21+ and Maven 3.8+ installed on your system.
 </Callout>
 
 <Callout type="tip" title="Visual Pipeline Designer Alternative">

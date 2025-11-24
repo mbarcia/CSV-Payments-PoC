@@ -13,7 +13,7 @@ The framework supports multiple processing patterns including OneToOne, OneToMan
 ## How to Use This Guide by Role
 
 ### For Developers
-Ready to build? Start here to create your first pipeline applications:
+Start here to create your first pipeline applications:
 
 - [Quick Start](/guide/quick-start): Get up and running in minutes with the visual Canvas designer
 - [Creating Pipeline Steps](/guide/creating-steps): Build your first pipeline step from scratch
@@ -27,7 +27,7 @@ Ready to build? Start here to create your first pipeline applications:
 - [Orchestrator Services](/guide/orchestrator-services): Control the flow of your pipeline
 
 ### For QA Engineers
-Learn how to effectively test pipeline applications:
+Learn how to test pipeline applications effectively:
 
 - [Testing Strategies](/guide/best-practices#testing): Testing strategies for pipeline applications
 - [Observability](/guide/observability): How to monitor and verify pipeline behavior
@@ -50,7 +50,7 @@ Deep-dive into design patterns and enterprise considerations:
 - [Best Practices](/guide/best-practices): Design and implementation best practices
 
 ### For CTOs
-Strategic overview for technical leadership:
+Get a strategic overview for technical leadership:
 
 - [Architecture](/reference/architecture): System capabilities and technology stack
 - [YAML Schema](/YAML_SCHEMA): Infrastructure-as-code configuration options

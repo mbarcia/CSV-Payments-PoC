@@ -19,7 +19,7 @@ The `@PipelineStep` annotation marks a class as a pipeline step and enables auto
 - `inboundMapper`: The inbound mapper class for this pipeline service/step - handles conversion from gRPC to domain types (using MapStruct-based unified Mapper interface)
 - `outboundMapper`: The outbound mapper class for this pipeline service/step - handles conversion from domain to gRPC types (using MapStruct-based unified Mapper interface)
 - `autoPersist`: When true, the input gets written to the DB during transformation (immutable architecture)
-- `runOnVirtualThreads`: When true, runs on virtual threads for I/O-bound operations
+- `runOnVirtualThreads`: Whether to offload server processing to virtual threads, i.e. for I/O-bound operations
 - `recoverOnFailure`: When true, enables dead letter queue (DLQ) support for error handling
 - `backpressureBufferCapacity`: Buffer capacity when using BUFFER strategy
 - `backpressureStrategy`: Backpressure strategy (BUFFER, DROP, or ERROR)
@@ -27,7 +27,6 @@ The `@PipelineStep` annotation marks a class as a pipeline step and enables auto
 - `grpcEnabled`: Whether to enable gRPC adapter generation for this step
 - `local`: Whether this step runs locally in the same process (default: false). When `true`, the step runs in the same application process without requiring gRPC communication, making it suitable for services that process data locally within the orchestrator.
 - `restEnabled`: Whether to enable REST adapter generation for this step
-- `runOnVirtualThreads`: Whether to offload server processing to virtual threads.
 
 ### Example
 

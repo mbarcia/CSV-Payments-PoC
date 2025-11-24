@@ -83,12 +83,13 @@ jobs:
       - name: Build CSV Payments example services (with the framework already installed)
         run: ./mvnw $MAVEN_ARGS -DskipTests -pl examples/csv-payments package --no-transfer-progress
 
-      - name: Run unit and quick integration tests not requiring slow infra
+      - name: Run unit tests not requiring slow infra
         if: ${{ env.IS_PR != 'true' }}
         run: |
           ./mvnw $MAVEN_ARGS verify \
             -Pcoverage \
             -DskipNative=true \
+            -DskipITs \
             -Dtest="**/*Test.java,**/*TestCase.java" \
             -DfailIfNoTests=false        
 

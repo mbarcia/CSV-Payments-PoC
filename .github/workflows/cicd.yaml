@@ -118,7 +118,12 @@ jobs:
         with:
           name: build-targets
           path: |
-            examples/csv-payments/*/target/**
+            examples/csv-payments/payments-processing-svc/target/**
+            examples/csv-payments/orchestrator-svc/target/**
+            examples/csv-payments/input-csv-file-processing-svc/target/**
+            examples/csv-payments/common/target/**
+            examples/csv-payments/output-csv-file-processing-svc/target/**
+            examples/csv-payments/payment-status-svc/target/**
           retention-days: 3
 
   ####################################################################

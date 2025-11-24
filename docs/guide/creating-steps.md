@@ -2,6 +2,10 @@
 
 This guide explains how to create your own pipeline steps using The Pipeline Framework.
 
+<Callout type="tip" title="Rich Step Types">
+The Pipeline Framework supports multiple processing patterns including OneToOne, OneToMany, ManyToOne, ManyToMany, SideEffect and blocking variants. Each step type is optimized for specific data transformation scenarios. The Canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> allows you to visually configure these step types without writing code.
+</Callout>
+
 <Callout type="tip" title="Visual Pipeline Designer">
 While you can create pipeline steps programmatically as shown below, you can also design your entire pipeline visually using the Canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>. The Canvas allows you to define steps, their types, and connections without writing code, then generates the appropriate configuration files.
 </Callout>

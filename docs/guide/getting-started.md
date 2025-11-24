@@ -2,6 +2,10 @@
 
 This guide walks you through the process of quickly setting up and using The Pipeline Framework to create your first pipeline application using the template generator - the fastest and easiest way to get started!
 
+<Callout type="tip" title="Immutable Architecture">
+The Pipeline Framework follows an immutable architecture where no database updates occur during pipeline execution - only appends/preserves. This ensures complete data integrity and provides a complete audit trail of all transformations.
+</Callout>
+
 <Callout type="tip" title="Prerequisites">
 Before you begin, ensure you have Java 21+ and Maven 3.8+ installed on your system.
 </Callout>

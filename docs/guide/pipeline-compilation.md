@@ -31,8 +31,7 @@ During the Maven build process, the annotation processor scans for `@PipelineSte
     inboundMapper = PaymentRecordInboundMapper.class,
     outboundMapper = PaymentStatusOutboundMapper.class,
     grpcClient = "process-payment",
-    autoPersist = true,
-    debug = true
+    autoPersist = true
 )
 @ApplicationScoped
 public class ProcessPaymentService implements StepOneToOne<PaymentRecord, PaymentStatus> {
@@ -345,7 +344,6 @@ The annotation processor can be customized through annotation parameters:
     outboundMapper = PaymentStatusOutboundMapper.class,
     grpcClient = "process-payment",
     autoPersist = true,
-    debug = true,
     retryLimit = 5,
     retryWait = "PT1S",
     maxBackoff = "PT30S",

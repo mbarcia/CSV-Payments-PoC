@@ -22,10 +22,18 @@ hero:
 features:
   - title: Reactive by Design
     details: Built on Mutiny for non-blocking, high-performance applications
+  - title: Immutable Architecture
+    details: No database updates during pipeline execution - only appends/preserves
+  - title: Multiple Processing Patterns
+    details: OneToOne, OneToMany, ManyToOne, ManyToMany, SideEffect and blocking variants
+  - title: gRPC & REST Flexibility
+    details: Automatic adapter generation for fast gRPC or easy REST integration
   - title: Annotation Driven
     details: Simple annotations generate complex infrastructure automatically
   - title: Visual Design
     details: Use the Canvas designer to create and configure pipelines visually
+  - title: Health Monitoring
+    details: Built-in health check capabilities
   - title: Observability First
     details: Built-in metrics, tracing, and logging support
   - title: Resilient by Default
@@ -43,13 +51,17 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 ## Key Features
 
 - **Reactive Programming**: Built on top of Mutiny for non-blocking operations
+- **Immutable Architecture**: No database updates during pipeline execution - only appends/preserves, ensuring data integrity
 - **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
-- **gRPC and REST Support**: Automatically generates adapters for both communication protocols
+- **gRPC & REST Flexibility**: Automatic adapter generation for fast gRPC or easy REST integration
+- **Multiple Processing Patterns**: OneToOne, OneToMany, ManyToOne, ManyToMany, SideEffect and blocking variants
+- **Health Monitoring**: Built-in health check capabilities
+- **Multiple Persistence Models**: Choose from reactive or virtual thread-based persistence
 - **Modular Design**: Clear separation between runtime and deployment components
 - **Auto-Generation**: Generates necessary infrastructure at build time
 - **Observability**: Built-in metrics, tracing, and logging support
 - **Error Handling**: Comprehensive error handling with DLQ support
-- **Concurrency Control**: Virtual threads and backpressure management
+- **Backpressure Management**: Reactive processing with configurable backpressure strategies
 
 ## Getting Started
 

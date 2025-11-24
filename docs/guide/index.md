@@ -9,9 +9,13 @@ The Pipeline Framework includes a visual canvas designer at <a href="https://app
 ## Key Features
 
 - **Reactive Programming**: Built on top of Mutiny for non-blocking operations
+- **Immutable Architecture**: No database updates during pipeline execution - only appends/preserves, ensuring data integrity
 - **Visual Design Canvas**: Create and configure pipelines with the visual designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>
 - **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
-- **gRPC and REST Support**: Automatically generates adapters for both communication protocols
+- **gRPC & REST Flexibility**: Automatic adapter generation for fast gRPC or easy REST integration
+- **Multiple Processing Patterns**: OneToOne, OneToMany, ManyToOne, ManyToMany, SideEffect and blocking variants
+- **Health Monitoring**: Built-in health check capabilities
+- **Multiple Persistence Models**: Choose from reactive or virtual thread-based persistence
 - **Modular Design**: Clear separation between runtime and deployment components
 - **Test Integration**: Built-in support for unit and integration tests with Testcontainers
 

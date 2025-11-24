@@ -41,30 +41,37 @@ export default withMermaid(
 
         sidebar: [
             {
-                text: 'Introduction',
+                text: 'Getting Started',
                 items: [
-                    {text: 'What is The Pipeline Framework?', link: '/'},
+                    {text: 'Guide Overview', link: '/guide/'},
+                    {text: 'Quick Start', link: '/guide/quick-start'},
                     {text: 'Getting Started', link: '/guide/getting-started'},
-                    {text: 'Creating Pipeline Steps', link: '/guide/creating-steps'},
                 ]
             },
             {
-                text: 'Guides',
+                text: 'Essential Guides',
                 items: [
-                    {text: 'Overview', link: '/guide/'},
+                    {text: 'Creating Pipeline Steps', link: '/guide/creating-steps'},
                     {text: 'Application Structure', link: '/guide/application-structure'},
                     {text: 'Backend Services', link: '/guide/backend-services'},
+                    {text: 'Mappers and DTOs', link: '/guide/mappers-and-dtos'},
                     {text: 'Orchestrator Services', link: '/guide/orchestrator-services'},
+                ]
+            },
+            {
+                text: 'Advanced Guides',
+                items: [
                     {text: 'Pipeline Compilation', link: '/guide/pipeline-compilation'},
                     {text: 'Error Handling & DLQ', link: '/guide/error-handling'},
                     {text: 'Observability', link: '/guide/observability'},
+                    {text: 'Configuration', link: '/guide/configuration'},
+                    {text: 'Best Practices', link: '/guide/best-practices'},
                 ]
             },
             {
                 text: 'Reference',
                 items: [
                     {text: 'Architecture', link: '/reference/architecture'},
-                    {text: 'Framework Overview', link: '/FRAMEWORK_OVERVIEW'},
                     {text: 'Reference Implementation', link: '/REFERENCE_IMPLEMENTATION'},
                     {text: 'YAML Schema', link: '/YAML_SCHEMA'},
                     {text: 'Canvas Guide', link: '/CANVAS_GUIDE'},
@@ -72,15 +79,19 @@ export default withMermaid(
                 ]
             },
             {
-                text: 'Advanced Topics',
+                text: 'API Reference',
                 items: [
-                    {text: 'Application Structure Overview', link: '/guide/app-structure-overview'},
+                    {text: '@PipelineStep Annotation', link: '/annotations/pipeline-step'},
+                ]
+            },
+            {
+                text: 'Additional Resources',
+                items: [
                     {text: 'Common Module Structure', link: '/guide/common-module-structure'},
-                    {text: 'Backend Service Structure', link: '/guide/backend-service-structure'},
-                    {text: 'Orchestrator Service Structure', link: '/guide/orchestrator-service-structure'},
-                    {text: 'Dependency Management', link: '/guide/dependency-management'},
-                    {text: 'Configuration', link: '/guide/configuration'},
-                    {text: 'Best Practices', link: '/guide/best-practices'},
+                    {text: 'Local Steps', link: '/guide/local-steps'},
+                    {text: 'Handling File Operations', link: '/guide/handling-file-operations'},
+                    {text: 'Using Template Generator', link: '/guide/using-template-generator'},
+                    {text: 'Versions', link: '/versions'},
                 ]
             }
         ],

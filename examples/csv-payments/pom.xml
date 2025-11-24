@@ -258,8 +258,4 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <profiles>
-    </profiles>
-
 </project>

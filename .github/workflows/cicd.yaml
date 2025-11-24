@@ -118,9 +118,8 @@ jobs:
         with:
           name: build-targets
           path: |
-            '**/target/**'
+            examples/csv-payments/*/target/**
           retention-days: 3
-
 
   ####################################################################
   # INTEGRATION TESTS - heavier tests (split out)

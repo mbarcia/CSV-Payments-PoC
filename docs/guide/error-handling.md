@@ -1,14 +1,14 @@
 # Concurrency, Error Handling, and DLQ
 
-This guide explains the advanced features of The Pipeline Framework including concurrency control, error handling mechanisms, and dead letter queue (DLQ) support.
+This guide explains the advanced features of The Pipeline Framework including concurrency control, error handling mechanisms, dead letter queue (DLQ) support, and immutable architecture patterns.
 
 ## Concurrency Control
 
 The Pipeline Framework provides sophisticated concurrency controls to optimize performance while maintaining resource efficiency.
 
-### Virtual Threads
+### Reactive Processing
 
-The framework leverages Java 21's virtual threads for high-throughput, low-overhead concurrency:
+The framework leverages Mutiny's reactive processing model for high-throughput, efficient concurrency:
 
 ```java
 @PipelineStep(
@@ -23,24 +23,23 @@ The framework leverages Java 21's virtual threads for high-throughput, low-overh
     outboundMapper = PaymentStatusOutboundMapper.class,
     grpcClient = "process-payment",
     autoPersist = true,
-    debug = true,
-    runWithVirtualThreads = true  // Enable virtual threads
+    runOnVirtualThreads = true  // Run on virtual threads for I/O-bound operations
 )
 @ApplicationScoped
 public class ProcessPaymentService implements StepOneToOne<PaymentRecord, PaymentStatus> {
-    
+
     @Override
     public Uni<PaymentStatus> applyOneToOne(PaymentRecord paymentRecord) {
-        // This will run on a virtual thread if enabled
+        // This will run reactively using Mutiny's event/worker thread model
         return processPaymentWithExternalService(paymentRecord);
     }
-    
+
     private Uni<PaymentStatus> processPaymentWithExternalService(PaymentRecord record) {
-        // Virtual threads are ideal for I/O-bound operations like HTTP calls
+        // Reactive processing is ideal for I/O-bound operations like HTTP calls
         return webClient.post("/process-payment")
             .sendJson(record)
             .onItem().transform(response -> {
-                // Processing response on virtual thread
+                // Processing response reactively
                 return convertResponseToPaymentStatus(response, record);
             });
     }
@@ -49,26 +48,14 @@ public class ProcessPaymentService implements StepOneToOne<PaymentRecord, Paymen
 
 ### Concurrency Limits
 
-Control the maximum number of concurrent operations:
+Control the maximum number of concurrent operations through backpressure and buffer settings:
 
 ```java
 @PipelineStep(
     // ... other configuration
-    concurrency = 1000  // Limit to 1000 concurrent operations
+    // Use backpressureBufferCapacity and concurrency control via reactive streams
+    backpressureBufferCapacity = 1024  // Buffer capacity when using BUFFER strategy
 )
-```
-
-Configuration can also be set globally or per-profile:
-
-```properties
-# application.properties
-pipeline.concurrency=2000
-
-# application-dev.properties  
-pipeline.concurrency=100
-
-# application-prod.properties
-pipeline.concurrency=5000
 ```
 
 ### Backpressure Handling
@@ -99,8 +86,6 @@ The available overflow strategies are:
 
 - **BUFFER** (default): Buffers items when the downstream consumer cannot keep up (using `onOverflow().buffer(capacity)`)
 - **DROP**: Drops items when the downstream consumer cannot keep up (using `onOverflow().drop()`)
-
-Note: In Mutiny 2.9.4, the explicit `onOverflow().fail()` method is not available. By default, Mutiny will signal an error when overflow occurs if no other overflow strategy is specified.
 
 Programmatic configuration is also possible:
 
@@ -443,13 +428,11 @@ pipeline.runtime.max-backoff=PT30S
 pipeline.runtime.jitter=true
 
 # Concurrency configuration
-pipeline.runtime.concurrency=1000
 pipeline.runtime.run-with-virtual-threads=true
 
 # Error handling
 pipeline.runtime.recover-on-failure=true
 pipeline.runtime.auto-persist=true
-pipeline.runtime.debug=false
 ```
 
 ### Profile-Specific Configuration
@@ -458,14 +441,12 @@ pipeline.runtime.debug=false
 # application-dev.properties
 pipeline.runtime.retry-limit=1
 pipeline.runtime.retry-wait=PT100MS
-pipeline.runtime.debug=true
 pipeline.runtime.run-with-virtual-threads=false  # Disable in dev for easier debugging
 
 # application-prod.properties
 pipeline.runtime.retry-limit=5
 pipeline.runtime.retry-wait=PT1S
 pipeline.runtime.max-backoff=PT60S
-pipeline.runtime.concurrency=5000
 pipeline.runtime.run-with-virtual-threads=true
 ```
 

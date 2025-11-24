@@ -12,7 +12,6 @@ All configuration properties are accessed under the `pipeline.defaults` prefix:
 # Global defaults for all steps
 pipeline.defaults.retry-limit=10
 pipeline.defaults.retry-wait-ms=3000
-pipeline.defaults.debug=true
 pipeline.defaults.parallel=false
 pipeline.defaults.recover-on-failure=true
 pipeline.defaults.max-backoff=60000
@@ -32,7 +31,6 @@ You can override configuration for specific steps using the fully qualified clas
 ```properties
 # Override for specific step
 pipeline.step."org.example.MyStep".retry-limit=5
-pipeline.step."org.example.MyStep".debug=false
 pipeline.step."org.example.MyStep".parallel=true
 pipeline.step."org.example.MyStep".order=100
 pipeline.step."org.example.MyStep".recover-on-failure=false

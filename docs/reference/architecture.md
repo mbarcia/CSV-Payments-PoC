@@ -1,11 +1,11 @@
 # Architecture
 
-The Pipeline Framework is designed as a modular, extensible system for building reactive pipeline processing applications. Understanding its architecture is key to leveraging its full potential.
+The Pipeline Framework is designed as a modular, extensible system for building reactive pipeline processing applications. Understanding its architecture is key to leveraging its full potential. Built on an immutable architecture, the framework ensures data integrity by preserving all transformations and maintaining a complete audit trail.
 
 ## Core Concepts
 
 ### Pipeline
-A pipeline is a sequence of processing steps that transform input data into output data. Each step in the pipeline performs a specific transformation or operation on the data flowing through it.
+A pipeline is a sequence of processing steps that transform input data into output data. Each step in the pipeline performs a specific transformation or operation on the data flowing through it. The framework follows an immutable architecture where no database updates occur during pipeline execution - only appends/preserves.
 
 ```mermaid
 graph TD

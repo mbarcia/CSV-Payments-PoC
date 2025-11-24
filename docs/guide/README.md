@@ -1,23 +1,62 @@
 # The Pipeline Framework Guide
 
-Welcome to The Pipeline Framework guide! This guide will help you understand how to use the framework to build reactive pipeline processing systems.
+Welcome to The Pipeline Framework guide! This guide will help you understand how to use the framework to build reactive pipeline processing systems that work for your specific use case.
 
-## What You'll Learn
+<Callout type="tip" title="Immutable Architecture">
+The Pipeline Framework follows an immutable architecture where no database updates occur during pipeline execution - only appends/preserves. This ensures complete data integrity and provides a complete audit trail of all transformations.
+</Callout>
 
-This guide covers everything you need to know about The Pipeline Framework:
+<Callout type="tip" title="Rich Processing Patterns">
+The framework supports multiple processing patterns including OneToOne, OneToMany, ManyToOne, ManyToMany, SideEffect and blocking variants. Each step type is optimized for specific data transformation scenarios.
+</Callout>
 
-1. **Getting Started**: Setting up the framework in your project
-2. **Creating Pipeline Steps**: Building your first pipeline steps
-3. **Application Structure**: Structuring pipeline applications
-4. **Backend Services**: Creating backend services that implement pipeline steps
-5. **Orchestrator Services**: Building orchestrator services that coordinate pipelines
-6. **Pipeline Compilation**: Understanding how the annotation processor works
-7. **Error Handling & DLQ**: Managing errors and dead letter queues
-8. **Observability**: Monitoring and observing pipeline applications
-9. **Framework Overview**: Complete architecture and comparison to original spec ([Framework Overview](/FRAMEWORK_OVERVIEW.html))
-10. **Reference Implementation**: Complete implementation guide with examples ([Reference Implementation](/REFERENCE_IMPLEMENTATION.html))
-11. **YAML Configuration**: Schema documentation and configuration guide ([YAML Schema](/YAML_SCHEMA.html))
-12. **Visual Design**: Canvas designer usage guide ([Canvas Guide](/CANVAS_GUIDE.html))
+## How to Use This Guide by Role
+
+### For Developers
+Start here to create your first pipeline applications:
+
+- [Quick Start](/guide/quick-start): Get up and running in minutes with the visual Canvas designer
+- [Creating Pipeline Steps](/guide/creating-steps): Build your first pipeline step from scratch
+- [Application Structure](/guide/application-structure): Understand how to organize your code
+- [Backend Services](/guide/backend-services): Implement the business logic for your steps
+- [Mappers and DTOs](/guide/mappers-and-dtos): Handle data transformation between object types
+- [Configuration](/guide/configuration): Manage your pipeline configuration settings
+- [Error Handling & DLQ](/guide/error-handling): Implement error handling and dead letter queue functionality
+- [Observability](/guide/observability): Monitor and observe your pipeline applications
+- [Best Practices](/guide/best-practices): Follow recommended approaches for pipeline applications
+- [Orchestrator Services](/guide/orchestrator-services): Control the flow of your pipeline
+
+### For QA Engineers
+Learn how to test pipeline applications effectively:
+
+- [Testing Strategies](/guide/best-practices#testing): Testing strategies for pipeline applications
+- [Observability](/guide/observability): How to monitor and verify pipeline behavior
+- [Error Handling & DLQ](/guide/error-handling): Testing error scenarios and recovery
+
+### For Product Owners
+Understand the business value and capabilities:
+
+- [Architecture](/reference/architecture): High-level overview of the system design
+- [Reference Implementation](/REFERENCE_IMPLEMENTATION): See a real-world example
+- [Canvas Guide](/CANVAS_GUIDE): Learn about the visual design tool for non-technical stakeholders
+
+### For Architects
+Deep-dive into design patterns and enterprise considerations:
+
+- [Architecture](/reference/architecture): System design patterns and principles
+- [Observability](/guide/observability): Enterprise monitoring and tracing strategies
+- [Error Handling & DLQ](/guide/error-handling): Resilience and fault-tolerance patterns
+- [Configuration](/guide/configuration): Environment-specific settings and deployment strategies
+- [Best Practices](/guide/best-practices): Design and implementation best practices
+
+### For CTOs
+Get a strategic overview for technical leadership:
+
+- [Architecture](/reference/architecture): System capabilities and technology stack
+- [YAML Schema](/YAML_SCHEMA): Infrastructure-as-code configuration options
+- [Best Practices](/guide/best-practices): Organizational implementation guidelines
+- [Observability](/guide/observability): Enterprise monitoring strategies
+- [Configuration](/guide/configuration): Enterprise deployment strategies
 
 ## Prerequisites
 
@@ -27,29 +66,5 @@ Before diving into The Pipeline Framework, make sure you have:
 - Maven 3.8+
 - A Quarkus-based project (the framework is designed to work with Quarkus)
 - Basic understanding of reactive programming concepts
-
-## Quick Start
-
-To quickly get started with The Pipeline Framework:
-
-1. Add the framework dependencies to your `pom.xml`
-2. Create your first pipeline step with the `@PipelineStep` annotation
-3. Implement the step interface with your business logic
-4. Build your project to trigger automatic adapter generation
-5. Run your application to execute the pipeline
-
-## Next Steps
-
-Dive into the specific guides to learn more about each aspect of The Pipeline Framework:
-
-- [Getting Started](/guide/getting-started): Detailed setup instructions
-- [Creating Pipeline Steps](/guide/creating-steps): Building your first steps
-- [Local Steps](/guide/local-steps): Creating steps that run within the same process
-- [Application Structure](/guide/application-structure): Structuring complex applications
-- [Backend Services](/guide/backend-services): Implementing backend services
-- [Orchestrator Services](/guide/orchestrator-services): Coordinating pipelines
-- [Pipeline Compilation](/guide/pipeline-compilation): Understanding code generation
-- [Error Handling & DLQ](/guide/error-handling): Managing failures
-- [Observability](/guide/observability): Monitoring your applications
 
 Happy pipelining!

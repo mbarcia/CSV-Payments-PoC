@@ -217,7 +217,6 @@ Customize the generated application properties:
 # Pipeline Configuration
 pipeline.runtime.retry-limit=5
 pipeline.runtime.retry-wait-ms=1000
-pipeline.runtime.debug=true
 ```
 
 ## Advanced Features

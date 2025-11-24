@@ -7,9 +7,15 @@ on:
       - 'main'  # Only trigger on pushes to main branch
     tags:
       - 'v*'
+    paths-ignore:
+      - 'docs/**'
+      - 'web-ui/**'
   pull_request:
     branches:
       - '**'  # Trigger on pull requests to any branch
+    paths-ignore:
+      - 'docs/**'
+      - 'web-ui/**'
 
 concurrency:
   group: ci-${{ github.ref }}

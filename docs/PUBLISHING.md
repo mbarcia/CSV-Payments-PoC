@@ -14,7 +14,8 @@ The release process is fully automated with GitHub Actions:
 
 The GitHub Actions workflow automatically:
 - Builds and tests the complete project
-- Runs unit and integration tests
+- Runs unit tests during the build phase
+- Runs integration tests (on main branch only)
 - Builds native executables for example services (on main branch)
 - Signs all artifacts with GPG
 - Deploys to Sonatype OSSRH
@@ -46,7 +47,7 @@ The Pipeline Framework uses a centralized version management system to ensure co
 
 ### Version Property Definition
 
-In the root POM (`pom.xml`):
+In several (`pom.xml`):
 ```xml
 <properties>
     <!-- ... other properties ... -->
@@ -55,7 +56,11 @@ In the root POM (`pom.xml`):
 </properties>
 ```
 
-All other modules reference this property, ensuring a single point of update for version changes.
+- Framework's parent POM
+- Deployment POM
+- Runtime module POM
+- Root POM
+- CSV Payments parent POM
 
 ### Using Maven Versions Plugin
 
@@ -300,7 +305,8 @@ This approach allows manual control over when releases happen.
 ### Testing the Setup
 
 Before pushing a tag that triggers the release workflow:
-- `mvn clean verify` - test the build locally
+- `mvn clean verify` - test the build locally (runs unit tests)
+- `mvn clean verify -DskipITs` - test build without integration tests
 - `mvn clean verify -P release` - test with the release profile but without deployment
 - Use a test Sonatype repository for verification
 

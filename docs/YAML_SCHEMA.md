@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Pipeline Framework uses YAML configuration files to define pipeline applications. This document details the complete schema and available options.
+The Pipeline Framework uses YAML configuration files to define pipeline applications. This document details the complete schema and available options, including support for multiple processing patterns (OneToOne, OneToMany, ManyToOne, ManyToMany, SideEffect and blocking variants) and immutable architecture with auto-persistence capabilities.
 
 ## Root Level Properties
 

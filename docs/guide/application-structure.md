@@ -2,6 +2,14 @@
 
 This guide explains how to structure applications using The Pipeline Framework, following the patterns demonstrated in the CSV Payments reference implementation. The application structure is broken down into several key components that promote modularity and separation of concerns.
 
+<Callout type="tip" title="Multiple Persistence Options">
+The framework offers multiple persistence models including reactive (Panache) or virtual thread-based persistence models, allowing you to choose the best approach for your use case.
+</Callout>
+
+<Callout type="tip" title="Immutable Architecture">
+The Pipeline Framework follows an immutable architecture where no database updates occur during pipeline execution - only appends/preserves. This ensures complete data integrity and provides a complete audit trail of all transformations.
+</Callout>
+
 <Callout type="tip" title="Visual Design with Canvas">
 The Pipeline Framework includes a visual canvas designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a> that allows you to visually plan and configure your application structure. You can create and connect services on the canvas, which then generates the corresponding configuration for your application.
 </Callout>
@@ -43,7 +51,7 @@ The shared components module contains code that is used across all services in t
 ### Backend Services
 Backend services implement individual pipeline steps with specific processing logic. Each service focuses on a single responsibility and can be independently configured.
 
-[Learn about Backend Service Structure](./backend-service-structure)
+[Learn about Backend Service Structure](./backend-services.md)
 
 ### Orchestrator Service
 The orchestrator service coordinates the overall pipeline execution, managing the flow of data through the pipeline steps and handling input/output operations.

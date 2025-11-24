@@ -13,16 +13,20 @@ The Pipeline Framework is a powerful tool for building reactive pipeline process
 ### Key Features
 
 - **Reactive Programming**: Built on top of Quarkus, Mutiny and Vert.x for non-blocking operations
+- **Immutable Architecture**: No database updates during pipeline execution - only appends/preserves, ensuring data integrity
 - **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
 - **Visual Design Canvas**: Create and configure pipelines with the visual designer at <a href="https://app.pipelineframework.org" target="_blank">https://app.pipelineframework.org</a>
-- **gRPC and REST Support**: Automatically generates adapters for both communication protocols
+- **gRPC & REST Flexibility**: Automatic adapter generation for fast gRPC or easy REST integration
+- **Multiple Processing Patterns**: OneToOne, OneToMany, ManyToOne, ManyToMany, SideEffect and blocking variants
 - **Modular Design**: Clear separation between runtime and deployment components
+- **Health Monitoring**: Built-in health check capabilities
 - **Test Integration**: Built-in support for integration tests with Testcontainers
+- **Multiple Persistence Models**: Choose from reactive or virtual thread-based persistence
+- **Error Handling**: Comprehensive error handling with dead letter queue (DLQ) support
 - **CI/CD Ready**: Pre-configured GitHub Actions workflow for testing and publishing
 - **Auto-Generation**: Generates necessary infrastructure at build time
 - **Observability**: Built-in metrics, tracing, and logging support
-- **Error Handling**: Comprehensive error handling with DLQ support
-- **Concurrency Control**: Virtual threads and backpressure management
+- **Concurrency Control**: Reactive processing with backpressure management
 
 ## Complete Documentation
 

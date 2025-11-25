@@ -124,3 +124,4 @@ jobs:
             ${{ matrix.service }}/target/*-runner
             ${{ matrix.service }}/target/*-runner.*
           retention-days: 7
+          if-no-files-found: error

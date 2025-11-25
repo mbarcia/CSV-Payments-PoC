@@ -7,6 +7,7 @@ on:
 
 env:
   MAVEN_OPTS: -Xmx1g -Xms512m
+  MAVEN_ARGS_BUILD: -B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none
 
 jobs:
   ##################################################################
@@ -28,8 +29,7 @@ jobs:
           cache: maven
 
       - name: Configure Maven
-        run: |
-          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
+        run: echo "MAVEN_ARGS=${{ env.MAVEN_ARGS_BUILD }}" >> $GITHUB_ENV
 
       - name: Full clean install (framework + examples)
         run: ./mvnw $MAVEN_ARGS clean install -DskipITs=false -DskipNative=true
@@ -57,22 +57,15 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Configure Maven
-        run: |
-          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true -Dsurefire.parallel=none -Dfailsafe.parallel=none" >> $GITHUB_ENV
+        run: echo "MAVEN_ARGS=${{ env.MAVEN_ARGS_BUILD }}" >> $GITHUB_ENV
 
       # Build Docker images using Jib for all CSV Payments modules
       - name: Build Docker images (Jib)
         run: |
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests \
-            -pl examples/csv-payments/input-csv-file-processing-svc package
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests \
-            -pl examples/csv-payments/payments-processing-svc package
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests \
-            -pl examples/csv-payments/payment-status-svc package
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests \
-            -pl examples/csv-payments/output-csv-file-processing-svc package
-          ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests \
-            -pl examples/csv-payments/orchestrator-svc package
+          for svc in input-csv-file-processing-svc payments-processing-svc payment-status-svc output-csv-file-processing-svc orchestrator-svc; do
+            ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests \
+              -pl "examples/csv-payments/$svc" package
+          done
 
       - name: Run Integration Tests
         run: ./mvnw $MAVEN_ARGS verify

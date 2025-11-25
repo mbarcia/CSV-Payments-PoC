@@ -117,16 +117,41 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
             .select().first(maxSampleSize)
             .collect().asList()
             .onItem().transformToUni(sampleList -> {
-                // Count the total number of items in the stream
-                return broadcastInput.count().onItem().invoke(count -> {
-                    String sampleInfo = sampleList.size() > 0 ?
-                        String.format("first %d of %d items",
-                                      Math.min(sampleList.size(), maxSampleSize),
-                                      count) :
-                        String.format("%d items", count);
-                    LOG.errorf("DLQ drop for stream with %s: %s",
-                        sampleInfo, error.getMessage());
-                }).transformToUni(count -> Uni.createFrom().nullItem());
+                // Count the total number of items in the stream using a counter approach
+                java.util.concurrent.atomic.AtomicLong counter = new java.util.concurrent.atomic.AtomicLong(0);
+
+                // Create a Uni that completes when the counting stream completes
+                Uni<Void> countingCompletion = Uni.createFrom().emitter(emitter -> broadcastInput
+                    .invoke(ignored -> counter.incrementAndGet()) // Count items as they pass through
+                    .subscribe()
+                    .with(
+                        ignored -> {}, // Do nothing with each item
+                        failure -> {
+                            // On failure, log and complete the emitter
+                            String sampleInfo = !sampleList.isEmpty() ?
+                                String.format("first %d items before failure",
+                                              Math.min(sampleList.size(), maxSampleSize)) :
+                                "stream with failure";
+                            LOG.errorf("DLQ drop for %s: %s",
+                                sampleInfo, failure.getMessage());
+                            emitter.fail(failure);
+                        },
+                        () -> {
+                            // On completion, log the count and complete the emitter
+                            long count = counter.get();
+                            String sampleInfo = !sampleList.isEmpty() ?
+                                String.format("first %d of %d items",
+                                              Math.min(sampleList.size(), maxSampleSize),
+                                              count) :
+                                String.format("%d items", count);
+                            LOG.errorf("DLQ drop for stream with %s: %s",
+                                sampleInfo, error.getMessage());
+                            emitter.complete(null);
+                        }
+                    ));
+
+                return countingCompletion
+                    .onItem().transformToUni(ignored -> Uni.createFrom().nullItem());
             });
     }
 }

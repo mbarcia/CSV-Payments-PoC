@@ -263,7 +263,7 @@ class StepManyToOneTest {
         // Given
         TestStep step = new TestStep();
         java.util.List<String> items = java.util.List.of("item1", "item2", "item3");
-        Multi<String> multiStream = Multi.createFrom().items(String.valueOf(items));
+        Multi<String> multiStream = Multi.createFrom().iterable(items);
 
         // When
         Uni<Void> result =
@@ -284,10 +284,14 @@ class StepManyToOneTest {
     void testDeadLetterStreamWithMoreItemsThanSampleSize() {
         // Given
         TestStep step = new TestStep();
-        Multi<String> multiStream = Multi.createFrom().items("item1", "item2", "item3", "item4", "item5", "item6", "item7");
+        Multi<String> multiStream =
+                Multi.createFrom()
+                        .items("item1", "item2", "item3", "item4", "item5", "item6", "item7");
 
         // When
-        Uni<Void> result = step.deadLetterStream(multiStream, new RuntimeException("Test error")).replaceWithVoid();
+        Uni<Void> result =
+                step.deadLetterStream(multiStream, new RuntimeException("Test error"))
+                        .replaceWithVoid();
 
         // Then
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<Void> subscriber =
@@ -308,7 +312,8 @@ class StepManyToOneTest {
 
         // When
         Uni<Void> result =
-                step.deadLetterStream(errorStream, new RuntimeException("Processing error")).replaceWithVoid();
+                step.deadLetterStream(errorStream, new RuntimeException("Processing error"))
+                        .replaceWithVoid();
 
         // Then
         io.smallrye.mutiny.helpers.test.UniAssertSubscriber<Void> subscriber =

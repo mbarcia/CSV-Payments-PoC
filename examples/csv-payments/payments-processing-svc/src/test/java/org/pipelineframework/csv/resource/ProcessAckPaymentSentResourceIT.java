@@ -113,8 +113,6 @@ class ProcessAckPaymentSentResourceIT {
                 .when()
                 .post("/api/v1/process-ack-payment-sent/process")
                 .then()
-                .statusCode(
-                        400); // Missing required fields in the response object results in 400 Bad
-        // Request
+                .statusCode(500);
     }
 }

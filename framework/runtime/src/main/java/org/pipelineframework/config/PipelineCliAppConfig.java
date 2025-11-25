@@ -68,7 +68,9 @@ public interface PipelineCliAppConfig {
     /**
      * CLI Command Version
      * <p>
-     * If not provided, falls back to the framework version specified in 'version()'.
+     * If not provided, returns an empty Optional. Callers should use
+     * cliVersion().orElse(config.version()) to get the framework version when
+     * CLI version is not configured.
      *
      * @return the CLI command version
      */

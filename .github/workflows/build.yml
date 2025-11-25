@@ -31,11 +31,8 @@ jobs:
         run: |
           echo "MAVEN_ARGS=-B -T 1 -V -DskipITs -DskipNative=true -Dmaven.test.redirectTestOutputToFile=true" >> $GITHUB_ENV
 
-      - name: Build framework
-        run: ./mvnw $MAVEN_ARGS -f framework/pom.xml clean install
-
-      - name: Build example services (unit tests only)
-        run: ./mvnw $MAVEN_ARGS -pl examples/csv-payments package
+      - name: Build framework (skip tests)
+        run: ./mvnw $MAVEN_ARGS --no-transfer-progress clean install -DskipTests
 
       - name: Run unit tests with coverage
-        run: ./mvnw $MAVEN_ARGS verify -Pcoverage -Dtest="**/*Test.java,**/*TestCase.java"
+        run: ./mvnw $MAVEN_ARGS --no-transfer-progress verify -Pcoverage

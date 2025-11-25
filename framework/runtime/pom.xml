@@ -29,7 +29,6 @@
     </parent>
 
     <artifactId>pipelineframework</artifactId>
-    <version>${version.pipeline}</version>
     <packaging>jar</packaging>
     <name>The Pipeline Framework Extension (Runtime)</name>
     <description>Runtime module for The Pipeline Framework Extension</description>

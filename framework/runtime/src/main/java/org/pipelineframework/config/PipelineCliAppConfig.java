@@ -42,7 +42,7 @@ public interface PipelineCliAppConfig {
      *
      * @return the version of The Pipeline Framework
      */
-    @WithDefault("${project.version:0.9.1}")
+    @WithDefault("0.9.1")
     String version();
     
     /**

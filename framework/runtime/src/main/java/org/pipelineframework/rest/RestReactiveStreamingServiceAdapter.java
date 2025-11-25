@@ -33,6 +33,12 @@ public abstract class RestReactiveStreamingServiceAdapter<DomainIn, DomainOut, D
 
     @Inject
     PersistenceManager persistenceManager;
+
+    /**
+     * Default constructor for RestReactiveStreamingServiceAdapter.
+     */
+    public RestReactiveStreamingServiceAdapter() {
+    }
     
 
     /**

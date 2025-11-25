@@ -1,0 +1,52 @@
+name: Release — Publish to Maven Central
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    name: Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK 21 (GPG enabled)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          server-id: ossrh
+          server-username: OSSRH_USERNAME
+          server-password: OSSRH_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: GPG_PASSPHRASE
+
+      - name: Import GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          gpg --list-secret-keys --keyid-format LONG
+
+      - name: Build framework for release
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: ./mvnw -B -f framework/pom.xml clean install -Prelease -DskipTests -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Deploy to Maven Central
+        env:
+          OSSRH_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          OSSRH_PASSWORD: ${{ secrets.OSSRH_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: ./mvnw -B -f framework/pom.xml clean deploy -Prelease -DskipTests -U -Dgpg.passphrase=${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          generate_release_notes: true

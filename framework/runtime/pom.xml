@@ -29,7 +29,6 @@
     </parent>
 
     <artifactId>pipelineframework</artifactId>
-    <version>${version.pipeline}</version>
     <packaging>jar</packaging>
     <name>The Pipeline Framework Extension (Runtime)</name>
     <description>Runtime module for The Pipeline Framework Extension</description>
@@ -138,6 +137,10 @@
 
     <build>
         <plugins>
+            <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>flatten-maven-plugin</artifactId>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

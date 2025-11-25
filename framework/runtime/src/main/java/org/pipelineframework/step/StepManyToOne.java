@@ -18,12 +18,18 @@ package org.pipelineframework.step;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import org.pipelineframework.step.functional.ManyToOne;
 import org.jboss.logging.Logger;
+import org.pipelineframework.step.functional.ManyToOne;
 
-/** N -> 1 (reactive) */
+/**
+ * N -> 1 (reactive)
+ *
+ * @param <I> the input type
+ * @param <O> the output type
+ */
 public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
 
+    /** Logger for StepManyToOne operations. */
     Logger LOG = Logger.getLogger(StepManyToOne.class);
 
     /**
@@ -43,12 +49,16 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
         
         // Apply overflow strategy to the input if needed
         Multi<I> backpressuredInput = input;
-        if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
+        final String strategy = backpressureStrategy();
+        if ("buffer".equalsIgnoreCase(strategy)) {
             backpressuredInput = backpressuredInput.onOverflow().buffer(backpressureBufferCapacity());
-        } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
+        } else if ("drop".equalsIgnoreCase(strategy)) {
             backpressuredInput = backpressuredInput.onOverflow().drop();
-        } else {
+        } else if (strategy == null || strategy.isBlank() || "default".equalsIgnoreCase(strategy)) {
             // default behavior - buffer with default capacity
+            backpressuredInput = backpressuredInput.onOverflow().buffer(128); // default buffer size
+        } else {
+            LOG.warnf("Unknown backpressure strategy '%s', defaulting to buffer(128)", strategy);
             backpressuredInput = backpressuredInput.onOverflow().buffer(128); // default buffer size
         }
 
@@ -97,8 +107,44 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
      * @return The result of dead letter handling as a Uni (can be null)
      */
     default Uni<O> deadLetterStream(Multi<I> input, Throwable error) {
-        return input.collect().asList()
-            .onItem().invoke(list -> LOG.errorf("DLQ drop for stream of %s items: %s", list.size(), error.getMessage()))
-            .onItem().transformToUni(_ -> Uni.createFrom().nullItem());
+        // Perform a single pass to collect a sample and count the total items
+        final int maxSampleSize = 5; // Only keep a few sample items to avoid memory issues
+
+        // Cache the items and count to handle both successful and failed streams
+        // If the input stream fails, we'll still return a successful result with zero count
+        return input
+            .collect().in(
+                // Supplier: Initialize the collection state with empty list and zero count
+                () -> new java.util.AbstractMap.SimpleEntry<>(new java.util.ArrayList<I>(), 0L),
+                // Accumulator: Add item to sample list if under maxSampleSize, increment count
+                (state, item) -> {
+                    java.util.List<I> sampleList = state.getKey();
+                    Long count = state.getValue();
+
+                    if (sampleList.size() < maxSampleSize) {
+                        sampleList.add(item);
+                    }
+                    state.setValue(count + 1);
+                }
+            )
+            // If collecting the stream fails, recover with an empty state (no items, count 0)
+            .onFailure().recoverWithItem(throwable -> {
+                LOG.debug("Stream failed during dead letter collection, returning empty state", throwable);
+                return new java.util.AbstractMap.SimpleEntry<>(new java.util.ArrayList<>(), 0L);
+            })
+            .onItem().transformToUni(state -> {
+                java.util.List<I> sampleList = state.getKey();
+                Long count = state.getValue();
+
+                String sampleInfo;
+                if (!sampleList.isEmpty()) {
+                    sampleInfo = String.format("first %d of %d items",
+                        Math.min(sampleList.size(), maxSampleSize), count);
+                } else {
+                    sampleInfo = String.format("%d items", count);
+                }
+                LOG.errorf("DLQ drop for stream with %s: %s", sampleInfo, error.getMessage());
+                return Uni.createFrom().nullItem();
+            });
     }
 }

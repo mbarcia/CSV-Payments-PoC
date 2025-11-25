@@ -169,7 +169,8 @@
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         </systemPropertyVariables>
-                        <argLine>--enable-preview -XX:+EnableDynamicAgentLoading</argLine>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <argLine>${surefireArgLine} --enable-preview -XX:+EnableDynamicAgentLoading</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -209,7 +210,8 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>3.5.1</version>
                     <configuration>
-                        <argLine>--enable-preview</argLine>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <argLine>${surefireArgLine} --enable-preview</argLine>
                     </configuration>
                     <executions>
                         <execution>
@@ -258,4 +260,54 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <profiles>
+        <profile>
+            <id>coverage</id>
+            <activation>
+                <property>
+                    <name>!skipTests</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.12</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                                <configuration>
+                                    <!-- Write to a shared location for aggregation -->
+                                    <destFile>${session.executionRootDirectory}/target/jacoco.exec</destFile>
+                                    <propertyName>surefireArgLine</propertyName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+            <reporting>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.12</version>
+                        <reportSets>
+                            <reportSet>
+                                <reports>
+                                    <!-- Include individual reports but not aggregate in submodules -->
+                                    <report>report</report>
+                                </reports>
+                            </reportSet>
+                        </reportSets>
+                    </plugin>
+                </plugins>
+            </reporting>
+        </profile>
+    </profiles>
 </project>

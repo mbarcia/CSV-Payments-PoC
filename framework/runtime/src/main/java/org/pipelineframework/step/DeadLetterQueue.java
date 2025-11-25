@@ -19,8 +19,15 @@ package org.pipelineframework.step;
 import io.smallrye.mutiny.Uni;
 import org.jboss.logging.Logger;
 
+/**
+ * Interface for pipeline steps that support dead letter queue functionality.
+ *
+ * @param <I> the input type
+ * @param <O> the output type
+ */
 public interface DeadLetterQueue<I, O> {
 
+    /** Logger for dead letter queue operations. */
     Logger LOG = Logger.getLogger(DeadLetterQueue.class);
 
     /**

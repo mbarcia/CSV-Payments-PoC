@@ -30,8 +30,16 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface PipelineStep {
+    /**
+     * The input type for this pipeline step.
+     * @return the input type for this pipeline step
+     */
     Class<?> inputType() default Void.class;
 
+    /**
+     * The output type for this pipeline step.
+     * @return the output type for this pipeline step
+     */
     Class<?> outputType() default Void.class;
 
     /**

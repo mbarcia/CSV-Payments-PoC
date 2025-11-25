@@ -19,7 +19,19 @@ package org.pipelineframework.service;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
+/**
+ * Interface for reactive streaming client services that process a stream of inputs and return a single output.
+ *
+ * @param <T> the input type
+ * @param <S> the output type
+ */
 @FunctionalInterface
 public interface ReactiveStreamingClientService<T, S> {
+  /**
+   * Process a stream of input objects and return a single output object.
+   *
+   * @param processableObj the stream of input objects to process
+   * @return a Uni with the single output object
+   */
   Uni<S> process(Multi<T> processableObj);
 }

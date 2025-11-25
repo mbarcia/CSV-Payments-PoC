@@ -18,7 +18,22 @@ package org.pipelineframework.service;
 
 import io.smallrye.mutiny.Multi;
 
+/**
+ * Interface for reactive bidirectional streaming services that process a stream of inputs and return a stream of outputs.
+ *
+ * @param <T> the input type
+ * @param <S> the output type
+ */
 @FunctionalInterface
 public interface ReactiveBidirectionalStreamingService<T, S> {
+  /**
+   * Process a stream of input objects and return a stream of output objects.
+   * <p>
+   * Errors emitted by the input stream are propagated to the output stream.
+   * Backpressure is handled according to Mutiny's Multi semantics.
+   *
+   * @param processableObj the stream of input objects to process
+   * @return a Multi stream of output objects
+   */
   Multi<S> process(Multi<T> processableObj);
 }

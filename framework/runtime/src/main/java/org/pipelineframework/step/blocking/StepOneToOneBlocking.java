@@ -28,6 +28,9 @@ import org.pipelineframework.step.StepOneToOne;
  * The PipelineRunner will automatically handle the conversion between reactive
  * and blocking representations, executing blocking operations on virtual threads
  * to prevent platform thread blocking.
+ *
+ * @param <I> the input type
+ * @param <O> the output type
  */
 public interface StepOneToOneBlocking<I, O> extends StepOneToOne<I, O> {
     /**

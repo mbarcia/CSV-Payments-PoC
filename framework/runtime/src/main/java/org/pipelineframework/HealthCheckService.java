@@ -33,17 +33,26 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+/**
+ * Service for checking the health of dependent services before pipeline execution.
+ */
 @ApplicationScoped
 public class HealthCheckService {
 
     private static final Logger LOG = Logger.getLogger(HealthCheckService.class);
+
+    /**
+     * Default constructor for HealthCheckService.
+     */
+    public HealthCheckService() {
+    }
 
 	/**
 	 * Creates an SSLContext that accepts all certificates (insecure).
 	 * <p>
 	 * If building the permissive context fails, returns the platform default SSLContext.
 	 *
-	 * @return an SSLContext that does not validate peer certificates, or the default SSLContext if creation of an insecure context fails
+	 * @return an SSLContext that does not validate peer certificates, or the default SSLContext if creation of an insecure context and retrieval of the default SSLContext fail
 	 * @throws RuntimeException if both creation of the insecure context and retrieval of the default SSLContext fail
 	 */
     private javax.net.ssl.SSLContext createInsecureSslContext() {

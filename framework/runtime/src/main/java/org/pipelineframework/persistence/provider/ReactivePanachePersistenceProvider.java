@@ -34,6 +34,12 @@ public class ReactivePanachePersistenceProvider implements PersistenceProvider<P
 
   private static final Logger LOG = Logger.getLogger(ReactivePanachePersistenceProvider.class);
 
+  /**
+   * Default constructor for ReactivePanachePersistenceProvider.
+   */
+  public ReactivePanachePersistenceProvider() {
+  }
+
   @Override
   public Class<PanacheEntityBase> type() {
     return PanacheEntityBase.class;
@@ -49,7 +55,7 @@ public class ReactivePanachePersistenceProvider implements PersistenceProvider<P
     return Panache.getSession()
         .onItem()
         .transformToUni(session -> 
-            session.withTransaction(_ -> session.persist(entity)))
+            session.withTransaction(ignored -> session.persist(entity)))
         .replaceWith(Uni.createFrom().item(entity))
         .onFailure()
         .transform(

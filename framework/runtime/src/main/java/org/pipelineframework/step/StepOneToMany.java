@@ -21,8 +21,19 @@ import io.smallrye.mutiny.Uni;
 import org.jboss.logging.Logger;
 import org.pipelineframework.step.functional.OneToMany;
 
-/** 1 -> N */
+/**
+ * 1 -> N
+ *
+ * @param <I> the input type
+ * @param <O> the output type
+ */
 public interface StepOneToMany<I, O> extends OneToMany<I, O>, Configurable, DeadLetterQueue<I, O> {
+    /**
+     * Apply the step to a single input and produce multiple outputs.
+     *
+     * @param in the input element to process
+     * @return a Multi that emits the transformed output elements
+     */
     Multi<O> applyOneToMany(I in);
 
 	/**

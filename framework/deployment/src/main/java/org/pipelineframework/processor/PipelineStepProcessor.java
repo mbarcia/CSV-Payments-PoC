@@ -46,10 +46,27 @@ import org.pipelineframework.step.StepOneToOne;
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class PipelineStepProcessor extends AbstractProcessor {
 
+    /**
+     * Suffix to append to generated client step classes.
+     */
     public static final String CLIENT_STEP_SUFFIX = "ClientStep";
+
+    /**
+     * Suffix to append to generated gRPC service classes.
+     */
     public static final String GRPC_SERVICE_SUFFIX = "GrpcService";
     private static final String PIPELINE_PACKAGE_SUFFIX = ".pipeline";
+
+    /**
+     * Suffix to append to generated REST resource classes.
+     */
     public static final String REST_RESOURCE_SUFFIX = "Resource";
+
+    /**
+     * Default constructor for PipelineStepProcessor.
+     */
+    public PipelineStepProcessor() {
+    }
 
     @Override
     public synchronized void init(ProcessingEnvironment processingEnv) {
@@ -1245,6 +1262,13 @@ public class PipelineStepProcessor extends AbstractProcessor {
         return null;
     }
 
+        /**
+     * Extracts a TypeMirror value from an annotation by member name.
+     *
+     * @param annotation The annotation mirror to extract the value from
+     * @param memberName The name of the annotation member to extract
+     * @return The TypeMirror value of the annotation member, or null if not found or if it's a void type
+     */
     protected TypeMirror getAnnotationValue(AnnotationMirror annotation, String memberName) {
         for (ExecutableElement executableElement : annotation.getElementValues().keySet()) {
             if (executableElement.getSimpleName().toString().equals(memberName)) {
@@ -1266,6 +1290,13 @@ public class PipelineStepProcessor extends AbstractProcessor {
         return null;
     }
 
+        /**
+     * Extracts a String value from an annotation by member name.
+     *
+     * @param annotation The annotation mirror to extract the value from
+     * @param memberName The name of the annotation member to extract
+     * @return The String value of the annotation member, or null if not found
+     */
     protected String getAnnotationValueAsString(AnnotationMirror annotation, String memberName) {
         for (ExecutableElement executableElement : annotation.getElementValues().keySet()) {
             if (executableElement.getSimpleName().toString().equals(memberName)) {
@@ -1281,6 +1312,14 @@ public class PipelineStepProcessor extends AbstractProcessor {
         return null;
     }
 
+        /**
+     * Extracts a boolean value from an annotation by member name.
+     *
+     * @param annotation The annotation mirror to extract the value from
+     * @param memberName The name of the annotation member to extract
+     * @param defaultValue The default value to return if the annotation value is not found
+     * @return The boolean value of the annotation member, or the default value if not found
+     */
     protected boolean getAnnotationValueAsBoolean(AnnotationMirror annotation, String memberName, boolean defaultValue) {
         for (ExecutableElement executableElement : annotation.getElementValues().keySet()) {
             if (executableElement.getSimpleName().toString().equals(memberName)) {

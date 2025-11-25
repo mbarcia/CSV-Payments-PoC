@@ -17,7 +17,7 @@ The fastest way to get started is using our visual canvas designer:
 - Design your pipeline visually
 - Download the complete source code for your pipeline application
 
-## 📋 For Different Audiences
+## 📋 Featuring capabilities
 
 ### Product Owners
 - **Microservices Architecture**: Each pipeline step can be deployed and scaled independently
@@ -59,22 +59,18 @@ The fastest way to get started is using our visual canvas designer:
 - **Technology Modernization**: Reactive, cloud-native architecture with industry standards
 - **Risk Mitigation**: Dead letter queue and multiple processing patterns provide resilience
 
-## ✨ Key Features
+## ✨ Capabilities summary
 
-- **Reactive Programming**: Built on top of Quarkus, Mutiny and Vert.x for non-blocking operations
-- **Immutable Architecture**: No database updates during pipeline execution - only appends/preserves
-- **Annotation-Based Configuration**: Simplifies adapter generation with `@PipelineStep`
-- **gRPC & REST Flexibility**: Automatic adapter generation for fast gRPC or easy REST integration
-- **Visual Design Canvas**: Create and configure pipelines with the visual designer
-- **Modular Design**: Clear separation between runtime and deployment components
-- **Auto-Generation**: Generates necessary infrastructure at build time
-- **Observability**: Built-in metrics, tracing, and logging support
-- **Error Handling**: Comprehensive error handling with DLQ support
-- **Multiple Processing Patterns**: OneToOne, OneToMany, ManyToOne, ManyToMany, SideEffect and blocking variants
-- **Health Monitoring**: Built-in health check capabilities
-- **Concurrency Control**: Reactive processing with backpressure management
-- **Cost Optimization**: Native builds for fast startup and reduced resource consumption
-- **Multiple Persistence Models**: Choose from reactive or virtual thread-based persistence
+- Reactive, immutable architecture with strong compile-time safety  
+- Automatic adapter generation for REST & gRPC  
+- Modular monorepo with clear separation of runtime vs. deployment  
+- Native-ready builds for ultra‑fast startup and cloud efficiency  
+- Built-in health monitoring, observability, metrics, and tracing  
+- Visual pipeline designer for rapid development  
+- Multiple execution patterns (OneToOne, OneToMany, ManyToOne, ManyToMany, SideEffect, blocking)  
+- Comprehensive error handling with dead-letter queue support  
+- Multiple persistence models (reactive or virtual‑thread‑based)  
+- Strong testing support: deterministic, focused, and easy to automate  
 
 ## 📚 Documentation
 
@@ -114,7 +110,6 @@ Here's a simple pipeline step implementation:
     stepType = StepOneToOne.class,
     backendType = GenericGrpcReactiveServiceAdapter.class,
     autoPersist = true,
-    runOnVirtualThreads = true
 )
 @ApplicationScoped
 public class ProcessPaymentService implements ReactiveStreamingClientService<PaymentRecord, PaymentStatus> {
@@ -129,23 +124,12 @@ public class ProcessPaymentService implements ReactiveStreamingClientService<Pay
 }
 ```
 
+## Continuous Integration
+See our [CI documentation](CI.md)
+
+## 🧪 Testing
+See our [Testing documentation](TESTING.md)
+
 ## 🤝 Contributing
 
-Besides the obvious development contributions, anything, (yes! especially silly questions) are a contribution to this project.
-Ask questions, test existing functionality, propose new features, engage in constructive debate. Thank you in advance!
-
-## 📄 License
-
-This project is licensed under the Apache License, Version 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- Built with [Quarkus](https://quarkus.io) - Supersonic Subatomic Java
-- Powered by [Mutiny](https://smallrye.io/smallrye-mutiny/) - Reactive programming toolkit
-- Inspired by reactive, functional and OOP patters, helped by platform and devops experience 
-
----
-
-<p align="center">
-  Made with ❤️ by the Pipeline Framework team
-</p>
+Contributions of all kinds are welcome — code, documentation, ideas, and especially questions.

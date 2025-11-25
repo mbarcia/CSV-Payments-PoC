@@ -39,14 +39,23 @@ public class PipelineExecutionService {
 
   private static final Logger LOG = Logger.getLogger(PipelineExecutionService.class);
 
+  /** Pipeline configuration for this service. */
   @Inject
   protected PipelineConfig pipelineConfig;
 
+  /** Runner responsible for executing pipeline steps. */
   @Inject
   protected PipelineRunner pipelineRunner;
 
+  /** Health check service to verify dependent services. */
   @Inject
   protected HealthCheckService healthCheckService;
+
+  /**
+   * Default constructor for PipelineExecutionService.
+   */
+  public PipelineExecutionService() {
+  }
 
   /**
    * Execute the configured pipeline using the provided input.
@@ -85,7 +94,7 @@ public class PipelineExecutionService {
         case null -> Multi.createFrom().failure(new IllegalStateException(
           "PipelineRunner returned null"));
         case Multi<?> multi1 -> multi1
-          .onSubscription().invoke(_ -> {
+          .onSubscription().invoke(ignored -> {
             LOG.info("PIPELINE BEGINS processing");
             watch.start();
           })
@@ -98,7 +107,7 @@ public class PipelineExecutionService {
             LOG.errorf(failure, "❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS));
           });
         case Uni<?> uni -> uni.toMulti()
-          .onSubscription().invoke(_ -> {
+          .onSubscription().invoke(ignored -> {
             LOG.info("PIPELINE BEGINS processing");
             watch.start();
           })
@@ -198,10 +207,21 @@ public class PipelineExecutionService {
    * Exception thrown when there are configuration issues related to pipeline setup.
    */
   public static class PipelineConfigurationException extends RuntimeException {
+      /**
+       * Constructs a new PipelineConfigurationException with the specified detail message.
+       *
+       * @param message the detail message
+       */
       public PipelineConfigurationException(String message) {
           super(message);
       }
 
+      /**
+       * Constructs a new PipelineConfigurationException with the specified detail message and cause.
+       *
+       * @param message the detail message
+       * @param cause the cause
+       */
       public PipelineConfigurationException(String message, Throwable cause) {
           super(message, cause);
       }

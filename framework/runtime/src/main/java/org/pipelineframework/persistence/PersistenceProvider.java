@@ -25,6 +25,11 @@ import io.smallrye.mutiny.Uni;
  */
 public interface PersistenceProvider<T> {
 
+    /**
+     * Gets the type of entity handled by this persistence provider.
+     *
+     * @return The Class object representing the entity type
+     */
     Class<T> type();
 
     /**

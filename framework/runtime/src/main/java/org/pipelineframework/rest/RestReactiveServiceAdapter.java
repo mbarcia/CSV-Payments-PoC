@@ -35,6 +35,12 @@ public abstract class RestReactiveServiceAdapter<DomainIn, DomainOut, DtoOut> {
     PersistenceManager persistenceManager;
 
     /**
+     * Default constructor for RestReactiveServiceAdapter.
+     */
+    public RestReactiveServiceAdapter() {
+    }
+
+    /**
  * Provides the reactive service used to process domain inputs into domain outputs.
  *
  * @return the {@code ReactiveService<DomainIn, DomainOut>} instance used to process domain objects

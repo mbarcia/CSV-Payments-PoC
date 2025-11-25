@@ -32,9 +32,13 @@ import org.pipelineframework.step.functional.ManyToMany;
  * <p>
  * The PipelineRunner will automatically handle the conversion between reactive
  * and imperative representations.
+ *
+ * @param <I> the input type
+ * @param <O> the output type
  */
 public interface StepManyToManyBlocking<I, O> extends ManyToMany<I, O>, Configurable, DeadLetterQueue<I, O> {
 
+    /** Logger for StepManyToManyBlocking operations. */
     Logger LOG = Logger.getLogger(StepManyToManyBlocking.class);
 
     /**

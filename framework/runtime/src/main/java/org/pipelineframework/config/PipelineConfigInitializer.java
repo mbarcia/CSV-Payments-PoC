@@ -42,6 +42,12 @@ public class PipelineConfigInitializer {
     PipelineStepConfig stepConfig;
 
     /**
+     * Default constructor for PipelineConfigInitializer.
+     */
+    public PipelineConfigInitializer() {
+    }
+
+    /**
      * Initializes the PipelineConfig with values from application configuration
      * when the application starts up.
      */

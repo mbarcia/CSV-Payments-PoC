@@ -37,19 +37,42 @@ public interface PipelineCliAppConfig {
     @WithDefault("false")
     Boolean generateCli();
 
-    /** Version of The Pipeline Framework */
-    @WithDefault("0.9.0")
+    /**
+     * Version of The Pipeline Framework
+     *
+     * @return the version of The Pipeline Framework
+     */
+    @WithDefault("0.9.1")
     String version();
     
-    /** CLI Command Name */
+    /**
+     * CLI Command Name
+     * <p>
+     * If not provided, defaults to an empty string (no specific command name).
+     *
+     * @return the CLI command name
+     */
     @WithDefault("")
     Optional<String> cliName();
 
-    /** CLI Command Description */
+    /**
+     * CLI Command Description
+     * <p>
+     * If not provided, defaults to an empty string (no description).
+     *
+     * @return the CLI command description
+     */
     @WithDefault("")
     Optional<String> cliDescription();
 
-    /** CLI Command Version */
-    @WithDefault("0.9.0")
+    /**
+     * CLI Command Version
+     * <p>
+     * If not provided, returns an empty Optional. Callers should use
+     * cliVersion().orElse(config.version()) to get the framework version when
+     * CLI version is not configured.
+     *
+     * @return the CLI command version
+     */
     Optional<String> cliVersion();
 }

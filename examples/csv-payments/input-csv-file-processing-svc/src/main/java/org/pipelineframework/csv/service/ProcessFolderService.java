@@ -16,13 +16,6 @@
 
 package org.pipelineframework.csv.service;
 
-import org.pipelineframework.csv.common.domain.CsvFolder;
-import org.pipelineframework.csv.common.domain.CsvPaymentsInputFile;
-import org.pipelineframework.csv.grpc.MutinyProcessFolderServiceGrpc;
-import org.pipelineframework.csv.common.mapper.CsvFolderMapper;
-import org.pipelineframework.csv.common.mapper.CsvPaymentsInputFileMapper;
-import org.pipelineframework.csv.util.HybridResourceLoader;
-import org.pipelineframework.annotation.PipelineStep;
 import io.smallrye.mutiny.Multi;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -34,6 +27,13 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import org.jboss.logging.Logger;
 import org.jboss.logging.MDC;
+import org.pipelineframework.annotation.PipelineStep;
+import org.pipelineframework.csv.common.domain.CsvFolder;
+import org.pipelineframework.csv.common.domain.CsvPaymentsInputFile;
+import org.pipelineframework.csv.common.mapper.CsvFolderMapper;
+import org.pipelineframework.csv.common.mapper.CsvPaymentsInputFileMapper;
+import org.pipelineframework.csv.grpc.MutinyProcessFolderServiceGrpc;
+import org.pipelineframework.csv.util.HybridResourceLoader;
 
 @ApplicationScoped
 @PipelineStep(
@@ -87,7 +87,7 @@ public class ProcessFolderService implements org.pipelineframework.service.React
                   "CSV path is not a valid directory: {0}", directory.getAbsolutePath())));
     }
 
-    File[] csvFiles = directory.listFiles((_, name) -> name.toLowerCase().endsWith(".csv"));
+    File[] csvFiles = directory.listFiles((ignored, name) -> name.toLowerCase().endsWith(".csv"));
     if (csvFiles == null || csvFiles.length == 0) {
       LOG.warnf("No CSV files found in %s", csvFolderPath);
       resourceLoader.diagnoseResourceAccess(String.valueOf(csvFolderPath));

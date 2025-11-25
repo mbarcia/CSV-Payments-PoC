@@ -24,8 +24,24 @@ import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 
+/**
+ * Adapter for gRPC reactive services that handle 1-1 (one-to-one) cardinality.
+ * This adapter takes a single input message and returns a single output message, suitable
+ * for unary gRPC scenarios.
+ *
+ * @param <GrpcIn> the gRPC input message type
+ * @param <GrpcOut> the gRPC output message type
+ * @param <DomainIn> the domain input object type
+ * @param <DomainOut> the domain output object type
+ */
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> extends ReactiveServiceAdapterBase {
+
+  /**
+   * Default constructor for GrpcReactiveServiceAdapter.
+   */
+  public GrpcReactiveServiceAdapter() {
+  }
 
   private static final Logger LOG = Logger.getLogger(GrpcReactiveServiceAdapter.class);
 
@@ -84,7 +100,7 @@ protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
       boolean autoPersistenceEnabled = isAutoPersistenceEnabled();
       Uni<DomainOut> withPersistence = autoPersistenceEnabled
-              ? processedResult.call(_ ->
+              ? processedResult.call(ignored ->
               // guaranteed event-loop
               switchToEventLoop()
                   // If auto-persistence is enabled, persist the input entity after successful processing

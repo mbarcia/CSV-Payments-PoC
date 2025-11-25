@@ -26,6 +26,12 @@ public abstract class ConfigurableStep implements Configurable {
 
     StepConfig config = null;
 
+    /**
+     * Default constructor for ConfigurableStep.
+     */
+    public ConfigurableStep() {
+    }
+
 
     /**
      * Obtain the effective configuration for this step.

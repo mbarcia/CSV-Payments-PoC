@@ -32,6 +32,12 @@ public class GrpcServiceStartup {
 
     private static final Logger LOG = Logger.getLogger(GrpcServiceStartup.class);
 
+    /**
+     * Default constructor for GrpcServiceStartup.
+     */
+    public GrpcServiceStartup() {
+    }
+
     @Inject
     BeanManager beanManager;
 

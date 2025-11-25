@@ -36,7 +36,8 @@ export default withMermaid(
             {text: 'Home', link: '/'},
             {text: 'Guide', link: '/guide/'},
             {text: 'Annotations', link: '/annotations/pipeline-step'},
-            {text: 'Versions', link: '/versions'}
+            {text: 'Versions', link: '/versions'},
+            {text: 'Dev Guidelines', link: '/ci-guidelines'}
         ],
 
         sidebar: [
@@ -92,6 +93,14 @@ export default withMermaid(
                     {text: 'Handling File Operations', link: '/guide/handling-file-operations'},
                     {text: 'Using Template Generator', link: '/guide/using-template-generator'},
                     {text: 'Versions', link: '/versions'},
+                ]
+            },
+            {
+                text: 'Development Guidelines',
+                items: [
+                    {text: 'CI Guidelines', link: '/ci-guidelines'},
+                    {text: 'Testing Guidelines', link: '/testing-guidelines'},
+                    {text: 'Gotchas & Pitfalls', link: '/gotchas-pitfalls'},
                 ]
             }
         ],

@@ -214,4 +214,109 @@ class StepManyToOneTest {
                 resultString.contains(
                         "payment_1_for_csv_file_X, payment_2_for_csv_file_X, payment_3_for_csv_file_X"));
     }
+
+    // Tests for deadLetterStream functionality
+    @Test
+    void testDeadLetterStreamWithEmptyStream() {
+        // Given
+        TestStep step = new TestStep();
+        Multi<String> emptyStream = Multi.createFrom().empty();
+
+        // When
+        Uni<Void> result =
+                step.deadLetterStream(emptyStream, new RuntimeException("Test error"))
+                        .replaceWithVoid();
+
+        // Then
+        io.smallrye.mutiny.helpers.test.UniAssertSubscriber<Void> subscriber =
+                result.subscribe()
+                        .withSubscriber(
+                                io.smallrye.mutiny.helpers.test.UniAssertSubscriber.create());
+        subscriber.awaitItem();
+
+        assertNull(subscriber.getItem());
+    }
+
+    @Test
+    void testDeadLetterStreamWithSingleItem() {
+        // Given
+        TestStep step = new TestStep();
+        Multi<String> singleItemStream = Multi.createFrom().item("single");
+
+        // When
+        Uni<Void> result =
+                step.deadLetterStream(singleItemStream, new RuntimeException("Test error"))
+                        .replaceWithVoid();
+
+        // Then
+        io.smallrye.mutiny.helpers.test.UniAssertSubscriber<Void> subscriber =
+                result.subscribe()
+                        .withSubscriber(
+                                io.smallrye.mutiny.helpers.test.UniAssertSubscriber.create());
+        subscriber.awaitItem();
+
+        assertNull(subscriber.getItem());
+    }
+
+    @Test
+    void testDeadLetterStreamWithMultipleItems() {
+        // Given
+        TestStep step = new TestStep();
+        java.util.List<String> items = java.util.List.of("item1", "item2", "item3");
+        Multi<String> multiStream = Multi.createFrom().items(String.valueOf(items));
+
+        // When
+        Uni<Void> result =
+                step.deadLetterStream(multiStream, new RuntimeException("Test error"))
+                        .replaceWithVoid();
+
+        // Then
+        io.smallrye.mutiny.helpers.test.UniAssertSubscriber<Void> subscriber =
+                result.subscribe()
+                        .withSubscriber(
+                                io.smallrye.mutiny.helpers.test.UniAssertSubscriber.create());
+        subscriber.awaitItem();
+
+        assertNull(subscriber.getItem());
+    }
+
+    @Test
+    void testDeadLetterStreamWithMoreItemsThanSampleSize() {
+        // Given
+        TestStep step = new TestStep();
+        Multi<String> multiStream = Multi.createFrom().items("item1", "item2", "item3", "item4", "item5", "item6", "item7");
+
+        // When
+        Uni<Void> result = step.deadLetterStream(multiStream, new RuntimeException("Test error")).replaceWithVoid();
+
+        // Then
+        io.smallrye.mutiny.helpers.test.UniAssertSubscriber<Void> subscriber =
+                result.subscribe()
+                        .withSubscriber(
+                                io.smallrye.mutiny.helpers.test.UniAssertSubscriber.create());
+        subscriber.awaitItem();
+
+        assertNull(subscriber.getItem());
+    }
+
+    @Test
+    void testDeadLetterStreamWithErrorInStream() {
+        // Given
+        TestStep step = new TestStep();
+        RuntimeException streamError = new RuntimeException("Stream error");
+        Multi<String> errorStream = Multi.createFrom().failure(streamError);
+
+        // When
+        Uni<Void> result =
+                step.deadLetterStream(errorStream, new RuntimeException("Processing error")).replaceWithVoid();
+
+        // Then
+        io.smallrye.mutiny.helpers.test.UniAssertSubscriber<Void> subscriber =
+                result.subscribe()
+                        .withSubscriber(
+                                io.smallrye.mutiny.helpers.test.UniAssertSubscriber.create());
+        subscriber.awaitItem();
+
+        assertNull(subscriber.getItem());
+    }
 }

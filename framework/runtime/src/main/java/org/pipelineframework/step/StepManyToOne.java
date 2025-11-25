@@ -107,51 +107,44 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
      * @return The result of dead letter handling as a Uni (can be null)
      */
     default Uni<O> deadLetterStream(Multi<I> input, Throwable error) {
-        // Use broadcast to allow multiple consumers of the same stream
-        Multi<I> broadcastInput = input.broadcast().toAllSubscribers();
-
-        // Count the number of elements and collect a small sample
+        // Perform a single pass to collect a sample and count the total items
         final int maxSampleSize = 5; // Only keep a few sample items to avoid memory issues
 
-        return broadcastInput
-            .select().first(maxSampleSize)
-            .collect().asList()
-            .onItem().transformToUni(sampleList -> {
-                // Count the total number of items in the stream using a counter approach
-                java.util.concurrent.atomic.AtomicLong counter = new java.util.concurrent.atomic.AtomicLong(0);
+        // Cache the items and count to handle both successful and failed streams
+        // If the input stream fails, we'll still return a successful result with zero count
+        return input
+            .collect().in(
+                // Supplier: Initialize the collection state with empty list and zero count
+                () -> new java.util.AbstractMap.SimpleEntry<>(new java.util.ArrayList<I>(), 0L),
+                // Accumulator: Add item to sample list if under maxSampleSize, increment count
+                (state, item) -> {
+                    java.util.List<I> sampleList = state.getKey();
+                    Long count = state.getValue();
 
-                // Create a Uni that completes when the counting stream completes
-                Uni<Void> countingCompletion = Uni.createFrom().emitter(emitter -> broadcastInput
-                    .invoke(ignored -> counter.incrementAndGet()) // Count items as they pass through
-                    .subscribe()
-                    .with(
-                        ignored -> {}, // Do nothing with each item
-                        failure -> {
-                            // On failure, log and complete the emitter
-                            String sampleInfo = !sampleList.isEmpty() ?
-                                String.format("first %d items before failure",
-                                              Math.min(sampleList.size(), maxSampleSize)) :
-                                "stream with failure";
-                            LOG.errorf("DLQ drop for %s: %s",
-                                sampleInfo, failure.getMessage());
-                            emitter.fail(failure);
-                        },
-                        () -> {
-                            // On completion, log the count and complete the emitter
-                            long count = counter.get();
-                            String sampleInfo = !sampleList.isEmpty() ?
-                                String.format("first %d of %d items",
-                                              Math.min(sampleList.size(), maxSampleSize),
-                                              count) :
-                                String.format("%d items", count);
-                            LOG.errorf("DLQ drop for stream with %s: %s",
-                                sampleInfo, error.getMessage());
-                            emitter.complete(null);
-                        }
-                    ));
+                    if (sampleList.size() < maxSampleSize) {
+                        sampleList.add(item);
+                    }
+                    state.setValue(count + 1);
+                }
+            )
+            // If collecting the stream fails, recover with an empty state (no items, count 0)
+            .onFailure().recoverWithItem(throwable -> {
+                LOG.debug("Stream failed during dead letter collection, returning empty state", throwable);
+                return new java.util.AbstractMap.SimpleEntry<>(new java.util.ArrayList<>(), 0L);
+            })
+            .onItem().transformToUni(state -> {
+                java.util.List<I> sampleList = state.getKey();
+                Long count = state.getValue();
 
-                return countingCompletion
-                    .onItem().transformToUni(ignored -> Uni.createFrom().nullItem());
+                String sampleInfo;
+                if (!sampleList.isEmpty()) {
+                    sampleInfo = String.format("first %d of %d items",
+                        Math.min(sampleList.size(), maxSampleSize), count);
+                } else {
+                    sampleInfo = String.format("%d items", count);
+                }
+                LOG.errorf("DLQ drop for stream with %s: %s", sampleInfo, error.getMessage());
+                return Uni.createFrom().nullItem();
             });
     }
 }

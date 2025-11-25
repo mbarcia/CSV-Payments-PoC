@@ -37,31 +37,31 @@ The project uses three independent workflows:
 ```mermaid
 flowchart TD
 
-    subgraph PR_Flow[PR / Non-Main Branches]
-        A1[Checkout] --> A2[Maven Clean Install]
-        A2 --> A3[Run Unit Tests (Surefire)]
-        A3 --> A4[Skip ITs & Skip Native]
-        A4 --> A5[Done]
-    end
+   subgraph Release_Flow["Tag v* — Publishing"]
+      D1[Checkout] --> D2[Maven Clean Install]
+      D2 --> D3[Release Build -Prelease]
+      D3 --> D4[Deploy to Maven Central]
+      D4 --> D5[GitHub Release]
+   end
 
-    subgraph Main_Flow[Push to Main]
-        B1[Checkout] --> B2[Maven Clean Install]
-        B2 --> B3[Build Jib Images]
-        B3 --> B4[Run Integration Tests (Failsafe)]
-        
-        B4 --> C1_Orch[Native Build: Orchestrator]
-        B4 --> C2_In[Native Build: Input Service]
-        B4 --> C3_Proc[Native Build: Payment Processing]
-        B4 --> C4_Stat[Native Build: Status Service]
-        B4 --> C5_Out[Native Build: Output Service]
-    end
+   subgraph Main_Flow["Push to Main"]
+      B1[Checkout] --> B2[Maven Clean Install]
+      B2 --> B3[Build Jib Images]
+      B3 --> B4[Integration Tests - Failsafe]
 
-    subgraph Release_Flow[Tag v* — Publishing]
-        D1[Checkout] --> D2[Maven Clean Install]
-        D2 --> D3[Release Build -Prelease]
-        D3 --> D4[Deploy to Maven Central]
-        D4 --> D5[GitHub Release]
-    end
+      B4 --> C1_Orch[Native Build - Orchestrator]
+      B4 --> C2_In[Native Build - Input Service]
+      B4 --> C3_Proc[Native Build - Processing Service]
+      B4 --> C4_Stat[Native Build - Status Service]
+      B4 --> C5_Out[Native Build - Output Service]
+   end
+
+   subgraph PR_Flow["PR / Non-Main Branches"]
+      A1[Checkout] --> A2[Maven Clean Install]
+      A2 --> A3[Run Unit Tests - Surefire]
+      A3 --> A4[Skip ITs and Native]
+      A4 --> A5[Done]
+   end
 ```
 
 ## 🧩 CLI Flags — TL;DR

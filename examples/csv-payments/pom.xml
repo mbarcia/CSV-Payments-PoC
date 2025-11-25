@@ -169,7 +169,8 @@
                         <systemPropertyVariables>
                             <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                         </systemPropertyVariables>
-                        <argLine>--enable-preview -XX:+EnableDynamicAgentLoading</argLine>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <argLine>${surefireArgLine} --enable-preview -XX:+EnableDynamicAgentLoading</argLine>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -209,7 +210,8 @@
                     <artifactId>maven-failsafe-plugin</artifactId>
                     <version>3.5.1</version>
                     <configuration>
-                        <argLine>--enable-preview</argLine>
+                        <!--suppress UnresolvedMavenProperty -->
+                        <argLine>${surefireArgLine} --enable-preview</argLine>
                     </configuration>
                     <executions>
                         <execution>

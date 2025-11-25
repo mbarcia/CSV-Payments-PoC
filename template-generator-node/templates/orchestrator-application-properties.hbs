@@ -69,3 +69,10 @@ quarkus.otel.exporter.otlp.protocol=grpc
 quarkus.otel.traces.enabled=true
 quarkus.otel.metrics.enabled=true
 quarkus.otel.logs.enabled=true
+
+# Docker image
+quarkus.container-image.builder=jib
+quarkus.container-image.registry=localhost
+quarkus.container-image.group={{basePackage}}
+quarkus.container-image.name={{serviceName}}
+quarkus.container-image.tag=latest

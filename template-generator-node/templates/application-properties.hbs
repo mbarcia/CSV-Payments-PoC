@@ -18,3 +18,10 @@ quarkus.grpc.clients.orchestrator-service.port={{#portNumber}}{{add 8443 order}}
 quarkus.grpc.clients.orchestrator-service.plain-text=false
 quarkus.grpc.clients.orchestrator-service.use-quarkus-grpc-client=true
 quarkus.grpc.clients.orchestrator-service.tls.enabled=true
+
+# Docker image
+quarkus.container-image.builder=jib
+quarkus.container-image.registry=localhost
+quarkus.container-image.group={{basePackage}}
+quarkus.container-image.name={{serviceName}}
+quarkus.container-image.tag=latest

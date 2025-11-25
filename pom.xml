@@ -73,6 +73,8 @@
         <module>framework</module>
         <!-- Example projects -->
         <module>examples/csv-payments</module>
+        <!-- JaCoCo aggregation module -->
+        <module>jacoco-aggregator</module>
     </modules>
 
     <dependencyManagement>
@@ -256,6 +258,11 @@
     <profiles>
         <profile>
             <id>coverage</id>
+            <activation>
+                <property>
+                    <name>!skipTests</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
@@ -274,16 +281,6 @@
                                     <propertyName>surefireArgLine</propertyName>
                                 </configuration>
                             </execution>
-                            <execution>
-                                <id>report</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>report</goal>
-                                </goals>
-                                <configuration>
-                                    <dataFile>${session.executionRootDirectory}/target/jacoco.exec</dataFile>
-                                </configuration>
-                            </execution>
                         </executions>
                     </plugin>
                 </plugins>
@@ -297,8 +294,8 @@
                         <reportSets>
                             <reportSet>
                                 <reports>
-                                    <!-- Only include aggregate report in root -->
-                                    <report>report-aggregate</report>
+                                    <!-- Include only individual report in root -->
+                                    <report>report</report>
                                 </reports>
                             </reportSet>
                         </reportSets>

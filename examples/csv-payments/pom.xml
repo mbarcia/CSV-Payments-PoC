@@ -262,6 +262,11 @@
     <profiles>
         <profile>
             <id>coverage</id>
+            <activation>
+                <property>
+                    <name>!skipTests</name>
+                </property>
+            </activation>
             <build>
                 <plugins>
                     <plugin>
@@ -280,16 +285,6 @@
                                     <propertyName>surefireArgLine</propertyName>
                                 </configuration>
                             </execution>
-                            <execution>
-                                <id>report</id>
-                                <phase>verify</phase>
-                                <goals>
-                                    <goal>report</goal>
-                                </goals>
-                                <configuration>
-                                    <dataFile>${session.executionRootDirectory}/target/jacoco.exec</dataFile>
-                                </configuration>
-                            </execution>
                         </executions>
                     </plugin>
                 </plugins>
@@ -303,7 +298,7 @@
                         <reportSets>
                             <reportSet>
                                 <reports>
-                                    <!-- Don't include report-aggregate in submodules -->
+                                    <!-- Include individual reports but not aggregate in submodules -->
                                     <report>report</report>
                                 </reports>
                             </reportSet>

@@ -107,8 +107,26 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
      * @return The result of dead letter handling as a Uni (can be null)
      */
     default Uni<O> deadLetterStream(Multi<I> input, Throwable error) {
-        return input.collect().asList()
-            .onItem().invoke(list -> LOG.errorf("DLQ drop for stream of %s items: %s", list.size(), error.getMessage()))
-            .onItem().transformToUni(ignored -> Uni.createFrom().nullItem());
+        // Use broadcast to allow multiple consumers of the same stream
+        Multi<I> broadcastInput = input.broadcast().toAllSubscribers();
+
+        // Count the number of elements and collect a small sample
+        final int maxSampleSize = 5; // Only keep a few sample items to avoid memory issues
+
+        return broadcastInput
+            .select().first(maxSampleSize)
+            .collect().asList()
+            .onItem().transformToUni(sampleList -> {
+                // Count the total number of items in the stream
+                return broadcastInput.count().onItem().invoke(count -> {
+                    String sampleInfo = sampleList.size() > 0 ?
+                        String.format("first %d of %d items",
+                                      Math.min(sampleList.size(), maxSampleSize),
+                                      count) :
+                        String.format("%d items", count);
+                    LOG.errorf("DLQ drop for stream with %s: %s",
+                        sampleInfo, error.getMessage());
+                }).transformToUni(count -> Uni.createFrom().nullItem());
+            });
     }
 }

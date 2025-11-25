@@ -29,6 +29,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+// REST endpoint disabled: restEnabled is now false in configuration
 @QuarkusIntegrationTest
 @Disabled
 class SendPaymentRecordResourceIT {

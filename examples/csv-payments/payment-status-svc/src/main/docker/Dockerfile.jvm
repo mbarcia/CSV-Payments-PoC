@@ -1,3 +1,6 @@
 FROM quay.io/quarkus/quarkus-micro-image:2.0
+RUN groupadd -r app && useradd -r -g app app
 COPY target/*-runner.jar /app/app.jar
+RUN chown app:app /app/app.jar
+USER app
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

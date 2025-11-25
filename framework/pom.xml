@@ -292,6 +292,8 @@
                                     <goal>prepare-agent</goal>
                                 </goals>
                                 <configuration>
+                                    <!-- Write to a shared location for aggregation -->
+                                    <destFile>${session.executionRootDirectory}/target/jacoco.exec</destFile>
                                     <propertyName>surefireArgLine</propertyName>
                                 </configuration>
                             </execution>
@@ -302,13 +304,30 @@
                                     <goal>report</goal>
                                 </goals>
                                 <configuration>
-                                    <dataFile>${project.build.directory}/jacoco.exec</dataFile>
+                                    <dataFile>${session.executionRootDirectory}/target/jacoco.exec</dataFile>
                                 </configuration>
                             </execution>
                         </executions>
                     </plugin>
                 </plugins>
             </build>
+            <reporting>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.8.12</version>
+                        <reportSets>
+                            <reportSet>
+                                <reports>
+                                    <!-- Don't include report-aggregate in submodules -->
+                                    <report>report</report>
+                                </reports>
+                            </reportSet>
+                        </reportSets>
+                    </plugin>
+                </plugins>
+            </reporting>
         </profile>
         <profile>
             <id>release</id>

@@ -49,12 +49,16 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
         
         // Apply overflow strategy to the input if needed
         Multi<I> backpressuredInput = input;
-        if ("buffer".equalsIgnoreCase(backpressureStrategy())) {
+        final String strategy = backpressureStrategy();
+        if ("buffer".equalsIgnoreCase(strategy)) {
             backpressuredInput = backpressuredInput.onOverflow().buffer(backpressureBufferCapacity());
-        } else if ("drop".equalsIgnoreCase(backpressureStrategy())) {
+        } else if ("drop".equalsIgnoreCase(strategy)) {
             backpressuredInput = backpressuredInput.onOverflow().drop();
-        } else {
+        } else if (strategy == null || strategy.isBlank() || "default".equalsIgnoreCase(strategy)) {
             // default behavior - buffer with default capacity
+            backpressuredInput = backpressuredInput.onOverflow().buffer(128); // default buffer size
+        } else {
+            LOG.warnf("Unknown backpressure strategy '%s', defaulting to buffer(128)", strategy);
             backpressuredInput = backpressuredInput.onOverflow().buffer(128); // default buffer size
         }
 

@@ -15,10 +15,7 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.pipelineframework</groupId>
@@ -65,7 +62,7 @@
         <version.pipeline>0.9.1-SNAPSHOT</version.pipeline>
         <spotless.plugin.version>2.44.0</spotless.plugin.version>
         <google-java-format.version>1.25.0</google-java-format.version>
-        <surefireArgLine></surefireArgLine>
+        <surefireArgLine />
     </properties>
 
     <modules>
@@ -73,8 +70,6 @@
         <module>framework</module>
         <!-- Example projects -->
         <module>examples/csv-payments</module>
-        <!-- JaCoCo aggregation module -->
-        <module>jacoco-aggregator</module>
     </modules>
 
     <dependencyManagement>
@@ -175,7 +170,7 @@
                                 <version>${google-java-format.version}</version>
                                 <style>AOSP</style>
                             </googleJavaFormat>
-                            <removeUnusedImports/>
+                            <removeUnusedImports />
                         </java>
                         <formats>
                             <format>

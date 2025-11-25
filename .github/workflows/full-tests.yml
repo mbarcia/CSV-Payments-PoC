@@ -32,7 +32,7 @@ jobs:
         run: echo "MAVEN_ARGS=${{ env.MAVEN_ARGS_BUILD }}" >> $GITHUB_ENV
 
       - name: Full clean install (framework + examples)
-        run: ./mvnw $MAVEN_ARGS clean install -DskipITs=false -DskipNative=true
+        run: ./mvnw $MAVEN_ARGS clean install -DskipITs=false -DskipNative=true -Dquarkus.container-image.build=false
 
   ##################################################################
   # 1.5) Generate aggregate JaCoCo coverage report
@@ -101,9 +101,46 @@ jobs:
       - name: Configure Maven
         run: echo "MAVEN_ARGS=${{ env.MAVEN_ARGS_BUILD }}" >> $GITHUB_ENV
 
-      # Build Docker images using Jib for all CSV Payments modules
-      - name: Build Docker images (Jib)
-        run: ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests package
+      # Build Docker images using docker/build-push-action for all CSV Payments modules
+      - name: Build input-csv-file-processing-svc Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: examples/csv-payments/input-csv-file-processing-svc
+          file: examples/csv-payments/input-csv-file-processing-svc/src/main/docker/Dockerfile.jvm
+          tags: localhost/csv-payments/input-csv-file-processing-svc:latest
+          load: true     # important: makes image available to Testcontainers
+
+      - name: Build payment-status-svc Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: examples/csv-payments/payment-status-svc
+          file: examples/csv-payments/payment-status-svc/src/main/docker/Dockerfile.jvm
+          tags: localhost/csv-payments/payment-status-svc:latest
+          load: true     # important: makes image available to Testcontainers
+
+      - name: Build payments-processing-svc Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: examples/csv-payments/payments-processing-svc
+          file: examples/csv-payments/payments-processing-svc/src/main/docker/Dockerfile.jvm
+          tags: localhost/csv-payments/payments-processing-svc:latest
+          load: true     # important: makes image available to Testcontainers
+
+      - name: Build output-csv-file-processing-svc Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: examples/csv-payments/output-csv-file-processing-svc
+          file: examples/csv-payments/output-csv-file-processing-svc/src/main/docker/Dockerfile.jvm
+          tags: localhost/csv-payments/output-csv-file-processing-svc:latest
+          load: true     # important: makes image available to Testcontainers
+
+      - name: Build orchestrator-svc Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: examples/csv-payments/orchestrator-svc
+          file: examples/csv-payments/orchestrator-svc/src/main/docker/Dockerfile.jvm
+          tags: localhost/csv-payments/orchestrator-svc:latest
+          load: true     # important: makes image available to Testcontainers
 
       - name: Run Integration Tests
         run: ./mvnw $MAVEN_ARGS verify

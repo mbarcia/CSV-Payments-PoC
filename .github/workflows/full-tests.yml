@@ -103,11 +103,7 @@ jobs:
 
       # Build Docker images using Jib for all CSV Payments modules
       - name: Build Docker images (Jib)
-        run: |
-          for svc in input-csv-file-processing-svc payments-processing-svc payment-status-svc output-csv-file-processing-svc orchestrator-svc; do
-            ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests \
-              -pl "examples/csv-payments/$svc" package
-          done
+        run: ./mvnw $MAVEN_ARGS -Dquarkus.container-image.build=true -DskipTests package
 
       - name: Run Integration Tests
         run: ./mvnw $MAVEN_ARGS verify

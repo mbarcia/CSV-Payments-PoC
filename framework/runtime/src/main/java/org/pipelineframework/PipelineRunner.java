@@ -42,15 +42,17 @@ public class PipelineRunner implements AutoCloseable {
 
     private static final Logger logger = Logger.getLogger(PipelineRunner.class);
 
-    /**
-     * Constructs a new PipelineRunner instance.
-     */
-
     @Inject
     ConfigFactory configFactory;
 
     @Inject
     PipelineConfig pipelineConfig;
+
+    /**
+     * Default constructor for PipelineRunner.
+     */
+    public PipelineRunner() {
+    }
 
     /**
      * Run a sequence of pipeline steps against the provided reactive source.

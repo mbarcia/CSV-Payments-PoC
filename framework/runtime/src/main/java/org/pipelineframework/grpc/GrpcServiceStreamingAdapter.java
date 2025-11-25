@@ -41,6 +41,8 @@ public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, Dom
   /**
    * Default constructor for GrpcServiceStreamingAdapter.
    */
+  public GrpcServiceStreamingAdapter() {
+  }
 
   private static final Logger LOG = Logger.getLogger(GrpcServiceStreamingAdapter.class);
 

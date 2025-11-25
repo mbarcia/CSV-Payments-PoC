@@ -35,15 +35,17 @@ public class PipelineConfigInitializer {
 
     private static final Logger logger = Logger.getLogger(PipelineConfigInitializer.class);
 
-    /**
-     * Default constructor for PipelineConfigInitializer.
-     */
-
     @Inject
     PipelineConfig pipelineConfig;
 
     @Inject
     PipelineStepConfig stepConfig;
+
+    /**
+     * Default constructor for PipelineConfigInitializer.
+     */
+    public PipelineConfigInitializer() {
+    }
 
     /**
      * Initializes the PipelineConfig with values from application configuration

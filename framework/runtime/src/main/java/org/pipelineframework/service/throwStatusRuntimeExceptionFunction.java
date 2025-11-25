@@ -27,11 +27,13 @@ import org.jboss.logging.Logger;
  */
 public class throwStatusRuntimeExceptionFunction implements Function<Throwable, Throwable> {
 
-    /**
-     * Default constructor for throwStatusRuntimeExceptionFunction.
-     */
-
   private static final Logger LOG = Logger.getLogger(throwStatusRuntimeExceptionFunction.class);
+
+  /**
+   * Default constructor for throwStatusRuntimeExceptionFunction.
+   */
+  public throwStatusRuntimeExceptionFunction() {
+  }
 
   @Override
   public Throwable apply(Throwable throwable) {

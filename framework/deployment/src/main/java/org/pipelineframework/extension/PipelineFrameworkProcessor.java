@@ -27,6 +27,12 @@ public class PipelineFrameworkProcessor {
 
     private static final String FEATURE_NAME = "pipelineframework";
 
+    /**
+     * Default constructor for PipelineFrameworkProcessor.
+     */
+    public PipelineFrameworkProcessor() {
+    }
+
     @BuildStep
     FeatureBuildItem feature() {
         return new FeatureBuildItem(FEATURE_NAME);

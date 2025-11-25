@@ -43,6 +43,8 @@ public abstract class GrpcServiceBidirectionalStreamingAdapter<
   /**
    * Default constructor for GrpcServiceBidirectionalStreamingAdapter.
    */
+  public GrpcServiceBidirectionalStreamingAdapter() {
+  }
 
   private final Logger logger = Logger.getLogger(getClass());
 

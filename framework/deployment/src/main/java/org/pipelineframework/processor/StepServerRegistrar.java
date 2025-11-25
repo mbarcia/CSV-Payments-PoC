@@ -27,10 +27,19 @@ import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.pipelineframework.config.PipelineCliAppConfig;
 
+/**
+ * Registers generated gRPC service classes as additional unremovable beans when CLI generation is disabled.
+ */
 public class StepServerRegistrar {
 
     private static final String FEATURE_NAME = "pipelineframework-services";
     private static final Logger LOG = Logger.getLogger(StepServerRegistrar.class);
+
+    /**
+     * Default constructor for StepServerRegistrar.
+     */
+    public StepServerRegistrar() {
+    }
 
     /**
      * Declare the extension feature provided by this processor.

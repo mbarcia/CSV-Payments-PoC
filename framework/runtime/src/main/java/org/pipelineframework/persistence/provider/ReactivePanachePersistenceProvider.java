@@ -32,10 +32,13 @@ import org.pipelineframework.persistence.PersistenceProvider;
 @Unremovable
 public class ReactivePanachePersistenceProvider implements PersistenceProvider<PanacheEntityBase> {
 
+  private static final Logger LOG = Logger.getLogger(ReactivePanachePersistenceProvider.class);
+
   /**
    * Default constructor for ReactivePanachePersistenceProvider.
    */
-  private static final Logger LOG = Logger.getLogger(ReactivePanachePersistenceProvider.class);
+  public ReactivePanachePersistenceProvider() {
+  }
 
   @Override
   public Class<PanacheEntityBase> type() {

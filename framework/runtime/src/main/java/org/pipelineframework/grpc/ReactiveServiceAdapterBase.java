@@ -24,9 +24,11 @@ import io.vertx.mutiny.core.Vertx;
  */
 public abstract class ReactiveServiceAdapterBase {
 
-    /**
-     * Default constructor for ReactiveServiceAdapterBase.
-     */
+  /**
+   * Default constructor for ReactiveServiceAdapterBase.
+   */
+  public ReactiveServiceAdapterBase() {
+  }
 
   /**
    * Determines whether entities should be automatically persisted before processing. This method

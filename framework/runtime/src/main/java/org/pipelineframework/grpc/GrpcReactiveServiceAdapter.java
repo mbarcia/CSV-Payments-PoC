@@ -40,6 +40,8 @@ public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, Doma
   /**
    * Default constructor for GrpcReactiveServiceAdapter.
    */
+  public GrpcReactiveServiceAdapter() {
+  }
 
   private static final Logger LOG = Logger.getLogger(GrpcReactiveServiceAdapter.class);
 

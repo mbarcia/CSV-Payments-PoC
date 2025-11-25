@@ -29,10 +29,19 @@ import org.jboss.jandex.IndexView;
 import org.jboss.logging.Logger;
 import org.pipelineframework.config.PipelineCliAppConfig;
 
+/**
+ * Registers client step classes as additional unremovable beans when CLI client generation is enabled.
+ */
 public class StepClientRegistrar {
 
     private static final String FEATURE_NAME = "pipelineframework-steps";
     private static final Logger LOG = Logger.getLogger(StepClientRegistrar.class);
+
+    /**
+     * Default constructor for StepClientRegistrar.
+     */
+    public StepClientRegistrar() {
+    }
 
     /**
      * Declares the build feature provided by this extension.

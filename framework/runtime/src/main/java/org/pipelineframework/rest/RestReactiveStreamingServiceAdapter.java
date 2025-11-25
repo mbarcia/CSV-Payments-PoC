@@ -31,11 +31,14 @@ import org.pipelineframework.service.ReactiveStreamingService;
  */
 public abstract class RestReactiveStreamingServiceAdapter<DomainIn, DomainOut, DtoOut> {
 
+    @Inject
+    PersistenceManager persistenceManager;
+
     /**
      * Default constructor for RestReactiveStreamingServiceAdapter.
      */
-    @Inject
-    PersistenceManager persistenceManager;
+    public RestReactiveStreamingServiceAdapter() {
+    }
     
 
     /**

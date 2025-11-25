@@ -54,6 +54,8 @@ public class PipelineExecutionService {
   /**
    * Default constructor for PipelineExecutionService.
    */
+  public PipelineExecutionService() {
+  }
 
   /**
    * Execute the configured pipeline using the provided input.

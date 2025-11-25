@@ -30,10 +30,13 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class GrpcServiceStartup {
 
+    private static final Logger LOG = Logger.getLogger(GrpcServiceStartup.class);
+
     /**
      * Default constructor for GrpcServiceStartup.
      */
-    private static final Logger LOG = Logger.getLogger(GrpcServiceStartup.class);
+    public GrpcServiceStartup() {
+    }
 
     @Inject
     BeanManager beanManager;

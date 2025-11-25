@@ -37,12 +37,14 @@ public class PersistenceManager {
 
     private List<PersistenceProvider<?>> providers;
 
+    @Inject
+    Instance<PersistenceProvider<?>> providerInstance;
+
     /**
      * Default constructor for PersistenceManager.
      */
-
-    @Inject
-    Instance<PersistenceProvider<?>> providerInstance;
+    public PersistenceManager() {
+    }
 
     @PostConstruct
     void init() {

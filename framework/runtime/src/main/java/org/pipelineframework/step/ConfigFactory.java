@@ -29,12 +29,14 @@ import org.pipelineframework.config.StepConfig;
 @ApplicationScoped
 public class ConfigFactory {
 
+    @Inject
+    PipelineConfig pipelineConfig;
+
     /**
      * Default constructor for ConfigFactory.
      */
-
-    @Inject
-    PipelineConfig pipelineConfig;
+    public ConfigFactory() {
+    }
 
     /**
      * Build a StepConfig for the given step class, applying any per-step overrides to pipeline defaults.

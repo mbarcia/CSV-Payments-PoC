@@ -42,11 +42,13 @@ public interface PipelineCliAppConfig {
      *
      * @return the version of The Pipeline Framework
      */
-    @WithDefault("0.9.1")
+    @WithDefault("${project.version:0.9.1}")
     String version();
     
     /**
      * CLI Command Name
+     * <p>
+     * If not provided, defaults to an empty string (no specific command name).
      *
      * @return the CLI command name
      */
@@ -55,6 +57,8 @@ public interface PipelineCliAppConfig {
 
     /**
      * CLI Command Description
+     * <p>
+     * If not provided, defaults to an empty string (no description).
      *
      * @return the CLI command description
      */
@@ -63,9 +67,10 @@ public interface PipelineCliAppConfig {
 
     /**
      * CLI Command Version
+     * <p>
+     * If not provided, falls back to the framework version specified in 'version()'.
      *
      * @return the CLI command version
      */
-    @WithDefault("0.9.1")
     Optional<String> cliVersion();
 }

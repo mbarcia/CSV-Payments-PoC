@@ -28,6 +28,9 @@ import io.smallrye.mutiny.Multi;
 public interface ReactiveBidirectionalStreamingService<T, S> {
   /**
    * Process a stream of input objects and return a stream of output objects.
+   * <p>
+   * Errors emitted by the input stream are propagated to the output stream.
+   * Backpressure is handled according to Mutiny's Multi semantics.
    *
    * @param processableObj the stream of input objects to process
    * @return a Multi stream of output objects

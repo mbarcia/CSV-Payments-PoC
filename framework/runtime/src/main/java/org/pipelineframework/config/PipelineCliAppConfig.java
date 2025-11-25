@@ -42,7 +42,7 @@ public interface PipelineCliAppConfig {
      *
      * @return the version of The Pipeline Framework
      */
-    @WithDefault("0.9.0")
+    @WithDefault("0.9.1")
     String version();
     
     /**
@@ -66,6 +66,6 @@ public interface PipelineCliAppConfig {
      *
      * @return the CLI command version
      */
-    @WithDefault("0.9.0")
+    @WithDefault("0.9.1")
     Optional<String> cliVersion();
 }

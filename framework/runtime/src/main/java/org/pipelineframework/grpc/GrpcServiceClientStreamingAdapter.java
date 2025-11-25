@@ -28,6 +28,19 @@ import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveStreamingClientService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 
+/**
+ * Adapter for gRPC client streaming services that handle N-1 (many-to-one) cardinality.
+ * This adapter takes a stream of input messages and returns a single output message, suitable
+ * for client streaming scenarios where the client sends multiple messages to the server.
+ *
+ * @param <GrpcIn> the gRPC input message type
+ * @param <GrpcOut> the gRPC output message type
+ * @param <DomainIn> the domain input object type
+ * @param <DomainOut> the domain output object type
+ */
+/**
+ * Default constructor for GrpcServiceClientStreamingAdapter.
+ */
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut>
         extends ReactiveServiceAdapterBase {
@@ -47,8 +60,19 @@ public abstract class GrpcServiceClientStreamingAdapter<GrpcIn, GrpcOut, DomainI
     this.persistenceManager = persistenceManager;
   }
 
+  /**
+   * Gets the reactive streaming client service for processing.
+   *
+   * @return the ReactiveStreamingClientService to use for processing
+   */
   protected abstract ReactiveStreamingClientService<DomainIn, DomainOut> getService();
 
+  /**
+   * Converts a gRPC input object to the corresponding domain input object.
+   *
+   * @param grpcIn the gRPC input object to convert
+   * @return the corresponding domain input object
+   */
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
   /**

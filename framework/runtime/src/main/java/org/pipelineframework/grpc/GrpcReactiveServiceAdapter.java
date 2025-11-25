@@ -24,6 +24,19 @@ import org.pipelineframework.persistence.PersistenceManager;
 import org.pipelineframework.service.ReactiveService;
 import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
 
+/**
+ * Adapter for gRPC reactive services that handle 1-1 (one-to-one) cardinality.
+ * This adapter takes a single input message and returns a single output message, suitable
+ * for unary gRPC scenarios.
+ *
+ * @param <GrpcIn> the gRPC input message type
+ * @param <GrpcOut> the gRPC output message type
+ * @param <DomainIn> the domain input object type
+ * @param <DomainOut> the domain output object type
+ */
+/**
+ * Default constructor for GrpcReactiveServiceAdapter.
+ */
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcReactiveServiceAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut> extends ReactiveServiceAdapterBase {
 

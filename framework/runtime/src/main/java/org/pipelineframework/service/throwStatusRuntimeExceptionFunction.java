@@ -22,7 +22,14 @@ import io.grpc.StatusRuntimeException;
 import java.util.function.Function;
 import org.jboss.logging.Logger;
 
+/**
+ * Function that converts exceptions to gRPC StatusRuntimeExceptions.
+ */
 public class throwStatusRuntimeExceptionFunction implements Function<Throwable, Throwable> {
+
+    /**
+     * Default constructor for throwStatusRuntimeExceptionFunction.
+     */
 
   private static final Logger LOG = Logger.getLogger(throwStatusRuntimeExceptionFunction.class);
 

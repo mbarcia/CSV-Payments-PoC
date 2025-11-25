@@ -52,7 +52,10 @@ public interface PipelineStepConfig {
      */
     @WithName("step")
     Map<String, StepConfig> step();
-    
+
+    /**
+     * Configuration for individual pipeline steps, allowing per-step override of global defaults.
+     */
     interface StepConfig {
         /**
          * Execution order of this step within the pipeline.

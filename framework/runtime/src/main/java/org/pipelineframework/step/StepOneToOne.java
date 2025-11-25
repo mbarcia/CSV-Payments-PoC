@@ -33,6 +33,12 @@ import org.pipelineframework.step.functional.OneToOne;
  */
 public interface StepOneToOne<I, O> extends OneToOne<I, O>, Configurable, DeadLetterQueue<I, O> {
 
+  /**
+   * Apply the step to a single input and produce a single output.
+   *
+   * @param in the input element to process
+   * @return a Uni that emits the transformed output element
+   */
   Uni<O> applyOneToOne(I in);
 
   /**

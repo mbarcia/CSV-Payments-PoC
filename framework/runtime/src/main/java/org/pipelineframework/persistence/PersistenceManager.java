@@ -26,6 +26,9 @@ import org.jboss.logging.Logger;
 
 /**
  * Manager for persistence operations that delegates to registered PersistenceProvider implementations.
+ *
+ * <p>This class handles persistence operations by identifying an appropriate provider based on the
+ * type of entity and thread context, then delegating the operation to that provider.</p>
  */
 @ApplicationScoped
 public class PersistenceManager {
@@ -33,6 +36,10 @@ public class PersistenceManager {
     private static final Logger LOG = Logger.getLogger(PersistenceManager.class);
 
     private List<PersistenceProvider<?>> providers;
+
+    /**
+     * Default constructor for PersistenceManager.
+     */
 
     @Inject
     Instance<PersistenceProvider<?>> providerInstance;
@@ -46,6 +53,7 @@ public class PersistenceManager {
     /**
      * Persist the given entity using a registered persistence provider that supports it and the current thread context.
      *
+     * @param <T> the type of entity to persist
      * @param entity the entity to persist
      * @return the persisted entity if a suitable provider handled it, otherwise the original entity; if the input was null the Uni emits `null`
      */

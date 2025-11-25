@@ -21,6 +21,9 @@ import static java.text.MessageFormat.format;
 import io.quarkus.runtime.LaunchMode;
 import jakarta.enterprise.context.ApplicationScoped;
 
+/**
+ * Configuration class for pipeline steps that manages different profiles and their settings.
+ */
 @ApplicationScoped
 public final class PipelineConfig {
 
@@ -48,23 +51,41 @@ public final class PipelineConfig {
         activate(quarkusProfile);
     }
 
-    /** Which profile is currently active */
+    /**
+     * Which profile is currently active
+     *
+     * @return the name of the currently active profile
+     */
     public String activeProfile() {
         return activeProfile.get();
     }
 
-    /** Switch active profile (must already exist or will be created) */
+    /**
+     * Switch active profile (must already exist or will be created)
+     *
+     * @param profileName the name of the profile to activate
+     */
     public void activate(String profileName) {
         profiles.computeIfAbsent(profileName, ignored -> new StepConfig());
         activeProfile.set(profileName);
     }
 
-    /** Get the StepConfig for the current profile */
+    /**
+     * Get the StepConfig for the current profile
+     *
+     * @return the StepConfig for the active profile
+     */
     public StepConfig defaults() {
         return profiles.get(activeProfile());
     }
 
-    /** Add or update a profile explicitly */
+    /**
+     * Add or update a profile explicitly
+     *
+     * @param name the name of the profile to add or update
+     * @param config the StepConfig to associate with the profile
+     * @return this PipelineConfig instance for method chaining
+     */
     public PipelineConfig profile(String name, StepConfig config) {
         profiles.put(name, config);
         return this;

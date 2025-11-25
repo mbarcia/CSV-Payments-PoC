@@ -33,10 +33,17 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
+/**
+ * Service for checking the health of dependent services before pipeline execution.
+ */
 @ApplicationScoped
 public class HealthCheckService {
 
     private static final Logger LOG = Logger.getLogger(HealthCheckService.class);
+
+    /**
+     * Default constructor for HealthCheckService.
+     */
 
 	/**
 	 * Creates an SSLContext that accepts all certificates (insecure).

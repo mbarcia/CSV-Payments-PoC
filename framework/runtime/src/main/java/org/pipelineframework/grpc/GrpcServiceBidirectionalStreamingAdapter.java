@@ -30,6 +30,14 @@ import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
  * This adapter takes a stream of input messages and returns a stream of output messages, suitable
  * for bidirectional streaming scenarios where both client and server can send multiple messages to
  * each other.
+ *
+ * @param <GrpcIn> the gRPC input message type
+ * @param <GrpcOut> the gRPC output message type
+ * @param <DomainIn> the domain input object type
+ * @param <DomainOut> the domain output object type
+ */
+/**
+ * Default constructor for GrpcServiceBidirectionalStreamingAdapter.
  */
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceBidirectionalStreamingAdapter<
@@ -49,8 +57,19 @@ public abstract class GrpcServiceBidirectionalStreamingAdapter<
     this.persistenceManager = persistenceManager;
   }
 
+  /**
+   * Gets the reactive bidirectional streaming service for processing.
+   *
+   * @return the ReactiveBidirectionalStreamingService to use for processing
+   */
   protected abstract ReactiveBidirectionalStreamingService<DomainIn, DomainOut> getService();
 
+  /**
+   * Converts a gRPC input object to the corresponding domain input object.
+   *
+   * @param grpcIn the gRPC input object to convert
+   * @return the corresponding domain input object
+   */
   protected abstract DomainIn fromGrpc(GrpcIn grpcIn);
 
   /**

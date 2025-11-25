@@ -19,6 +19,9 @@ package org.pipelineframework.step;
 import java.time.Duration;
 import org.pipelineframework.config.StepConfig;
 
+/**
+ * Interface for pipeline steps that can be configured at runtime.
+ */
 public interface Configurable {
     /**
      * Get the effective configuration for this step.

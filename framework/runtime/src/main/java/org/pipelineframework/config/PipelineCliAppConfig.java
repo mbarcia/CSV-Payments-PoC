@@ -37,19 +37,35 @@ public interface PipelineCliAppConfig {
     @WithDefault("false")
     Boolean generateCli();
 
-    /** Version of The Pipeline Framework */
+    /**
+     * Version of The Pipeline Framework
+     *
+     * @return the version of The Pipeline Framework
+     */
     @WithDefault("0.9.0")
     String version();
     
-    /** CLI Command Name */
+    /**
+     * CLI Command Name
+     *
+     * @return the CLI command name
+     */
     @WithDefault("")
     Optional<String> cliName();
 
-    /** CLI Command Description */
+    /**
+     * CLI Command Description
+     *
+     * @return the CLI command description
+     */
     @WithDefault("")
     Optional<String> cliDescription();
 
-    /** CLI Command Version */
+    /**
+     * CLI Command Version
+     *
+     * @return the CLI command version
+     */
     @WithDefault("0.9.0")
     Optional<String> cliVersion();
 }

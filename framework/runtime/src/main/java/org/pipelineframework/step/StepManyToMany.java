@@ -20,8 +20,19 @@ import io.smallrye.mutiny.Multi;
 import org.jboss.logging.Logger;
 import org.pipelineframework.step.functional.ManyToMany;
 
-/** N -> N */
+/**
+ * N -> N
+ *
+ * @param <I> the input type
+ * @param <O> the output type
+ */
 public interface StepManyToMany<I, O> extends Configurable, ManyToMany<I, O>, DeadLetterQueue<I, O> {
+    /**
+     * Apply the step to transform a stream of inputs to a stream of outputs.
+     *
+     * @param input the stream of input elements to process
+     * @return a Multi that emits the transformed output elements
+     */
     Multi<O> applyTransform(Multi<I> input);
 
 	/**

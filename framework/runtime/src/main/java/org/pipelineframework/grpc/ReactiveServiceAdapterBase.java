@@ -19,7 +19,14 @@ package org.pipelineframework.grpc;
 import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.core.Vertx;
 
+/**
+ * Base class for reactive service adapters that provide common functionality for gRPC reactive services.
+ */
 public abstract class ReactiveServiceAdapterBase {
+
+    /**
+     * Default constructor for ReactiveServiceAdapterBase.
+     */
 
   /**
    * Determines whether entities should be automatically persisted before processing. This method

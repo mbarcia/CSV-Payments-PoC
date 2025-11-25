@@ -23,8 +23,15 @@ import org.pipelineframework.config.PipelineConfig;
 import org.pipelineframework.config.PipelineStepConfig;
 import org.pipelineframework.config.StepConfig;
 
+/**
+ * A factory class for building configuration for pipeline steps.
+ */
 @ApplicationScoped
 public class ConfigFactory {
+
+    /**
+     * Default constructor for ConfigFactory.
+     */
 
     @Inject
     PipelineConfig pipelineConfig;

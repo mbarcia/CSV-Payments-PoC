@@ -25,7 +25,12 @@ import org.pipelineframework.step.Configurable;
 import org.pipelineframework.step.DeadLetterQueue;
 import org.pipelineframework.step.functional.ManyToOne;
 
-/** N -> 1 (imperative) */
+/**
+ * N -> 1 (imperative)
+ *
+ * @param <I> the input type
+ * @param <O> the output type
+ */
 public interface StepManyToOneBlocking<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
 
     /**

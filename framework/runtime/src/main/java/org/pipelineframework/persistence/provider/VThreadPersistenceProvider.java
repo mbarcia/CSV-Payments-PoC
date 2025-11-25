@@ -25,6 +25,10 @@ import jakarta.persistence.EntityManager;
 import org.jboss.logging.Logger;
 import org.pipelineframework.persistence.PersistenceProvider;
 
+/**
+ * A persistence provider implementation that works with virtual threads (using Jakarta Persistence EntityManager).
+ * This provider is designed to handle persistence operations within virtual thread contexts.
+ */
 @Dependent
 public class VThreadPersistenceProvider implements PersistenceProvider<Object> {
 
@@ -35,7 +39,7 @@ public class VThreadPersistenceProvider implements PersistenceProvider<Object> {
   /**
    * Initialises the provider and locates an injectable EntityManager instance via Arc.
    *
-   * Stores the resolved InjectableInstance<EntityManager> for use by the provider's persistence operations.
+   * Stores the resolved InjectableInstance&lt;EntityManager&gt; for use by the provider's persistence operations.
    */
   public VThreadPersistenceProvider() {
     // Look up the EntityManager bean instance via Arc

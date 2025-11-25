@@ -21,9 +21,15 @@ import io.smallrye.mutiny.Uni;
 import org.jboss.logging.Logger;
 import org.pipelineframework.step.functional.ManyToOne;
 
-/** N -> 1 (reactive) */
+/**
+ * N -> 1 (reactive)
+ *
+ * @param <I> the input type
+ * @param <O> the output type
+ */
 public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
 
+    /** Logger for StepManyToOne operations. */
     Logger LOG = Logger.getLogger(StepManyToOne.class);
 
     /**

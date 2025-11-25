@@ -30,11 +30,21 @@ import org.pipelineframework.step.blocking.StepOneToManyBlocking;
 import org.pipelineframework.step.functional.ManyToOne;
 import org.pipelineframework.step.future.StepOneToOneCompletableFuture;
 
+/**
+ * A service that runs a sequence of pipeline steps against a reactive source.
+ *
+ * This class orchestrates the execution of pipeline steps, handling the transformation of reactive streams
+ * through various step types (one-to-one, one-to-many, many-to-one, many-to-many).
+ */
 @ApplicationScoped
 @Unremovable
 public class PipelineRunner implements AutoCloseable {
 
     private static final Logger logger = Logger.getLogger(PipelineRunner.class);
+
+    /**
+     * Constructs a new PipelineRunner instance.
+     */
 
     @Inject
     ConfigFactory configFactory;
@@ -89,10 +99,12 @@ public class PipelineRunner implements AutoCloseable {
     /**
      * Apply a one-to-one pipeline step to the provided reactive stream and produce the transformed stream.
      *
+     * @param <I>     the input type of the step
+     * @param <O>     the output type of the step
      * @param step    the step that transforms items of type I to type O
-     * @param current a Uni<?> or Multi<?> that provides the input items; other types are not supported
-     * @return        the resulting Uni<?> or Multi<?> after applying the step
-     * @throws IllegalArgumentException if {@code current} is neither a Uni<?> nor a Multi<?>
+     * @param current a Uni&lt;?&gt; or Multi&lt;?&gt; that provides the input items; other types are not supported
+     * @return        the resulting Uni&lt;?&gt; or Multi&lt;?&gt; after applying the step
+     * @throws IllegalArgumentException if {@code current} is neither a Uni&lt;?&gt; nor a Multi&lt;?&gt;
      */
     @SuppressWarnings({"unchecked"})
     public static <I, O> Object applyOneToOneUnchecked(StepOneToOne<I, O> step, Object current) {

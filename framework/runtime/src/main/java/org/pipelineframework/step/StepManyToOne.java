@@ -18,8 +18,8 @@ package org.pipelineframework.step;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
-import org.pipelineframework.step.functional.ManyToOne;
 import org.jboss.logging.Logger;
+import org.pipelineframework.step.functional.ManyToOne;
 
 /** N -> 1 (reactive) */
 public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, DeadLetterQueue<I, O> {
@@ -99,6 +99,6 @@ public interface StepManyToOne<I, O> extends Configurable, ManyToOne<I, O>, Dead
     default Uni<O> deadLetterStream(Multi<I> input, Throwable error) {
         return input.collect().asList()
             .onItem().invoke(list -> LOG.errorf("DLQ drop for stream of %s items: %s", list.size(), error.getMessage()))
-            .onItem().transformToUni(_ -> Uni.createFrom().nullItem());
+            .onItem().transformToUni(ignored -> Uni.createFrom().nullItem());
     }
 }

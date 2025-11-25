@@ -55,7 +55,7 @@ public final class PipelineConfig {
 
     /** Switch active profile (must already exist or will be created) */
     public void activate(String profileName) {
-        profiles.computeIfAbsent(profileName, _ -> new StepConfig());
+        profiles.computeIfAbsent(profileName, ignored -> new StepConfig());
         activeProfile.set(profileName);
     }
 

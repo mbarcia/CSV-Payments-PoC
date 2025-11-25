@@ -84,7 +84,7 @@ protected abstract GrpcOut toGrpc(DomainOut domainOut);
 
       boolean autoPersistenceEnabled = isAutoPersistenceEnabled();
       Uni<DomainOut> withPersistence = autoPersistenceEnabled
-              ? processedResult.call(_ ->
+              ? processedResult.call(ignored ->
               // guaranteed event-loop
               switchToEventLoop()
                   // If auto-persistence is enabled, persist the input entity after successful processing

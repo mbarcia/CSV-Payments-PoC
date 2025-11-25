@@ -49,7 +49,7 @@ public class ReactivePanachePersistenceProvider implements PersistenceProvider<P
     return Panache.getSession()
         .onItem()
         .transformToUni(session -> 
-            session.withTransaction(_ -> session.persist(entity)))
+            session.withTransaction(ignored -> session.persist(entity)))
         .replaceWith(Uni.createFrom().item(entity))
         .onFailure()
         .transform(

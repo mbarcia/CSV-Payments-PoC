@@ -80,7 +80,7 @@ public class PollAckPaymentSentReactiveService
             // Use reactive delay instead of Thread.sleep
             return Uni.createFrom().item(ack)
                 .onItem().delayIt().by(Duration.ofMillis(time))
-                .onItem().transformToUni(_ ->
+                .onItem().transformToUni(ignored ->
                     // Wrap blocking service call with vertx.executeBlocking
                     vertx.executeBlocking(() -> {
                       logger.debug("Calling paymentProviderServiceMock.getPaymentStatus");

@@ -85,7 +85,7 @@ public class PipelineExecutionService {
         case null -> Multi.createFrom().failure(new IllegalStateException(
           "PipelineRunner returned null"));
         case Multi<?> multi1 -> multi1
-          .onSubscription().invoke(_ -> {
+          .onSubscription().invoke(ignored -> {
             LOG.info("PIPELINE BEGINS processing");
             watch.start();
           })
@@ -98,7 +98,7 @@ public class PipelineExecutionService {
             LOG.errorf(failure, "❌ PIPELINE FAILED after %s seconds", watch.getTime(TimeUnit.SECONDS));
           });
         case Uni<?> uni -> uni.toMulti()
-          .onSubscription().invoke(_ -> {
+          .onSubscription().invoke(ignored -> {
             LOG.info("PIPELINE BEGINS processing");
             watch.start();
           })

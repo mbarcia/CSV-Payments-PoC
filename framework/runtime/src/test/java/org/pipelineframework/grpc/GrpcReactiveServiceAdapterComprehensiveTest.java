@@ -148,7 +148,7 @@ class GrpcReactiveServiceAdapterComprehensiveTest {
                                         ? processedResult
                                                 .onItem()
                                                 .call(
-                                                        _ ->
+                                                        ignored ->
                                                                 // If auto-persistence is enabled,
                                                                 // persist the input entity after
                                                                 // successful processing
@@ -266,7 +266,7 @@ class GrpcReactiveServiceAdapterComprehensiveTest {
                                                 ? processedResult
                                                         .onItem()
                                                         .call(
-                                                                _ ->
+                                                                ignored ->
                                                                         // If auto-persistence is
                                                                         // enabled, persist the
                                                                         // input entity after

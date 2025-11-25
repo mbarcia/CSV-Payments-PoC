@@ -1,6 +1,8 @@
-FROM quay.io/quarkus/quarkus-micro-image:2.0
+FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
+WORKDIR /work/
 RUN groupadd -r app && useradd -r -g app app
-COPY target/*-runner.jar /app/app.jar
-RUN chown app:app /app/app.jar
+COPY --chmod=0755 target/*-runner /work/application
+RUN chown app:app /work/application
+EXPOSE 8080
 USER app
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]

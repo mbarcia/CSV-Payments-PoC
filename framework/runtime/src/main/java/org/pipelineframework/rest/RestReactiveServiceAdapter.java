@@ -31,6 +31,9 @@ import org.pipelineframework.service.ReactiveService;
  */
 public abstract class RestReactiveServiceAdapter<DomainIn, DomainOut, DtoOut> {
 
+    /**
+     * Default constructor for RestReactiveServiceAdapter.
+     */
     @Inject
     PersistenceManager persistenceManager;
 

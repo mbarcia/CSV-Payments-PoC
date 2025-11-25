@@ -24,6 +24,9 @@ import org.pipelineframework.config.StepConfig;
  */
 public abstract class ConfigurableStep implements Configurable {
 
+    /**
+     * Default constructor for ConfigurableStep.
+     */
     StepConfig config = null;
 
 

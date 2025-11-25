@@ -30,6 +30,9 @@ import org.jboss.logging.Logger;
 @ApplicationScoped
 public class GrpcServiceStartup {
 
+    /**
+     * Default constructor for GrpcServiceStartup.
+     */
     private static final Logger LOG = Logger.getLogger(GrpcServiceStartup.class);
 
     @Inject

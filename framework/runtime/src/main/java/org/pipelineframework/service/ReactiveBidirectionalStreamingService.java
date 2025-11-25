@@ -18,13 +18,13 @@ package org.pipelineframework.service;
 
 import io.smallrye.mutiny.Multi;
 
-@FunctionalInterface
 /**
  * Interface for reactive bidirectional streaming services that process a stream of inputs and return a stream of outputs.
  *
  * @param <T> the input type
  * @param <S> the output type
  */
+@FunctionalInterface
 public interface ReactiveBidirectionalStreamingService<T, S> {
   /**
    * Process a stream of input objects and return a stream of output objects.

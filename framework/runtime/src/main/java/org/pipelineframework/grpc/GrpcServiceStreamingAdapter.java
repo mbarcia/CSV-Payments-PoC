@@ -34,12 +34,13 @@ import org.pipelineframework.service.throwStatusRuntimeExceptionFunction;
  * @param <DomainIn> the domain input object type
  * @param <DomainOut> the domain output object type
  */
-/**
- * Default constructor for GrpcServiceStreamingAdapter.
- */
 @SuppressWarnings("LombokSetterMayBeUsed")
 public abstract class GrpcServiceStreamingAdapter<GrpcIn, GrpcOut, DomainIn, DomainOut>
         extends ReactiveServiceAdapterBase {
+
+  /**
+   * Default constructor for GrpcServiceStreamingAdapter.
+   */
 
   private static final Logger LOG = Logger.getLogger(GrpcServiceStreamingAdapter.class);
 

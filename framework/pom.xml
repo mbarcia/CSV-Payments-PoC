@@ -133,17 +133,6 @@
                     <configuration>
                         <jvmArgs>--enable-preview</jvmArgs>
                     </configuration>
-                    <executions>
-                        <!-- Prevent dev and build goals from running on extensions -->
-                        <execution>
-                            <id>disable-dev</id>
-                            <phase>none</phase>
-                            <goals>
-                                <goal>dev</goal>
-                                <goal>build</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -218,7 +207,7 @@
                 </plugin>
             </plugins>
         </pluginManagement>
-        
+
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -245,8 +234,6 @@
                     </execution>
                 </executions>
             </plugin>
-            
-
             <!-- Versions Maven Plugin for consistent version management across modules -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

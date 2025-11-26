@@ -134,7 +134,7 @@ The documentation site now includes:
 
 1. **Search Functionality**: Users can search across all documentation pages using the search bar in the top navigation
 2. **Multi-Version Support**: Documentation is available for multiple versions of the The Pipeline Framework:
-   - v0.9.0 (current)
+   - v0.9.2 (current)
    - v0.8.0
    - v0.7.0
 3. **Mermaid Diagram Support**: Rich diagrams for visualizing workflows (with increased bundle size)

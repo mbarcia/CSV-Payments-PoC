@@ -33,7 +33,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Configure Maven
-        run: echo "MAVEN_ARGS=${{ env.MAVEN_ARGS_BUILD }}" >> $GITHUB_ENV
+        run: echo "MAVEN_ARGS=${{ env.MAVEN_ARGS_BUILD }} --no-transfer-progress" >> $GITHUB_ENV
 
       - name: Full clean install (framework + examples)
         run: ./mvnw $MAVEN_ARGS clean install -DskipITs=true -DskipNative=true -Dquarkus.container-image.build=false -Dquarkus.package.type=fast-jar
@@ -120,37 +120,11 @@ jobs:
 
       - name: Configure Maven for Native Builds
         run: |
-          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true" >> $GITHUB_ENV
+          echo "MAVEN_ARGS=-B -T 1 -V -Dmaven.test.redirectTestOutputToFile=true --no-transfer-progress" >> $GITHUB_ENV
 
-      - name: Native build for orchestrator-svc
+      - name: Full native build
         run: |
-          ./mvnw $MAVEN_ARGS -f examples/csv-payments/orchestrator-svc/pom.xml \
-            -Dquarkus.native.enabled=true \
-            -Pnative package --no-transfer-progress
-
-      - name: Native build for input-csv-file-processing-svc
-        run: |
-          ./mvnw $MAVEN_ARGS -f examples/csv-payments/input-csv-file-processing-svc/pom.xml \
-            -Dquarkus.native.enabled=true \
-            -Pnative package --no-transfer-progress
-
-      - name: Native build for payment-status-svc
-        run: |
-          ./mvnw $MAVEN_ARGS -f examples/csv-payments/payment-status-svc/pom.xml \
-            -Dquarkus.native.enabled=true \
-            -Pnative package --no-transfer-progress
-
-      - name: Native build for payments-processing-svc
-        run: |
-          ./mvnw $MAVEN_ARGS -f examples/csv-payments/payments-processing-svc/pom.xml \
-            -Dquarkus.native.enabled=true \
-            -Pnative package --no-transfer-progress
-
-      - name: Native build for output-csv-file-processing-svc
-        run: |
-          ./mvnw $MAVEN_ARGS -f examples/csv-payments/output-csv-file-processing-svc/pom.xml \
-            -Dquarkus.native.enabled=true \
-            -Pnative package --no-transfer-progress
+          ./mvnw $MAVEN_ARGS -DskipTests -Dquarkus.native.enabled=true -Pnative package
 
       - name: Upload native orchestrator artifact
         uses: actions/upload-artifact@v4

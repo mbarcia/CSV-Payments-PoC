@@ -1,7 +1,7 @@
-FROM quay.io/quarkus/ubi9-quarkus-micro-image:2.0
+FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
 WORKDIR /work/
-RUN groupadd -r app && useradd -r -g app app
-COPY --chmod=0755 target/*-runner /work/application
+RUN microdnf install shadow-utils && groupadd -r app && useradd -r -g app app
+COPY --chmod=0755 target/quarkus-app/quarkus-run.jar /work/application
 RUN chown app:app /work/application
 EXPOSE 8080
 USER app

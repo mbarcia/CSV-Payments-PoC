@@ -1,8 +1,16 @@
-FROM registry.access.redhat.com/ubi9/ubi-minimal:latest
-WORKDIR /work/
-RUN microdnf install shadow-utils && groupadd -r app && useradd -r -g app app
-COPY --chmod=0755 target/quarkus-run.jar /work/application
-RUN chown app:app /work/application
+FROM registry.access.redhat.com/ubi8/openjdk-21
+
+ENV LANGUAGE='en_GB:en'
+
+# We make four distinct layers so if there are application changes the library layers can be re-used
+COPY target/quarkus-app/lib/ /deployments/lib/
+COPY target/quarkus-app/*.jar /deployments/
+COPY target/quarkus-app/app/ /deployments/app/
+COPY target/quarkus-app/quarkus/ /deployments/quarkus/
+
 EXPOSE 8080
-USER app
-CMD ["./application", "-Dquarkus.http.host=0.0.0.0"]
+USER 1001
+ENV JAVA_OPTS="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
+ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
+
+ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]

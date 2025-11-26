@@ -32,7 +32,7 @@ jobs:
         run: echo "MAVEN_ARGS=${{ env.MAVEN_ARGS_BUILD }}" >> $GITHUB_ENV
 
       - name: Full clean install (framework + examples)
-        run: ./mvnw $MAVEN_ARGS clean install -DskipITs=true -DskipNative=true -Dquarkus.container-image.build=false
+        run: ./mvnw $MAVEN_ARGS clean install -DskipITs=true -DskipNative=true -Dquarkus.container-image.build=false -Dquarkus.package.type=fast-jar
 
   ##################################################################
   # 1.5) Generate aggregate JaCoCo coverage report

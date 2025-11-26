@@ -200,10 +200,12 @@ public class PipelineStepProcessor extends AbstractProcessor {
         String serviceClassName = serviceClass.getSimpleName().toString();
         String clientStepClassName = serviceClassName.replace("Service", "") + CLIENT_STEP_SUFFIX;
         
-        // Create the class with Dependent annotation for CDI
+        // Create the class with Dependent annotation for CDI and Unremovable to prevent Quarkus from removing it during build
         TypeSpec.Builder clientStepBuilder = TypeSpec.classBuilder(clientStepClassName)
             .addModifiers(Modifier.PUBLIC)
             .addAnnotation(AnnotationSpec.builder(ClassName.get("jakarta.enterprise.context", "Dependent"))
+                .build())
+            .addAnnotation(AnnotationSpec.builder(ClassName.get(io.quarkus.arc.Unremovable.class))
                 .build());
 
 
@@ -587,7 +589,7 @@ public class PipelineStepProcessor extends AbstractProcessor {
     
     /**
      * Generate a REST resource class that exposes the annotated reactive service as HTTP endpoints.
-     *
+     * <p>
      * The generated resource maps request and response DTOs to domain types using configured mappers,
      * delegates processing to the domain service, and registers an exception mapper for runtime errors.
      *

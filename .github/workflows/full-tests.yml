@@ -38,27 +38,6 @@ jobs:
       - name: Full clean install (framework + examples)
         run: ./mvnw $MAVEN_ARGS clean install -DskipITs=true -DskipNative=true -Dquarkus.container-image.build=false -Dquarkus.package.type=fast-jar
 
-      - name: Generate JaCoCo aggregate report
-        if: github.event_name != 'pull_request'
-        run: |
-          # Build with coverage profile enabled to collect coverage data from unit tests only
-          ./mvnw $MAVEN_ARGS clean verify -Pcoverage -DskipITs -DskipNative=true -Dquarkus.package.type=fast-jar
-
-          # Generate an aggregated report (this will aggregate across all modules that produced coverage data)
-          ./mvnw $MAVEN_ARGS org.jacoco:jacoco-maven-plugin:report-aggregate
-
-      - name: Analyze with SonarQube
-        if: github.event_name != 'pull_request'
-        uses: sonarsource/sonarqube-scan-action@v4
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        with:
-          projectBaseDir: .
-          args: >
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco-aggregate/jacoco.xml
-            -Dsonar.java.coveragePlugin=jacoco
-
       # Build Docker images using docker/build-push-action for all CSV Payments modules
       - name: Build input-csv-file-processing-svc Docker image
         uses: docker/build-push-action@v6
@@ -102,6 +81,28 @@ jobs:
 
       - name: Run Integration Tests
         run: ./mvnw $MAVEN_ARGS verify
+
+      - name: Generate JaCoCo aggregate report
+        if: github.event_name != 'pull_request'
+        run: |
+          # Build with coverage profile enabled to collect coverage data from unit tests only
+          ./mvnw $MAVEN_ARGS clean verify -Pcoverage -DskipITs -DskipNative=true -Dquarkus.package.type=fast-jar
+
+          # Generate an aggregated report (this will aggregate across all modules that produced coverage data)
+          ./mvnw $MAVEN_ARGS org.jacoco:jacoco-maven-plugin:report-aggregate
+
+      - name: Analyze with SonarQube
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        uses: sonarsource/sonarqube-scan-action@v6
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectBaseDir=.
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco-aggregate/jacoco.xml
+            -Dsonar.java.coveragePlugin=jacoco
 
       # Native builds
       - name: Setup GraalVM

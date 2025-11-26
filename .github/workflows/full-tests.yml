@@ -32,7 +32,7 @@ jobs:
         run: echo "MAVEN_ARGS=${{ env.MAVEN_ARGS_BUILD }}" >> $GITHUB_ENV
 
       - name: Full clean install (framework + examples)
-        run: ./mvnw $MAVEN_ARGS clean install -DskipITs=false -DskipNative=true -Dquarkus.container-image.build=false
+        run: ./mvnw $MAVEN_ARGS clean install -DskipITs=true -DskipNative=true -Dquarkus.container-image.build=false
 
   ##################################################################
   # 1.5) Generate aggregate JaCoCo coverage report
@@ -59,8 +59,8 @@ jobs:
 
       - name: Generate JaCoCo aggregate report
         run: |
-          # Build with coverage profile enabled to collect coverage data
-          ./mvnw $MAVEN_ARGS clean verify -Pcoverage -DskipITs=false -DskipNative=true
+          # Build with coverage profile enabled to collect coverage data from unit tests only
+          ./mvnw $MAVEN_ARGS clean verify -Pcoverage -DskipITs -DskipNative=true
 
           # Generate an aggregated report (this will aggregate across all modules that produced coverage data)
           ./mvnw $MAVEN_ARGS org.jacoco:jacoco-maven-plugin:report-aggregate

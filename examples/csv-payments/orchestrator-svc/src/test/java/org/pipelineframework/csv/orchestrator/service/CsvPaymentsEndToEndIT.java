@@ -48,8 +48,7 @@ class CsvPaymentsEndToEndIT {
     private static final Logger LOG = Logger.getLogger(CsvPaymentsEndToEndIT.class);
 
     private static final Network network = Network.newNetwork();
-
-    private static final String TEST_E2E_DIR = "target/test-e2e";
+    private static final String TEST_E2E_DIR = System.getProperty("user.dir") + "/target/test-e2e";
     private static final String TEST_E2E_TARGET_DIR = "/app/test-e2e";
 
     // Define containers for each service
@@ -137,12 +136,16 @@ class CsvPaymentsEndToEndIT {
     /**
      * Initialises and starts the test containers required for the end-to-end CSV payments test.
      *
-     * <p>Starts the PostgreSQL container first, then starts each service container so the test
-     * services (input CSV, payments processing, payment status and output CSV) are available before
-     * tests execute.
+     * <p>Creates the test directory first if needed, then starts the PostgreSQL container, then
+     * starts each service container so the test services (input CSV, payments processing, payment
+     * status and output CSV) are available before tests execute.
      */
     @BeforeAll
-    static void startServices() {
+    static void startServices() throws IOException {
+        // Create the test directory if it doesn't exist
+        Path dir = Paths.get(TEST_E2E_DIR);
+        Files.createDirectories(dir);
+
         // Start database first
         postgresContainer.start();
 
@@ -164,8 +167,9 @@ class CsvPaymentsEndToEndIT {
     void fullPipelineWorks() throws Exception {
         LOG.info("Running full end-to-end pipeline test");
 
-        // Create test input directory
+        // Create test input directory - already created in @BeforeAll
         Path dir = Paths.get(TEST_E2E_DIR);
+        // Make sure the directory exists at the time of test execution too
         Files.createDirectories(dir);
 
         // Clean up any existing test files

@@ -1,3 +1,16 @@
----
-name: The Pipeline Framework extension
-description: Automatically exposes endpoints and pipeline steps with runner/CLI
+name: "The Pipeline Framework"
+description: "A framework for building reactive pipeline processing systems"
+metadata:
+  group-id: "org.pipelineframework"
+  artifact: "pipelineframework"
+  version: "0.9.2-SNAPSHOT"
+  keywords:
+    - "pipeline"
+    - "processing"
+    - "reactive"
+    - "grpc"
+  guide: "https://pipelineframework.org"
+  categories:
+    - "reactive"
+  status: "stable"
+  unlisted: false

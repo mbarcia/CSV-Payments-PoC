@@ -100,6 +100,12 @@ jobs:
           SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
         with:
           args: >
+            -Dsonar.projectKey=${{ github.repository }}
+            -Dsonar.organization=${{ github.repository_owner }}
+            -Dsonar.projectName=${{ github.repository }}
+            -Dsonar.projectVersion=${{ github.sha }}
+            -Dsonar.sources=.
+            -Dsonar.java.source=21
             -Dsonar.projectBaseDir=.
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco-aggregate/jacoco.xml
             -Dsonar.java.coveragePlugin=jacoco
@@ -109,7 +115,7 @@ jobs:
         uses: graalvm/setup-graalvm@v1
         with:
           java-version: 21
-          distribution: graal
+          distribution: graalvm
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Maven for Native Builds

@@ -215,16 +215,6 @@
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-extension-maven-plugin</artifactId>
                     <version>${quarkus.platform.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>extension-descriptor</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <deployment>org.pipelineframework:pipelineframework-deployment:${version.pipeline}</deployment>
-                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>

@@ -51,7 +51,7 @@ In several (`pom.xml`):
 ```xml
 <properties>
     <!-- ... other properties ... -->
-    <version.pipeline>0.9.0</version.pipeline>
+    <version.pipeline>0.9.2</version.pipeline>
     <!-- ... other properties ... -->
 </properties>
 ```

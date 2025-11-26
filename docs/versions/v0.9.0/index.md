@@ -1,4 +1,4 @@
-# The Pipeline Framework v0.9.0
+# The Pipeline Framework v0.9.2
 
 A framework for building reactive pipeline processing systems.
 

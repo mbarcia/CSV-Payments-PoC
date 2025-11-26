@@ -1,6 +1,7 @@
 quarkus.http.ssl-port={{#portNumber}}{{add 8443 order}}{{/portNumber}}
 
 quarkus.hibernate-orm.blocking=false
+quarkus.datasource.jdbc=false
 quarkus.hibernate-orm.packages={{basePackage}}.common.domain
 quarkus.index-dependency."common".group-id={{basePackage}}
 quarkus.index-dependency."common".artifact-id=common

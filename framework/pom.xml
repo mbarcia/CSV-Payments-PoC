@@ -133,17 +133,6 @@
                     <configuration>
                         <jvmArgs>--enable-preview</jvmArgs>
                     </configuration>
-                    <executions>
-                        <!-- Prevent dev and build goals from running on extensions -->
-                        <execution>
-                            <id>disable-dev</id>
-                            <phase>none</phase>
-                            <goals>
-                                <goal>dev</goal>
-                                <goal>build</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -215,20 +204,10 @@
                     <groupId>io.quarkus</groupId>
                     <artifactId>quarkus-extension-maven-plugin</artifactId>
                     <version>${quarkus.platform.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>extension-descriptor</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <deployment>org.pipelineframework:pipelineframework-deployment:${version.pipeline}</deployment>
-                    </configuration>
                 </plugin>
             </plugins>
         </pluginManagement>
-        
+
         <plugins>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
@@ -255,8 +234,6 @@
                     </execution>
                 </executions>
             </plugin>
-            
-
             <!-- Versions Maven Plugin for consistent version management across modules -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

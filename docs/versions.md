@@ -4,7 +4,7 @@ The Pipeline Framework documentation is available for the following versions:
 
 ## Latest Version
 
-- [v0.9.0](/) - Latest stable release
+- [v0.9.2](/) - Latest stable release
 
 ## Previous Versions
 
@@ -18,4 +18,4 @@ The Pipeline Framework follows semantic versioning:
 - **Minor versions** (0.9.x) add new features while maintaining backward compatibility
 - **Patch versions** (0.9.1) include bug fixes and minor improvements
 
-For production use, we recommend using the latest stable version (v0.9.0).
+For production use, we recommend using the latest stable version (v0.9.2).

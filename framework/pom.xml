@@ -20,7 +20,7 @@
 
     <groupId>org.pipelineframework</groupId>
     <artifactId>framework-parent</artifactId>
-    <version>0.9.3-SNAPSHOT</version>
+    <version>0.9.2</version>
     <packaging>pom</packaging>
     <name>The Pipeline Framework (Parent)</name>
     <description>A Quarkus extension for building reactive pipeline processing systems</description>

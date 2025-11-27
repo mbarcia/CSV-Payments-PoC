@@ -204,7 +204,6 @@
                 <artifactId>versions-maven-plugin</artifactId>
                 <version>2.19.1</version>
             </plugin>
-            
             <!-- Release Plugin for automating releases to Maven Central -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -263,7 +262,7 @@
             </reporting>
         </profile>
         <profile>
-            <id>release</id>
+            <id>central-publishing</id>
             <build>
                 <plugins>
                     <!-- Source plugin to generate sources jar -->
@@ -311,8 +310,7 @@
                             </execution>
                         </executions>
                     </plugin>
-                    
-                    <!-- Nexus Staging plugin for deploying to Maven Central -->
+
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>

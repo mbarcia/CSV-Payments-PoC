@@ -28,7 +28,7 @@ The project uses three independent workflows:
 - `-DskipNative=true` — Skip native builds
 - `-Dquarkus.container-image.build=true` — Build Jib image
 - `-Pcoverage` — Enable coverage for unit tests only
-- `-Prelease` — Release mode for Maven Central deploy
+- `-Pcentral-publishing` — Release mode for Maven Central deploy
 - Avoid mixing `skipTests` and `skipITs`
 - Quarkus extensions require full reactor builds (`clean install`)
 - `flatten-maven-plugin` must NOT run on deployment modules
@@ -39,7 +39,7 @@ flowchart TD
 
    subgraph Release_Flow["Tag v* — Publishing"]
       D1[Checkout] --> D2[Maven Clean Install]
-      D2 --> D3[Release Build -Prelease]
+      D2 --> D3[Release Build -Pcentral-publishing]
       D3 --> D4[Deploy to Maven Central]
       D4 --> D5[GitHub Release]
    end
@@ -72,7 +72,7 @@ flowchart TD
 | `-DskipNative=true` | Skips native images | Everything except main |
 | `-Dquarkus.container-image.build=true` | Build Jib images | Full tests on main |
 | `-Pcoverage` | Run coverage on unit tests | PRs, quality gates |
-| `-Prelease` | Release signing + GPG + deploy | Only on tags |
+| `-Pcentral-publishing` | Release signing + GPG + deploy | Only on tags |
 | `-DskipTests` | Skips **all** tests | ⚠️ Avoid — rarely correct |
 | `-Dquarkus.native.enabled=true` | Enables native build | Native matrix stage |
 

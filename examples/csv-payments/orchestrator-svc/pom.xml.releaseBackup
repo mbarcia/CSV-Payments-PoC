@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   ~ Copyright (c) 2023-2025 Mariano Barcia
   ~
@@ -18,53 +17,75 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>input-csv-file-processing-svc</artifactId>
-    <version>0.9.2</version>
+    <artifactId>orchestrator-svc</artifactId>
+    <version>0.9.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <parent>
         <groupId>org.pipelineframework</groupId>
         <artifactId>csv-payments-parent</artifactId>
-        <version>0.9.2</version>
+        <version>0.9.2-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <dependencies>
+        <!-- Backend service dependencies for pipeline processing -->
         <dependency>
             <groupId>org.pipelineframework</groupId>
-            <artifactId>common</artifactId>
-            <version>0.9.2</version>
-            <scope>compile</scope>
+            <artifactId>input-csv-file-processing-svc</artifactId>
+            <version>0.9.2-SNAPSHOT</version>
+            <classifier>client</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
-        <!-- Hibernate Reactive and PostgreSQL reactive -->
+        <dependency>
+            <groupId>org.pipelineframework</groupId>
+            <artifactId>payments-processing-svc</artifactId>
+            <version>0.9.2-SNAPSHOT</version>
+            <classifier>client</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.pipelineframework</groupId>
+            <artifactId>payment-status-svc</artifactId>
+            <version>0.9.2-SNAPSHOT</version>
+            <classifier>client</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.pipelineframework</groupId>
+            <artifactId>output-csv-file-processing-svc</artifactId>
+            <version>0.9.2-SNAPSHOT</version>
+            <classifier>client</classifier>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.quarkus</groupId>
+                    <artifactId>quarkus-grpc-protoc-plugin</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-hibernate-reactive-panache</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-reactive-pg-client</artifactId>
+            <artifactId>quarkus-picocli</artifactId>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>1.18.36</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct</artifactId>
-            <version>1.5.5.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>org.mapstruct</groupId>
-            <artifactId>mapstruct-processor</artifactId>
-            <version>1.5.5.Final</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-grpc</artifactId>
         </dependency>
         <!-- Quarkus REST dependencies -->
         <dependency>
@@ -72,51 +93,22 @@
             <artifactId>quarkus-rest</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.slf4j</groupId>
-            <artifactId>slf4j-jboss-logmanager</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <!-- Health check dependency -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-smallrye-health</artifactId>
+            <groupId>jakarta.annotation</groupId>
+            <artifactId>jakarta.annotation-api</artifactId>
         </dependency>
         <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-container-image-jib</artifactId>
+            <groupId>jakarta.resource</groupId>
+            <artifactId>jakarta.resource-api</artifactId>
         </dependency>
-
-        <!-- Test Dependencies -->
+        <!-- Quarkus gRPC -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-grpc</artifactId>
+        </dependency>
+        <!-- Tests -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-junit5</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-test-vertx</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-junit5-mockito</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <version>5.14.2</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
-            <version>5.14.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -126,9 +118,9 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-nop</artifactId>
-            <version>2.0.9</version>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>4.2.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -143,9 +135,26 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>jakarta.validation</groupId>
-            <artifactId>jakarta.validation-api</artifactId>
-            <version>3.1.1</version>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>1.21.3</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- Hibernate Reactive and PostgreSQL reactive -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-jdbc-postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Health check dependency -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-health</artifactId>
         </dependency>
         <!-- Observability-->
         <dependency>
@@ -174,20 +183,20 @@
                 <artifactId>maven-surefire-plugin</artifactId>
             </plugin>
             <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-maven-plugin</artifactId>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
             </plugin>
             <plugin>
-                <groupId>io.smallrye</groupId>
-                <artifactId>jandex-maven-plugin</artifactId>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
             </plugin>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
+                <groupId>io.smallrye</groupId>
+                <artifactId>jandex-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>
@@ -198,8 +207,7 @@
             <properties>
                 <quarkus.native.container-build>true</quarkus.native.container-build>
                 <quarkus.native.additional-build-args>
-                    --enable-preview,
-                    --initialize-at-run-time=org.apache.commons.logging.impl.Log4jApiLogFactory
+                    --enable-preview
                 </quarkus.native.additional-build-args>
             </properties>
             <build>
